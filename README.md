@@ -37,7 +37,8 @@ circom2llvm --input ./benchmark/sample/iszero_safe.circom --output ./benchmark/s
 - Visualization
 
 ```bash
-opt -enable-new-pm=0 -load ./zkap/detectors/build/libCDGPass.so --PrintGraphviz -S ./benchmark/sample/iszero_safe.ll -o /dev/null 2> ./benchmark/sample/iszero_safe.dot
+opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so --ExtendedPrintGraphviz -
+S ./benchmark/sample/iszero_safe.ll -o /dev/null 2> ./benchmark/sample/iszero_safe.dot
 ```
 
 <img src="./benchmark/sample/iszero_safe_graphviz.svg" width=900>

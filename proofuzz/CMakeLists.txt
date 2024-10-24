@@ -11,6 +11,12 @@ add_definitions(${LLVM_DEFINITIONS})
 add_library(ProoFuzzPass MODULE
     InitializeConstraintPass.cpp
     MainAdderPass.cpp
+    ExtendedPrintGraphviz.cpp
+    ExtendedProtocolFlowGraph.cpp
+    ../zkap/detectors/ProtocolFlowGraph.hpp
+    ../zkap/detectors/utils_arrayshapes.cpp
+    ../zkap/detectors/utils_basicinfo.cpp
+    ../zkap/detectors/utils.cpp
 )
 
 target_link_libraries(ProoFuzzPass PRIVATE LLVMCore LLVMSupport LLVMIRReader LLVMInstCombine LLVMScalarOpts)
