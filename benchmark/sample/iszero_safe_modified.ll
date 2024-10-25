@@ -115,22 +115,22 @@ exit:                                             ; preds = %body
   ret void
 }
 
+declare i32 @printf(i8*, ...)
+
 define i32 @main() {
 entry:
   %instance = call %struct_template_IsZero* @fn_template_build_IsZero()
   %"gep.IsZero|in.input" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 0
-  store i128 0, i128* %"gep.IsZero|in.input", align 4
+  store i128 123, i128* %"gep.IsZero|in.input", align 4
   call void @fn_template_init_IsZero(%struct_template_IsZero* %instance)
   %"gep.IsZero|out.output" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 2
-  %"val.IsZero|out.output" = load i128, i128* %"gep.IsZero|out.output", align 4
-  %0 = trunc i128 %"val.IsZero|out.output" to i64
-  %1 = lshr i128 %"val.IsZero|out.output", 64
+  %"val.gep.IsZero|out.output" = load i128, i128* %"gep.IsZero|out.output", align 4
+  %0 = trunc i128 %"val.gep.IsZero|out.output" to i64
+  %1 = lshr i128 %"val.gep.IsZero|out.output", 64
   %2 = trunc i128 %1 to i64
   %3 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str, i32 0, i32 0), i64 %2)
   %4 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str, i32 0, i32 0), i64 %0)
   ret i32 0
 }
-
-declare i32 @printf(i8*, ...)
 
 attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
