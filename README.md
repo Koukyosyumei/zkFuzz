@@ -48,7 +48,8 @@ opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so --ExtendedPrintGr
 ```bash
 # modify .ll file 
 opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so  --InitializeConstraintPass --MainAdderPass -S ./benchmark/sample/iszero_safe.ll -o ./benchmark/sample/iszero_safe_modified.ll
+llvm-link ./benchmark/sample/iszero_safe_modified.ll ../circom2llvm/utils/field_operations.ll -o ./benchmark/sample/iszero_safe_linked.ll
 
 # execute .ll file
-lli ./benchmark/sample/iszero_safe_modified.ll
+lli ./benchmark/sample/iszero_safe_linked.ll
 ```
