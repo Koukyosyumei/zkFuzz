@@ -65,7 +65,7 @@ namespace
             }
 
             // Remove the store instruction to the free intermediate/output variables.
-            removeStoreToFreeVariables(M);
+            overwriteStoreToFreeVariables(M);
 
             // Declare the `main` function that initializes an instance of the target circuit.
             createMainFunction(M);
@@ -73,7 +73,7 @@ namespace
             return true;
         }
 
-        void removeStoreToFreeVariables(Module &M)
+        void overwriteStoreToFreeVariables(Module &M)
         {
             LLVMContext &Context = M.getContext();
 
@@ -95,6 +95,7 @@ namespace
                         }
                     }
 
+                    // Overwrite free variables
                     for (auto &Arg : F.args())
                     {
                         if (Arg.getType()->isPointerTy())
