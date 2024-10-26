@@ -82,6 +82,9 @@ entry:
   %read.in.input = load i128, i128* %"gep.IsZero|in.input", align 4
   store i128 %read.in.input, i128* %initial.in.input, align 4
   %initial.inv.inter = alloca i128, align 8
+  %"free.gep.IsZero|inv.inter" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 1
+  %free.read.inv.inter = load i128, i128* %"free.gep.IsZero|inv.inter", align 4
+  store i128 %free.read.inv.inter, i128* %initial.inv.inter, align 4
   %initial.out.output = alloca i128, align 8
   br label %body
 
@@ -91,7 +94,6 @@ body:                                             ; preds = %entry
   %read.in.input2 = load i128, i128* %initial.in.input, align 4
   %mod_div = call i128 @mod_div(i128 1, i128 %read.in.input2, i128 9938766679346745377)
   %utils_switch = call i128 @fn_intrinsic_utils_switch(i1 %ne, i128 %mod_div, i128 0)
-  store i128 %utils_switch, i128* %initial.inv.inter, align 4
   %read.in.input3 = load i128, i128* %initial.in.input, align 4
   %mod_sub = call i128 @mod_sub(i128 0, i128 %read.in.input3, i128 9938766679346745377)
   %read.inv.inter = load i128, i128* %initial.inv.inter, align 4

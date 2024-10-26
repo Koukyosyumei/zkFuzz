@@ -13,6 +13,7 @@ add_library(ProoFuzzPass MODULE
     MainAdderPass.cpp
     ExtendedPrintGraphviz.cpp
     ExtendedProtocolFlowGraph.cpp
+    helpers.cpp
     ../zkap/detectors/ProtocolFlowGraph.hpp
     ../zkap/detectors/utils_arrayshapes.cpp
     ../zkap/detectors/utils_basicinfo.cpp

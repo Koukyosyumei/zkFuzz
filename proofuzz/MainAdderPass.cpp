@@ -6,6 +6,9 @@
 #include <unordered_map>
 #include <iostream>
 
+#include "ExtendedProtocolFlowGraph.hpp"
+#include "helpers.hpp"
+
 using namespace llvm;
 
 namespace
@@ -18,8 +21,10 @@ namespace
     struct MainAdderPass : public ModulePass
     {
         static char ID;
+        std::string circuitName;
         FunctionCallee printfFunc, scanfFunc;
         std::unordered_map<std::string, int> gepInputIndexMap, gepInterIndexMap, gepOutputIndexMap;
+        std::unordered_map<std::string, EPFGraph *> nameToGraph;
 
         MainAdderPass() : ModulePass(ID) {}
 
@@ -34,10 +39,33 @@ namespace
          */
         bool runOnModule(Module &M) override
         {
-            // Declare the `printf` function for output
+            // Declare the `printf` and `scanf` function for output
             printfFunc = declarePrintfFunction(M);
-
             scanfFunc = declareScanfFunction(M);
+
+            // Find the inputs and outputs of the circuit using pattern matching
+            for (Function &F : M)
+            {
+                if (F.getName().contains("fn_template_init"))
+                {
+                    circuitName = F.getName().substr(17).str();
+
+                    getIndexMap(&F, "gep.*.input", gepInputIndexMap);
+                    getIndexMap(&F, "gep.*.inter", gepInterIndexMap);
+                    getIndexMap(&F, "gep.*.output", gepOutputIndexMap);
+                    break;
+                }
+            }
+
+            // Construct Extended Protocol Flow Graph
+            EGraphVec graphs = initDetectedEGraphs(M, true, true);
+            for (EPFGraph *g : graphs)
+            {
+                nameToGraph[g->getName()] = g;
+            }
+
+            // Remove the store instruction to the free intermediate/output variables.
+            removeStoreToFreeVariables(M);
 
             // Declare the `main` function that initializes an instance of the target circuit.
             createMainFunction(M);
@@ -45,101 +73,67 @@ namespace
             return true;
         }
 
-        /**
-         * @brief Declares an external `printf` function for formatted output.
-         *
-         * This method inserts a declaration of the C standard library's `printf` function into the module.
-         *
-         * @param M The LLVM module where the function will be declared.
-         * @return A callable reference to the `printf` function.
-         */
-        FunctionCallee declarePrintfFunction(Module &M)
+        void removeStoreToFreeVariables(Module &M)
         {
-            LLVMContext &Ctx = M.getContext();
-            Type *PrintfArgType = Type::getInt8PtrTy(Ctx);
-            FunctionType *PrintfType = FunctionType::get(Type::getInt32Ty(Ctx), PrintfArgType, true);
-            return M.getOrInsertFunction("printf", PrintfType);
-        }
+            LLVMContext &Context = M.getContext();
 
-        FunctionCallee declareScanfFunction(Module &M)
-        {
-            LLVMContext &Ctx = M.getContext();
-            Type *PrintfArgType = Type::getInt8PtrTy(Ctx);
-            FunctionType *PrintfType = FunctionType::get(Type::getInt32Ty(Ctx), PrintfArgType, true);
-            return M.getOrInsertFunction("scanf", PrintfType);
-        }
-
-        /**
-         * @brief Finds all `alloca` instructions in a function that match a given name pattern.
-         *
-         * This method scans through all basic blocks and instructions within the specified function,
-         * searching for `alloca` instructions (used for stack allocation) that match a specific regex pattern.
-         *
-         * @param F The function to search for `alloca` instructions.
-         * @param pattern The regex pattern to match against instruction names.
-         * @return A vector of pointers to matching `alloca` instructions.
-         */
-        std::vector<Instruction *> findAllocas(Function *F, const std::string &pattern)
-        {
-            std::vector<Instruction *> allocas;
-            std::regex regexPattern(pattern);
-
-            // Iterate over all basic blocks and instructions within the function
-            for (auto &BB : *F)
+            for (Function &F : M)
             {
-                for (auto &I : BB)
+                if (F.getName().contains("fn_template_init"))
                 {
-                    if (AllocaInst *AI = dyn_cast<AllocaInst>(&I))
+                    std::string circuitName = F.getName().substr(17).str();
+                    EPFGraph *g = nameToGraph[circuitName];
+                    std::vector<Instruction *> toInsert, toRemove;
+
+                    for (auto p : g->nodes)
                     {
-                        if (std::regex_search(AI->getName().str(), regexPattern))
+                        PFGNode *n = p.second;
+                        if (g->isFree(n))
                         {
-                            allocas.push_back(AI);
+                            findAllocas(&F, "initial." + n->getName().substr(1) + ".*", toInsert);
+                            findStores(&F, "initial." + n->getName().substr(1) + ".*", toRemove);
                         }
                     }
-                }
-            }
-            return allocas;
-        }
 
-        /**
-         * @brief Helper function to generate a GEP (GetElementPtr) instruction.
-         *
-         * This method creates a GEP instruction to calculate the address of an element in a data structure.
-         *
-         * @param Context The LLVM context.
-         * @param Builder The IRBuilder used to insert the instruction.
-         * @param instance The base pointer to the data structure.
-         * @param index The index of the element to access.
-         * @param name The name of the GEP instruction.
-         * @return A pointer to the calculated element.
-         */
-        Value *getGEP(LLVMContext &Context, IRBuilder<> &Builder, Value *instance, unsigned index, const char *name)
-        {
-            return Builder.CreateGEP(instance->getType()->getPointerElementType(), instance,
-                                     {Builder.getInt32(0), Builder.getInt32(index)}, name);
-        }
-
-        void getIndexMap(Function *F, const std::string &pattern, std::unordered_map<std::string, int> &gepIndexMap)
-        {
-            std::regex regexPattern(pattern);
-
-            for (auto &BB : *F)
-            {
-                for (auto &I : BB)
-                {
-                    if (auto *GEP = dyn_cast<GetElementPtrInst>(&I))
+                    for (auto &Arg : F.args())
                     {
-                        // get the last operand, which is the index of the field
-                        if (auto *CI = dyn_cast<ConstantInt>(GEP->getOperand(GEP->getNumOperands() - 1)))
+                        if (Arg.getType()->isPointerTy())
                         {
-                            int fieldIndex = CI->getZExtValue();
-                            const std::string gepName = GEP->getName().str();
-                            if (std::regex_search(gepName, regexPattern))
+                            Type *PtrTy = dyn_cast<Type>(Arg.getType());
+                            if (StructType *StructTy = dyn_cast<StructType>(PtrTy->getPointerElementType()))
                             {
-                                gepIndexMap[gepName] = fieldIndex;
+                                if (StructTy->getName().startswith("struct_template_"))
+                                {
+                                    for (auto *I : toInsert)
+                                    {
+                                        IRBuilder<> Builder(I->getNextNode());
+                                        Value *valPtr = nullptr;
+                                        std::string valName = I->getName().str();
+                                        std::string gepName = "gep." + circuitName + "|" + valName.substr(8);
+                                        if (gepInterIndexMap.find(gepName) != gepInterIndexMap.end())
+                                        {
+                                            valPtr = getGEP(Context, Builder, &Arg, gepInterIndexMap[gepName], ("free." + gepName).c_str());
+                                        }
+                                        else if (gepOutputIndexMap.find(gepName) != gepOutputIndexMap.end())
+                                        {
+                                            valPtr = getGEP(Context, Builder, &Arg, gepOutputIndexMap[gepName], ("free." + gepName).c_str());
+                                        }
+                                        if (valPtr != nullptr) {
+                                            Value *loadPtr = Builder.CreateLoad(Builder.getInt128Ty(), valPtr, ("free.read." + valName.substr(8)).c_str());
+                                            Builder.CreateStore(loadPtr, dyn_cast<Value>(I)); 
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+
+                    // Remove store instructions to free variables
+                    for (auto *I : toRemove)
+                    {
+                        I->eraseFromParent();
+                    }
+                    break;
                 }
             }
         }
@@ -169,22 +163,6 @@ namespace
             BasicBlock *entry = BasicBlock::Create(Context, "entry", mainFunc);
             Builder.SetInsertPoint(entry);
 
-            std::string circuitName;
-
-            // Find the inputs and outputs of the circuit using pattern matching
-            for (Function &F : M)
-            {
-                if (F.getName().contains("fn_template_init"))
-                {
-                    circuitName = F.getName().substr(17).str();
-
-                    getIndexMap(&F, "gep.*.input", gepInputIndexMap);
-                    getIndexMap(&F, "gep.*.inter", gepInterIndexMap);
-                    getIndexMap(&F, "gep.*.output", gepOutputIndexMap);
-                    break;
-                }
-            }
-
             GlobalVariable *formatStrVar = new GlobalVariable(
                 M, formatStrScanf->getType(), true, GlobalValue::PrivateLinkage, formatStrScanf, ".str.scanf");
             GlobalVariable *formatStrPrintfVar = new GlobalVariable(
@@ -205,8 +183,8 @@ namespace
                         Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
                         Builder.CreateCall(scanfFunc, {formatStrPtr, inputPtr});
 
-                        //Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
-                        //Builder.CreateStore(ConstantInt::get(Builder.getInt128Ty(), 123), inputPtr); // 123 is the example values
+                        // Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
+                        // Builder.CreateStore(ConstantInt::get(Builder.getInt128Ty(), 123), inputPtr); // 123 is the example values
                     }
 
                     // Call circuit initialization
