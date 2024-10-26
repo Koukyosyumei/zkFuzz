@@ -1,10 +1,12 @@
-; ModuleID = 'add32bits.circom'
+; ModuleID = './benchmark/sample/add32bits.ll'
 source_filename = "./benchmark/sample/add32bits.circom"
 
 %struct_template_Add32Bits = type { i128, i128, i128, i128 }
 
-@constraint = external global i1
-@constraint.1 = external global i1
+@constraint = internal global i1 false
+@constraint.1 = internal global i1 false
+@.str.scanf = private constant [5 x i8] c"%lld\00"
+@.str.printf = private constant [5 x i8] c"%ld\0A\00"
 
 define void @fn_intrinsic_utils_constraint(i128 %0, i128 %1, i1* %2) {
 entry:
@@ -120,6 +122,28 @@ exit:                                             ; preds = %body
   %"gep.Add32Bits|out.output" = getelementptr inbounds %struct_template_Add32Bits, %struct_template_Add32Bits* %0, i32 0, i32 3
   store i128 %read.out.output13, i128* %"gep.Add32Bits|out.output", align 4
   ret void
+}
+
+declare i32 @printf(i8*, ...)
+
+declare i32 @scanf(i8*, ...)
+
+define i32 @main() {
+entry:
+  %instance = call %struct_template_Add32Bits* @fn_template_build_Add32Bits()
+  %"gep.Add32Bits|b.input" = getelementptr %struct_template_Add32Bits, %struct_template_Add32Bits* %instance, i32 0, i32 1
+  %0 = call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.scanf, i32 0, i32 0), i128* %"gep.Add32Bits|b.input")
+  %"gep.Add32Bits|a.input" = getelementptr %struct_template_Add32Bits, %struct_template_Add32Bits* %instance, i32 0, i32 0
+  %1 = call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.scanf, i32 0, i32 0), i128* %"gep.Add32Bits|a.input")
+  call void @fn_template_init_Add32Bits(%struct_template_Add32Bits* %instance)
+  %"gep.Add32Bits|out.output" = getelementptr %struct_template_Add32Bits, %struct_template_Add32Bits* %instance, i32 0, i32 3
+  %"val.gep.Add32Bits|out.output" = load i128, i128* %"gep.Add32Bits|out.output", align 4
+  %2 = trunc i128 %"val.gep.Add32Bits|out.output" to i64
+  %3 = lshr i128 %"val.gep.Add32Bits|out.output", 64
+  %4 = trunc i128 %3 to i64
+  %5 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %4)
+  %6 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %2)
+  ret i32 0
 }
 
 attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
