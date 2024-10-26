@@ -191,8 +191,7 @@ namespace
                     for (const std::pair<std::string, int> kv : gepInputIndexMap)
                     {
                         Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
-                        Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
-                        Builder.CreateCall(scanfFunc, {formatStrPtr, inputPtr});
+                        read128bit(Context, Builder, inputPtr, scanfFunc, formatStrVar);
                     }
 
                     // Read free variables from standard inputs
@@ -209,8 +208,9 @@ namespace
                             {
                                 fvPtr = getGEP(Context, Builder, instance, gepOutputIndexMap[fv_gep_name], fv_gep_name.c_str());
                             }
-                            Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
-                            Builder.CreateCall(scanfFunc, {formatStrPtr, fvPtr});
+                            read128bit(Context, Builder, fvPtr, scanfFunc, formatStrVar);
+                            //Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
+                            //Builder.CreateCall(scanfFunc, {formatStrPtr, fvPtr});
                         }
                     }
 

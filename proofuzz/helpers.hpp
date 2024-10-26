@@ -14,3 +14,4 @@ void findAllocas(Function *F, const std::string &pattern, std::vector<Instructio
 void findStores(Function *F, const std::string &pattern, std::vector<Instruction *> &stores);
 Value *getGEP(LLVMContext &Context, IRBuilder<> &Builder, Value *instance, unsigned index, const char *name);
 void getIndexMap(Function *F, const std::string &pattern, std::unordered_map<std::string, int> &gepIndexMap);
+llvm::StoreInst * read128bit(LLVMContext &Context, IRBuilder<> &Builder, Value *inputPtr, FunctionCallee &scanfFunc, GlobalVariable *formatStrVar);

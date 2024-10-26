@@ -93,7 +93,7 @@ void findStores(Function *F, const std::string &pattern, std::vector<Instruction
 Value *getGEP(LLVMContext &Context, IRBuilder<> &Builder, Value *instance, unsigned index, const char *name)
 {
     return Builder.CreateGEP(instance->getType()->getPointerElementType(), instance,
-                                {Builder.getInt32(0), Builder.getInt32(index)}, name);
+                             {Builder.getInt32(0), Builder.getInt32(index)}, name);
 }
 
 void getIndexMap(Function *F, const std::string &pattern, std::unordered_map<std::string, int> &gepIndexMap)
@@ -119,4 +119,30 @@ void getIndexMap(Function *F, const std::string &pattern, std::unordered_map<std
             }
         }
     }
+}
+
+llvm::StoreInst *read128bit(LLVMContext &Context, IRBuilder<> &Builder, Value *inputPtr, FunctionCallee &scanfFunc, GlobalVariable *formatStrVar)
+{
+    AllocaInst *tempLow = Builder.CreateAlloca(Builder.getInt64Ty(), nullptr);
+    AllocaInst *tempHigh = Builder.CreateAlloca(Builder.getInt64Ty(), nullptr);
+
+    // Read lower 64 bits
+    // Value *formatStrPtr = Builder.CreateBitCast(formatStr64, Type::getInt8PtrTy(Context));
+    Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
+    Builder.CreateCall(scanfFunc, {formatStrPtr, tempLow});
+    // Read upper 64 bits
+    Builder.CreateCall(scanfFunc, {formatStrPtr, tempHigh});
+    // Load the 64-bit parts
+    Value *lowVal = Builder.CreateLoad(Builder.getInt64Ty(), tempLow);
+    Value *highVal = Builder.CreateLoad(Builder.getInt64Ty(), tempHigh);
+    // Extend low to 128 bits
+    Value *lowExtended = Builder.CreateZExt(lowVal, Builder.getInt128Ty());
+    // Shift high and extend to 128 bits
+    Value *highExtended = Builder.CreateZExt(highVal, Builder.getInt128Ty());
+    Value *highShifted = Builder.CreateShl(highExtended, ConstantInt::get(Builder.getInt128Ty(), 64));
+    // Combine low and high parts
+    Value *fullValue = Builder.CreateOr(lowExtended, highShifted);
+
+    // Builder.CreateCall(scanfFunc, {formatStrPtr, inputPtr});
+    return Builder.CreateStore(fullValue, inputPtr);
 }
