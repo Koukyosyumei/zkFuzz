@@ -5,7 +5,8 @@ source_filename = "./benchmark/sample/iszero_safe.circom"
 
 @constraint = internal global i1 false
 @constraint.1 = internal global i1 false
-@.str = private constant [5 x i8] c"%ld\0A\00"
+@.str.scanf = private constant [5 x i8] c"%lld\00"
+@.str.printf = private constant [5 x i8] c"%ld\0A\00"
 
 define void @fn_intrinsic_utils_constraint(i128 %0, i128 %1, i1* %2) {
 entry:
@@ -117,19 +118,21 @@ exit:                                             ; preds = %body
 
 declare i32 @printf(i8*, ...)
 
+declare i32 @scanf(i8*, ...)
+
 define i32 @main() {
 entry:
   %instance = call %struct_template_IsZero* @fn_template_build_IsZero()
   %"gep.IsZero|in.input" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 0
-  store i128 123, i128* %"gep.IsZero|in.input", align 4
+  %0 = call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.scanf, i32 0, i32 0), i128* %"gep.IsZero|in.input")
   call void @fn_template_init_IsZero(%struct_template_IsZero* %instance)
   %"gep.IsZero|out.output" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 2
   %"val.gep.IsZero|out.output" = load i128, i128* %"gep.IsZero|out.output", align 4
-  %0 = trunc i128 %"val.gep.IsZero|out.output" to i64
-  %1 = lshr i128 %"val.gep.IsZero|out.output", 64
-  %2 = trunc i128 %1 to i64
-  %3 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str, i32 0, i32 0), i64 %2)
-  %4 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str, i32 0, i32 0), i64 %0)
+  %1 = trunc i128 %"val.gep.IsZero|out.output" to i64
+  %2 = lshr i128 %"val.gep.IsZero|out.output", 64
+  %3 = trunc i128 %2 to i64
+  %4 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %3)
+  %5 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %1)
   ret i32 0
 }
 

@@ -18,7 +18,7 @@ namespace
     struct MainAdderPass : public ModulePass
     {
         static char ID;
-        FunctionCallee printfFunc;
+        FunctionCallee printfFunc, scanfFunc;
         std::unordered_map<std::string, int> gepInputIndexMap, gepInterIndexMap, gepOutputIndexMap;
 
         MainAdderPass() : ModulePass(ID) {}
@@ -36,6 +36,8 @@ namespace
         {
             // Declare the `printf` function for output
             printfFunc = declarePrintfFunction(M);
+
+            scanfFunc = declareScanfFunction(M);
 
             // Declare the `main` function that initializes an instance of the target circuit.
             createMainFunction(M);
@@ -57,6 +59,14 @@ namespace
             Type *PrintfArgType = Type::getInt8PtrTy(Ctx);
             FunctionType *PrintfType = FunctionType::get(Type::getInt32Ty(Ctx), PrintfArgType, true);
             return M.getOrInsertFunction("printf", PrintfType);
+        }
+
+        FunctionCallee declareScanfFunction(Module &M)
+        {
+            LLVMContext &Ctx = M.getContext();
+            Type *PrintfArgType = Type::getInt8PtrTy(Ctx);
+            FunctionType *PrintfType = FunctionType::get(Type::getInt32Ty(Ctx), PrintfArgType, true);
+            return M.getOrInsertFunction("scanf", PrintfType);
         }
 
         /**
@@ -147,6 +157,10 @@ namespace
             LLVMContext &Context = M.getContext();
             IRBuilder<> Builder(Context);
 
+            // Define the constatn values
+            Constant *formatStrScanf = ConstantDataArray::getString(Context, "%lld", true);
+            Constant *formatStrPrintf = ConstantDataArray::getString(Context, "%ld\n", true);
+
             // Define the `main` function type and create the function
             FunctionType *mainType = FunctionType::get(Builder.getInt32Ty(), false);
             Function *mainFunc = Function::Create(mainType, Function::ExternalLinkage, "main", M);
@@ -171,9 +185,10 @@ namespace
                 }
             }
 
-            Constant *formatStr = ConstantDataArray::getString(Context, "%ld\n", true);
             GlobalVariable *formatStrVar = new GlobalVariable(
-                M, formatStr->getType(), true, GlobalValue::PrivateLinkage, formatStr, ".str");
+                M, formatStrScanf->getType(), true, GlobalValue::PrivateLinkage, formatStrScanf, ".str.scanf");
+            GlobalVariable *formatStrPrintfVar = new GlobalVariable(
+                M, formatStrPrintf->getType(), true, GlobalValue::PrivateLinkage, formatStrPrintf, ".str.printf");
 
             // Execute the circuit and print outputs
             for (Function &F : M)
@@ -187,7 +202,11 @@ namespace
                     for (const std::pair<std::string, int> kv : gepInputIndexMap)
                     {
                         Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
-                        Builder.CreateStore(ConstantInt::get(Builder.getInt128Ty(), 123), inputPtr); // 123 is the example values
+                        Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
+                        Builder.CreateCall(scanfFunc, {formatStrPtr, inputPtr});
+
+                        //Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
+                        //Builder.CreateStore(ConstantInt::get(Builder.getInt128Ty(), 123), inputPtr); // 123 is the example values
                     }
 
                     // Call circuit initialization
@@ -208,9 +227,9 @@ namespace
                         Value *shifted = Builder.CreateLShr(outputVal, ConstantInt::get(Type::getInt128Ty(Context), 64));
                         Value *highPart = Builder.CreateTrunc(shifted, Type::getInt64Ty(Context));
 
-                        Value *formatStrPtr = Builder.CreatePointerCast(formatStrVar, Type::getInt8PtrTy(Context));
-                        Builder.CreateCall(printfFunc, {formatStrPtr, highPart});
-                        Builder.CreateCall(printfFunc, {formatStrPtr, lowPart});
+                        Value *formatStrPrintfPtr = Builder.CreatePointerCast(formatStrPrintfVar, Type::getInt8PtrTy(Context));
+                        Builder.CreateCall(printfFunc, {formatStrPrintfPtr, highPart});
+                        Builder.CreateCall(printfFunc, {formatStrPrintfPtr, lowPart});
                     }
 
                     break;
