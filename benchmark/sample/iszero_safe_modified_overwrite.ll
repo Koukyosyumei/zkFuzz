@@ -82,6 +82,9 @@ entry:
   %read.in.input = load i128, i128* %"gep.IsZero|in.input", align 4
   store i128 %read.in.input, i128* %initial.in.input, align 4
   %initial.inv.inter = alloca i128, align 8
+  %"free.gep.IsZero|inv.inter" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 1
+  %free.read.inv.inter = load i128, i128* %"free.gep.IsZero|inv.inter", align 4
+  store i128 %free.read.inv.inter, i128* %initial.inv.inter, align 4
   %initial.out.output = alloca i128, align 8
   br label %body
 
@@ -91,7 +94,6 @@ body:                                             ; preds = %entry
   %read.in.input2 = load i128, i128* %initial.in.input, align 4
   %mod_div = call i128 @mod_div(i128 1, i128 %read.in.input2, i128 9938766679346745377)
   %utils_switch = call i128 @fn_intrinsic_utils_switch(i1 %ne, i128 %mod_div, i128 0)
-  store i128 %utils_switch, i128* %initial.inv.inter, align 4
   %read.in.input3 = load i128, i128* %initial.in.input, align 4
   %mod_sub = call i128 @mod_sub(i128 0, i128 %read.in.input3, i128 9938766679346745377)
   %read.inv.inter = load i128, i128* %initial.inv.inter, align 4
@@ -125,14 +127,16 @@ entry:
   %instance = call %struct_template_IsZero* @fn_template_build_IsZero()
   %"gep.IsZero|in.input" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 0
   %0 = call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.scanf, i32 0, i32 0), i128* %"gep.IsZero|in.input")
+  %"gep.IsZero|inv.inter" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 1
+  %1 = call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.scanf, i32 0, i32 0), i128* %"gep.IsZero|inv.inter")
   call void @fn_template_init_IsZero(%struct_template_IsZero* %instance)
   %"gep.IsZero|out.output" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 2
   %"val.gep.IsZero|out.output" = load i128, i128* %"gep.IsZero|out.output", align 4
-  %1 = trunc i128 %"val.gep.IsZero|out.output" to i64
-  %2 = lshr i128 %"val.gep.IsZero|out.output", 64
-  %3 = trunc i128 %2 to i64
-  %4 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %3)
-  %5 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %1)
+  %2 = trunc i128 %"val.gep.IsZero|out.output" to i64
+  %3 = lshr i128 %"val.gep.IsZero|out.output", 64
+  %4 = trunc i128 %3 to i64
+  %5 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %4)
+  %6 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %2)
   ret i32 0
 }
 

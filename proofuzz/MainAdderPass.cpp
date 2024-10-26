@@ -11,6 +11,8 @@
 
 using namespace llvm;
 
+static cl::opt<bool> OverwriteFreeVariable("enable-overwrite-free-variables", cl::desc("Enable arbitrary assignments to free variables"));
+
 namespace
 {
     /**
@@ -65,8 +67,11 @@ namespace
                 nameToGraph[g->getName()] = g;
             }
 
-            // Remove the store instruction to the free intermediate/output variables.
-            overwriteStoreToFreeVariables(M);
+            if (OverwriteFreeVariable)
+            {
+                // Remove the store instruction to the free intermediate/output variables.
+                overwriteStoreToFreeVariables(M);
+            }
 
             // Declare the `main` function that initializes an instance of the target circuit.
             createMainFunction(M);
@@ -191,19 +196,22 @@ namespace
                     }
 
                     // Read free variables from standard inputs
-                    for (const std::string fv_gep_name : freeVariableGEPNames)
+                    if (OverwriteFreeVariable)
                     {
-                        Value *fvPtr = nullptr;
-                        if (gepInterIndexMap.find(fv_gep_name) != gepInterIndexMap.end())
+                        for (const std::string fv_gep_name : freeVariableGEPNames)
                         {
-                            fvPtr = getGEP(Context, Builder, instance, gepInterIndexMap[fv_gep_name], fv_gep_name.c_str());
+                            Value *fvPtr = nullptr;
+                            if (gepInterIndexMap.find(fv_gep_name) != gepInterIndexMap.end())
+                            {
+                                fvPtr = getGEP(Context, Builder, instance, gepInterIndexMap[fv_gep_name], fv_gep_name.c_str());
+                            }
+                            else if (gepOutputIndexMap.find(fv_gep_name) != gepOutputIndexMap.end())
+                            {
+                                fvPtr = getGEP(Context, Builder, instance, gepOutputIndexMap[fv_gep_name], fv_gep_name.c_str());
+                            }
+                            Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
+                            Builder.CreateCall(scanfFunc, {formatStrPtr, fvPtr});
                         }
-                        else if (gepOutputIndexMap.find(fv_gep_name) != gepOutputIndexMap.end())
-                        {
-                            fvPtr = getGEP(Context, Builder, instance, gepOutputIndexMap[fv_gep_name], fv_gep_name.c_str());
-                        }
-                        Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
-                        Builder.CreateCall(scanfFunc, {formatStrPtr, fvPtr});
                     }
 
                     // Call circuit initialization
