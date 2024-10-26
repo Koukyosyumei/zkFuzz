@@ -25,6 +25,7 @@ namespace
         FunctionCallee printfFunc, scanfFunc;
         std::unordered_map<std::string, int> gepInputIndexMap, gepInterIndexMap, gepOutputIndexMap;
         std::unordered_map<std::string, EPFGraph *> nameToGraph;
+        std::vector<std::string> freeVariableGEPNames;
 
         MainAdderPass() : ModulePass(ID) {}
 
@@ -111,6 +112,8 @@ namespace
                                         Value *valPtr = nullptr;
                                         std::string valName = I->getName().str();
                                         std::string gepName = "gep." + circuitName + "|" + valName.substr(8);
+                                        freeVariableGEPNames.emplace_back(gepName);
+
                                         if (gepInterIndexMap.find(gepName) != gepInterIndexMap.end())
                                         {
                                             valPtr = getGEP(Context, Builder, &Arg, gepInterIndexMap[gepName], ("free." + gepName).c_str());
@@ -119,9 +122,11 @@ namespace
                                         {
                                             valPtr = getGEP(Context, Builder, &Arg, gepOutputIndexMap[gepName], ("free." + gepName).c_str());
                                         }
-                                        if (valPtr != nullptr) {
+
+                                        if (valPtr != nullptr)
+                                        {
                                             Value *loadPtr = Builder.CreateLoad(Builder.getInt128Ty(), valPtr, ("free.read." + valName.substr(8)).c_str());
-                                            Builder.CreateStore(loadPtr, dyn_cast<Value>(I)); 
+                                            Builder.CreateStore(loadPtr, dyn_cast<Value>(I));
                                         }
                                     }
                                 }
@@ -177,15 +182,28 @@ namespace
                     Value *instance = Builder.CreateCall(&F, {}, "instance");
                     unsigned index = 0;
 
-                    // Store inputs
+                    // Read inputs from standard inputs
                     for (const std::pair<std::string, int> kv : gepInputIndexMap)
                     {
                         Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
                         Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
                         Builder.CreateCall(scanfFunc, {formatStrPtr, inputPtr});
+                    }
 
-                        // Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
-                        // Builder.CreateStore(ConstantInt::get(Builder.getInt128Ty(), 123), inputPtr); // 123 is the example values
+                    // Read free variables from standard inputs
+                    for (const std::string fv_gep_name : freeVariableGEPNames)
+                    {
+                        Value *fvPtr = nullptr;
+                        if (gepInterIndexMap.find(fv_gep_name) != gepInterIndexMap.end())
+                        {
+                            fvPtr = getGEP(Context, Builder, instance, gepInterIndexMap[fv_gep_name], fv_gep_name.c_str());
+                        }
+                        else if (gepOutputIndexMap.find(fv_gep_name) != gepOutputIndexMap.end())
+                        {
+                            fvPtr = getGEP(Context, Builder, instance, gepOutputIndexMap[fv_gep_name], fv_gep_name.c_str());
+                        }
+                        Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
+                        Builder.CreateCall(scanfFunc, {formatStrPtr, fvPtr});
                     }
 
                     // Call circuit initialization
@@ -215,11 +233,6 @@ namespace
                 }
             }
 
-            // Return based on the value of `constraint`
-            // GlobalVariable *constraintVar = M.getGlobalVariable("constraint");
-            // Value *constraintVal = Builder.CreateLoad(Builder.getInt1Ty(), constraintVar, "constraint_val");
-            // Value *constraintI32 = Builder.CreateZExt(constraintVal, Builder.getInt32Ty(), "constraint_i32");
-            // Builder.CreateRet(constraintI32);
             Value *zeroVal = Builder.getInt32(0);
             Builder.CreateRet(zeroVal);
         }

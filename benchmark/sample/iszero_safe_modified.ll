@@ -127,14 +127,16 @@ entry:
   %instance = call %struct_template_IsZero* @fn_template_build_IsZero()
   %"gep.IsZero|in.input" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 0
   %0 = call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.scanf, i32 0, i32 0), i128* %"gep.IsZero|in.input")
+  %"gep.IsZero|inv.inter" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 1
+  %1 = call i32 (i8*, ...) @scanf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.scanf, i32 0, i32 0), i128* %"gep.IsZero|inv.inter")
   call void @fn_template_init_IsZero(%struct_template_IsZero* %instance)
   %"gep.IsZero|out.output" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 2
   %"val.gep.IsZero|out.output" = load i128, i128* %"gep.IsZero|out.output", align 4
-  %1 = trunc i128 %"val.gep.IsZero|out.output" to i64
-  %2 = lshr i128 %"val.gep.IsZero|out.output", 64
-  %3 = trunc i128 %2 to i64
-  %4 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %3)
-  %5 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %1)
+  %2 = trunc i128 %"val.gep.IsZero|out.output" to i64
+  %3 = lshr i128 %"val.gep.IsZero|out.output", 64
+  %4 = trunc i128 %3 to i64
+  %5 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %4)
+  %6 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %2)
   ret i32 0
 }
 
