@@ -209,8 +209,6 @@ namespace
                                 fvPtr = getGEP(Context, Builder, instance, gepOutputIndexMap[fv_gep_name], fv_gep_name.c_str());
                             }
                             read128bit(Context, Builder, fvPtr, scanfFunc, formatStrVar);
-                            //Value *formatStrPtr = Builder.CreateBitCast(formatStrVar, Type::getInt8PtrTy(Context));
-                            //Builder.CreateCall(scanfFunc, {formatStrPtr, fvPtr});
                         }
                     }
 
