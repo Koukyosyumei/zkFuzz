@@ -49,7 +49,7 @@ namespace
             // Find the inputs and outputs of the circuit using pattern matching
             for (Function &F : M)
             {
-                if (F.getName().contains("fn_template_init"))
+                if (F.getName().startswith("fn_template_init"))
                 {
                     circuitName = F.getName().substr(17).str();
 
@@ -67,10 +67,13 @@ namespace
                 nameToGraph[g->getName()] = g;
             }
 
+            // Clone the target function
+            cloneFunctions(M, "fn_template_init_" + circuitName, "cloned_");
+
+            // Remove the store instruction to the free intermediate/output variables.
             if (OverwriteFreeVariable)
             {
-                // Remove the store instruction to the free intermediate/output variables.
-                overwriteStoreToFreeVariables(M);
+                overwriteStoreToFreeVariables(M, "cloned_fn_template_init_" + circuitName, circuitName);
             }
 
             // Declare the `main` function that initializes an instance of the target circuit.
@@ -79,73 +82,66 @@ namespace
             return true;
         }
 
-        void overwriteStoreToFreeVariables(Module &M)
+        void overwriteStoreToFreeVariables(Module &M, const std::string &funcName, const std::string &circuitName)
         {
             LLVMContext &Context = M.getContext();
+            Function *F = M.getFunction(funcName);
 
-            for (Function &F : M)
+            EPFGraph *g = nameToGraph[circuitName];
+            std::vector<Instruction *> toInsert, toRemove;
+
+            for (auto p : g->nodes)
             {
-                if (F.getName().contains("fn_template_init"))
+                PFGNode *n = p.second;
+                if (g->isFree(n))
                 {
-                    std::string circuitName = F.getName().substr(17).str();
-                    EPFGraph *g = nameToGraph[circuitName];
-                    std::vector<Instruction *> toInsert, toRemove;
+                    findAllocas(F, "initial." + n->getName().substr(1) + ".*", toInsert);
+                    findStores(F, "initial." + n->getName().substr(1) + ".*", toRemove);
+                }
+            }
 
-                    for (auto p : g->nodes)
+            // Overwrite free variables
+            for (auto &Arg : F->args())
+            {
+                if (Arg.getType()->isPointerTy())
+                {
+                    Type *PtrTy = dyn_cast<Type>(Arg.getType());
+                    if (StructType *StructTy = dyn_cast<StructType>(PtrTy->getPointerElementType()))
                     {
-                        PFGNode *n = p.second;
-                        if (g->isFree(n))
+                        if (StructTy->getName().startswith("struct_template_"))
                         {
-                            findAllocas(&F, "initial." + n->getName().substr(1) + ".*", toInsert);
-                            findStores(&F, "initial." + n->getName().substr(1) + ".*", toRemove);
-                        }
-                    }
-
-                    // Overwrite free variables
-                    for (auto &Arg : F.args())
-                    {
-                        if (Arg.getType()->isPointerTy())
-                        {
-                            Type *PtrTy = dyn_cast<Type>(Arg.getType());
-                            if (StructType *StructTy = dyn_cast<StructType>(PtrTy->getPointerElementType()))
+                            for (auto *I : toInsert)
                             {
-                                if (StructTy->getName().startswith("struct_template_"))
+                                IRBuilder<> Builder(I->getNextNode());
+                                Value *valPtr = nullptr;
+                                std::string valName = I->getName().str();
+                                std::string gepName = "gep." + circuitName + "|" + valName.substr(8);
+                                freeVariableGEPNames.emplace_back(gepName);
+
+                                if (gepInterIndexMap.find(gepName) != gepInterIndexMap.end())
                                 {
-                                    for (auto *I : toInsert)
-                                    {
-                                        IRBuilder<> Builder(I->getNextNode());
-                                        Value *valPtr = nullptr;
-                                        std::string valName = I->getName().str();
-                                        std::string gepName = "gep." + circuitName + "|" + valName.substr(8);
-                                        freeVariableGEPNames.emplace_back(gepName);
+                                    valPtr = getGEP(Context, Builder, &Arg, gepInterIndexMap[gepName], ("free." + gepName).c_str());
+                                }
+                                else if (gepOutputIndexMap.find(gepName) != gepOutputIndexMap.end())
+                                {
+                                    valPtr = getGEP(Context, Builder, &Arg, gepOutputIndexMap[gepName], ("free." + gepName).c_str());
+                                }
 
-                                        if (gepInterIndexMap.find(gepName) != gepInterIndexMap.end())
-                                        {
-                                            valPtr = getGEP(Context, Builder, &Arg, gepInterIndexMap[gepName], ("free." + gepName).c_str());
-                                        }
-                                        else if (gepOutputIndexMap.find(gepName) != gepOutputIndexMap.end())
-                                        {
-                                            valPtr = getGEP(Context, Builder, &Arg, gepOutputIndexMap[gepName], ("free." + gepName).c_str());
-                                        }
-
-                                        if (valPtr != nullptr)
-                                        {
-                                            Value *loadPtr = Builder.CreateLoad(Builder.getInt128Ty(), valPtr, ("free.read." + valName.substr(8)).c_str());
-                                            Builder.CreateStore(loadPtr, dyn_cast<Value>(I));
-                                        }
-                                    }
+                                if (valPtr != nullptr)
+                                {
+                                    Value *loadPtr = Builder.CreateLoad(Builder.getInt128Ty(), valPtr, ("free.read." + valName.substr(8)).c_str());
+                                    Builder.CreateStore(loadPtr, dyn_cast<Value>(I));
                                 }
                             }
                         }
                     }
-
-                    // Remove store instructions to free variables
-                    for (auto *I : toRemove)
-                    {
-                        I->eraseFromParent();
-                    }
-                    break;
                 }
+            }
+
+            // Remove store instructions to free variables
+            for (auto *I : toRemove)
+            {
+                I->eraseFromParent();
             }
         }
 
@@ -179,63 +175,59 @@ namespace
             GlobalVariable *formatStrPrintfVar = new GlobalVariable(
                 M, formatStrPrintf->getType(), true, GlobalValue::PrivateLinkage, formatStrPrintf, ".str.printf");
 
-            // Execute the circuit and print outputs
-            for (Function &F : M)
+            Function *buildFuncPtr = M.getFunction("fn_template_build_" + circuitName);
+            Value *instance = Builder.CreateCall(buildFuncPtr, {}, "instance");
+
+            // Read inputs from standard inputs
+            for (const std::pair<std::string, int> kv : gepInputIndexMap)
             {
-                if (F.getName().contains("fn_template_build"))
+                Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
+                read128bit(Context, Builder, inputPtr, scanfFunc, formatStrVar);
+            }
+
+            // Read free variables from standard inputs
+            if (OverwriteFreeVariable)
+            {
+                for (const std::string fv_gep_name : freeVariableGEPNames)
                 {
-                    Value *instance = Builder.CreateCall(&F, {}, "instance");
-                    unsigned index = 0;
-
-                    // Read inputs from standard inputs
-                    for (const std::pair<std::string, int> kv : gepInputIndexMap)
+                    Value *fvPtr = nullptr;
+                    if (gepInterIndexMap.find(fv_gep_name) != gepInterIndexMap.end())
                     {
-                        Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
-                        read128bit(Context, Builder, inputPtr, scanfFunc, formatStrVar);
+                        fvPtr = getGEP(Context, Builder, instance, gepInterIndexMap[fv_gep_name], fv_gep_name.c_str());
                     }
-
-                    // Read free variables from standard inputs
-                    if (OverwriteFreeVariable)
+                    else if (gepOutputIndexMap.find(fv_gep_name) != gepOutputIndexMap.end())
                     {
-                        for (const std::string fv_gep_name : freeVariableGEPNames)
-                        {
-                            Value *fvPtr = nullptr;
-                            if (gepInterIndexMap.find(fv_gep_name) != gepInterIndexMap.end())
-                            {
-                                fvPtr = getGEP(Context, Builder, instance, gepInterIndexMap[fv_gep_name], fv_gep_name.c_str());
-                            }
-                            else if (gepOutputIndexMap.find(fv_gep_name) != gepOutputIndexMap.end())
-                            {
-                                fvPtr = getGEP(Context, Builder, instance, gepOutputIndexMap[fv_gep_name], fv_gep_name.c_str());
-                            }
-                            read128bit(Context, Builder, fvPtr, scanfFunc, formatStrVar);
-                        }
+                        fvPtr = getGEP(Context, Builder, instance, gepOutputIndexMap[fv_gep_name], fv_gep_name.c_str());
                     }
+                    read128bit(Context, Builder, fvPtr, scanfFunc, formatStrVar);
+                }
+            }
 
-                    // Call circuit initialization
-                    std::string initFuncName = "fn_template_init_" + circuitName;
-                    Function *initFunc = M.getFunction(initFuncName);
-                    if (initFunc)
-                    {
-                        Builder.CreateCall(initFunc, {instance});
-                    }
+            // Call the cloned circuit
+            Function *clonedFunc = M.getFunction("cloned_fn_template_init_" + circuitName);
+            if (clonedFunc)
+            {
+                Builder.CreateCall(clonedFunc, {instance});
+                // Load and print outputs
+                for (const std::pair<std::string, int> kv : gepOutputIndexMap)
+                {
+                    Value *gepPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
+                    Value *outputPtr = Builder.CreateLoad(Builder.getInt128Ty(), gepPtr, ("cloned_result." + kv.first).c_str());
+                    print128bit(Context, Builder, outputPtr, printfFunc, formatStrPrintfVar);
+                }
+            }
 
-                    // Load and print outputs
-                    for (const std::pair<std::string, int> kv : gepOutputIndexMap)
-                    {
-                        Value *outputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
-                        Value *outputVal = Builder.CreateLoad(Builder.getInt128Ty(), outputPtr, ("val." + kv.first).c_str());
-
-                        Value *lowPart = Builder.CreateTrunc(outputVal, Type::getInt64Ty(Context));
-                        Value *shifted = Builder.CreateLShr(outputVal, ConstantInt::get(Type::getInt128Ty(Context), 64));
-                        Value *highPart = Builder.CreateTrunc(shifted, Type::getInt64Ty(Context));
-
-                        Value *formatStrPrintfPtr = Builder.CreatePointerCast(formatStrPrintfVar, Type::getInt8PtrTy(Context));
-                        Builder.CreateCall(printfFunc, {formatStrPrintfPtr, highPart});
-                        Builder.CreateCall(printfFunc, {formatStrPrintfPtr, lowPart});
-                    }
-
-                    break;
+            // Call the original circuit
+            Function *initFunc = M.getFunction("fn_template_init_" + circuitName);
+            if (initFunc)
+            {
+                Builder.CreateCall(initFunc, {instance});
+                // Load and print outputs
+                for (const std::pair<std::string, int> kv : gepOutputIndexMap)
+                {
+                    Value *gepPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
+                    Value *outputPtr = Builder.CreateLoad(Builder.getInt128Ty(), gepPtr, ("original_result." + kv.first).c_str());
+                    print128bit(Context, Builder, outputPtr, printfFunc, formatStrPrintfVar);
                 }
             }
 

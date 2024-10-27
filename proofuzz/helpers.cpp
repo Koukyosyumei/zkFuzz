@@ -146,3 +146,28 @@ llvm::StoreInst *read128bit(LLVMContext &Context, IRBuilder<> &Builder, Value *i
     // Builder.CreateCall(scanfFunc, {formatStrPtr, inputPtr});
     return Builder.CreateStore(fullValue, inputPtr);
 }
+
+void print128bit(LLVMContext &Context, IRBuilder<> &Builder, Value *outputPtr, FunctionCallee &printfFunc, GlobalVariable *formatStrVar)
+{
+    Value *lowPart = Builder.CreateTrunc(outputPtr, Type::getInt64Ty(Context));
+    Value *shifted = Builder.CreateLShr(outputPtr, ConstantInt::get(Type::getInt128Ty(Context), 64));
+    Value *highPart = Builder.CreateTrunc(shifted, Type::getInt64Ty(Context));
+
+    Value *formatStrPrintfPtr = Builder.CreatePointerCast(formatStrVar, Type::getInt8PtrTy(Context));
+    Builder.CreateCall(printfFunc, {formatStrPrintfPtr, highPart});
+    Builder.CreateCall(printfFunc, {formatStrPrintfPtr, lowPart});
+}
+
+bool cloneFunctions(Module &M, const std::string &funcName, const std::string &prefix)
+{
+    bool Modified = false;
+    Function *F = M.getFunction(funcName);
+    if (F)
+    {
+        ValueToValueMapTy VMap;
+        Function *ClonedF = CloneFunction(F, VMap, nullptr);
+        ClonedF->setName(prefix + funcName);
+        Modified = true;
+    }
+    return Modified;
+}

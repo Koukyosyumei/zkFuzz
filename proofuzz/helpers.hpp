@@ -1,6 +1,7 @@
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
+#include "llvm/Transforms/Utils/Cloning.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
 #include <regex>
 #include <unordered_map>
@@ -14,4 +15,6 @@ void findAllocas(Function *F, const std::string &pattern, std::vector<Instructio
 void findStores(Function *F, const std::string &pattern, std::vector<Instruction *> &stores);
 Value *getGEP(LLVMContext &Context, IRBuilder<> &Builder, Value *instance, unsigned index, const char *name);
 void getIndexMap(Function *F, const std::string &pattern, std::unordered_map<std::string, int> &gepIndexMap);
-llvm::StoreInst * read128bit(LLVMContext &Context, IRBuilder<> &Builder, Value *inputPtr, FunctionCallee &scanfFunc, GlobalVariable *formatStrVar);
+llvm::StoreInst *read128bit(LLVMContext &Context, IRBuilder<> &Builder, Value *inputPtr, FunctionCallee &scanfFunc, GlobalVariable *formatStrVar);
+bool cloneFunctions(Module &M, const std::string &funcName, const std::string &prefix);
+void print128bit(LLVMContext &Context, IRBuilder<> &Builder, Value *outputPtr, FunctionCallee &printfFunc, GlobalVariable *formatStrVar);
