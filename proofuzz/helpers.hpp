@@ -11,6 +11,7 @@ using namespace llvm;
 
 FunctionCallee declarePrintfFunction(Module &M);
 FunctionCallee declareScanfFunction(Module &M);
+FunctionCallee declareExitFunction(Module &M);
 void findAllocas(Function *F, const std::string &pattern, std::vector<Instruction *> &allocas);
 void findStores(Function *F, const std::string &pattern, std::vector<Instruction *> &stores);
 Value *getGEP(LLVMContext &Context, IRBuilder<> &Builder, Value *instance, unsigned index, const char *name);

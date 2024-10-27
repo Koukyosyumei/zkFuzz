@@ -24,7 +24,7 @@ namespace
     {
         static char ID;
         std::string circuitName;
-        FunctionCallee printfFunc, scanfFunc;
+        FunctionCallee printfFunc, scanfFunc, exitFunc;
         std::unordered_map<std::string, int> gepInputIndexMap, gepInterIndexMap, gepOutputIndexMap;
         std::unordered_map<std::string, EPFGraph *> nameToGraph;
         std::vector<std::string> freeVariableGEPNames;
@@ -45,6 +45,7 @@ namespace
             // Declare the `printf` and `scanf` function for output
             printfFunc = declarePrintfFunction(M);
             scanfFunc = declareScanfFunction(M);
+            exitFunc = declareExitFunction(M);
 
             // Find the inputs and outputs of the circuit using pattern matching
             for (Function &F : M)
@@ -203,32 +204,99 @@ namespace
                 }
             }
 
-            // Call the cloned circuit
-            Function *clonedFunc = M.getFunction("cloned_fn_template_init_" + circuitName);
-            if (clonedFunc)
+            Function *clonedFunc = nullptr;
+            Value *outputPtrCloned = nullptr;
+            AllocaInst *IsClonedSatisfyConstraintsAlloca = nullptr;
+
+            if (OverwriteFreeVariable)
             {
-                Builder.CreateCall(clonedFunc, {instance});
-                // Load and print outputs
-                for (const std::pair<std::string, int> kv : gepOutputIndexMap)
+                clonedFunc = M.getFunction("cloned_fn_template_init_" + circuitName);
+                IsClonedSatisfyConstraintsAlloca = Builder.CreateAlloca(Type::getInt1Ty(Context),
+                                                                        nullptr, "is_cloned_satisfy_constraints");
+                if (clonedFunc)
                 {
-                    Value *gepPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
-                    Value *outputPtr = Builder.CreateLoad(Builder.getInt128Ty(), gepPtr, ("cloned_result." + kv.first).c_str());
-                    print128bit(Context, Builder, outputPtr, printfFunc, formatStrPrintfVar);
+                    // Call the cloned circuit
+                    Builder.CreateCall(clonedFunc, {instance});
+
+                    // Load and print outputs
+                    for (const std::pair<std::string, int> kv : gepOutputIndexMap)
+                    {
+                        Value *gepPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
+                        outputPtrCloned = Builder.CreateLoad(Builder.getInt128Ty(), gepPtr, ("cloned_result." + kv.first).c_str());
+                        print128bit(Context, Builder, outputPtrCloned, printfFunc, formatStrPrintfVar);
+                    }
+
+                    // Check if the constraints are satisfied
+                    Value *InitialValue = ConstantInt::getTrue(Context);
+                    Builder.CreateStore(InitialValue, IsClonedSatisfyConstraintsAlloca);
+                    for (auto &GV : M.globals())
+                    {
+                        if (GV.getName().startswith("constraint"))
+                        {
+                            Value *LoadedValue = Builder.CreateLoad(GV.getValueType(), &GV);
+                            Value *CurrentResult = Builder.CreateLoad(Type::getInt1Ty(Context), IsClonedSatisfyConstraintsAlloca);
+                            Value *NewResult = Builder.CreateAnd(CurrentResult, LoadedValue);
+                            Builder.CreateStore(NewResult, IsClonedSatisfyConstraintsAlloca);
+                        }
+                    }
                 }
             }
 
-            // Call the original circuit
             Function *initFunc = M.getFunction("fn_template_init_" + circuitName);
+            Value *outputPtrOriginal = nullptr;
+            AllocaInst *IsOriginalSatisfyConstraintsAlloca = Builder.CreateAlloca(Type::getInt1Ty(Context),
+                                                                                  nullptr, "is_original_satisfy_constraints");
             if (initFunc)
             {
+                // Call the original circuit
                 Builder.CreateCall(initFunc, {instance});
+
                 // Load and print outputs
                 for (const std::pair<std::string, int> kv : gepOutputIndexMap)
                 {
                     Value *gepPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
-                    Value *outputPtr = Builder.CreateLoad(Builder.getInt128Ty(), gepPtr, ("original_result." + kv.first).c_str());
-                    print128bit(Context, Builder, outputPtr, printfFunc, formatStrPrintfVar);
+                    outputPtrOriginal = Builder.CreateLoad(Builder.getInt128Ty(), gepPtr, ("original_result." + kv.first).c_str());
+                    print128bit(Context, Builder, outputPtrOriginal, printfFunc, formatStrPrintfVar);
                 }
+
+                // Check if the constraints are satisfied
+                Value *InitialValue = ConstantInt::getTrue(Context);
+                Builder.CreateStore(InitialValue, IsOriginalSatisfyConstraintsAlloca);
+                for (auto &GV : M.globals())
+                {
+                    if (GV.getName().startswith("constraint"))
+                    {
+                        Value *LoadedValue = Builder.CreateLoad(GV.getValueType(), &GV);
+                        Value *CurrentResult = Builder.CreateLoad(Type::getInt1Ty(Context), IsOriginalSatisfyConstraintsAlloca);
+                        Value *NewResult = Builder.CreateAnd(CurrentResult, LoadedValue);
+                        Builder.CreateStore(NewResult, IsOriginalSatisfyConstraintsAlloca);
+                    }
+                }
+            }
+
+            if (OverwriteFreeVariable)
+            {
+                Value *outputNotEqual = Builder.CreateICmpNE(outputPtrCloned, outputPtrOriginal, "outputNotEqual");
+                Value *originalConstraintValue = Builder.CreateLoad(Type::getInt1Ty(Context), IsOriginalSatisfyConstraintsAlloca, "originalConstraintValue");
+                Value *clonedConstraintValue = Builder.CreateLoad(Type::getInt1Ty(Context), IsClonedSatisfyConstraintsAlloca, "clonedConstraintValue");
+
+                Value *UndercConstrainedCondition = Builder.CreateAnd(outputNotEqual, originalConstraintValue, "tmp_under_constrained_condition");
+                UndercConstrainedCondition = Builder.CreateAnd(UndercConstrainedCondition, clonedConstraintValue, "final_under_constrained_condition");
+
+                BasicBlock *CurrentBB = Builder.GetInsertBlock();
+                Function *CurrentFunc = CurrentBB->getParent();
+                BasicBlock *ErrorBB = BasicBlock::Create(Context, "under_constrained_error", CurrentFunc);
+                BasicBlock *ContinueBB = BasicBlock::Create(Context, "no_under_constrained_continue", CurrentFunc);
+                Builder.CreateCondBr(UndercConstrainedCondition, ErrorBB, ContinueBB);
+
+                Builder.SetInsertPoint(ErrorBB);
+                Value *ErrorMsg = Builder.CreateGlobalStringPtr("Error: Under-Constraint-Condition met. Terminating program.\n");
+                Builder.CreateCall(printfFunc, {ErrorMsg});
+
+                Builder.CreateCall(exitFunc, {ConstantInt::get(Type::getInt32Ty(Context), 1)});
+                Builder.CreateUnreachable();
+
+                Builder.SetInsertPoint(ContinueBB);
             }
 
             Value *zeroVal = Builder.getInt32(0);

@@ -19,9 +19,16 @@ FunctionCallee declarePrintfFunction(Module &M)
 FunctionCallee declareScanfFunction(Module &M)
 {
     LLVMContext &Ctx = M.getContext();
-    Type *PrintfArgType = Type::getInt8PtrTy(Ctx);
-    FunctionType *PrintfType = FunctionType::get(Type::getInt32Ty(Ctx), PrintfArgType, true);
+    Type *ScanfArgType = Type::getInt8PtrTy(Ctx);
+    FunctionType *PrintfType = FunctionType::get(Type::getInt32Ty(Ctx), ScanfArgType, true);
     return M.getOrInsertFunction("scanf", PrintfType);
+}
+
+FunctionCallee declareExitFunction(Module &M)
+{
+    LLVMContext &Ctx = M.getContext();
+    FunctionType *ExitType = FunctionType::get(Type::getVoidTy(Ctx), {Type::getInt32Ty(Ctx)}, false);
+    return M.getOrInsertFunction("exit", ExitType);
 }
 
 /**

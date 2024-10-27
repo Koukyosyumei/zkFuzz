@@ -7,6 +7,7 @@ source_filename = "./benchmark/sample/iszero_safe.circom"
 @constraint.1 = internal global i1 false
 @.str.scanf = private constant [5 x i8] c"%lld\00"
 @.str.printf = private constant [5 x i8] c"%ld\0A\00"
+@0 = private unnamed_addr constant [61 x i8] c"Error: Under-Constraint-Condition met. Terminating program.\0A\00", align 1
 
 define void @fn_intrinsic_utils_constraint(i128 %0, i128 %1, i1* %2) {
 entry:
@@ -120,6 +121,8 @@ declare i32 @printf(i8*, ...)
 
 declare i32 @scanf(i8*, ...)
 
+declare void @exit(i32)
+
 define void @cloned_fn_template_init_IsZero(%struct_template_IsZero* %0) {
 entry:
   %initial.in.input = alloca i128, align 8
@@ -190,6 +193,7 @@ entry:
   %18 = shl i128 %17, 64
   %19 = or i128 %16, %18
   store i128 %19, i128* %"gep.IsZero|inv.inter", align 4
+  %is_cloned_satisfy_constraints = alloca i1, align 1
   call void @cloned_fn_template_init_IsZero(%struct_template_IsZero* %instance)
   %"gep.IsZero|out.output" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 2
   %"cloned_result.gep.IsZero|out.output" = load i128, i128* %"gep.IsZero|out.output", align 4
@@ -198,14 +202,46 @@ entry:
   %22 = trunc i128 %21 to i64
   %23 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %22)
   %24 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %20)
+  store i1 true, i1* %is_cloned_satisfy_constraints, align 1
+  %25 = load i1, i1* @constraint, align 1
+  %26 = load i1, i1* %is_cloned_satisfy_constraints, align 1
+  %27 = and i1 %26, %25
+  store i1 %27, i1* %is_cloned_satisfy_constraints, align 1
+  %28 = load i1, i1* @constraint.1, align 1
+  %29 = load i1, i1* %is_cloned_satisfy_constraints, align 1
+  %30 = and i1 %29, %28
+  store i1 %30, i1* %is_cloned_satisfy_constraints, align 1
+  %is_original_satisfy_constraints = alloca i1, align 1
   call void @fn_template_init_IsZero(%struct_template_IsZero* %instance)
   %"gep.IsZero|out.output1" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 2
   %"original_result.gep.IsZero|out.output" = load i128, i128* %"gep.IsZero|out.output1", align 4
-  %25 = trunc i128 %"original_result.gep.IsZero|out.output" to i64
-  %26 = lshr i128 %"original_result.gep.IsZero|out.output", 64
-  %27 = trunc i128 %26 to i64
-  %28 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %27)
-  %29 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %25)
+  %31 = trunc i128 %"original_result.gep.IsZero|out.output" to i64
+  %32 = lshr i128 %"original_result.gep.IsZero|out.output", 64
+  %33 = trunc i128 %32 to i64
+  %34 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %33)
+  %35 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.printf, i32 0, i32 0), i64 %31)
+  store i1 true, i1* %is_original_satisfy_constraints, align 1
+  %36 = load i1, i1* @constraint, align 1
+  %37 = load i1, i1* %is_original_satisfy_constraints, align 1
+  %38 = and i1 %37, %36
+  store i1 %38, i1* %is_original_satisfy_constraints, align 1
+  %39 = load i1, i1* @constraint.1, align 1
+  %40 = load i1, i1* %is_original_satisfy_constraints, align 1
+  %41 = and i1 %40, %39
+  store i1 %41, i1* %is_original_satisfy_constraints, align 1
+  %outputNotEqual = icmp ne i128 %"cloned_result.gep.IsZero|out.output", %"original_result.gep.IsZero|out.output"
+  %originalConstraintValue = load i1, i1* %is_original_satisfy_constraints, align 1
+  %clonedConstraintValue = load i1, i1* %is_cloned_satisfy_constraints, align 1
+  %tmp_under_constrained_condition = and i1 %outputNotEqual, %originalConstraintValue
+  %final_under_constrained_condition = and i1 %tmp_under_constrained_condition, %clonedConstraintValue
+  br i1 %final_under_constrained_condition, label %under_constrained_error, label %no_under_constrained_continue
+
+under_constrained_error:                          ; preds = %entry
+  %42 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([61 x i8], [61 x i8]* @0, i32 0, i32 0))
+  call void @exit(i32 1)
+  unreachable
+
+no_under_constrained_continue:                    ; preds = %entry
   ret i32 0
 }
 
