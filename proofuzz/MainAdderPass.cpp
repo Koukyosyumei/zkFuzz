@@ -161,6 +161,7 @@ namespace
 
             // Define the constatn values
             Constant *formatStrScanf = ConstantDataArray::getString(Context, "%lld", true);
+            Constant *formatStr1BitPrintf = ConstantDataArray::getString(Context, "%d\n", true);
             Constant *formatStrPrintf = ConstantDataArray::getString(Context, "%ld\n", true);
 
             // Define the `main` function type and create the function
@@ -173,6 +174,8 @@ namespace
 
             GlobalVariable *formatStrVar = new GlobalVariable(
                 M, formatStrScanf->getType(), true, GlobalValue::PrivateLinkage, formatStrScanf, ".str.scanf");
+            GlobalVariable *formatStr1BitPrintfVar = new GlobalVariable(
+                M, formatStr1BitPrintf->getType(), true, GlobalValue::PrivateLinkage, formatStr1BitPrintf, ".str.1bit.printf");
             GlobalVariable *formatStrPrintfVar = new GlobalVariable(
                 M, formatStrPrintf->getType(), true, GlobalValue::PrivateLinkage, formatStrPrintf, ".str.printf");
 
@@ -227,6 +230,7 @@ namespace
                     }
 
                     // Check if the constraints are satisfied
+                    Value *formatStr1BitPrintfPtr = Builder.CreatePointerCast(formatStr1BitPrintfVar, Type::getInt8PtrTy(Context));
                     Value *InitialValue = ConstantInt::getTrue(Context);
                     Builder.CreateStore(InitialValue, IsClonedSatisfyConstraintsAlloca);
                     for (auto &GV : M.globals())
@@ -237,6 +241,7 @@ namespace
                             Value *CurrentResult = Builder.CreateLoad(Type::getInt1Ty(Context), IsClonedSatisfyConstraintsAlloca);
                             Value *NewResult = Builder.CreateAnd(CurrentResult, LoadedValue);
                             Builder.CreateStore(NewResult, IsClonedSatisfyConstraintsAlloca);
+                            Builder.CreateCall(printfFunc, {formatStr1BitPrintfPtr, NewResult});
                         }
                     }
                 }
