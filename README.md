@@ -53,3 +53,13 @@ llvm-link ./benchmark/sample/iszero_safe_modified.ll ../circom2llvm/utils/field_
 # execute .ll file
 lli ./benchmark/sample/iszero_safe_linked.ll
 ```
+
+- AFL++
+
+```bash
+circom2llvm --input ./benchmark/sample/iszero_vuln.circom --output ./benchmark/sample/
+
+opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so  --InitializeConstraintPass --MainAdderPass --enable-overwrite-free-variables --printout-outputs --printout-constraints -S ./benchmark/sample/iszero_vuln.ll -o ./benchmark/sample/iszero_vuln_overwritten.ll
+
+llvm-link ./benchmark/sample/iszero_vuln_overwritten.ll ../circom2llvm/utils/field_operations.ll -o ./benchmark/sample/iszero_vuln_overwritten_linked.ll
+```

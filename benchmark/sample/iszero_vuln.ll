@@ -4,6 +4,7 @@ source_filename = "./benchmark/sample/iszero_vuln.circom"
 %struct_template_IsZero = type { i128, i128, i128 }
 
 @constraint = external global i1
+@constraint.1 = external global i1
 
 define void @fn_intrinsic_utils_constraint(i128 %0, i128 %1, i1* %2) {
 entry:
@@ -78,8 +79,8 @@ entry:
   %"gep.IsZero|in.input" = getelementptr inbounds %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 0
   %read.in.input = load i128, i128* %"gep.IsZero|in.input", align 4
   store i128 %read.in.input, i128* %initial.in.input, align 4
-  %initial.inv.inter = alloca i128, align 8
   %initial.out.output = alloca i128, align 8
+  %initial.inv.inter = alloca i128, align 8
   br label %body
 
 body:                                             ; preds = %entry
@@ -97,15 +98,20 @@ body:                                             ; preds = %entry
   store i128 %mod_add, i128* %initial.out.output, align 4
   %read.out.output = load i128, i128* %initial.out.output, align 4
   call void @fn_intrinsic_utils_constraint(i128 %read.out.output, i128 %mod_add, i1* @constraint)
+  %read.out.output4 = load i128, i128* %initial.out.output, align 4
+  %read.out.output5 = load i128, i128* %initial.out.output, align 4
+  %mod_sub6 = call i128 @mod_sub(i128 %read.out.output5, i128 1, i128 9938766679346745377)
+  %mod_mul7 = call i128 @mod_mul(i128 %read.out.output4, i128 %mod_sub6, i128 9938766679346745377)
+  call void @fn_intrinsic_utils_constraint(i128 %mod_mul7, i128 0, i1* @constraint.1)
   br label %exit
 
 exit:                                             ; preds = %body
-  %read.inv.inter4 = load i128, i128* %initial.inv.inter, align 4
+  %read.inv.inter8 = load i128, i128* %initial.inv.inter, align 4
   %"gep.IsZero|inv.inter" = getelementptr inbounds %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 1
-  store i128 %read.inv.inter4, i128* %"gep.IsZero|inv.inter", align 4
-  %read.out.output5 = load i128, i128* %initial.out.output, align 4
+  store i128 %read.inv.inter8, i128* %"gep.IsZero|inv.inter", align 4
+  %read.out.output9 = load i128, i128* %initial.out.output, align 4
   %"gep.IsZero|out.output" = getelementptr inbounds %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 2
-  store i128 %read.out.output5, i128* %"gep.IsZero|out.output", align 4
+  store i128 %read.out.output9, i128* %"gep.IsZero|out.output", align 4
   ret void
 }
 

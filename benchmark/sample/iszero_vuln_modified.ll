@@ -4,7 +4,6 @@ source_filename = "./benchmark/sample/iszero_vuln.circom"
 %struct_template_IsZero = type { i128, i128, i128 }
 
 @constraint = internal global i1 false
-@constraint.1 = internal global i1 false
 @.str.map.d = private constant [4 x i8] c"%d\0A\00"
 @.str.map.ld = private constant [5 x i8] c"%ld\0A\00"
 @.str.map.lld = private constant [5 x i8] c"%lld\00"
@@ -83,8 +82,8 @@ entry:
   %"gep.IsZero|in.input" = getelementptr inbounds %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 0
   %read.in.input = load i128, i128* %"gep.IsZero|in.input", align 4
   store i128 %read.in.input, i128* %initial.in.input, align 4
-  %initial.out.output = alloca i128, align 8
   %initial.inv.inter = alloca i128, align 8
+  %initial.out.output = alloca i128, align 8
   br label %body
 
 body:                                             ; preds = %entry
@@ -102,20 +101,15 @@ body:                                             ; preds = %entry
   store i128 %mod_add, i128* %initial.out.output, align 4
   %read.out.output = load i128, i128* %initial.out.output, align 4
   call void @fn_intrinsic_utils_constraint(i128 %read.out.output, i128 %mod_add, i1* @constraint)
-  %read.out.output4 = load i128, i128* %initial.out.output, align 4
-  %read.out.output5 = load i128, i128* %initial.out.output, align 4
-  %mod_sub6 = call i128 @mod_sub(i128 %read.out.output5, i128 1, i128 9938766679346745377)
-  %mod_mul7 = call i128 @mod_mul(i128 %read.out.output4, i128 %mod_sub6, i128 9938766679346745377)
-  call void @fn_intrinsic_utils_constraint(i128 %mod_mul7, i128 0, i1* @constraint.1)
   br label %exit
 
 exit:                                             ; preds = %body
-  %read.inv.inter8 = load i128, i128* %initial.inv.inter, align 4
+  %read.inv.inter4 = load i128, i128* %initial.inv.inter, align 4
   %"gep.IsZero|inv.inter" = getelementptr inbounds %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 1
-  store i128 %read.inv.inter8, i128* %"gep.IsZero|inv.inter", align 4
-  %read.out.output9 = load i128, i128* %initial.out.output, align 4
+  store i128 %read.inv.inter4, i128* %"gep.IsZero|inv.inter", align 4
+  %read.out.output5 = load i128, i128* %initial.out.output, align 4
   %"gep.IsZero|out.output" = getelementptr inbounds %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 2
-  store i128 %read.out.output9, i128* %"gep.IsZero|out.output", align 4
+  store i128 %read.out.output5, i128* %"gep.IsZero|out.output", align 4
   ret void
 }
 
@@ -131,11 +125,11 @@ entry:
   %"gep.IsZero|in.input" = getelementptr inbounds %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 0
   %read.in.input = load i128, i128* %"gep.IsZero|in.input", align 4
   store i128 %read.in.input, i128* %initial.in.input, align 4
-  %initial.out.output = alloca i128, align 8
   %initial.inv.inter = alloca i128, align 8
   %"free.gep.IsZero|inv.inter" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 1
   %free.read.inv.inter = load i128, i128* %"free.gep.IsZero|inv.inter", align 4
   store i128 %free.read.inv.inter, i128* %initial.inv.inter, align 4
+  %initial.out.output = alloca i128, align 8
   br label %body
 
 body:                                             ; preds = %entry
@@ -152,20 +146,15 @@ body:                                             ; preds = %entry
   store i128 %mod_add, i128* %initial.out.output, align 4
   %read.out.output = load i128, i128* %initial.out.output, align 4
   call void @fn_intrinsic_utils_constraint(i128 %read.out.output, i128 %mod_add, i1* @constraint)
-  %read.out.output4 = load i128, i128* %initial.out.output, align 4
-  %read.out.output5 = load i128, i128* %initial.out.output, align 4
-  %mod_sub6 = call i128 @mod_sub(i128 %read.out.output5, i128 1, i128 9938766679346745377)
-  %mod_mul7 = call i128 @mod_mul(i128 %read.out.output4, i128 %mod_sub6, i128 9938766679346745377)
-  call void @fn_intrinsic_utils_constraint(i128 %mod_mul7, i128 0, i1* @constraint.1)
   br label %exit
 
 exit:                                             ; preds = %body
-  %read.inv.inter8 = load i128, i128* %initial.inv.inter, align 4
+  %read.inv.inter4 = load i128, i128* %initial.inv.inter, align 4
   %"gep.IsZero|inv.inter" = getelementptr inbounds %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 1
-  store i128 %read.inv.inter8, i128* %"gep.IsZero|inv.inter", align 4
-  %read.out.output9 = load i128, i128* %initial.out.output, align 4
+  store i128 %read.inv.inter4, i128* %"gep.IsZero|inv.inter", align 4
+  %read.out.output5 = load i128, i128* %initial.out.output, align 4
   %"gep.IsZero|out.output" = getelementptr inbounds %struct_template_IsZero, %struct_template_IsZero* %0, i32 0, i32 2
-  store i128 %read.out.output9, i128* %"gep.IsZero|out.output", align 4
+  store i128 %read.out.output5, i128* %"gep.IsZero|out.output", align 4
   ret void
 }
 
@@ -210,30 +199,22 @@ entry:
   %26 = load i1, i1* %is_cloned_satisfy_constraints, align 1
   %27 = and i1 %26, %25
   store i1 %27, i1* %is_cloned_satisfy_constraints, align 1
-  %28 = load i1, i1* @constraint.1, align 1
-  %29 = load i1, i1* %is_cloned_satisfy_constraints, align 1
-  %30 = and i1 %29, %28
-  store i1 %30, i1* %is_cloned_satisfy_constraints, align 1
-  %31 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.map.d, i32 0, i32 0), i1 %30)
+  %28 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.map.d, i32 0, i32 0), i1 %27)
   %is_original_satisfy_constraints = alloca i1, align 1
   call void @fn_template_init_IsZero(%struct_template_IsZero* %instance)
   %"gep.IsZero|out.output1" = getelementptr %struct_template_IsZero, %struct_template_IsZero* %instance, i32 0, i32 2
   %"original_result.gep.IsZero|out.output" = load i128, i128* %"gep.IsZero|out.output1", align 4
-  %32 = trunc i128 %"original_result.gep.IsZero|out.output" to i64
-  %33 = lshr i128 %"original_result.gep.IsZero|out.output", 64
-  %34 = trunc i128 %33 to i64
-  %35 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %34)
-  %36 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %32)
+  %29 = trunc i128 %"original_result.gep.IsZero|out.output" to i64
+  %30 = lshr i128 %"original_result.gep.IsZero|out.output", 64
+  %31 = trunc i128 %30 to i64
+  %32 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %31)
+  %33 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %29)
   store i1 true, i1* %is_original_satisfy_constraints, align 1
-  %37 = load i1, i1* @constraint, align 1
-  %38 = load i1, i1* %is_original_satisfy_constraints, align 1
-  %39 = and i1 %38, %37
-  store i1 %39, i1* %is_original_satisfy_constraints, align 1
-  %40 = load i1, i1* @constraint.1, align 1
-  %41 = load i1, i1* %is_original_satisfy_constraints, align 1
-  %42 = and i1 %41, %40
-  store i1 %42, i1* %is_original_satisfy_constraints, align 1
-  %43 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.map.d, i32 0, i32 0), i1 %42)
+  %34 = load i1, i1* @constraint, align 1
+  %35 = load i1, i1* %is_original_satisfy_constraints, align 1
+  %36 = and i1 %35, %34
+  store i1 %36, i1* %is_original_satisfy_constraints, align 1
+  %37 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([4 x i8], [4 x i8]* @.str.map.d, i32 0, i32 0), i1 %36)
   %outputNotEqual = icmp ne i128 %"cloned_result.gep.IsZero|out.output", %"original_result.gep.IsZero|out.output"
   %originalConstraintValue = load i1, i1* %is_original_satisfy_constraints, align 1
   %clonedConstraintValue = load i1, i1* %is_cloned_satisfy_constraints, align 1
@@ -242,7 +223,7 @@ entry:
   br i1 %final_under_constrained_condition, label %under_constrained_error, label %no_under_constrained_continue
 
 under_constrained_error:                          ; preds = %entry
-  %44 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([61 x i8], [61 x i8]* @0, i32 0, i32 0))
+  %38 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([61 x i8], [61 x i8]* @0, i32 0, i32 0))
   call void @exit(i32 1)
   unreachable
 

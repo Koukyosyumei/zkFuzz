@@ -36,6 +36,7 @@ template IsZero() {
 
     // Constraint to calculate `out`: vulnerable due to the free nature of `inv`.
     out <== -in*inv +1;
+    out*(out-1) === 0;
 }
 
 
