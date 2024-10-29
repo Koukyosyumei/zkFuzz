@@ -1,10 +1,10 @@
+#include <regex>
+#include <unordered_map>
+
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/Transforms/Utils/BasicBlockUtils.h"
-#include <regex>
-#include <unordered_map>
-#include <iostream>
 
 #include "ExtendedProtocolFlowGraph.hpp"
 #include "helpers.hpp"
@@ -12,6 +12,8 @@
 using namespace llvm;
 
 static cl::opt<bool> OverwriteFreeVariable("enable-overwrite-free-variables", cl::desc("Enable arbitrary assignments to free variables"));
+static cl::opt<bool> PrintoutOutputs("printout-outputs"), cl::desc("Print out all outputs of the main circuits");
+static cl::opt<bool> PrintoutConstraints("printout-constraints"), cl::desc("Print out the logical AND of all constraints of the main circuits");
 
 namespace
 {
@@ -160,9 +162,9 @@ namespace
             IRBuilder<> Builder(Context);
 
             // Define the constatn values
-            Constant *formatStrScanf = ConstantDataArray::getString(Context, "%lld", true);
-            Constant *formatStr1BitPrintf = ConstantDataArray::getString(Context, "%d\n", true);
-            Constant *formatStrPrintf = ConstantDataArray::getString(Context, "%ld\n", true);
+            Constant *formatStrInt = ConstantDataArray::getString(Context, "%d\n", true);
+            Constant *formatStrLongInt = ConstantDataArray::getString(Context, "%ld\n", true);
+            Constant *formatStrLongLongInt = ConstantDataArray::getString(Context, "%lld", true);
 
             // Define the `main` function type and create the function
             FunctionType *mainType = FunctionType::get(Builder.getInt32Ty(), false);
@@ -172,12 +174,12 @@ namespace
             BasicBlock *entry = BasicBlock::Create(Context, "entry", mainFunc);
             Builder.SetInsertPoint(entry);
 
-            GlobalVariable *formatStrVar = new GlobalVariable(
-                M, formatStrScanf->getType(), true, GlobalValue::PrivateLinkage, formatStrScanf, ".str.scanf");
-            GlobalVariable *formatStr1BitPrintfVar = new GlobalVariable(
-                M, formatStr1BitPrintf->getType(), true, GlobalValue::PrivateLinkage, formatStr1BitPrintf, ".str.1bit.printf");
-            GlobalVariable *formatStrPrintfVar = new GlobalVariable(
-                M, formatStrPrintf->getType(), true, GlobalValue::PrivateLinkage, formatStrPrintf, ".str.printf");
+            GlobalVariable *formatStrIntVar = new GlobalVariable(
+                M, formatStrInt->getType(), true, GlobalValue::PrivateLinkage, formatStrInt, ".str.map.d");
+            GlobalVariable *formatStrLongIntVar = new GlobalVariable(
+                M, formatStrLongInt->getType(), true, GlobalValue::PrivateLinkage, formatStrLongInt, ".str.map.ld");
+            GlobalVariable *formatStrLongLongIntVar = new GlobalVariable(
+                M, formatStrLongLongInt->getType(), true, GlobalValue::PrivateLinkage, formatStrLongLongInt, ".str.map.lld");
 
             Function *buildFuncPtr = M.getFunction("fn_template_build_" + circuitName);
             Value *instance = Builder.CreateCall(buildFuncPtr, {}, "instance");
@@ -186,7 +188,7 @@ namespace
             for (const std::pair<std::string, int> kv : gepInputIndexMap)
             {
                 Value *inputPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
-                read128bit(Context, Builder, inputPtr, scanfFunc, formatStrVar);
+                read128bit(Context, Builder, inputPtr, scanfFunc, formatStrLongLongIntVar);
             }
 
             // Read free variables from standard inputs
@@ -203,7 +205,7 @@ namespace
                     {
                         fvPtr = getGEP(Context, Builder, instance, gepOutputIndexMap[fv_gep_name], fv_gep_name.c_str());
                     }
-                    read128bit(Context, Builder, fvPtr, scanfFunc, formatStrVar);
+                    read128bit(Context, Builder, fvPtr, scanfFunc, formatStrLongLongIntVar);
                 }
             }
 
@@ -226,23 +228,30 @@ namespace
                     {
                         Value *gepPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
                         outputPtrCloned = Builder.CreateLoad(Builder.getInt128Ty(), gepPtr, ("cloned_result." + kv.first).c_str());
-                        print128bit(Context, Builder, outputPtrCloned, printfFunc, formatStrPrintfVar);
+                        if (PrintoutOutputs)
+                        {
+                            print128bit(Context, Builder, outputPtrCloned, printfFunc, formatStrLongIntVar);
+                        }
                     }
 
                     // Check if the constraints are satisfied
-                    Value *formatStr1BitPrintfPtr = Builder.CreatePointerCast(formatStr1BitPrintfVar, Type::getInt8PtrTy(Context));
                     Value *InitialValue = ConstantInt::getTrue(Context);
                     Builder.CreateStore(InitialValue, IsClonedSatisfyConstraintsAlloca);
+                    Value *NewResult;
                     for (auto &GV : M.globals())
                     {
                         if (GV.getName().startswith("constraint"))
                         {
                             Value *LoadedValue = Builder.CreateLoad(GV.getValueType(), &GV);
                             Value *CurrentResult = Builder.CreateLoad(Type::getInt1Ty(Context), IsClonedSatisfyConstraintsAlloca);
-                            Value *NewResult = Builder.CreateAnd(CurrentResult, LoadedValue);
+                            NewResult = Builder.CreateAnd(CurrentResult, LoadedValue);
                             Builder.CreateStore(NewResult, IsClonedSatisfyConstraintsAlloca);
-                            Builder.CreateCall(printfFunc, {formatStr1BitPrintfPtr, NewResult});
                         }
+                    }
+                    Value *formatStrIntPtr = Builder.CreatePointerCast(formatStrIntVar, Type::getInt8PtrTy(Context));
+                    if (PrintoutConstraints)
+                    {
+                        Builder.CreateCall(printfFunc, {formatStrIntPtr, NewResult});
                     }
                 }
             }
@@ -261,21 +270,30 @@ namespace
                 {
                     Value *gepPtr = getGEP(Context, Builder, instance, kv.second, kv.first.c_str());
                     outputPtrOriginal = Builder.CreateLoad(Builder.getInt128Ty(), gepPtr, ("original_result." + kv.first).c_str());
-                    print128bit(Context, Builder, outputPtrOriginal, printfFunc, formatStrPrintfVar);
+                    if (PrintoutOutputs)
+                    {
+                        print128bit(Context, Builder, outputPtrOriginal, printfFunc, formatStrLongIntVar);
+                    }
                 }
 
                 // Check if the constraints are satisfied
                 Value *InitialValue = ConstantInt::getTrue(Context);
                 Builder.CreateStore(InitialValue, IsOriginalSatisfyConstraintsAlloca);
+                Value *NewResult;
                 for (auto &GV : M.globals())
                 {
                     if (GV.getName().startswith("constraint"))
                     {
                         Value *LoadedValue = Builder.CreateLoad(GV.getValueType(), &GV);
                         Value *CurrentResult = Builder.CreateLoad(Type::getInt1Ty(Context), IsOriginalSatisfyConstraintsAlloca);
-                        Value *NewResult = Builder.CreateAnd(CurrentResult, LoadedValue);
+                        NewResult = Builder.CreateAnd(CurrentResult, LoadedValue);
                         Builder.CreateStore(NewResult, IsOriginalSatisfyConstraintsAlloca);
                     }
+                }
+                Value *formatStrIntPtr = Builder.CreatePointerCast(formatStrIntVar, Type::getInt8PtrTy(Context));
+                if (PrintoutConstraints)
+                {
+                    Builder.CreateCall(printfFunc, {formatStrIntPtr, NewResult});
                 }
             }
 
@@ -295,7 +313,7 @@ namespace
                 Builder.CreateCondBr(UndercConstrainedCondition, ErrorBB, ContinueBB);
 
                 Builder.SetInsertPoint(ErrorBB);
-                Value *ErrorMsg = Builder.CreateGlobalStringPtr("Error: Under-Constraint-Condition met. Terminating program.\n");
+                Value *ErrorMsg = Builder.CreateGlobalStringPtr("Error: Under-Constraint-Condition Met. Terminating program.\n");
                 Builder.CreateCall(printfFunc, {ErrorMsg});
 
                 Builder.CreateCall(exitFunc, {ConstantInt::get(Type::getInt32Ty(Context), 1)});
