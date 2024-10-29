@@ -1,6 +1,6 @@
 # ProoFuzz
 
-- [Doc](./doc/)
+- [Documentation](./doc/)
 - [Meeting Notes](./NOTE.md)
 
 ## Build
@@ -29,12 +29,13 @@ sh ./build.sh
 
 ## Example
 
+1. Compile Circom to LLVM IR
+
 ```bash
-# compile circom to llvm ir
 $ circom2llvm --input ./benchmark/sample/iszero_safe.circom --output ./benchmark/sample/
 ```
 
-- Visualization
+2. Visualization
 
 ```bash
 $ opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so --ExtendedPrintGraphviz -S ./benchmark/sample/iszero_safe.ll -o /dev/null 2> ./benchmark/sample/iszero_safe.dot
@@ -43,29 +44,50 @@ $ opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so --ExtendedPrint
 <img src="./benchmark/sample/iszero_safe_graphviz.svg" width=900>
 
 
-- Execution
+3. Execution
+
+- Compile to LLVM IR
 
 ```bash
-# compile circom to llvm ir
 $ circom2llvm --input ./benchmark/sample/iszero_vuln.circom --output ./benchmark/sample/
+```
 
-# modify .ll file 
+- Modify LLVM IR file
+
+```bash
 $ opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so  --InitializeConstraintPass --MainAdderPass --enable-overwrite-free-variables --printout-outputs --printout-constraints -S ./benchmark/sample/iszero_vuln.ll -o ./benchmark/sample/iszero_vuln_overwritten.ll
+```
 
-# link .ll files
+- Link LLVM IR files
+
+```bash
 $ llvm-link ./benchmark/sample/iszero_vuln_overwritten.ll ../circom2llvm/utils/field_operations.ll -o ./benchmark/sample/iszero_vuln_overwritten_linked.ll
+```
 
+- Execute the LLVM IR file
+
+```bash
 # execute .ll file
 $ lli ./benchmark/sample/iszero_vuln_overwritten_linked.ll
-1     # <-- lower bits of the input `in`
-0     # <-- higher bits of the input `in`
-0     # <-- lower bits of the intermediate variable `inv`
-0     # <-- higher bits of the intermediate variable `inv`
-1     # <-- lower bits of the output `out` of the modified circuit 
-0     # <-- higher bits of the output `out` of the modified circuit
-1     # <-- whether all of the constraints is met in the modified circuit
-0     # <-- lower bits of the output `out` of the original circuit 
-0     # <-- higher bits of the output `out` of the original circuit 
-1     # <-- whether all of the constraints is met in the modified circuit
+```
+
+Input:
+
+```makefile
+1     # Lower bits of input `in`
+0     # Higher bits of input `in`
+0     # Lower bits of intermediate variable `inv`
+0     # Higher bits of intermediate variable `inv`
+```
+
+Output:
+
+```makefile
+1     # Lower bits of the modified circuit's output `out`
+0     # Higher bits of the modified circuit's output `out`
+1     # Whether all constraints are met in the modified circuit
+0     # Lower bits of the original circuit's output `out`
+0     # Higher bits of the original circuit's output `out`
+1     # Whether all constraints are met in the modified circuit
 Error: Under-Constraint-Condition Met. Terminating program.
 ```
