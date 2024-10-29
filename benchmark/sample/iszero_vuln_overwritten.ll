@@ -203,8 +203,8 @@ entry:
   %20 = trunc i128 %"cloned_result.gep.IsZero|out.output" to i64
   %21 = lshr i128 %"cloned_result.gep.IsZero|out.output", 64
   %22 = trunc i128 %21 to i64
-  %23 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %22)
-  %24 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %20)
+  %23 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %20)
+  %24 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %22)
   store i1 true, i1* %is_cloned_satisfy_constraints, align 1
   %25 = load i1, i1* @constraint, align 1
   %26 = load i1, i1* %is_cloned_satisfy_constraints, align 1
@@ -222,8 +222,8 @@ entry:
   %32 = trunc i128 %"original_result.gep.IsZero|out.output" to i64
   %33 = lshr i128 %"original_result.gep.IsZero|out.output", 64
   %34 = trunc i128 %33 to i64
-  %35 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %34)
-  %36 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %32)
+  %35 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %32)
+  %36 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @.str.map.ld, i32 0, i32 0), i64 %34)
   store i1 true, i1* %is_original_satisfy_constraints, align 1
   %37 = load i1, i1* @constraint, align 1
   %38 = load i1, i1* %is_original_satisfy_constraints, align 1

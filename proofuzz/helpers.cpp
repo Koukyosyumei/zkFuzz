@@ -161,8 +161,8 @@ void print128bit(LLVMContext &Context, IRBuilder<> &Builder, Value *outputPtr, F
     Value *highPart = Builder.CreateTrunc(shifted, Type::getInt64Ty(Context));
 
     Value *formatStrPrintfPtr = Builder.CreatePointerCast(formatStrVar, Type::getInt8PtrTy(Context));
-    Builder.CreateCall(printfFunc, {formatStrPrintfPtr, highPart});
     Builder.CreateCall(printfFunc, {formatStrPrintfPtr, lowPart});
+    Builder.CreateCall(printfFunc, {formatStrPrintfPtr, highPart});
 }
 
 bool cloneFunctions(Module &M, const std::string &funcName, const std::string &prefix)

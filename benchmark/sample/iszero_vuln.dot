@@ -1,0 +1,43 @@
+digraph "IsZero" {
+graph [fontname="Helvetica", fontsize=12, bgcolor="#f1f4f9", style="filled"];
+node [shape=rectangle, style="filled,rounded", fontname="Helvetica", fontsize=10, penwidth=2];
+edge [fontname="Helvetica", fontsize=10, arrowsize=1.2, penwidth=1.5];
+"<<expr>>
+%utils_switch" [fillcolor="#d1d1d1", fontcolor="#333333", color="#a0a0a0", shape="diamond"];
+"<<expr>>
+%mod_mul7" [fillcolor="#d1d1d1", fontcolor="#333333", color="#a0a0a0", shape="diamond"];
+"<<expr>>
+%mod_add" [fillcolor="#d1d1d1", fontcolor="#333333", color="#a0a0a0", shape="diamond"];
+"<<output>>
+%out" [fillcolor="#b0e4d5", fontcolor="#000000", color="#7fb4a0", shape="ellipse"];
+"<<const>>
+0" [fillcolor="#252525", fontcolor="#f8f8f8", color="#555555", shape="hexagon"];
+"<<inter>>
+%inv" [fillcolor="#a8d0e6", fontcolor="#e60000", color="#6c8ea4", shape="ellipse"];
+"<<input>>
+%in" [fillcolor="#b786c5", fontcolor="#ffffff", color="#8e6292", shape="ellipse"];
+"<<expr>>
+%mod_add" -> "<<output>>
+%out" [label="assign", color="darkgreen", arrowhead="vee"];
+"<<expr>>
+%utils_switch" -> "<<inter>>
+%inv" [label="assign", color="darkgreen", arrowhead="vee"];
+"<<input>>
+%in" -> "<<expr>>
+%utils_switch" [label="assign", color="darkgreen", arrowhead="vee"];
+"<<expr>>
+%mod_mul7" -> "<<const>>
+0" [label="constraint", dir=none, color="black:invis:black", style="dashed"];
+"<<output>>
+%out" -> "<<expr>>
+%mod_mul7" [label="assign", color="darkgreen", arrowhead="vee"];
+"<<output>>
+%out" -> "<<expr>>
+%mod_add" [label="constraint", dir=none, color="black:invis:black", style="dashed"];
+"<<inter>>
+%inv" -> "<<expr>>
+%mod_add" [label="assign", color="darkgreen", arrowhead="vee"];
+"<<input>>
+%in" -> "<<expr>>
+%mod_add" [label="assign", color="darkgreen", arrowhead="vee"];
+}
