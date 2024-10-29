@@ -12,8 +12,8 @@
 using namespace llvm;
 
 static cl::opt<bool> OverwriteFreeVariable("enable-overwrite-free-variables", cl::desc("Enable arbitrary assignments to free variables"));
-static cl::opt<bool> PrintoutOutputs("printout-outputs"), cl::desc("Print out all outputs of the main circuits");
-static cl::opt<bool> PrintoutConstraints("printout-constraints"), cl::desc("Print out the logical AND of all constraints of the main circuits");
+static cl::opt<bool> PrintoutOutputs("printout-outputs", cl::desc("Print out all outputs of the main circuits"));
+static cl::opt<bool> PrintoutConstraints("printout-constraints", cl::desc("Print out the logical AND of all constraints of the main circuits"));
 
 namespace
 {
