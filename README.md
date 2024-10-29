@@ -91,3 +91,12 @@ Output:
 1     # Whether all constraints are met in the modified circuit
 Error: Under-Constraint-Condition Met. Terminating program.
 ```
+
+4. AFL++
+
+```bash
+$ afl-clang-fast -S -emit-llvm ./benchmark/sample/iszero_vuln_overwritten_linked.ll -o ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.ll
+$ llc -filetype=obj ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.ll -o ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.o
+$ afl-clang-fast ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.o -o ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.out
+afl-fuzz -i ./benchmark/data/ -o benchmark/output_dir/ -- ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.out
+```
