@@ -243,11 +243,15 @@ entry:
 
 under_constrained_error:                          ; preds = %entry
   %44 = call i32 (i8*, ...) @printf(i8* getelementptr inbounds ([61 x i8], [61 x i8]* @0, i32 0, i32 0))
-  call void @exit(i32 1)
+  call void @llvm.trap()
   unreachable
 
 no_under_constrained_continue:                    ; preds = %entry
   ret i32 0
 }
 
+; Function Attrs: cold noreturn nounwind
+declare void @llvm.trap() #1
+
 attributes #0 = { nofree nosync nounwind readnone speculatable willreturn }
+attributes #1 = { cold noreturn nounwind }
