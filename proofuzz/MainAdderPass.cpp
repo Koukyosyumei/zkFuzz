@@ -316,7 +316,10 @@ namespace
                 Value *ErrorMsg = Builder.CreateGlobalStringPtr("Error: Under-Constraint-Condition Met. Terminating program.\n");
                 Builder.CreateCall(printfFunc, {ErrorMsg});
 
-                Builder.CreateCall(exitFunc, {ConstantInt::get(Type::getInt32Ty(Context), 1)});
+                // Builder.CreateCall(exitFunc, {ConstantInt::get(Type::getInt32Ty(Context), 1)});
+                // Builder.CreateUnreachable();
+                Function *TrapFunc = Intrinsic::getDeclaration(&M, Intrinsic::trap);
+                Builder.CreateCall(TrapFunc);
                 Builder.CreateUnreachable();
 
                 Builder.SetInsertPoint(ContinueBB);
