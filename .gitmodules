@@ -4,6 +4,6 @@
 [submodule "circom2llvm"]
 	path = circom2llvm
 	url = git@github.com:Koukyosyumei/circom2llvm.git
-[submodule "./benchmark/circomlib"]
-	path = circomlib
+[submodule "benchmark/circomlib"]
+	path = benchmark/circomlib
 	url = git@github.com:iden3/circomlib.git
