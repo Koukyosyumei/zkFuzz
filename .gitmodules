@@ -91,3 +91,6 @@
 [submodule "benchmark/ZKWhisper"]
 	path = benchmark/ZKWhisper
 	url = git@github.com:aayush4vedi/ZKWhisper.git
+[submodule "benchmark/circomlib-ml"]
+	path = benchmark/circomlib-ml
+	url = git@github.com:socathie/circomlib-ml.git
