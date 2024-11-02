@@ -11,6 +11,7 @@ add_definitions(${LLVM_DEFINITIONS})
 add_library(ProoFuzzPass MODULE
     InitializeConstraintPass.cpp
     MainAdderPass.cpp
+    BasicStatsPass.cpp
     ExtendedPrintGraphviz.cpp
     ExtendedProtocolFlowGraph.cpp
     helpers.cpp
