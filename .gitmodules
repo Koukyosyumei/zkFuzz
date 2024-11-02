@@ -94,3 +94,12 @@
 [submodule "benchmark/circomlib-ml"]
 	path = benchmark/circomlib-ml
 	url = git@github.com:socathie/circomlib-ml.git
+[submodule "benchmark/IC3-dec-id"]
+	path = benchmark/IC3-dec-id
+	url = git@github.com:topliceanu/IC3-dec-id.git
+[submodule "benchmark/Oraisan-Circuit-Demo"]
+	path = benchmark/Oraisan-Circuit-Demo
+	url = git@github.com:Oraisan/Oraisan-Circuit-Demo.git
+[submodule "benchmark/circom-embassy"]
+	path = benchmark/circom-embassy
+	url = git@github.com:0xturboblitz/circom-embassy.git
