@@ -103,3 +103,6 @@
 [submodule "benchmark/circom-embassy"]
 	path = benchmark/circom-embassy
 	url = git@github.com:0xturboblitz/circom-embassy.git
+[submodule "benchmark/abdk-libraries-circom"]
+	path = benchmark/abdk-libraries-circom
+	url = git@github.com:abdk-consulting/abdk-libraries-circom.git
