@@ -1,0 +1,13 @@
+[package]
+name = "tcct"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+circom_parser = { git = "https://github.com/iden3/circom.git", package = "parser" }
+circom_program_structure = { git = "https://github.com/iden3/circom.git", package = "program_structure" }
+
+clap = "2.33.0"
+ansi_term = "0.12.1"
+wast = "39.0.0"
+exitcode = "1.1.2"
