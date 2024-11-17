@@ -1,8 +1,312 @@
 use super::input_user::Input;
 use crate::VERSION;
+use program_structure::abstract_syntax_tree::ast::{
+    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Statement,
+};
 use program_structure::constants::UsefulConstants;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
+use std::fmt;
+
+pub struct DebugAssignOp(AssignOp);
+pub struct DebugExpressionInfixOpcode(ExpressionInfixOpcode);
+pub struct DebugExpressionPrefixOpcode(ExpressionPrefixOpcode);
+pub struct DebugExpression(Expression);
+pub struct DebugStatement(Statement);
+
+impl fmt::Debug for DebugAssignOp {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            AssignOp::AssignVar => f.debug_struct("AssignVar").finish(),
+            AssignOp::AssignSignal => f.debug_struct("AssignSignal").finish(),
+            AssignOp::AssignConstraintSignal => f.debug_struct("AssignConstraintSignal").finish(),
+        }
+    }
+}
+
+impl fmt::Debug for DebugExpressionInfixOpcode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            ExpressionInfixOpcode::Mul => f.debug_struct("Mul").finish(),
+            ExpressionInfixOpcode::Div => f.debug_struct("Div").finish(),
+            ExpressionInfixOpcode::Add => f.debug_struct("Add").finish(),
+            ExpressionInfixOpcode::Sub => f.debug_struct("Sub").finish(),
+            ExpressionInfixOpcode::Pow => f.debug_struct("Pow").finish(),
+            ExpressionInfixOpcode::IntDiv => f.debug_struct("IntDiv").finish(),
+            ExpressionInfixOpcode::Mod => f.debug_struct("Mod").finish(),
+            ExpressionInfixOpcode::ShiftL => f.debug_struct("ShiftL").finish(),
+            ExpressionInfixOpcode::ShiftR => f.debug_struct("ShiftR").finish(),
+            ExpressionInfixOpcode::LesserEq => f.debug_struct("LesserEq").finish(),
+            ExpressionInfixOpcode::GreaterEq => f.debug_struct("GreaterEq").finish(),
+            ExpressionInfixOpcode::Lesser => f.debug_struct("Lesser").finish(),
+            ExpressionInfixOpcode::Greater => f.debug_struct("Greater").finish(),
+            ExpressionInfixOpcode::Eq => f.debug_struct("Eq").finish(),
+            ExpressionInfixOpcode::NotEq => f.debug_struct("NotEq").finish(),
+            ExpressionInfixOpcode::BoolOr => f.debug_struct("BoolOr").finish(),
+            ExpressionInfixOpcode::BoolAnd => f.debug_struct("BoolAnd").finish(),
+            ExpressionInfixOpcode::BitOr => f.debug_struct("BitOr").finish(),
+            ExpressionInfixOpcode::BitAnd => f.debug_struct("BitAnd").finish(),
+            ExpressionInfixOpcode::BitXor => f.debug_struct("BitXor").finish(),
+        }
+    }
+}
+
+impl fmt::Debug for DebugExpressionPrefixOpcode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.0 {
+            ExpressionPrefixOpcode::Sub => f.debug_struct("Sub").finish(),
+            ExpressionPrefixOpcode::BoolNot => f.debug_struct("BoolNot").finish(),
+            ExpressionPrefixOpcode::Complement => f.debug_struct("Complement").finish(),
+        }
+    }
+}
+
+impl fmt::Debug for DebugExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.0 {
+            Expression::InfixOp {
+                meta,
+                lhe,
+                infix_op,
+                rhe,
+            } => f
+                .debug_struct("InfixOp")
+                .field("lhe", &DebugExpression(*lhe.clone()))
+                .field("infix_op", &DebugExpressionInfixOpcode(*infix_op))
+                .field("rhe", &DebugExpression(*rhe.clone()))
+                .finish(),
+            Expression::PrefixOp {
+                meta,
+                prefix_op,
+                rhe,
+            } => f
+                .debug_struct("PrefixOp")
+                .field("prefix_op", &DebugExpressionPrefixOpcode(*prefix_op))
+                .field("rhe", &DebugExpression(*rhe.clone()))
+                .finish(),
+            Expression::InlineSwitchOp {
+                meta,
+                cond,
+                if_true,
+                if_false,
+            } => f
+                .debug_struct("InlineSwitchOp")
+                .field("cond", &DebugExpression(*cond.clone()))
+                .field("if_true", &DebugExpression(*if_true.clone()))
+                .field("if_false", &DebugExpression(*if_false.clone()))
+                .finish(),
+            Expression::ParallelOp { meta, rhe } => f
+                .debug_struct("ParallelOp")
+                .field("rhe", &DebugExpression(*rhe.clone()))
+                .finish(),
+            Expression::Variable { meta, name, access } => f
+                .debug_struct("Variable")
+                .field("name", &name)
+                //.field("access", access)
+                .finish(),
+            Expression::Number(meta, value) => {
+                f.debug_struct("Number").field("value", &value).finish()
+            }
+            Expression::Call { meta, id, args } => f
+                .debug_struct("Call")
+                .field("id", &id)
+                .field(
+                    "args",
+                    &args
+                        .iter()
+                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
+                .finish(),
+            Expression::BusCall { meta, id, args } => f
+                .debug_struct("BusCall")
+                .field("id", &id)
+                .field(
+                    "args",
+                    &args
+                        .iter()
+                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
+                .finish(),
+            Expression::AnonymousComp {
+                meta,
+                id,
+                is_parallel,
+                params,
+                signals,
+                names,
+            } => f
+                .debug_struct("AnonymousComp")
+                .field("id", &id)
+                .field("is_parallel", &is_parallel)
+                .field(
+                    "params",
+                    &params
+                        .iter()
+                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
+                .field(
+                    "signals",
+                    &signals
+                        .iter()
+                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
+                //.field("names", names)
+                .finish(),
+            Expression::ArrayInLine { meta, values } => f
+                .debug_struct("ArrayInLine")
+                .field(
+                    "values",
+                    &values
+                        .iter()
+                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
+                .finish(),
+            Expression::Tuple { meta, values } => f
+                .debug_struct("Tuple")
+                .field(
+                    "values",
+                    &values
+                        .iter()
+                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
+                .finish(),
+            Expression::UniformArray {
+                meta,
+                value,
+                dimension,
+            } => f
+                .debug_struct("UniformArray")
+                .field("value", &DebugExpression(*value.clone()))
+                .field("dimension", &DebugExpression(*dimension.clone()))
+                .finish(),
+        }
+    }
+}
+
+impl fmt::Debug for DebugStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.0 {
+            Statement::IfThenElse {
+                meta,
+                cond,
+                if_case,
+                else_case,
+            } => {
+                if else_case.is_none() {
+                    f.debug_struct("IfThenElse")
+                        .field("condition", &DebugExpression(cond.clone()))
+                        .field("if_case", &DebugStatement(*if_case.clone()))
+                        .finish()
+                } else {
+                    f.debug_struct("IfThenElse")
+                        .field("condition", &DebugExpression(cond.clone()))
+                        .field("if_case", &DebugStatement(*if_case.clone()))
+                        .field(
+                            "else_case",
+                            &DebugStatement(*else_case.clone().unwrap().clone()),
+                        )
+                        .finish()
+                }
+            }
+            Statement::While { meta, cond, stmt } => f
+                .debug_struct("While")
+                .field("condition", &DebugExpression(cond.clone()))
+                .field("statement", &DebugStatement(*stmt.clone()))
+                .finish(),
+            Statement::Return { meta, value } => f
+                .debug_struct("Return")
+                .field("value", &DebugExpression(value.clone()))
+                .finish(),
+            Statement::InitializationBlock {
+                meta,
+                xtype,
+                initializations,
+            } => f
+                .debug_struct("InitializationBlock")
+                //.field("type", xtype)
+                .field(
+                    "initializations",
+                    &initializations
+                        .iter()
+                        .map(|arg0: &Statement| DebugStatement(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
+                .finish(),
+            Statement::Declaration {
+                meta,
+                xtype,
+                name,
+                dimensions,
+                is_constant,
+            } => f
+                .debug_struct("Declaration")
+                //.field("type", xtype)
+                .field("name", &name)
+                .field(
+                    "dimensions",
+                    &dimensions
+                        .iter()
+                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
+                .field("is_constant", &is_constant)
+                .finish(),
+            Statement::Substitution {
+                meta,
+                var,
+                access,
+                op,
+                rhe,
+            } => f
+                .debug_struct("Substitution")
+                .field("variable", &var)
+                //.field("access", &access)
+                .field("operation", &DebugAssignOp(op.clone()))
+                .field("rhe", &DebugExpression(rhe.clone()))
+                .finish(),
+            Statement::MultSubstitution { lhe, op, rhe, .. } => f
+                .debug_struct("MultSubstitution")
+                .field("lhs_expression", &DebugExpression(lhe.clone()))
+                .field("operation", &DebugAssignOp(op.clone()))
+                .field("rhs_expression", &DebugExpression(rhe.clone()))
+                .finish(),
+            Statement::UnderscoreSubstitution { op, rhe, .. } => f
+                .debug_struct("UnderscoreSubstitution")
+                .field("operation", &DebugAssignOp(op.clone()))
+                .field("rhe", &DebugExpression(rhe.clone()))
+                .finish(),
+            Statement::ConstraintEquality { meta, lhe, rhe } => f
+                .debug_struct("ConstraintEquality")
+                .field("lhs_expression", &DebugExpression(lhe.clone()))
+                .field("rhs_expression", &DebugExpression(rhe.clone()))
+                .finish(),
+            Statement::LogCall { meta, args } => {
+                f.debug_struct("LogCall").finish()
+                //f.debug_struct("LogCall").field("arguments", args).finish()
+            }
+            Statement::Block { meta, stmts } => f
+                .debug_struct("Block")
+                .field(
+                    "statements",
+                    &stmts
+                        .iter()
+                        .map(|arg0: &Statement| DebugStatement(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
+                .finish(),
+            Statement::Assert { meta, arg } => f
+                .debug_struct("Assert")
+                .field("argument", &DebugExpression(arg.clone()))
+                .finish(),
+        }
+    }
+}
 
 pub fn parse_project(input_info: &Input) -> Result<ProgramArchive, ()> {
     let initial_file = input_info.input_file().to_string();
@@ -21,6 +325,12 @@ pub fn parse_project(input_info: &Input) -> Result<ProgramArchive, ()> {
         }
         Result::Ok((program_archive, warnings)) => {
             Report::print_reports(&warnings, &program_archive.file_library);
+            println!("id_max: {}", program_archive.id_max);
+            for (k, v) in program_archive.templates.clone().into_iter() {
+                println!("template name: {}", k);
+                println!(" num_of_params: {}", v.get_num_of_params());
+                println!(" body: {:?}", DebugStatement(v.get_body().clone()));
+            }
             Result::Ok(program_archive)
         }
     }
