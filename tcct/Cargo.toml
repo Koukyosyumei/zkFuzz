@@ -4,9 +4,17 @@ version = "2.2.1"
 edition = "2021"
 
 [dependencies]
-circom_parser = { git = "https://github.com/iden3/circom.git", package = "parser" }
-circom_program_structure = { git = "https://github.com/iden3/circom.git", package = "program_structure" }
-
+compiler = { git = "https://github.com/iden3/circom.git", package = "compiler" }
+type_analysis = { git = "https://github.com/iden3/circom.git", package = "type_analysis" }
+circom_algebra = { git = "https://github.com/iden3/circom.git", package = "circom_algebra" }
+constraint_list = { git = "https://github.com/iden3/circom.git", package = "constraint_list" }
+program_structure = { git = "https://github.com/iden3/circom.git", package = "program_structure" }
+constraint_generation = { git = "https://github.com/iden3/circom.git", package = "constraint_generation" }
+constraint_writers = { git = "https://github.com/iden3/circom.git", package = "constraint_writers" }
+constant_tracking = { git = "https://github.com/iden3/circom.git", package = "constant_tracking" }
+parser = { git = "https://github.com/iden3/circom.git", package = "parser" }
+code_producers= { git = "https://github.com/iden3/circom.git", package = "code_producers" }
+dag = { git = "https://github.com/iden3/circom.git", package = "dag" }
 clap = "2.33.0"
 ansi_term = "0.12.1"
 wast = "39.0.0"
