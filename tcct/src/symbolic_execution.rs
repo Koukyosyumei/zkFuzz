@@ -11,6 +11,82 @@ use program_structure::ast::Statement;
 use std::collections::HashMap;
 use std::fmt;
 
+fn simplify_statement(statement: &Statement) -> Statement {
+    match &statement {
+        Statement::Substitution {
+            meta,
+            var,
+            access,
+            op,
+            rhe,
+        } => {
+            // Check if the RHS contains an InlineSwitchOp
+            if let Expression::InlineSwitchOp {
+                meta,
+                cond,
+                if_true,
+                if_false,
+            } = rhe
+            {
+                let if_stmt = Statement::Substitution {
+                    meta: meta.clone(),
+                    var: var.clone(),
+                    access: access.clone(),
+                    op: *op, // Assuming simple assignment
+                    rhe: *if_true.clone(),
+                };
+
+                let else_stmt = Statement::Substitution {
+                    meta: meta.clone(),
+                    var: var.clone(),
+                    access: access.clone(),
+                    op: *op, // Assuming simple assignment
+                    rhe: *if_false.clone(),
+                };
+
+                Statement::IfThenElse {
+                    meta: meta.clone(),
+                    cond: *cond.clone(),
+                    if_case: Box::new(if_stmt),
+                    else_case: Some(Box::new(else_stmt)),
+                }
+            } else {
+                statement.clone() // No InlineSwitchOp, return as-is
+            }
+        }
+        Statement::IfThenElse {
+            meta,
+            cond,
+            if_case,
+            else_case,
+        } => {
+            if else_case.is_none() {
+                Statement::IfThenElse {
+                    meta: meta.clone(),
+                    cond: cond.clone(),
+                    if_case: Box::new(simplify_statement(if_case)),
+                    else_case: None,
+                }
+            } else {
+                Statement::IfThenElse {
+                    meta: meta.clone(),
+                    cond: cond.clone(),
+                    if_case: Box::new(simplify_statement(if_case)),
+                    else_case: Some(Box::new(simplify_statement(&else_case.clone().unwrap()))),
+                }
+            }
+        }
+        Statement::Block { meta, stmts } => Statement::Block {
+            meta: meta.clone(),
+            stmts: stmts
+                .iter()
+                .map(|arg0: &Statement| simplify_statement(arg0))
+                .collect::<Vec<_>>(),
+        },
+        _ => statement.clone(),
+    }
+}
+
 #[derive(Clone)]
 enum SymbolicValue {
     Constant(BigInt),
@@ -72,6 +148,7 @@ impl SymbolicState {
 
 pub struct SymbolicExecutor {
     pub cur_state: SymbolicState,
+    //pub que_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
 }
 
