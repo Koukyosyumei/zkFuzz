@@ -8,10 +8,15 @@ use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 use std::fmt;
 
+#[derive(Clone)]
 pub struct DebugAssignOp(AssignOp);
+#[derive(Clone)]
 pub struct DebugExpressionInfixOpcode(ExpressionInfixOpcode);
+#[derive(Clone)]
 pub struct DebugExpressionPrefixOpcode(ExpressionPrefixOpcode);
+#[derive(Clone)]
 pub struct DebugExpression(Expression);
+#[derive(Clone)]
 pub struct DebugStatement(Statement);
 
 impl fmt::Debug for DebugAssignOp {

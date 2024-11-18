@@ -1,10 +1,12 @@
 mod execution_user;
 mod input_user;
 mod parser_user;
+mod symbolic_execution;
 mod type_analysis_user;
 
 use ansi_term::Colour;
 use input_user::Input;
+use symbolic_execution::SymbolicExecutor;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -26,6 +28,9 @@ fn start() -> Result<(), ()> {
     let mut program_archive = parser_user::parse_project(&user_input)?;
     type_analysis_user::analyse_project(&mut program_archive)?;
 
+    let mut sexe = SymbolicExecutor::new();
+
+    /*
     let config = ExecutionConfig {
         no_rounds: user_input.no_rounds(),
         flag_p: user_input.parallel_simplification_flag(),
@@ -45,6 +50,8 @@ fn start() -> Result<(), ()> {
         prime: user_input.prime(),
     };
     let circuit = execution_user::execute_project(program_archive, config)?;
+    */
+
     /*
     let compilation_config = CompilerConfig {
         vcp: circuit,
