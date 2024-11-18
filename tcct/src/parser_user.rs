@@ -330,12 +330,6 @@ pub fn parse_project(input_info: &Input) -> Result<ProgramArchive, ()> {
         }
         Result::Ok((program_archive, warnings)) => {
             Report::print_reports(&warnings, &program_archive.file_library);
-            println!("id_max: {}", program_archive.id_max);
-            for (k, v) in program_archive.templates.clone().into_iter() {
-                println!("template name: {}", k);
-                println!(" num_of_params: {}", v.get_num_of_params());
-                println!(" body: {:?}", DebugStatement(v.get_body().clone()));
-            }
             Result::Ok(program_archive)
         }
     }

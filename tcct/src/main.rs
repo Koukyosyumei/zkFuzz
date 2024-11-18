@@ -6,6 +6,7 @@ mod type_analysis_user;
 
 use ansi_term::Colour;
 use input_user::Input;
+use parser_user::DebugStatement;
 use symbolic_execution::SymbolicExecutor;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -28,7 +29,18 @@ fn start() -> Result<(), ()> {
     let mut program_archive = parser_user::parse_project(&user_input)?;
     type_analysis_user::analyse_project(&mut program_archive)?;
 
-    let mut sexe = SymbolicExecutor::new();
+    println!("id_max: {}", program_archive.id_max);
+    for (k, v) in program_archive.templates.clone().into_iter() {
+        println!("template name: {}", k);
+        println!(" num_of_params: {}", v.get_num_of_params());
+        println!(" body: {:?}", DebugStatement(v.get_body().clone()));
+    }
+    println!("============");
+    for (k, v) in program_archive.templates.clone().into_iter() {
+        let mut sexe = SymbolicExecutor::new();
+        sexe.execute(&DebugStatement(v.get_body().clone()));
+        println!("{:?}", sexe.cur_state);
+    }
 
     /*
     let config = ExecutionConfig {

@@ -32,6 +32,9 @@ impl fmt::Debug for SymbolicValue {
             SymbolicValue::Constant(value) => write!(f, "{}", value),
             SymbolicValue::Variable(name) => write!(f, "{}", name),
             SymbolicValue::BinaryOp(lhs, op, rhs) => write!(f, "({:?} {:?} {:?})", lhs, op, rhs),
+            SymbolicValue::Conditional(cond, if_branch, else_branch) => {
+                write!(f, "({:?} {:?} {:?})", cond, if_branch, else_branch)
+            }
             SymbolicValue::UnaryOp(op, expr) => write!(f, "({:?} {:?})", op, expr),
             _ => write!(f, "unknown symbolic value"),
         }
@@ -39,7 +42,7 @@ impl fmt::Debug for SymbolicValue {
 }
 
 #[derive(Clone, Debug)]
-struct SymbolicState {
+pub struct SymbolicState {
     values: HashMap<String, SymbolicValue>,
     constraints: Vec<SymbolicValue>,
 }
@@ -232,8 +235,8 @@ impl SymbolicExecutor {
                 infix_op,
                 rhe,
             } => {
-                let lhs = self.evaluate_expression(&DebugExpression(**lhe));
-                let rhs = self.evaluate_expression(&DebugExpression(**rhe));
+                let lhs = self.evaluate_expression(&DebugExpression(*lhe.clone()));
+                let rhs = self.evaluate_expression(&DebugExpression(*rhe.clone()));
                 SymbolicValue::BinaryOp(
                     Box::new(lhs),
                     DebugExpressionInfixOpcode(infix_op.clone()),
@@ -245,7 +248,7 @@ impl SymbolicExecutor {
                 prefix_op,
                 rhe,
             } => {
-                let expr = self.evaluate_expression(&DebugExpression(**rhe));
+                let expr = self.evaluate_expression(&DebugExpression(*rhe.clone()));
                 SymbolicValue::UnaryOp(
                     DebugExpressionPrefixOpcode(prefix_op.clone()),
                     Box::new(expr),
@@ -257,9 +260,9 @@ impl SymbolicExecutor {
                 if_true,
                 if_false,
             } => {
-                let condition = self.evaluate_expression(&DebugExpression(**cond));
-                let true_branch = self.evaluate_expression(&DebugExpression(**if_true));
-                let false_branch = self.evaluate_expression(&DebugExpression(**if_false));
+                let condition = self.evaluate_expression(&DebugExpression(*cond.clone()));
+                let true_branch = self.evaluate_expression(&DebugExpression(*if_true.clone()));
+                let false_branch = self.evaluate_expression(&DebugExpression(*if_false.clone()));
                 SymbolicValue::Conditional(
                     Box::new(condition),
                     Box::new(true_branch),
