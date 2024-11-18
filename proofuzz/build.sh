@@ -13,4 +13,4 @@ clang++ -shared -fPIC -o libProoFuzzPass.so \
     -Wl,--no-undefined \
     -I /usr/include/llvm \
     -L /usr/include/llvm \
-    ../InitializeConstraintPass.cpp ../MainAdderPass.cpp ../ExtendedPrintGraphviz.cpp ../ExtendedProtocolFlowGraph.cpp ../helpers.cpp ../../zkap/detectors/ProtocolFlowGraph.cpp ../../zkap/detectors/utils_arrayshapes.cpp ../../zkap/detectors/utils_basicinfo.cpp ../../zkap/detectors/utils.cpp
+    ../InitializeConstraintPass.cpp ../MainAdderPass.cpp ../BasicStatsPass.cpp ../ExtendedPrintGraphviz.cpp ../ExtendedProtocolFlowGraph.cpp ../helpers.cpp ../../zkap/detectors/ProtocolFlowGraph.cpp ../../zkap/detectors/utils_arrayshapes.cpp ../../zkap/detectors/utils_basicinfo.cpp ../../zkap/detectors/utils.cpp

@@ -32,16 +32,16 @@ sh ./build.sh
 1. Compile Circom to LLVM IR
 
 ```bash
-$ circom2llvm --input ./benchmark/sample/iszero_safe.circom --output ./benchmark/sample/
+$ circom2llvm --input ./sample/iszero_safe.circom --output ./sample/
 ```
 
 2. Visualization
 
 ```bash
-$ opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so --ExtendedPrintGraphviz -S ./benchmark/sample/iszero_safe.ll -o /dev/null 2> ./benchmark/sample/iszero_safe.dot
+$ opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so --ExtendedPrintGraphviz -S ./sample/iszero_safe.ll -o /dev/null 2> ./sample/iszero_safe.dot
 ```
 
-<img src="./benchmark/sample/iszero_safe_graphviz.svg" width=900>
+<img src="./sample/iszero_safe_graphviz.svg" width=900>
 
 
 3. Execution
@@ -49,26 +49,26 @@ $ opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so --ExtendedPrint
 - Compile to LLVM IR
 
 ```bash
-$ circom2llvm --input ./benchmark/sample/iszero_vuln.circom --output ./benchmark/sample/
+$ circom2llvm --input ./sample/iszero_vuln.circom --output ./sample/
 ```
 
 - Modify LLVM IR file
 
 ```bash
-$ opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so  --InitializeConstraintPass --MainAdderPass --enable-overwrite-free-variables --printout-outputs --printout-constraints -S ./benchmark/sample/iszero_vuln.ll -o ./benchmark/sample/iszero_vuln_overwritten.ll
+$ opt -enable-new-pm=0 -load ./proofuzz/build/libProoFuzzPass.so  --InitializeConstraintPass --MainAdderPass --enable-overwrite-free-variables --printout-outputs --printout-constraints -S ./sample/iszero_vuln.ll -o ./sample/iszero_vuln_overwritten.ll
 ```
 
 - Link LLVM IR files
 
 ```bash
-$ llvm-link ./benchmark/sample/iszero_vuln_overwritten.ll ../circom2llvm/utils/field_operations.ll -o ./benchmark/sample/iszero_vuln_overwritten_linked.ll
+$ llvm-link ./sample/iszero_vuln_overwritten.ll ../circom2llvm/utils/field_operations.ll -o ./sample/iszero_vuln_overwritten_linked.ll
 ```
 
 - Execute the LLVM IR file
 
 ```bash
 # execute .ll file
-$ lli ./benchmark/sample/iszero_vuln_overwritten_linked.ll
+$ lli ./sample/iszero_vuln_overwritten_linked.ll
 ```
 
 Input:
@@ -95,8 +95,8 @@ Error: Under-Constraint-Condition Met. Terminating program.
 4. AFL++
 
 ```bash
-$ afl-clang-fast -S -emit-llvm ./benchmark/sample/iszero_vuln_overwritten_linked.ll -o ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.ll
-$ llc -filetype=obj ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.ll -o ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.o
-$ afl-clang-fast ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.o -o ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.out
-$ afl-fuzz -i ./benchmark/data/ -o benchmark/output_dir/ -- ./benchmark/sample/iszero_vuln_overwritten_linked_instrumented.out
+$ afl-clang-fast -S -emit-llvm ./sample/iszero_vuln_overwritten_linked.ll -o ./sample/iszero_vuln_overwritten_linked_instrumented.ll
+$ llc -filetype=obj ./sample/iszero_vuln_overwritten_linked_instrumented.ll -o ./sample/iszero_vuln_overwritten_linked_instrumented.o
+$ afl-clang-fast ./sample/iszero_vuln_overwritten_linked_instrumented.o -o ./sample/iszero_vuln_overwritten_linked_instrumented.out
+$ afl-fuzz -i ./benchmark/data/ -o benchmark/output_dir/ -- ./sample/iszero_vuln_overwritten_linked_instrumented.out
 ```
