@@ -1,8 +1,9 @@
 use crate::parser_user::{
-    DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode,
-    DebugStatement,
+    DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode,
+    DebugExpressionPrefixOpcode, DebugStatement,
 };
 use num_bigint_dig::BigInt;
+use program_structure::ast::Access;
 use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
@@ -24,6 +25,7 @@ enum SymbolicValue {
     Array(Vec<SymbolicValue>),
     Tuple(Vec<SymbolicValue>),
     UniformArray(Box<SymbolicValue>, Box<SymbolicValue>),
+    Call(String, Vec<SymbolicValue>),
 }
 
 impl fmt::Debug for SymbolicValue {
@@ -140,8 +142,15 @@ impl SymbolicExecutor {
                 let var_name = if dimensions.is_empty() {
                     name.clone()
                 } else {
-                    "todo".to_string()
-                    //format!("{}[{:?}]", name, DebugExpression(dimensions))
+                    //"todo".to_string()
+                    format!(
+                        "{}[{:?}]",
+                        name,
+                        &dimensions
+                            .iter()
+                            .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                            .collect::<Vec<_>>()
+                    )
                 };
                 let value = SymbolicValue::Variable(var_name.clone());
                 self.cur_state.set_symval(var_name, value);
@@ -157,8 +166,15 @@ impl SymbolicExecutor {
                 let var_name = if access.is_empty() {
                     var.clone()
                 } else {
-                    format!("{}", var)
-                    //format!("{}[{:?}]", var, access)
+                    //format!("{}", var)
+                    format!(
+                        "{}[{:?}]",
+                        var,
+                        &access
+                            .iter()
+                            .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                            .collect::<Vec<_>>()
+                    )
                 };
                 self.cur_state.set_symval(var_name, value);
             }
@@ -300,13 +316,14 @@ impl SymbolicExecutor {
                     Box::new(evaluated_dimension),
                 )
             }
-            /*
-            DebugExpression::Call { id, args, .. } => {
-                let evaluated_args = args.iter()
+            Expression::Call { id, args, .. } => {
+                let evaluated_args = args
+                    .iter()
                     .map(|arg| self.evaluate_expression(&DebugExpression(arg.clone())))
                     .collect();
-                SymbolicValue::FunctionCall(id.clone(), evaluated_args)
+                SymbolicValue::Call(id.clone(), evaluated_args)
             }
+            /*
             DebugExpression::BusCall { id, args, .. } => {
                 let evaluated_args = args.iter()
                     .map(|arg| self.evaluate_expression(&DebugExpression(arg.clone())))

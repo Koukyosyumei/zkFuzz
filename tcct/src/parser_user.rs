@@ -1,13 +1,15 @@
 use super::input_user::Input;
 use crate::VERSION;
 use program_structure::abstract_syntax_tree::ast::{
-    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Statement,
+    Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Statement,
 };
 use program_structure::constants::UsefulConstants;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 use std::fmt;
 
+#[derive(Clone)]
+pub struct DebugAccess(pub Access);
 #[derive(Clone)]
 pub struct DebugAssignOp(pub AssignOp);
 #[derive(Clone)]
@@ -18,6 +20,21 @@ pub struct DebugExpressionPrefixOpcode(pub ExpressionPrefixOpcode);
 pub struct DebugExpression(pub Expression);
 #[derive(Clone)]
 pub struct DebugStatement(pub Statement);
+
+impl fmt::Debug for DebugAccess {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.0 {
+            Access::ComponentAccess(name) => f
+                .debug_struct("ComponentAccess")
+                .field("name", &name)
+                .finish(),
+            Access::ArrayAccess(expr) => f
+                .debug_struct("ArrayAccess")
+                .field("expr", &DebugExpression(expr.clone()))
+                .finish(),
+        }
+    }
+}
 
 impl fmt::Debug for DebugAssignOp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -107,7 +124,13 @@ impl fmt::Debug for DebugExpression {
             Expression::Variable { meta, name, access } => f
                 .debug_struct("Variable")
                 .field("name", &name)
-                //.field("access", access)
+                .field(
+                    "access",
+                    &access
+                        .iter()
+                        .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
                 .finish(),
             Expression::Number(meta, value) => {
                 f.debug_struct("Number").field("value", &value).finish()
@@ -271,7 +294,13 @@ impl fmt::Debug for DebugStatement {
             } => f
                 .debug_struct("Substitution")
                 .field("variable", &var)
-                //.field("access", &access)
+                .field(
+                    "access",
+                    &access
+                        .iter()
+                        .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                        .collect::<Vec<_>>(),
+                )
                 .field("operation", &DebugAssignOp(op.clone()))
                 .field("rhe", &DebugExpression(rhe.clone()))
                 .finish(),
