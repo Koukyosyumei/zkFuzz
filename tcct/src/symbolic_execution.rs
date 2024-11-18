@@ -122,14 +122,16 @@ impl fmt::Debug for SymbolicValue {
 #[derive(Clone, Debug)]
 pub struct SymbolicState {
     values: HashMap<String, SymbolicValue>,
-    constraints: Vec<SymbolicValue>,
+    trace_constraints: Vec<SymbolicValue>,
+    side_constraints: Vec<SymbolicValue>,
 }
 
 impl SymbolicState {
     pub fn new() -> Self {
         SymbolicState {
             values: HashMap::new(),
-            constraints: Vec::new(),
+            trace_constraints: Vec::new(),
+            side_constraints: Vec::new(),
         }
     }
 
@@ -137,8 +139,12 @@ impl SymbolicState {
         self.values.insert(name, value);
     }
 
-    pub fn push_symconstraint(&mut self, constraint: SymbolicValue) {
-        self.constraints.push(constraint);
+    pub fn push_trace_constraint(&mut self, constraint: SymbolicValue) {
+        self.trace_constraints.push(constraint);
+    }
+
+    pub fn push_side_constraint(&mut self, constraint: SymbolicValue) {
+        self.side_constraints.push(constraint);
     }
 
     pub fn get_symval(&self, name: &str) -> Option<&SymbolicValue> {
@@ -160,8 +166,8 @@ impl SymbolicExecutor {
     }
 
     pub fn execute(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
+        println!("cur_bid: {:?}, cur_state: {:?}", cur_bid, self.cur_state);
         if cur_bid < statements.len() {
-            println!("cur_bid: {:?}, cur_state: {:?}", cur_bid, self.cur_state);
             match &statements[cur_bid].0 {
                 Statement::InitializationBlock {
                     meta,
@@ -201,13 +207,13 @@ impl SymbolicExecutor {
                     let mut else_state = self.cur_state.clone();
                     let tmp_cur_bid = cur_bid;
 
-                    if_state.push_symconstraint(condition.clone());
+                    if_state.push_trace_constraint(condition.clone());
                     self.cur_state = if_state;
                     self.execute(&vec![DebugStatement(*if_case.clone())], 0);
                     self.execute(statements, cur_bid + 1);
 
                     if let Some(else_stmt) = else_case {
-                        else_state.push_symconstraint(SymbolicValue::UnaryOp(
+                        else_state.push_trace_constraint(SymbolicValue::UnaryOp(
                             DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
                             Box::new(condition),
                         ));
@@ -221,7 +227,7 @@ impl SymbolicExecutor {
                 } => {
                     // Symbolic execution of loops is complex. This is a simplified approach.
                     let condition = self.evaluate_expression(&DebugExpression(cond.clone()));
-                    self.cur_state.push_symconstraint(condition);
+                    self.cur_state.push_trace_constraint(condition);
                     self.execute(&vec![DebugStatement(*stmt.clone())], 0);
                     self.execute(statements, cur_bid + 1);
                     // Note: This doesn't handle loop invariants or fixed-point computation
@@ -288,11 +294,12 @@ impl SymbolicExecutor {
                     let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
                     let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
                     // Handle multiple substitution (simplified)
-                    self.cur_state.push_symconstraint(SymbolicValue::BinaryOp(
-                        Box::new(lhs),
-                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                        Box::new(rhs),
-                    ));
+                    self.cur_state
+                        .push_trace_constraint(SymbolicValue::BinaryOp(
+                            Box::new(lhs),
+                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                            Box::new(rhs),
+                        ));
                     self.execute(statements, cur_bid + 1);
                 }
                 /*
@@ -305,11 +312,13 @@ impl SymbolicExecutor {
                 Statement::ConstraintEquality { meta, lhe, rhe } => {
                     let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
                     let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                    self.cur_state.push_symconstraint(SymbolicValue::BinaryOp(
+                    let cond = SymbolicValue::BinaryOp(
                         Box::new(lhs),
                         DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                         Box::new(rhs),
-                    ));
+                    );
+                    self.cur_state.push_trace_constraint(cond.clone());
+                    self.cur_state.push_side_constraint(cond);
                     self.execute(statements, cur_bid + 1);
                 }
                 /*
@@ -323,7 +332,7 @@ impl SymbolicExecutor {
                 */
                 Statement::Assert { meta, arg, .. } => {
                     let condition = self.evaluate_expression(&DebugExpression(arg.clone()));
-                    self.cur_state.push_symconstraint(condition);
+                    self.cur_state.push_trace_constraint(condition);
                     self.execute(statements, cur_bid + 1);
                 }
                 // Handle other statement types
