@@ -9,15 +9,15 @@ use program_structure::program_archive::ProgramArchive;
 use std::fmt;
 
 #[derive(Clone)]
-pub struct DebugAssignOp(AssignOp);
+pub struct DebugAssignOp(pub AssignOp);
 #[derive(Clone)]
-pub struct DebugExpressionInfixOpcode(ExpressionInfixOpcode);
+pub struct DebugExpressionInfixOpcode(pub ExpressionInfixOpcode);
 #[derive(Clone)]
-pub struct DebugExpressionPrefixOpcode(ExpressionPrefixOpcode);
+pub struct DebugExpressionPrefixOpcode(pub ExpressionPrefixOpcode);
 #[derive(Clone)]
-pub struct DebugExpression(Expression);
+pub struct DebugExpression(pub Expression);
 #[derive(Clone)]
-pub struct DebugStatement(Statement);
+pub struct DebugStatement(pub Statement);
 
 impl fmt::Debug for DebugAssignOp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
