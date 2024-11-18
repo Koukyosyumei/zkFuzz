@@ -7,7 +7,7 @@ mod type_analysis_user;
 use ansi_term::Colour;
 use input_user::Input;
 use parser_user::DebugStatement;
-use symbolic_execution::SymbolicExecutor;
+use symbolic_execution::{simplify_statement, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -38,8 +38,12 @@ fn start() -> Result<(), ()> {
     println!("============");
     for (k, v) in program_archive.templates.clone().into_iter() {
         let mut sexe = SymbolicExecutor::new();
-        sexe.execute(&DebugStatement(v.get_body().clone()));
-        println!("{:?}", sexe.cur_state);
+        let body = simplify_statement(&v.get_body().clone());
+        sexe.execute(&vec![DebugStatement(body)], 0);
+
+        for s in sexe.final_states {
+            println!("{:?}", s);
+        }
     }
 
     /*

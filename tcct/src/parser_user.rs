@@ -93,8 +93,8 @@ impl fmt::Debug for DebugExpression {
                 rhe,
             } => f
                 .debug_struct("InfixOp")
-                .field("lhe", &DebugExpression(*lhe.clone()))
                 .field("infix_op", &DebugExpressionInfixOpcode(*infix_op))
+                .field("lhe", &DebugExpression(*lhe.clone()))
                 .field("rhe", &DebugExpression(*rhe.clone()))
                 .finish(),
             Expression::PrefixOp {

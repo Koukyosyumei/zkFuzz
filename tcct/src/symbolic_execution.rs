@@ -11,7 +11,7 @@ use program_structure::ast::Statement;
 use std::collections::HashMap;
 use std::fmt;
 
-fn simplify_statement(statement: &Statement) -> Statement {
+pub fn simplify_statement(statement: &Statement) -> Statement {
     match &statement {
         Statement::Substitution {
             meta,
@@ -109,7 +109,7 @@ impl fmt::Debug for SymbolicValue {
         match self {
             SymbolicValue::Constant(value) => write!(f, "{}", value),
             SymbolicValue::Variable(name) => write!(f, "{}", name),
-            SymbolicValue::BinaryOp(lhs, op, rhs) => write!(f, "({:?} {:?} {:?})", lhs, op, rhs),
+            SymbolicValue::BinaryOp(lhs, op, rhs) => write!(f, "({:?} {:?} {:?})", op, lhs, rhs),
             SymbolicValue::Conditional(cond, if_branch, else_branch) => {
                 write!(f, "({:?} {:?} {:?})", cond, if_branch, else_branch)
             }
@@ -148,7 +148,6 @@ impl SymbolicState {
 
 pub struct SymbolicExecutor {
     pub cur_state: SymbolicState,
-    //pub que_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
 }
 
@@ -160,150 +159,177 @@ impl SymbolicExecutor {
         }
     }
 
-    pub fn execute(&mut self, statement: &DebugStatement) {
-        match &statement.0 {
-            Statement::IfThenElse {
-                meta,
-                cond,
-                if_case,
-                else_case,
-                ..
-            } => {
-                let condition = self.evaluate_expression(&DebugExpression(cond.clone()));
-                // Create a branch in the symbolic state
-                let mut if_state = self.cur_state.clone();
-                if_state.push_symconstraint(condition.clone());
-                self.execute(&DebugStatement(*if_case.clone()));
-                if let Some(else_stmt) = else_case {
+    pub fn execute(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
+        if cur_bid < statements.len() {
+            println!("cur_bid: {:?}, cur_state: {:?}", cur_bid, self.cur_state);
+            match &statements[cur_bid].0 {
+                Statement::InitializationBlock {
+                    meta,
+                    xtype,
+                    initializations,
+                    ..
+                } => {
+                    for init in initializations {
+                        self.execute(&vec![DebugStatement(init.clone())], 0);
+                    }
+                    self.execute(statements, cur_bid + 1);
+                }
+                Statement::Block { meta, stmts, .. } => {
+                    if cur_bid >= stmts.len() {
+                        self.final_states.push(self.cur_state.clone());
+                    } else {
+                        self.execute(
+                            &stmts
+                                .iter()
+                                .map(|arg0: &Statement| DebugStatement(arg0.clone()))
+                                .collect::<Vec<_>>(),
+                            0,
+                        );
+                        self.execute(statements, cur_bid + 1);
+                    }
+                }
+                Statement::IfThenElse {
+                    meta,
+                    cond,
+                    if_case,
+                    else_case,
+                    ..
+                } => {
+                    let condition = self.evaluate_expression(&DebugExpression(cond.clone()));
+                    // Create a branch in the symbolic state
+                    let mut if_state = self.cur_state.clone();
                     let mut else_state = self.cur_state.clone();
-                    else_state.push_symconstraint(SymbolicValue::UnaryOp(
-                        DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
-                        Box::new(condition),
+                    let tmp_cur_bid = cur_bid;
+
+                    if_state.push_symconstraint(condition.clone());
+                    self.cur_state = if_state;
+                    self.execute(&vec![DebugStatement(*if_case.clone())], 0);
+                    self.execute(statements, cur_bid + 1);
+
+                    if let Some(else_stmt) = else_case {
+                        else_state.push_symconstraint(SymbolicValue::UnaryOp(
+                            DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
+                            Box::new(condition),
+                        ));
+                        self.cur_state = else_state;
+                        self.execute(&vec![DebugStatement(*else_stmt.clone())], 0);
+                        self.execute(statements, cur_bid + 1);
+                    }
+                }
+                Statement::While {
+                    meta, cond, stmt, ..
+                } => {
+                    // Symbolic execution of loops is complex. This is a simplified approach.
+                    let condition = self.evaluate_expression(&DebugExpression(cond.clone()));
+                    self.cur_state.push_symconstraint(condition);
+                    self.execute(&vec![DebugStatement(*stmt.clone())], 0);
+                    self.execute(statements, cur_bid + 1);
+                    // Note: This doesn't handle loop invariants or fixed-point computation
+                }
+                Statement::Return { meta, value, .. } => {
+                    let return_value = self.evaluate_expression(&DebugExpression(value.clone()));
+                    // Handle return value (e.g., store in a special "return" variable)
+                    self.cur_state
+                        .set_symval("__return__".to_string(), return_value);
+                    // self.execute(statement, cur_bid + 1);
+                }
+                Statement::Declaration {
+                    meta,
+                    xtype,
+                    name,
+                    dimensions,
+                    is_constant,
+                    ..
+                } => {
+                    let var_name = if dimensions.is_empty() {
+                        name.clone()
+                    } else {
+                        //"todo".to_string()
+                        format!(
+                            "{}[{:?}]",
+                            name,
+                            &dimensions
+                                .iter()
+                                .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                                .collect::<Vec<_>>()
+                        )
+                    };
+                    let value = SymbolicValue::Variable(var_name.clone());
+                    self.cur_state.set_symval(var_name, value);
+                    self.execute(statements, cur_bid + 1);
+                }
+                Statement::Substitution {
+                    meta,
+                    var,
+                    access,
+                    op,
+                    rhe,
+                } => {
+                    let value = self.evaluate_expression(&DebugExpression(rhe.clone()));
+                    let var_name = if access.is_empty() {
+                        var.clone()
+                    } else {
+                        //format!("{}", var)
+                        format!(
+                            "{}[{:?}]",
+                            var,
+                            &access
+                                .iter()
+                                .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                                .collect::<Vec<_>>()
+                        )
+                    };
+                    self.cur_state.set_symval(var_name, value);
+                    self.execute(statements, cur_bid + 1);
+                }
+                Statement::MultSubstitution {
+                    meta, lhe, op, rhe, ..
+                } => {
+                    let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
+                    let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
+                    // Handle multiple substitution (simplified)
+                    self.cur_state.push_symconstraint(SymbolicValue::BinaryOp(
+                        Box::new(lhs),
+                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                        Box::new(rhs),
                     ));
-                    self.execute(&DebugStatement(*else_stmt.clone()));
+                    self.execute(statements, cur_bid + 1);
                 }
-            }
-            Statement::While {
-                meta, cond, stmt, ..
-            } => {
-                // Symbolic execution of loops is complex. This is a simplified approach.
-                let condition = self.evaluate_expression(&DebugExpression(cond.clone()));
-                self.cur_state.push_symconstraint(condition);
-                self.execute(&DebugStatement(*stmt.clone()));
-                // Note: This doesn't handle loop invariants or fixed-point computation
-            }
-            Statement::Return { meta, value, .. } => {
-                let return_value = self.evaluate_expression(&DebugExpression(value.clone()));
-                // Handle return value (e.g., store in a special "return" variable)
-                self.cur_state
-                    .set_symval("__return__".to_string(), return_value);
-            }
-            Statement::InitializationBlock {
-                meta,
-                xtype,
-                initializations,
-                ..
-            } => {
-                for init in initializations {
-                    self.execute(&DebugStatement(init.clone()));
+                /*
+                Statement::UnderscoreSubstitution { op, rhe, .. } => {
+                    // Underscore substitution doesn't affect the symbolic state
+                    // But we might want to evaluate the rhe for side effects
+                    self.evaluate_expression(&DebugExpression(rhe.clone()));
+                },
+                */
+                Statement::ConstraintEquality { meta, lhe, rhe } => {
+                    let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
+                    let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
+                    self.cur_state.push_symconstraint(SymbolicValue::BinaryOp(
+                        Box::new(lhs),
+                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                        Box::new(rhs),
+                    ));
+                    self.execute(statements, cur_bid + 1);
                 }
-            }
-            Statement::Declaration {
-                meta,
-                xtype,
-                name,
-                dimensions,
-                is_constant,
-                ..
-            } => {
-                let var_name = if dimensions.is_empty() {
-                    name.clone()
-                } else {
-                    //"todo".to_string()
-                    format!(
-                        "{}[{:?}]",
-                        name,
-                        &dimensions
-                            .iter()
-                            .map(|arg0: &Expression| DebugExpression(arg0.clone()))
-                            .collect::<Vec<_>>()
-                    )
-                };
-                let value = SymbolicValue::Variable(var_name.clone());
-                self.cur_state.set_symval(var_name, value);
-            }
-            Statement::Substitution {
-                meta,
-                var,
-                access,
-                op,
-                rhe,
-            } => {
-                let value = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                let var_name = if access.is_empty() {
-                    var.clone()
-                } else {
-                    //format!("{}", var)
-                    format!(
-                        "{}[{:?}]",
-                        var,
-                        &access
-                            .iter()
-                            .map(|arg0: &Access| DebugAccess(arg0.clone()))
-                            .collect::<Vec<_>>()
-                    )
-                };
-                self.cur_state.set_symval(var_name, value);
-            }
-            Statement::MultSubstitution {
-                meta, lhe, op, rhe, ..
-            } => {
-                let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
-                let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                // Handle multiple substitution (simplified)
-                self.cur_state.push_symconstraint(SymbolicValue::BinaryOp(
-                    Box::new(lhs),
-                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                    Box::new(rhs),
-                ));
-            }
-            /*
-            Statement::UnderscoreSubstitution { op, rhe, .. } => {
-                // Underscore substitution doesn't affect the symbolic state
-                // But we might want to evaluate the rhe for side effects
-                self.evaluate_expression(&DebugExpression(rhe.clone()));
-            },
-            */
-            Statement::ConstraintEquality { meta, lhe, rhe } => {
-                let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
-                let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                self.cur_state.push_symconstraint(SymbolicValue::BinaryOp(
-                    Box::new(lhs),
-                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                    Box::new(rhs),
-                ));
-            }
-            /*
-            Statement::LogCall { args, .. } => {
-                // Logging doesn't affect the symbolic state
-                // But we might want to evaluate the args for side effects
-                for arg in args {
-                    self.evaluate_expression(&DebugExpression(arg.clone()));
+                /*
+                Statement::LogCall { args, .. } => {
+                    // Logging doesn't affect the symbolic state
+                    // But we might want to evaluate the args for side effects
+                    for arg in args {
+                        self.evaluate_expression(&DebugExpression(arg.clone()));
+                    }
+                },
+                */
+                Statement::Assert { meta, arg, .. } => {
+                    let condition = self.evaluate_expression(&DebugExpression(arg.clone()));
+                    self.cur_state.push_symconstraint(condition);
+                    self.execute(statements, cur_bid + 1);
                 }
-            },
-            */
-            Statement::Block { meta, stmts, .. } => {
-                for stmt in stmts {
-                    self.execute(&DebugStatement(stmt.clone()));
+                // Handle other statement types
+                _ => {
+                    println!("Unhandled statement type: {:?}", statements[cur_bid]);
                 }
-            }
-            Statement::Assert { meta, arg, .. } => {
-                let condition = self.evaluate_expression(&DebugExpression(arg.clone()));
-                self.cur_state.push_symconstraint(condition);
-            }
-            // Handle other statement types
-            _ => {
-                println!("Unhandled statement type: {:?}", statement);
             }
         }
     }
