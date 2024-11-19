@@ -47,13 +47,13 @@ fn start() -> Result<(), ()> {
             0,
         );
 
-        //for s in &sexe.final_states {
-        //    println!("final_state: {:?}", s);
-        //}
-        println!("template_name,num_of_params,max_depth");
-        println!("{},{},{}", k, v.get_num_of_params(), sexe.max_depth);
-        print_constraint_summary_statistics(&sexe.trace_constraint_stats);
-        print_constraint_summary_statistics(&sexe.side_constraint_stats);
+        for s in &sexe.final_states {
+            println!("final_state: {:?}", s);
+        }
+        //println!("template_name,num_of_params,max_depth");
+        //println!("{},{},{}", k, v.get_num_of_params(), sexe.max_depth);
+        //print_constraint_summary_statistics(&sexe.trace_constraint_stats);
+        //print_constraint_summary_statistics(&sexe.side_constraint_stats);
     }
 
     /*
