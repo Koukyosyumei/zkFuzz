@@ -181,7 +181,6 @@ impl SymbolicExecutor {
 
     pub fn execute(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
         if cur_bid < statements.len() {
-            //println!("{}: {:?}", cur_bid, &statements[cur_bid]);
             match &statements[cur_bid] {
                 ExtendedStatement::DebugStatement(stmt) => {
                     match stmt {
@@ -199,18 +198,18 @@ impl SymbolicExecutor {
                         }
                         Statement::Block { stmts, .. } => {
                             if cur_bid < stmts.len() {
-                                for state in &self.stack_states.clone() {
-                                    self.cur_state = state.clone();
-                                    self.execute(
-                                        &stmts
-                                            .iter()
-                                            .map(|arg0: &Statement| {
-                                                ExtendedStatement::DebugStatement(arg0.clone())
-                                            })
-                                            .collect::<Vec<_>>(),
-                                        0,
-                                    );
-                                }
+                                //for state in &self.stack_states.clone() {
+                                //    self.cur_state = state.clone();
+                                self.execute(
+                                    &stmts
+                                        .iter()
+                                        .map(|arg0: &Statement| {
+                                            ExtendedStatement::DebugStatement(arg0.clone())
+                                        })
+                                        .collect::<Vec<_>>(),
+                                    0,
+                                );
+                                //}
                                 self.execute_next_block(statements, cur_bid);
                             }
                         }
@@ -228,7 +227,7 @@ impl SymbolicExecutor {
                             let tmp_cur_bid = cur_bid;
 
                             if_state.push_trace_constraint(condition.clone());
-                            self.cur_state = if_state;
+                            self.cur_state = if_state.clone();
                             self.execute(
                                 &vec![ExtendedStatement::DebugStatement(*if_case.clone())],
                                 0,
@@ -316,6 +315,9 @@ impl SymbolicExecutor {
                                 Box::new(value),
                             );
                             self.cur_state.push_trace_constraint(cont.clone());
+                            if let AssignOp::AssignConstraintSignal = op {
+                                self.cur_state.push_side_constraint(cont.clone());
+                            }
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::MultSubstitution { lhe, op, rhe, .. } => {
