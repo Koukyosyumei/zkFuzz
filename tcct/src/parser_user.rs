@@ -171,7 +171,7 @@ impl fmt::Debug for DebugExpression {
                 is_parallel,
                 params,
                 signals,
-                names,
+                names: _,
             } => f
                 .debug_struct("AnonymousComp")
                 .field("id", &id)
@@ -278,7 +278,7 @@ impl fmt::Debug for ExtendedStatement {
                         .finish(),
                     Statement::InitializationBlock {
                         meta: _,
-                        xtype,
+                        xtype: _,
                         initializations,
                     } => f
                         .debug_struct("InitializationBlock")
@@ -295,7 +295,7 @@ impl fmt::Debug for ExtendedStatement {
                         .finish(),
                     Statement::Declaration {
                         meta: _,
-                        xtype,
+                        xtype: _,
                         name,
                         dimensions,
                         is_constant,
@@ -347,7 +347,7 @@ impl fmt::Debug for ExtendedStatement {
                         .field("lhs_expression", &DebugExpression(lhe.clone()))
                         .field("rhs_expression", &DebugExpression(rhe.clone()))
                         .finish(),
-                    Statement::LogCall { meta: _, args } => {
+                    Statement::LogCall { meta: _, args: _ } => {
                         f.debug_struct("LogCall").finish()
                         //f.debug_struct("LogCall").field("arguments", args).finish()
                     }

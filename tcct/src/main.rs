@@ -7,7 +7,9 @@ mod type_analysis_user;
 use ansi_term::Colour;
 use input_user::Input;
 use parser_user::ExtendedStatement;
-use symbolic_execution::{print_constraint_statistics, simplify_statement, SymbolicExecutor};
+use symbolic_execution::{
+    print_constraint_summary_statistics, simplify_statement, SymbolicExecutor,
+};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -29,17 +31,14 @@ fn start() -> Result<(), ()> {
     let mut program_archive = parser_user::parse_project(&user_input)?;
     type_analysis_user::analyse_project(&mut program_archive)?;
 
-    println!("id_max: {}", program_archive.id_max);
     for (k, v) in program_archive.templates.clone().into_iter() {
-        println!("template name: {}", k);
-        println!(" num_of_params: {}", v.get_num_of_params());
-        println!(
-            " body: {:?}",
-            ExtendedStatement::DebugStatement(v.get_body().clone())
-        );
-    }
-    println!("============");
-    for (k, v) in program_archive.templates.clone().into_iter() {
+        println!("template_name,num_of_params");
+        println!("{},{}", k, v.get_num_of_params());
+        //println!(
+        //    " body: {:?}",
+        //    ExtendedStatement::DebugStatement(v.get_body().clone())
+        //);
+
         let mut sexe = SymbolicExecutor::new();
         let body = simplify_statement(&v.get_body().clone());
         sexe.execute(
@@ -50,10 +49,11 @@ fn start() -> Result<(), ()> {
             0,
         );
 
-        for s in &sexe.final_states {
-            println!("final_state: {:?}", s);
-        }
-        print_constraint_statistics(&sexe.trace_constraint_stats);
+        //for s in &sexe.final_states {
+        //    println!("final_state: {:?}", s);
+        //}
+        print_constraint_summary_statistics(&sexe.trace_constraint_stats);
+        print_constraint_summary_statistics(&sexe.side_constraint_stats);
     }
 
     /*

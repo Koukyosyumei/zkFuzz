@@ -266,6 +266,121 @@ pub fn print_constraint_statistics(constraint_stats: &ConstraintStatistics) {
     );
 }
 
+pub fn print_constraint_summary_statistics(constraint_stats: &ConstraintStatistics) {
+    let headers = vec![
+        "Total_Constraints",
+        "Constant_Counts",
+        "Conditional_Counts",
+        "Array_Counts",
+        "Tuple_Counts",
+        "Avg_Depth",
+        "Max_Depth",
+        "Count_Mul",
+        "Count_Div",
+        "Count_Add",
+        "Count_Sub",
+        "Count_Pow",
+        "Count_IntDiv",
+        "Count_Mod",
+        "Count_ShiftL",
+        "Count_ShiftR",
+        "Count_LesserEq",
+        "Count_GreaterEq",
+        "Count_Lesser",
+        "Count_Greater",
+        "Count_Eq",
+        "Count_NotEq",
+        "Count_BoolOr",
+        "Count_BoolAnd",
+        "Count_BitOr",
+        "Count_BitAnd",
+        "Count_BitXor",
+        "Variable_Avg_Count",
+        "Variable_Max_Count",
+        "Function_Avg_Count",
+        "Function_Max_Count",
+    ];
+    println!("{}", headers.join(","));
+
+    let mut values = Vec::new();
+    values.push(constraint_stats.total_constraints.to_string());
+    values.push(constraint_stats.constant_counts.to_string());
+    values.push(constraint_stats.conditional_counts.to_string());
+    values.push(constraint_stats.array_counts.to_string());
+    values.push(constraint_stats.tuple_counts.to_string());
+
+    let avg_depth = if !constraint_stats.constraint_depths.is_empty() {
+        constraint_stats.constraint_depths.iter().sum::<usize>() as f64
+            / constraint_stats.constraint_depths.len() as f64
+    } else {
+        0.0
+    };
+    values.push(format!("{:.2}", avg_depth));
+    values.push(
+        constraint_stats
+            .constraint_depths
+            .iter()
+            .max()
+            .unwrap_or(&0)
+            .to_string(),
+    );
+
+    for op in &[
+        "Mul",
+        "Div",
+        "Add",
+        "Sub",
+        "Pow",
+        "IntDiv",
+        "Mod",
+        "ShiftL",
+        "ShiftR",
+        "LesserEq",
+        "GreaterEq",
+        "Lesser",
+        "Greater",
+        "Eq",
+        "NotEq",
+        "BoolOr",
+        "BoolAnd",
+        "BitOr",
+        "BitAnd",
+        "BitXor",
+    ] {
+        values.push(
+            constraint_stats
+                .operator_counts
+                .get(*op)
+                .unwrap_or(&0)
+                .to_string(),
+        );
+    }
+
+    let var_counts: Vec<usize> = constraint_stats.variable_counts.values().cloned().collect();
+    let var_avg = if !var_counts.is_empty() {
+        var_counts.iter().sum::<usize>() as f64 / var_counts.len() as f64
+    } else {
+        0.0
+    };
+    values.push(format!("{:.2}", var_avg));
+    values.push(var_counts.iter().max().unwrap_or(&0).to_string());
+
+    let func_counts: Vec<usize> = constraint_stats
+        .function_call_counts
+        .values()
+        .cloned()
+        .collect();
+    let func_avg = if !func_counts.is_empty() {
+        func_counts.iter().sum::<usize>() as f64 / func_counts.len() as f64
+    } else {
+        0.0
+    };
+    values.push(format!("{:.2}", func_avg));
+    values.push(func_counts.iter().max().unwrap_or(&0).to_string());
+
+    println!("{}", values.join(","));
+}
+
 pub struct SymbolicExecutor {
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
@@ -355,7 +470,6 @@ impl SymbolicExecutor {
                             // Create a branch in the symbolic state
                             let mut if_state = self.cur_state.clone();
                             let mut else_state = self.cur_state.clone();
-                            let tmp_cur_bid = cur_bid;
                             let cur_depth = self.cur_state.get_depth();
 
                             if_state.push_trace_constraint(condition.clone());
@@ -498,15 +612,11 @@ impl SymbolicExecutor {
                             self.trace_constraint_stats.update(&condition);
                             self.execute(statements, cur_bid + 1);
                         }
-                        Statement::UnderscoreSubstitution { op, rhe, .. } => {
+                        Statement::UnderscoreSubstitution { op: _, rhe: _, .. } => {
                             // Underscore substitution doesn't affect the symbolic state
                         }
-                        Statement::LogCall { args, .. } => {
+                        Statement::LogCall { args: _, .. } => {
                             // Logging doesn't affect the symbolic state
-                        }
-                        // Handle other statement types
-                        _ => {
-                            println!("Unhandled statement type: {:?}", statements[cur_bid]);
                         }
                     }
                 }
@@ -521,8 +631,12 @@ impl SymbolicExecutor {
 
     fn evaluate_expression(&self, expr: &DebugExpression) -> SymbolicValue {
         match &expr.0 {
-            Expression::Number(meta, value) => SymbolicValue::Constant(value.clone()),
-            Expression::Variable { name, access, meta } => {
+            Expression::Number(_meta, value) => SymbolicValue::Constant(value.clone()),
+            Expression::Variable {
+                name,
+                access,
+                meta: _,
+            } => {
                 if access.is_empty() {
                     self.cur_state
                         .get_symval(&name)
