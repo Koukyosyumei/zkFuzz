@@ -317,7 +317,7 @@ impl SymbolicExecutor {
                         DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                         Box::new(rhs),
                     );
-                    self.cur_state.push_trace_constraint(cond.clone());
+                    //self.cur_state.push_trace_constraint(cond.clone());
                     self.cur_state.push_side_constraint(cond);
                     self.execute(statements, cur_bid + 1);
                 }
