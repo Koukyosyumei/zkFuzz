@@ -70,6 +70,8 @@ calculate_median() {
 # Aggregation
 echo "Meta Information Average:"
 calculate_average "$meta_file"
+echo "Meta Information Median:"
+calculate_median "$meta_file"
 echo "Trace Constraints Average:"
 calculate_average "$trace_file"
 echo "Trace Constraints Median:"
