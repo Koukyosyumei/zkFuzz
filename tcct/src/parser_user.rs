@@ -87,7 +87,7 @@ impl fmt::Debug for DebugExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             Expression::InfixOp {
-                meta,
+                meta: _,
                 lhe,
                 infix_op,
                 rhe,
@@ -98,7 +98,7 @@ impl fmt::Debug for DebugExpression {
                 .field("rhe", &DebugExpression(*rhe.clone()))
                 .finish(),
             Expression::PrefixOp {
-                meta,
+                meta: _,
                 prefix_op,
                 rhe,
             } => f
@@ -107,7 +107,7 @@ impl fmt::Debug for DebugExpression {
                 .field("rhe", &DebugExpression(*rhe.clone()))
                 .finish(),
             Expression::InlineSwitchOp {
-                meta,
+                meta: _,
                 cond,
                 if_true,
                 if_false,
@@ -117,11 +117,15 @@ impl fmt::Debug for DebugExpression {
                 .field("if_true", &DebugExpression(*if_true.clone()))
                 .field("if_false", &DebugExpression(*if_false.clone()))
                 .finish(),
-            Expression::ParallelOp { meta, rhe } => f
+            Expression::ParallelOp { meta: _, rhe } => f
                 .debug_struct("ParallelOp")
                 .field("rhe", &DebugExpression(*rhe.clone()))
                 .finish(),
-            Expression::Variable { meta, name, access } => f
+            Expression::Variable {
+                meta: _,
+                name,
+                access,
+            } => f
                 .debug_struct("Variable")
                 .field("name", &name)
                 .field(
@@ -132,10 +136,10 @@ impl fmt::Debug for DebugExpression {
                         .collect::<Vec<_>>(),
                 )
                 .finish(),
-            Expression::Number(meta, value) => {
+            Expression::Number(_, value) => {
                 f.debug_struct("Number").field("value", &value).finish()
             }
-            Expression::Call { meta, id, args } => f
+            Expression::Call { meta: _, id, args } => f
                 .debug_struct("Call")
                 .field("id", &id)
                 .field(
@@ -146,7 +150,7 @@ impl fmt::Debug for DebugExpression {
                         .collect::<Vec<_>>(),
                 )
                 .finish(),
-            Expression::BusCall { meta, id, args } => f
+            Expression::BusCall { meta: _, id, args } => f
                 .debug_struct("BusCall")
                 .field("id", &id)
                 .field(
@@ -158,7 +162,7 @@ impl fmt::Debug for DebugExpression {
                 )
                 .finish(),
             Expression::AnonymousComp {
-                meta,
+                meta: _,
                 id,
                 is_parallel,
                 params,
@@ -184,7 +188,7 @@ impl fmt::Debug for DebugExpression {
                 )
                 //.field("names", names)
                 .finish(),
-            Expression::ArrayInLine { meta, values } => f
+            Expression::ArrayInLine { meta: _, values } => f
                 .debug_struct("ArrayInLine")
                 .field(
                     "values",
@@ -194,7 +198,7 @@ impl fmt::Debug for DebugExpression {
                         .collect::<Vec<_>>(),
                 )
                 .finish(),
-            Expression::Tuple { meta, values } => f
+            Expression::Tuple { meta: _, values } => f
                 .debug_struct("Tuple")
                 .field(
                     "values",
@@ -205,7 +209,7 @@ impl fmt::Debug for DebugExpression {
                 )
                 .finish(),
             Expression::UniformArray {
-                meta,
+                meta: _,
                 value,
                 dimension,
             } => f
@@ -221,7 +225,7 @@ impl fmt::Debug for DebugStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             Statement::IfThenElse {
-                meta,
+                meta: _,
                 cond,
                 if_case,
                 else_case,
@@ -242,17 +246,21 @@ impl fmt::Debug for DebugStatement {
                         .finish()
                 }
             }
-            Statement::While { meta, cond, stmt } => f
+            Statement::While {
+                meta: _,
+                cond,
+                stmt,
+            } => f
                 .debug_struct("While")
                 .field("condition", &DebugExpression(cond.clone()))
                 .field("statement", &DebugStatement(*stmt.clone()))
                 .finish(),
-            Statement::Return { meta, value } => f
+            Statement::Return { meta: _, value } => f
                 .debug_struct("Return")
                 .field("value", &DebugExpression(value.clone()))
                 .finish(),
             Statement::InitializationBlock {
-                meta,
+                meta: _,
                 xtype,
                 initializations,
             } => f
@@ -267,7 +275,7 @@ impl fmt::Debug for DebugStatement {
                 )
                 .finish(),
             Statement::Declaration {
-                meta,
+                meta: _,
                 xtype,
                 name,
                 dimensions,
@@ -286,7 +294,7 @@ impl fmt::Debug for DebugStatement {
                 .field("is_constant", &is_constant)
                 .finish(),
             Statement::Substitution {
-                meta,
+                meta: _,
                 var,
                 access,
                 op,
@@ -315,16 +323,16 @@ impl fmt::Debug for DebugStatement {
                 .field("operation", &DebugAssignOp(op.clone()))
                 .field("rhe", &DebugExpression(rhe.clone()))
                 .finish(),
-            Statement::ConstraintEquality { meta, lhe, rhe } => f
+            Statement::ConstraintEquality { meta: _, lhe, rhe } => f
                 .debug_struct("ConstraintEquality")
                 .field("lhs_expression", &DebugExpression(lhe.clone()))
                 .field("rhs_expression", &DebugExpression(rhe.clone()))
                 .finish(),
-            Statement::LogCall { meta, args } => {
+            Statement::LogCall { meta: _, args } => {
                 f.debug_struct("LogCall").finish()
                 //f.debug_struct("LogCall").field("arguments", args).finish()
             }
-            Statement::Block { meta, stmts } => f
+            Statement::Block { meta: _, stmts } => f
                 .debug_struct("Block")
                 .field(
                     "statements",
@@ -334,7 +342,7 @@ impl fmt::Debug for DebugStatement {
                         .collect::<Vec<_>>(),
                 )
                 .finish(),
-            Statement::Assert { meta, arg } => f
+            Statement::Assert { meta: _, arg } => f
                 .debug_struct("Assert")
                 .field("argument", &DebugExpression(arg.clone()))
                 .finish(),
