@@ -385,8 +385,10 @@ pub struct SymbolicExecutor {
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
+    // constraints
     pub trace_constraint_stats: ConstraintStatistics,
     pub side_constraint_stats: ConstraintStatistics,
+    // useful stats
     pub max_depth: usize,
 }
 

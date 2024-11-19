@@ -32,8 +32,6 @@ fn start() -> Result<(), ()> {
     type_analysis_user::analyse_project(&mut program_archive)?;
 
     for (k, v) in program_archive.templates.clone().into_iter() {
-        println!("template_name,num_of_params");
-        println!("{},{}", k, v.get_num_of_params());
         //println!(
         //    " body: {:?}",
         //    ExtendedStatement::DebugStatement(v.get_body().clone())
@@ -52,6 +50,8 @@ fn start() -> Result<(), ()> {
         //for s in &sexe.final_states {
         //    println!("final_state: {:?}", s);
         //}
+        println!("template_name,num_of_params,max_depth");
+        println!("{},{},{}", k, v.get_num_of_params(), sexe.max_depth);
         print_constraint_summary_statistics(&sexe.trace_constraint_stats);
         print_constraint_summary_statistics(&sexe.side_constraint_stats);
     }
