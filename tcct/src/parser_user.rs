@@ -79,7 +79,7 @@ impl fmt::Debug for DebugExpressionInfixOpcode {
 impl fmt::Debug for DebugExpressionPrefixOpcode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
-            ExpressionPrefixOpcode::Sub => f.debug_struct("Sub").finish(),
+            ExpressionPrefixOpcode::Sub => f.debug_struct("Minus").finish(),
             ExpressionPrefixOpcode::BoolNot => f.debug_struct("BoolNot").finish(),
             ExpressionPrefixOpcode::Complement => f.debug_struct("Complement").finish(),
         }
