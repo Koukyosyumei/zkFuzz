@@ -19,7 +19,7 @@ fn main() {
         eprintln!("{}", Colour::Red.paint("previous errors were found"));
         std::process::exit(1);
     } else {
-        println!("{}", Colour::Green.paint("Everything went okay"));
+        //println!("{}", Colour::Green.paint("Everything went okay"));
         //std::process::exit(0);
     }
 }
