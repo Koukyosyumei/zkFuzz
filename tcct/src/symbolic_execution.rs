@@ -9,6 +9,7 @@ use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
 use program_structure::ast::Statement;
+use std::cmp::max;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -271,6 +272,7 @@ pub struct SymbolicExecutor {
     pub final_states: Vec<SymbolicState>,
     pub trace_constraint_stats: ConstraintStatistics,
     pub side_constraint_stats: ConstraintStatistics,
+    pub max_depth: usize,
 }
 
 impl SymbolicExecutor {
@@ -281,20 +283,28 @@ impl SymbolicExecutor {
             final_states: Vec::new(),
             trace_constraint_stats: ConstraintStatistics::new(),
             side_constraint_stats: ConstraintStatistics::new(),
+            max_depth: 0,
         }
     }
 
-    fn execute_next_block(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
+    fn execute_next_block(
+        &mut self,
+        statements: &Vec<ExtendedStatement>,
+        cur_bid: usize,
+        depth: usize,
+    ) {
         let stack_states = self.block_end_states.clone();
         self.block_end_states.clear();
         for state in &stack_states.clone() {
             self.cur_state = state.clone();
+            self.cur_state.set_depth(depth);
             self.execute(statements, cur_bid + 1);
         }
     }
 
     pub fn execute(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
         if cur_bid < statements.len() {
+            self.max_depth = max(self.max_depth, self.cur_state.get_depth());
             match &statements[cur_bid] {
                 ExtendedStatement::DebugStatement(stmt) => {
                     match stmt {
@@ -308,7 +318,11 @@ impl SymbolicExecutor {
                                 );
                             }
                             self.block_end_states = vec![self.cur_state.clone()];
-                            self.execute_next_block(statements, cur_bid);
+                            self.execute_next_block(
+                                statements,
+                                cur_bid,
+                                self.cur_state.get_depth(),
+                            );
                         }
                         Statement::Block { stmts, .. } => {
                             if cur_bid < stmts.len() {
@@ -321,7 +335,11 @@ impl SymbolicExecutor {
                                         .collect::<Vec<_>>(),
                                     0,
                                 );
-                                self.execute_next_block(statements, cur_bid);
+                                self.execute_next_block(
+                                    statements,
+                                    cur_bid,
+                                    self.cur_state.get_depth(),
+                                );
                             }
                         }
                         Statement::IfThenElse {
@@ -347,8 +365,7 @@ impl SymbolicExecutor {
                                 &vec![ExtendedStatement::DebugStatement(*if_case.clone())],
                                 0,
                             );
-                            self.cur_state.set_depth(cur_depth);
-                            self.execute_next_block(statements, cur_bid);
+                            self.execute_next_block(statements, cur_bid, cur_depth);
 
                             if let Some(else_stmt) = else_case {
                                 else_state.push_trace_constraint(SymbolicValue::UnaryOp(
@@ -361,8 +378,7 @@ impl SymbolicExecutor {
                                     &vec![ExtendedStatement::DebugStatement(*else_stmt.clone())],
                                     0,
                                 );
-                                self.cur_state.set_depth(cur_depth);
-                                self.execute_next_block(statements, cur_bid);
+                                self.execute_next_block(statements, cur_bid, cur_depth);
                             }
                         }
                         Statement::While { cond, stmt, .. } => {
@@ -376,7 +392,11 @@ impl SymbolicExecutor {
                                 &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
                                 0,
                             );
-                            self.execute_next_block(statements, cur_bid);
+                            self.execute_next_block(
+                                statements,
+                                cur_bid,
+                                self.cur_state.get_depth(),
+                            );
                             // Note: This doesn't handle loop invariants or fixed-point computation
                         }
                         Statement::Return { value, .. } => {
