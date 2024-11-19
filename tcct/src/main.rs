@@ -7,7 +7,7 @@ mod type_analysis_user;
 use ansi_term::Colour;
 use input_user::Input;
 use parser_user::ExtendedStatement;
-use symbolic_execution::{simplify_statement, SymbolicExecutor};
+use symbolic_execution::{print_constraint_statistics, simplify_statement, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -50,9 +50,10 @@ fn start() -> Result<(), ()> {
             0,
         );
 
-        for s in sexe.final_states {
+        for s in &sexe.final_states {
             println!("final_state: {:?}", s);
         }
+        print_constraint_statistics(&sexe.trace_constraint_stats);
     }
 
     /*
