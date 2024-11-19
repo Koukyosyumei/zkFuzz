@@ -1,5 +1,5 @@
 use crate::parser_user::{
-    DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode,
+    DebugAccess, DebugExpression, DebugExpressionInfixOpcode,
     DebugExpressionPrefixOpcode, DebugStatement,
 };
 use num_bigint_dig::BigInt;
@@ -170,8 +170,8 @@ impl SymbolicExecutor {
         if cur_bid < statements.len() {
             match &statements[cur_bid].0 {
                 Statement::InitializationBlock {
-                    meta,
-                    xtype,
+                    
+                    
                     initializations,
                     ..
                 } => {
@@ -180,7 +180,7 @@ impl SymbolicExecutor {
                     }
                     self.execute(statements, cur_bid + 1);
                 }
-                Statement::Block { meta, stmts, .. } => {
+                Statement::Block {  stmts, .. } => {
                     if cur_bid >= stmts.len() {
                         self.final_states.push(self.cur_state.clone());
                     } else {
@@ -195,7 +195,7 @@ impl SymbolicExecutor {
                     }
                 }
                 Statement::IfThenElse {
-                    meta,
+                    
                     cond,
                     if_case,
                     else_case,
@@ -223,7 +223,7 @@ impl SymbolicExecutor {
                     }
                 }
                 Statement::While {
-                    meta, cond, stmt, ..
+                     cond, stmt, ..
                 } => {
                     // Symbolic execution of loops is complex. This is a simplified approach.
                     let condition = self.evaluate_expression(&DebugExpression(cond.clone()));
@@ -232,7 +232,7 @@ impl SymbolicExecutor {
                     self.execute(statements, cur_bid + 1);
                     // Note: This doesn't handle loop invariants or fixed-point computation
                 }
-                Statement::Return { meta, value, .. } => {
+                Statement::Return {  value, .. } => {
                     let return_value = self.evaluate_expression(&DebugExpression(value.clone()));
                     // Handle return value (e.g., store in a special "return" variable)
                     self.cur_state
@@ -240,11 +240,11 @@ impl SymbolicExecutor {
                     // self.execute(statement, cur_bid + 1);
                 }
                 Statement::Declaration {
-                    meta,
-                    xtype,
+                    
+                    
                     name,
                     dimensions,
-                    is_constant,
+                    
                     ..
                 } => {
                     let var_name = if dimensions.is_empty() {
@@ -289,7 +289,7 @@ impl SymbolicExecutor {
                     self.execute(statements, cur_bid + 1);
                 }
                 Statement::MultSubstitution {
-                    meta, lhe, op, rhe, ..
+                     lhe,  rhe, ..
                 } => {
                     let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
                     let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
@@ -330,7 +330,7 @@ impl SymbolicExecutor {
                     }
                 },
                 */
-                Statement::Assert { meta, arg, .. } => {
+                Statement::Assert {  arg, .. } => {
                     let condition = self.evaluate_expression(&DebugExpression(arg.clone()));
                     self.cur_state.push_trace_constraint(condition);
                     self.execute(statements, cur_bid + 1);
@@ -415,7 +415,7 @@ impl SymbolicExecutor {
                 SymbolicValue::Array(elements)
             }
             Expression::UniformArray {
-                meta,
+                
                 value,
                 dimension,
                 ..
