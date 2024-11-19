@@ -16,7 +16,8 @@ mv "$side_file.tmp" "$side_file"
 # 平均値計算関数
 calculate_average() {
   file=$1
-  echo "Processing: $file"
+  header=$(head -n 1 "$file") # ヘッダー取得
+  echo "$header"              # ヘッダー出力
   awk -F, '
   NR==1 { next } # ヘッダーをスキップ
   {
