@@ -1,6 +1,6 @@
 use crate::parser_user::{
-    DebugAccess, DebugExpression, DebugExpressionInfixOpcode,
-    DebugExpressionPrefixOpcode, DebugStatement,
+    DebugAccess, DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode,
+    DebugStatement,
 };
 use num_bigint_dig::BigInt;
 use program_structure::ast::Access;
@@ -14,7 +14,7 @@ use std::fmt;
 pub fn simplify_statement(statement: &Statement) -> Statement {
     match &statement {
         Statement::Substitution {
-            meta,
+            meta: _,
             var,
             access,
             op,
@@ -88,7 +88,7 @@ pub fn simplify_statement(statement: &Statement) -> Statement {
 }
 
 #[derive(Clone)]
-enum SymbolicValue {
+pub enum SymbolicValue {
     Constant(BigInt),
     Variable(String),
     BinaryOp(
@@ -170,17 +170,14 @@ impl SymbolicExecutor {
         if cur_bid < statements.len() {
             match &statements[cur_bid].0 {
                 Statement::InitializationBlock {
-                    
-                    
-                    initializations,
-                    ..
+                    initializations, ..
                 } => {
                     for init in initializations {
                         self.execute(&vec![DebugStatement(init.clone())], 0);
                     }
                     self.execute(statements, cur_bid + 1);
                 }
-                Statement::Block {  stmts, .. } => {
+                Statement::Block { stmts, .. } => {
                     if cur_bid >= stmts.len() {
                         self.final_states.push(self.cur_state.clone());
                     } else {
@@ -195,7 +192,6 @@ impl SymbolicExecutor {
                     }
                 }
                 Statement::IfThenElse {
-                    
                     cond,
                     if_case,
                     else_case,
@@ -222,9 +218,7 @@ impl SymbolicExecutor {
                         self.execute(statements, cur_bid + 1);
                     }
                 }
-                Statement::While {
-                     cond, stmt, ..
-                } => {
+                Statement::While { cond, stmt, .. } => {
                     // Symbolic execution of loops is complex. This is a simplified approach.
                     let condition = self.evaluate_expression(&DebugExpression(cond.clone()));
                     self.cur_state.push_trace_constraint(condition);
@@ -232,7 +226,7 @@ impl SymbolicExecutor {
                     self.execute(statements, cur_bid + 1);
                     // Note: This doesn't handle loop invariants or fixed-point computation
                 }
-                Statement::Return {  value, .. } => {
+                Statement::Return { value, .. } => {
                     let return_value = self.evaluate_expression(&DebugExpression(value.clone()));
                     // Handle return value (e.g., store in a special "return" variable)
                     self.cur_state
@@ -240,12 +234,7 @@ impl SymbolicExecutor {
                     // self.execute(statement, cur_bid + 1);
                 }
                 Statement::Declaration {
-                    
-                    
-                    name,
-                    dimensions,
-                    
-                    ..
+                    name, dimensions, ..
                 } => {
                     let var_name = if dimensions.is_empty() {
                         name.clone()
@@ -265,7 +254,7 @@ impl SymbolicExecutor {
                     self.execute(statements, cur_bid + 1);
                 }
                 Statement::Substitution {
-                    meta,
+                    meta: _,
                     var,
                     access,
                     op,
@@ -288,9 +277,7 @@ impl SymbolicExecutor {
                     self.cur_state.set_symval(var_name, value);
                     self.execute(statements, cur_bid + 1);
                 }
-                Statement::MultSubstitution {
-                     lhe,  rhe, ..
-                } => {
+                Statement::MultSubstitution { lhe, rhe, .. } => {
                     let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
                     let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
                     // Handle multiple substitution (simplified)
@@ -309,7 +296,7 @@ impl SymbolicExecutor {
                     self.evaluate_expression(&DebugExpression(rhe.clone()));
                 },
                 */
-                Statement::ConstraintEquality { meta, lhe, rhe } => {
+                Statement::ConstraintEquality { meta: _, lhe, rhe } => {
                     let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
                     let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
                     let cond = SymbolicValue::BinaryOp(
@@ -330,7 +317,7 @@ impl SymbolicExecutor {
                     }
                 },
                 */
-                Statement::Assert {  arg, .. } => {
+                Statement::Assert { arg, .. } => {
                     let condition = self.evaluate_expression(&DebugExpression(arg.clone()));
                     self.cur_state.push_trace_constraint(condition);
                     self.execute(statements, cur_bid + 1);
@@ -358,7 +345,7 @@ impl SymbolicExecutor {
                 }
             }
             Expression::InfixOp {
-                meta,
+                meta: _,
                 lhe,
                 infix_op,
                 rhe,
@@ -372,7 +359,7 @@ impl SymbolicExecutor {
                 )
             }
             Expression::PrefixOp {
-                meta,
+                meta: _,
                 prefix_op,
                 rhe,
             } => {
@@ -383,7 +370,7 @@ impl SymbolicExecutor {
                 )
             }
             Expression::InlineSwitchOp {
-                meta,
+                meta: _,
                 cond,
                 if_true,
                 if_false,
@@ -400,14 +387,14 @@ impl SymbolicExecutor {
             Expression::ParallelOp { rhe, .. } => {
                 self.evaluate_expression(&DebugExpression(*rhe.clone()))
             }
-            Expression::ArrayInLine { meta, values } => {
+            Expression::ArrayInLine { meta: _, values } => {
                 let elements = values
                     .iter()
                     .map(|v| self.evaluate_expression(&DebugExpression(v.clone())))
                     .collect();
                 SymbolicValue::Array(elements)
             }
-            Expression::Tuple { meta, values } => {
+            Expression::Tuple { meta: _, values } => {
                 let elements = values
                     .iter()
                     .map(|v| self.evaluate_expression(&DebugExpression(v.clone())))
@@ -415,10 +402,7 @@ impl SymbolicExecutor {
                 SymbolicValue::Array(elements)
             }
             Expression::UniformArray {
-                
-                value,
-                dimension,
-                ..
+                value, dimension, ..
             } => {
                 let evaluated_value = self.evaluate_expression(&DebugExpression(*value.clone()));
                 let evaluated_dimension =
