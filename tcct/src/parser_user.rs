@@ -140,6 +140,7 @@ impl fmt::Debug for DebugExpression {
                 )
                 .finish(),
             Expression::Number(_, value) => {
+                //write!("Number {}", "{}", value)
                 f.debug_struct("Number").field("value", &value).finish()
             }
             Expression::Call { meta: _, id, args } => f

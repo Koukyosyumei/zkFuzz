@@ -300,7 +300,7 @@ impl SymbolicExecutor {
                             } else {
                                 //format!("{}", var)
                                 format!(
-                                    "{}[{:?}]",
+                                    "{}{:?}",
                                     var,
                                     &access
                                         .iter()
@@ -384,7 +384,7 @@ impl SymbolicExecutor {
                         .unwrap_or_else(|| SymbolicValue::Variable(name.clone()))
                 } else {
                     SymbolicValue::Variable(format!(
-                        "{}[{:?}]",
+                        "{}{:?}",
                         name,
                         &access
                             .iter()
