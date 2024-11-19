@@ -19,7 +19,10 @@ pub struct DebugExpressionPrefixOpcode(pub ExpressionPrefixOpcode);
 #[derive(Clone)]
 pub struct DebugExpression(pub Expression);
 #[derive(Clone)]
-pub struct DebugStatement(pub Statement);
+pub enum ExtendedStatement {
+    DebugStatement(Statement),
+    Ret,
+}
 
 impl fmt::Debug for DebugAccess {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -221,131 +224,151 @@ impl fmt::Debug for DebugExpression {
     }
 }
 
-impl fmt::Debug for DebugStatement {
+impl fmt::Debug for ExtendedStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self.0 {
-            Statement::IfThenElse {
-                meta: _,
-                cond,
-                if_case,
-                else_case,
-            } => {
-                if else_case.is_none() {
-                    f.debug_struct("IfThenElse")
+        match &self {
+            ExtendedStatement::DebugStatement(stmt) => {
+                match &stmt {
+                    Statement::IfThenElse {
+                        meta: _,
+                        cond,
+                        if_case,
+                        else_case,
+                    } => {
+                        if else_case.is_none() {
+                            f.debug_struct("IfThenElse")
+                                .field("condition", &DebugExpression(cond.clone()))
+                                .field(
+                                    "if_case",
+                                    &ExtendedStatement::DebugStatement(*if_case.clone()),
+                                )
+                                .finish()
+                        } else {
+                            f.debug_struct("IfThenElse")
+                                .field("condition", &DebugExpression(cond.clone()))
+                                .field(
+                                    "if_case",
+                                    &ExtendedStatement::DebugStatement(*if_case.clone()),
+                                )
+                                .field(
+                                    "else_case",
+                                    &ExtendedStatement::DebugStatement(
+                                        *else_case.clone().unwrap().clone(),
+                                    ),
+                                )
+                                .finish()
+                        }
+                    }
+                    Statement::While {
+                        meta: _,
+                        cond,
+                        stmt,
+                    } => f
+                        .debug_struct("While")
                         .field("condition", &DebugExpression(cond.clone()))
-                        .field("if_case", &DebugStatement(*if_case.clone()))
-                        .finish()
-                } else {
-                    f.debug_struct("IfThenElse")
-                        .field("condition", &DebugExpression(cond.clone()))
-                        .field("if_case", &DebugStatement(*if_case.clone()))
                         .field(
-                            "else_case",
-                            &DebugStatement(*else_case.clone().unwrap().clone()),
+                            "statement",
+                            &ExtendedStatement::DebugStatement(*stmt.clone()),
                         )
-                        .finish()
+                        .finish(),
+                    Statement::Return { meta: _, value } => f
+                        .debug_struct("Return")
+                        .field("value", &DebugExpression(value.clone()))
+                        .finish(),
+                    Statement::InitializationBlock {
+                        meta: _,
+                        xtype,
+                        initializations,
+                    } => f
+                        .debug_struct("InitializationBlock")
+                        //.field("type", xtype)
+                        .field(
+                            "initializations",
+                            &initializations
+                                .iter()
+                                .map(|arg0: &Statement| {
+                                    ExtendedStatement::DebugStatement(arg0.clone())
+                                })
+                                .collect::<Vec<_>>(),
+                        )
+                        .finish(),
+                    Statement::Declaration {
+                        meta: _,
+                        xtype,
+                        name,
+                        dimensions,
+                        is_constant,
+                    } => f
+                        .debug_struct("Declaration")
+                        //.field("type", xtype)
+                        .field("name", &name)
+                        .field(
+                            "dimensions",
+                            &dimensions
+                                .iter()
+                                .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                                .collect::<Vec<_>>(),
+                        )
+                        .field("is_constant", &is_constant)
+                        .finish(),
+                    Statement::Substitution {
+                        meta: _,
+                        var,
+                        access,
+                        op,
+                        rhe,
+                    } => f
+                        .debug_struct("Substitution")
+                        .field("variable", &var)
+                        .field(
+                            "access",
+                            &access
+                                .iter()
+                                .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                                .collect::<Vec<_>>(),
+                        )
+                        .field("operation", &DebugAssignOp(op.clone()))
+                        .field("rhe", &DebugExpression(rhe.clone()))
+                        .finish(),
+                    Statement::MultSubstitution { lhe, op, rhe, .. } => f
+                        .debug_struct("MultSubstitution")
+                        .field("lhs_expression", &DebugExpression(lhe.clone()))
+                        .field("operation", &DebugAssignOp(op.clone()))
+                        .field("rhs_expression", &DebugExpression(rhe.clone()))
+                        .finish(),
+                    Statement::UnderscoreSubstitution { op, rhe, .. } => f
+                        .debug_struct("UnderscoreSubstitution")
+                        .field("operation", &DebugAssignOp(op.clone()))
+                        .field("rhe", &DebugExpression(rhe.clone()))
+                        .finish(),
+                    Statement::ConstraintEquality { meta: _, lhe, rhe } => f
+                        .debug_struct("ConstraintEquality")
+                        .field("lhs_expression", &DebugExpression(lhe.clone()))
+                        .field("rhs_expression", &DebugExpression(rhe.clone()))
+                        .finish(),
+                    Statement::LogCall { meta: _, args } => {
+                        f.debug_struct("LogCall").finish()
+                        //f.debug_struct("LogCall").field("arguments", args).finish()
+                    }
+                    Statement::Block { meta: _, stmts } => f
+                        .debug_struct("Block")
+                        .field(
+                            "statements",
+                            &stmts
+                                .iter()
+                                .map(|arg0: &Statement| {
+                                    ExtendedStatement::DebugStatement(arg0.clone())
+                                })
+                                .collect::<Vec<_>>(),
+                        )
+                        .finish(),
+                    Statement::Assert { meta: _, arg } => f
+                        .debug_struct("Assert")
+                        .field("argument", &DebugExpression(arg.clone()))
+                        .finish(),
                 }
             }
-            Statement::While {
-                meta: _,
-                cond,
-                stmt,
-            } => f
-                .debug_struct("While")
-                .field("condition", &DebugExpression(cond.clone()))
-                .field("statement", &DebugStatement(*stmt.clone()))
-                .finish(),
-            Statement::Return { meta: _, value } => f
-                .debug_struct("Return")
-                .field("value", &DebugExpression(value.clone()))
-                .finish(),
-            Statement::InitializationBlock {
-                meta: _,
-                xtype,
-                initializations,
-            } => f
-                .debug_struct("InitializationBlock")
-                //.field("type", xtype)
-                .field(
-                    "initializations",
-                    &initializations
-                        .iter()
-                        .map(|arg0: &Statement| DebugStatement(arg0.clone()))
-                        .collect::<Vec<_>>(),
-                )
-                .finish(),
-            Statement::Declaration {
-                meta: _,
-                xtype,
-                name,
-                dimensions,
-                is_constant,
-            } => f
-                .debug_struct("Declaration")
-                //.field("type", xtype)
-                .field("name", &name)
-                .field(
-                    "dimensions",
-                    &dimensions
-                        .iter()
-                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
-                        .collect::<Vec<_>>(),
-                )
-                .field("is_constant", &is_constant)
-                .finish(),
-            Statement::Substitution {
-                meta: _,
-                var,
-                access,
-                op,
-                rhe,
-            } => f
-                .debug_struct("Substitution")
-                .field("variable", &var)
-                .field(
-                    "access",
-                    &access
-                        .iter()
-                        .map(|arg0: &Access| DebugAccess(arg0.clone()))
-                        .collect::<Vec<_>>(),
-                )
-                .field("operation", &DebugAssignOp(op.clone()))
-                .field("rhe", &DebugExpression(rhe.clone()))
-                .finish(),
-            Statement::MultSubstitution { lhe, op, rhe, .. } => f
-                .debug_struct("MultSubstitution")
-                .field("lhs_expression", &DebugExpression(lhe.clone()))
-                .field("operation", &DebugAssignOp(op.clone()))
-                .field("rhs_expression", &DebugExpression(rhe.clone()))
-                .finish(),
-            Statement::UnderscoreSubstitution { op, rhe, .. } => f
-                .debug_struct("UnderscoreSubstitution")
-                .field("operation", &DebugAssignOp(op.clone()))
-                .field("rhe", &DebugExpression(rhe.clone()))
-                .finish(),
-            Statement::ConstraintEquality { meta: _, lhe, rhe } => f
-                .debug_struct("ConstraintEquality")
-                .field("lhs_expression", &DebugExpression(lhe.clone()))
-                .field("rhs_expression", &DebugExpression(rhe.clone()))
-                .finish(),
-            Statement::LogCall { meta: _, args } => {
-                f.debug_struct("LogCall").finish()
-                //f.debug_struct("LogCall").field("arguments", args).finish()
-            }
-            Statement::Block { meta: _, stmts } => f
-                .debug_struct("Block")
-                .field(
-                    "statements",
-                    &stmts
-                        .iter()
-                        .map(|arg0: &Statement| DebugStatement(arg0.clone()))
-                        .collect::<Vec<_>>(),
-                )
-                .finish(),
-            Statement::Assert { meta: _, arg } => f
-                .debug_struct("Assert")
-                .field("argument", &DebugExpression(arg.clone()))
-                .finish(),
+            ExtendedStatement::Ret => f.debug_struct("Ret").finish(),
         }
     }
 }

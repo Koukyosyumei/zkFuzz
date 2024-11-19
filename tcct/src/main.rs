@@ -6,7 +6,7 @@ mod type_analysis_user;
 
 use ansi_term::Colour;
 use input_user::Input;
-use parser_user::DebugStatement;
+use parser_user::ExtendedStatement;
 use symbolic_execution::{simplify_statement, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -24,7 +24,7 @@ fn main() {
 
 fn start() -> Result<(), ()> {
     //use compilation_user::CompilerConfig;
-    
+
     let user_input = Input::new()?;
     let mut program_archive = parser_user::parse_project(&user_input)?;
     type_analysis_user::analyse_project(&mut program_archive)?;
@@ -33,16 +33,25 @@ fn start() -> Result<(), ()> {
     for (k, v) in program_archive.templates.clone().into_iter() {
         println!("template name: {}", k);
         println!(" num_of_params: {}", v.get_num_of_params());
-        println!(" body: {:?}", DebugStatement(v.get_body().clone()));
+        println!(
+            " body: {:?}",
+            ExtendedStatement::DebugStatement(v.get_body().clone())
+        );
     }
     println!("============");
     for (k, v) in program_archive.templates.clone().into_iter() {
         let mut sexe = SymbolicExecutor::new();
         let body = simplify_statement(&v.get_body().clone());
-        sexe.execute(&vec![DebugStatement(body)], 0);
+        sexe.execute(
+            &vec![
+                ExtendedStatement::DebugStatement(body),
+                ExtendedStatement::Ret,
+            ],
+            0,
+        );
 
         for s in sexe.final_states {
-            println!("{:?}", s);
+            println!("final_state: {:?}", s);
         }
     }
 
