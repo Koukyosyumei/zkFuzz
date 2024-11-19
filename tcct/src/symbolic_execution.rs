@@ -154,19 +154,37 @@ impl SymbolicState {
 
 pub struct SymbolicExecutor {
     pub cur_state: SymbolicState,
+    pub stack_states: Vec<SymbolicState>,
+    pub block_end_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
 }
+
+/*
+[Block(IfElse(IfBranch, ElseBranch)), Ret]があるときに、IfBranch->Retを処理したあと、ElseBranch->Retを処理したいのに、
+今だと、IfBranchを処理したあと、ElseBranch->Retを処理してしまう。
+*/
 
 impl SymbolicExecutor {
     pub fn new() -> Self {
         SymbolicExecutor {
             cur_state: SymbolicState::new(),
+            stack_states: vec![SymbolicState::new()],
+            block_end_states: Vec::new(),
             final_states: Vec::new(),
         }
     }
 
+    fn execute_next_block(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
+        let stack_states = self.block_end_states.clone();
+        self.block_end_states.clear();
+        for state in &stack_states.clone() {
+            self.cur_state = state.clone();
+            self.execute(statements, cur_bid + 1);
+        }
+    }
+
     pub fn execute(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
-        println!("cur_bid: {:?}, cur_state: {:?}", cur_bid, self.cur_state);
+        //println!("cur_bid: {:?}, cur_state: {:?}", cur_bid, self.cur_state);
         if cur_bid < statements.len() {
             match &statements[cur_bid] {
                 ExtendedStatement::DebugStatement(stmt) => {
@@ -180,22 +198,33 @@ impl SymbolicExecutor {
                                     0,
                                 );
                             }
-                            self.execute(statements, cur_bid + 1);
+                            self.block_end_states = vec![self.cur_state.clone()];
+                            self.execute_next_block(statements, cur_bid);
                         }
                         Statement::Block { stmts, .. } => {
-                            println!("len of stmts = {}", stmts.len());
                             if cur_bid < stmts.len() {
-                                self.execute(
-                                    &stmts
-                                        .iter()
-                                        .map(|arg0: &Statement| {
-                                            ExtendedStatement::DebugStatement(arg0.clone())
-                                        })
-                                        .collect::<Vec<_>>(),
-                                    0,
-                                );
-                                println!("next statemet: {}", cur_bid + 1);
-                                self.execute(statements, cur_bid + 1);
+                                for state in &self.stack_states.clone() {
+                                    self.cur_state = state.clone();
+                                    self.execute(
+                                        &stmts
+                                            .iter()
+                                            .map(|arg0: &Statement| {
+                                                ExtendedStatement::DebugStatement(arg0.clone())
+                                            })
+                                            .collect::<Vec<_>>(),
+                                        0,
+                                    );
+                                }
+                                self.execute_next_block(statements, cur_bid);
+                                /*
+                                println!("#bs {}", self.block_end_states.len());
+                                self.stack_states = self.block_end_states.clone();
+                                self.block_end_states.clear();
+                                assert!(self.block_end_states.is_empty());
+                                for state in &self.stack_states.clone() {
+                                    self.cur_state = state.clone();
+                                    self.execute(statements, cur_bid + 1);
+                                }*/
                             }
                         }
                         Statement::IfThenElse {
@@ -217,8 +246,9 @@ impl SymbolicExecutor {
                                 &vec![ExtendedStatement::DebugStatement(*if_case.clone())],
                                 0,
                             );
-                            println!("anext statemet: {}", cur_bid + 1);
-                            self.execute(statements, cur_bid + 1);
+                            self.execute_next_block(statements, cur_bid);
+                            //self.block_end_states.clear();
+                            //self.execute(statements, cur_bid + 1);
 
                             if let Some(else_stmt) = else_case {
                                 else_state.push_trace_constraint(SymbolicValue::UnaryOp(
@@ -230,7 +260,9 @@ impl SymbolicExecutor {
                                     &vec![ExtendedStatement::DebugStatement(*else_stmt.clone())],
                                     0,
                                 );
-                                self.execute(statements, cur_bid + 1);
+                                self.execute_next_block(statements, cur_bid);
+                                //self.block_end_states.clear();
+                                //self.execute(statements, cur_bid + 1);
                             }
                         }
                         Statement::While { cond, stmt, .. } => {
@@ -242,7 +274,8 @@ impl SymbolicExecutor {
                                 &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
                                 0,
                             );
-                            self.execute(statements, cur_bid + 1);
+                            self.execute_next_block(statements, cur_bid);
+                            //self.execute(statements, cur_bid + 1);
                             // Note: This doesn't handle loop invariants or fixed-point computation
                         }
                         Statement::Return { value, .. } => {
@@ -349,12 +382,17 @@ impl SymbolicExecutor {
                     }
                 }
                 ExtendedStatement::Ret => {
-                    println!("ret");
                     self.final_states.push(self.cur_state.clone());
+                    //println!("ret");
                 }
             }
         } else {
-            println!("out: {}", cur_bid);
+            // println!(
+            //    "push to block end: {} {:?}",
+            //    cur_bid,
+            //    self.cur_state.clone()
+            //);
+            self.block_end_states.push(self.cur_state.clone());
         }
     }
 
