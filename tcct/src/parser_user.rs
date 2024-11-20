@@ -88,6 +88,186 @@ impl fmt::Debug for DebugExpressionPrefixOpcode {
 
 impl fmt::Debug for DebugExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.pretty_fmt(f, 0)
+    }
+}
+
+impl fmt::Debug for ExtendedStatement {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.pretty_fmt(f, 0)
+    }
+}
+
+impl DebugExpression {
+    fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+        let indentation = "  ".repeat(indent);
+        match &self.0 {
+            Expression::Number(_, value) => writeln!(f, "{}Number: {}", indentation, value),
+            Expression::InfixOp {
+                lhe, infix_op, rhe, ..
+            } => {
+                writeln!(f, "{}InfixOp:", indentation)?;
+                writeln!(
+                    f,
+                    "{}  Operator: {:?}",
+                    indentation,
+                    DebugExpressionInfixOpcode(*infix_op)
+                )?;
+                writeln!(f, "{}  Left-Hand Expression:", indentation)?;
+                DebugExpression(*lhe.clone()).pretty_fmt(f, indent + 2)?;
+                writeln!(f, "")?;
+                writeln!(f, "{}  Right-Hand Expression:", indentation)?;
+                DebugExpression(*rhe.clone()).pretty_fmt(f, indent + 2)
+            }
+            Expression::PrefixOp { prefix_op, rhe, .. } => {
+                writeln!(f, "{}PrefixOp:", indentation)?;
+                writeln!(
+                    f,
+                    "{}  Operator: {:?}",
+                    indentation,
+                    DebugExpressionPrefixOpcode(*prefix_op)
+                )?;
+                writeln!(f, "{}  Right-Hand Expression:", indentation)?;
+                DebugExpression(*rhe.clone()).pretty_fmt(f, indent + 2)
+            }
+            Expression::ParallelOp { rhe, .. } => {
+                writeln!(f, "{}ParallelOp", indentation)?;
+                writeln!(f, "{}  Right-Hand Expression:", indentation)?;
+                DebugExpression(*rhe.clone()).pretty_fmt(f, indent + 2)
+            }
+            Expression::Variable { name, access, .. } => {
+                writeln!(f, "{}Variable:", indentation)?;
+                writeln!(f, "{}  Name: {}", indentation, name)?;
+                write!(
+                    f,
+                    "{}  Access: {:?}",
+                    indentation,
+                    &access
+                        .iter()
+                        .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                        .collect::<Vec<_>>()
+                )
+            }
+            Expression::InlineSwitchOp {
+                cond,
+                if_true,
+                if_false,
+                ..
+            } => {
+                writeln!(f, "{}InlineSwitchOp:", indentation)?;
+                writeln!(f, "{}  if_true:", indentation)?;
+                DebugExpression(*if_true.clone()).pretty_fmt(f, indent + 2)?;
+                writeln!(f, "{}  if_false:", indentation)?;
+                DebugExpression(*if_false.clone()).pretty_fmt(f, indent + 2)
+            }
+            Expression::Call { id, args, .. } => {
+                writeln!(f, "{}Call", indentation)?;
+                writeln!(f, "{}  id: {}", indentation, id)?;
+                writeln!(
+                    f,
+                    "{}  args: {:?}",
+                    indentation,
+                    &args
+                        .iter()
+                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                        .collect::<Vec<_>>()
+                )
+            }
+            _ => writeln!(f, "{}Unhandled Expression", indentation),
+        }
+    }
+}
+
+impl ExtendedStatement {
+    fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+        let indentation = "  ".repeat(indent);
+        match &self {
+            ExtendedStatement::DebugStatement(stmt) => match &stmt {
+                Statement::IfThenElse {
+                    cond,
+                    if_case,
+                    else_case,
+                    ..
+                } => {
+                    writeln!(f, "{}IfThenElse:", indentation)?;
+                    writeln!(f, "{}  Condition:", indentation)?;
+                    DebugExpression(cond.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "{}  If Case:", indentation)?;
+                    ExtendedStatement::DebugStatement(*if_case.clone())
+                        .pretty_fmt(f, indent + 2)?;
+                    if let Some(else_case) = else_case {
+                        writeln!(f, "{}  Else Case:", indentation)?;
+                        ExtendedStatement::DebugStatement(*else_case.clone())
+                            .pretty_fmt(f, indent + 2)?;
+                    }
+                    writeln!(f, "")
+                }
+                Statement::While { cond, stmt, .. } => {
+                    writeln!(f, "{}While:", indentation)?;
+                    writeln!(f, "{}  Condition:", indentation)?;
+                    DebugExpression(cond.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "{}  Statement:", indentation)?;
+                    ExtendedStatement::DebugStatement(*stmt.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "")
+                }
+                Statement::Return { value, .. } => {
+                    writeln!(f, "{}Return:", indentation)?;
+                    writeln!(f, "{}  Value:", indentation)?;
+                    DebugExpression(value.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "")
+                }
+                Statement::Substitution {
+                    var,
+                    access,
+                    op,
+                    rhe,
+                    ..
+                } => {
+                    writeln!(f, "{}Substitution:", indentation)?;
+                    writeln!(f, "{}  Variable: {}", indentation, var)?;
+                    writeln!(
+                        f,
+                        "{}  Access: {:?}",
+                        indentation,
+                        &access
+                            .iter()
+                            .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                            .collect::<Vec<_>>()
+                    )?;
+                    writeln!(
+                        f,
+                        "{}  Operation: {:?}",
+                        indentation,
+                        DebugAssignOp(op.clone())
+                    )?;
+                    writeln!(f, "{}  Right-Hand Expression:", indentation)?;
+                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "")
+                }
+                Statement::Block { stmts, .. } => {
+                    writeln!(f, "{}Block:", indentation)?;
+                    for stmt in stmts {
+                        ExtendedStatement::DebugStatement(stmt.clone())
+                            .pretty_fmt(f, indent + 2)?;
+                    }
+                    writeln!(f, "")
+                }
+                Statement::Assert { arg, .. } => {
+                    writeln!(f, "{}Assert:", indentation)?;
+                    writeln!(f, "{}  Argument:", indentation)?;
+                    DebugExpression(arg.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "")
+                }
+                _ => writeln!(f, "{}Unhandled Statement", indentation),
+            },
+            ExtendedStatement::Ret => writeln!(f, "{}Ret", indentation),
+        }
+    }
+}
+
+/*
+impl fmt::Debug for DebugExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             Expression::InfixOp {
                 meta: _,
@@ -372,7 +552,7 @@ impl fmt::Debug for ExtendedStatement {
             ExtendedStatement::Ret => f.debug_struct("Ret").finish(),
         }
     }
-}
+}*/
 
 pub fn parse_project(input_info: &Input) -> Result<ProgramArchive, ()> {
     let initial_file = input_info.input_file().to_string();
