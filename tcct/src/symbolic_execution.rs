@@ -2,6 +2,7 @@ use crate::parser_user::{
     DebugAccess, DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode,
     ExtendedStatement,
 };
+use log::debug;
 use num_bigint_dig::BigInt;
 use program_structure::ast::Access;
 use program_structure::ast::AssignOp;
@@ -421,6 +422,7 @@ impl SymbolicExecutor {
 
     pub fn execute(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
         if cur_bid < statements.len() {
+            debug!("cur_bid={:?}: {:?}", cur_bid, statements[cur_bid]);
             self.max_depth = max(self.max_depth, self.cur_state.get_depth());
             match &statements[cur_bid] {
                 ExtendedStatement::DebugStatement(stmt) => {
@@ -466,7 +468,7 @@ impl SymbolicExecutor {
                             ..
                         } => {
                             let condition =
-                                self.evaluate_expression(&DebugExpression(cond.clone()));
+                                self.evaluate_expression(&DebugExpression(cond.clone()), true);
                             self.trace_constraint_stats.update(&condition);
 
                             // Create a branch in the symbolic state
@@ -500,7 +502,7 @@ impl SymbolicExecutor {
                         Statement::While { cond, stmt, .. } => {
                             // Symbolic execution of loops is complex. This is a simplified approach.
                             let condition =
-                                self.evaluate_expression(&DebugExpression(cond.clone()));
+                                self.evaluate_expression(&DebugExpression(cond.clone()), true);
                             self.trace_constraint_stats.update(&condition);
 
                             self.cur_state.push_trace_constraint(condition);
@@ -517,7 +519,7 @@ impl SymbolicExecutor {
                         }
                         Statement::Return { value, .. } => {
                             let return_value =
-                                self.evaluate_expression(&DebugExpression(value.clone()));
+                                self.evaluate_expression(&DebugExpression(value.clone()), true);
                             // Handle return value (e.g., store in a special "return" variable)
                             self.cur_state
                                 .set_symval("__return__".to_string(), return_value);
@@ -550,7 +552,11 @@ impl SymbolicExecutor {
                             op,
                             rhe,
                         } => {
-                            let value = self.evaluate_expression(&DebugExpression(rhe.clone()));
+                            let original_value =
+                                self.evaluate_expression(&DebugExpression(rhe.clone()), false);
+                            let value =
+                                self.evaluate_expression(&DebugExpression(rhe.clone()), true);
+
                             let var_name = if access.is_empty() {
                                 var.clone()
                             } else {
@@ -564,6 +570,7 @@ impl SymbolicExecutor {
                                         .collect::<Vec<_>>()
                                 )
                             };
+
                             self.cur_state.set_symval(var_name.clone(), value.clone());
                             let cont = SymbolicValue::BinaryOp(
                                 Box::new(SymbolicValue::Variable(var_name.clone())),
@@ -572,9 +579,8 @@ impl SymbolicExecutor {
                             );
                             self.cur_state.push_trace_constraint(cont.clone());
                             self.trace_constraint_stats.update(&cont);
+
                             if let AssignOp::AssignConstraintSignal = op {
-                                let original_value =
-                                    self.simple_evaluate_expression(&DebugExpression(rhe.clone()));
                                 let original_cont = SymbolicValue::BinaryOp(
                                     Box::new(SymbolicValue::Variable(var_name.clone())),
                                     DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
@@ -586,8 +592,13 @@ impl SymbolicExecutor {
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::MultSubstitution { lhe, op, rhe, .. } => {
-                            let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()));
-                            let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()));
+                            let simple_lhs =
+                                self.evaluate_expression(&DebugExpression(lhe.clone()), false);
+                            let simple_rhs =
+                                self.evaluate_expression(&DebugExpression(rhe.clone()), false);
+                            let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()), true);
+                            let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()), true);
+
                             // Handle multiple substitution (simplified)
                             let cont = SymbolicValue::BinaryOp(
                                 Box::new(lhs),
@@ -597,10 +608,6 @@ impl SymbolicExecutor {
                             self.cur_state.push_trace_constraint(cont.clone());
                             self.trace_constraint_stats.update(&cont);
                             if let AssignOp::AssignConstraintSignal = op {
-                                let simple_lhs =
-                                    self.simple_evaluate_expression(&DebugExpression(lhe.clone()));
-                                let simple_rhs =
-                                    self.simple_evaluate_expression(&DebugExpression(rhe.clone()));
                                 // Handle multiple substitution (simplified)
                                 let simple_cont = SymbolicValue::BinaryOp(
                                     Box::new(simple_lhs),
@@ -613,22 +620,34 @@ impl SymbolicExecutor {
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::ConstraintEquality { meta: _, lhe, rhe } => {
-                            let lhs =
-                                self.simple_evaluate_expression(&DebugExpression(lhe.clone()));
-                            let rhs =
-                                self.simple_evaluate_expression(&DebugExpression(rhe.clone()));
+                            let original_lhs =
+                                self.evaluate_expression(&DebugExpression(lhe.clone()), false);
+                            let original_rhs =
+                                self.evaluate_expression(&DebugExpression(rhe.clone()), false);
+                            let lhs = self.evaluate_expression(&DebugExpression(lhe.clone()), true);
+                            let rhs = self.evaluate_expression(&DebugExpression(rhe.clone()), true);
+
+                            let original_cond = SymbolicValue::BinaryOp(
+                                Box::new(original_lhs),
+                                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                Box::new(original_rhs),
+                            );
                             let cond = SymbolicValue::BinaryOp(
                                 Box::new(lhs),
                                 DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                 Box::new(rhs),
                             );
-                            //self.cur_state.push_trace_constraint(cond.clone());
-                            self.cur_state.push_side_constraint(cond.clone());
-                            self.side_constraint_stats.update(&cond);
+
+                            self.cur_state.push_trace_constraint(cond.clone());
+                            self.trace_constraint_stats.update(&cond);
+                            self.cur_state.push_side_constraint(original_cond.clone());
+                            self.side_constraint_stats.update(&original_cond);
+
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::Assert { arg, .. } => {
-                            let condition = self.evaluate_expression(&DebugExpression(arg.clone()));
+                            let condition =
+                                self.evaluate_expression(&DebugExpression(arg.clone()), true);
                             self.cur_state.push_trace_constraint(condition.clone());
                             self.trace_constraint_stats.update(&condition);
                             self.execute(statements, cur_bid + 1);
@@ -650,7 +669,7 @@ impl SymbolicExecutor {
         }
     }
 
-    fn simple_evaluate_expression(&self, expr: &DebugExpression) -> SymbolicValue {
+    fn evaluate_expression(&self, expr: &DebugExpression, substiture_var: bool) -> SymbolicValue {
         match &expr.0 {
             Expression::Number(_meta, value) => SymbolicValue::Constant(value.clone()),
             Expression::Variable {
@@ -659,7 +678,14 @@ impl SymbolicExecutor {
                 meta: _,
             } => {
                 if access.is_empty() {
-                    SymbolicValue::Variable(name.clone())
+                    if substiture_var {
+                        self.cur_state
+                            .get_symval(&name)
+                            .cloned()
+                            .unwrap_or_else(|| SymbolicValue::Variable(name.clone()))
+                    } else {
+                        SymbolicValue::Variable(name.clone())
+                    }
                 } else {
                     SymbolicValue::Variable(format!(
                         "{}{:?}",
@@ -677,8 +703,8 @@ impl SymbolicExecutor {
                 infix_op,
                 rhe,
             } => {
-                let lhs = self.simple_evaluate_expression(&DebugExpression(*lhe.clone()));
-                let rhs = self.simple_evaluate_expression(&DebugExpression(*rhe.clone()));
+                let lhs = self.evaluate_expression(&DebugExpression(*lhe.clone()), substiture_var);
+                let rhs = self.evaluate_expression(&DebugExpression(*rhe.clone()), substiture_var);
                 SymbolicValue::BinaryOp(
                     Box::new(lhs),
                     DebugExpressionInfixOpcode(infix_op.clone()),
@@ -690,7 +716,7 @@ impl SymbolicExecutor {
                 prefix_op,
                 rhe,
             } => {
-                let expr = self.simple_evaluate_expression(&DebugExpression(*rhe.clone()));
+                let expr = self.evaluate_expression(&DebugExpression(*rhe.clone()), substiture_var);
                 SymbolicValue::UnaryOp(
                     DebugExpressionPrefixOpcode(prefix_op.clone()),
                     Box::new(expr),
@@ -702,11 +728,12 @@ impl SymbolicExecutor {
                 if_true,
                 if_false,
             } => {
-                let condition = self.simple_evaluate_expression(&DebugExpression(*cond.clone()));
+                let condition =
+                    self.evaluate_expression(&DebugExpression(*cond.clone()), substiture_var);
                 let true_branch =
-                    self.simple_evaluate_expression(&DebugExpression(*if_true.clone()));
+                    self.evaluate_expression(&DebugExpression(*if_true.clone()), substiture_var);
                 let false_branch =
-                    self.simple_evaluate_expression(&DebugExpression(*if_false.clone()));
+                    self.evaluate_expression(&DebugExpression(*if_false.clone()), substiture_var);
                 SymbolicValue::Conditional(
                     Box::new(condition),
                     Box::new(true_branch),
@@ -714,19 +741,19 @@ impl SymbolicExecutor {
                 )
             }
             Expression::ParallelOp { rhe, .. } => {
-                self.simple_evaluate_expression(&DebugExpression(*rhe.clone()))
+                self.evaluate_expression(&DebugExpression(*rhe.clone()), substiture_var)
             }
             Expression::ArrayInLine { meta: _, values } => {
                 let elements = values
                     .iter()
-                    .map(|v| self.simple_evaluate_expression(&DebugExpression(v.clone())))
+                    .map(|v| self.evaluate_expression(&DebugExpression(v.clone()), substiture_var))
                     .collect();
                 SymbolicValue::Array(elements)
             }
             Expression::Tuple { meta: _, values } => {
                 let elements = values
                     .iter()
-                    .map(|v| self.simple_evaluate_expression(&DebugExpression(v.clone())))
+                    .map(|v| self.evaluate_expression(&DebugExpression(v.clone()), substiture_var))
                     .collect();
                 SymbolicValue::Array(elements)
             }
@@ -734,9 +761,9 @@ impl SymbolicExecutor {
                 value, dimension, ..
             } => {
                 let evaluated_value =
-                    self.simple_evaluate_expression(&DebugExpression(*value.clone()));
+                    self.evaluate_expression(&DebugExpression(*value.clone()), substiture_var);
                 let evaluated_dimension =
-                    self.simple_evaluate_expression(&DebugExpression(*dimension.clone()));
+                    self.evaluate_expression(&DebugExpression(*dimension.clone()), substiture_var);
                 SymbolicValue::UniformArray(
                     Box::new(evaluated_value),
                     Box::new(evaluated_dimension),
@@ -745,132 +772,9 @@ impl SymbolicExecutor {
             Expression::Call { id, args, .. } => {
                 let evaluated_args = args
                     .iter()
-                    .map(|arg| self.simple_evaluate_expression(&DebugExpression(arg.clone())))
-                    .collect();
-                SymbolicValue::Call(id.clone(), evaluated_args)
-            }
-            /*
-            DebugExpression::BusCall { id, args, .. } => {
-                let evaluated_args = args.iter()
-                    .map(|arg| self.simple_evaluate_expression(&DebugExpression(arg.clone())))
-                    .collect();
-                SymbolicValue::FunctionCall(format!("Bus_{}", id), evaluated_args)
-            }
-            DebugExpression::AnonymousComp { id, params, signals, .. } => {
-                let evaluated_params = params.iter()
-                    .map(|param| self.simple_evaluate_expression(&DebugExpression(param.clone())))
-                    .collect();
-                let evaluated_signals = signals.iter()
-                    .map(|signal| self.simple_evaluate_expression(&DebugExpression(signal.clone())))
-                    .collect();
-                SymbolicValue::FunctionCall(format!("AnonymousComp_{}", id),
-                    [evaluated_params, evaluated_signals].concat())
-            }*/
-            // Handle other expression types
-            _ => {
-                println!("Unhandled expression type: {:?}", expr);
-                SymbolicValue::Variable(format!("Unhandled({:?})", expr))
-            }
-        }
-    }
-
-
-    fn evaluate_expression(&self, expr: &DebugExpression) -> SymbolicValue {
-        match &expr.0 {
-            Expression::Number(_meta, value) => SymbolicValue::Constant(value.clone()),
-            Expression::Variable {
-                name,
-                access,
-                meta: _,
-            } => {
-                if access.is_empty() {
-                    self.cur_state
-                        .get_symval(&name)
-                        .cloned()
-                        .unwrap_or_else(|| SymbolicValue::Variable(name.clone()))
-                } else {
-                    SymbolicValue::Variable(format!(
-                        "{}{:?}",
-                        name,
-                        &access
-                            .iter()
-                            .map(|arg0: &Access| DebugAccess(arg0.clone()))
-                            .collect::<Vec<_>>()
-                    ))
-                }
-            }
-            Expression::InfixOp {
-                meta: _,
-                lhe,
-                infix_op,
-                rhe,
-            } => {
-                let lhs = self.evaluate_expression(&DebugExpression(*lhe.clone()));
-                let rhs = self.evaluate_expression(&DebugExpression(*rhe.clone()));
-                SymbolicValue::BinaryOp(
-                    Box::new(lhs),
-                    DebugExpressionInfixOpcode(infix_op.clone()),
-                    Box::new(rhs),
-                )
-            }
-            Expression::PrefixOp {
-                meta: _,
-                prefix_op,
-                rhe,
-            } => {
-                let expr = self.evaluate_expression(&DebugExpression(*rhe.clone()));
-                SymbolicValue::UnaryOp(
-                    DebugExpressionPrefixOpcode(prefix_op.clone()),
-                    Box::new(expr),
-                )
-            }
-            Expression::InlineSwitchOp {
-                meta: _,
-                cond,
-                if_true,
-                if_false,
-            } => {
-                let condition = self.evaluate_expression(&DebugExpression(*cond.clone()));
-                let true_branch = self.evaluate_expression(&DebugExpression(*if_true.clone()));
-                let false_branch = self.evaluate_expression(&DebugExpression(*if_false.clone()));
-                SymbolicValue::Conditional(
-                    Box::new(condition),
-                    Box::new(true_branch),
-                    Box::new(false_branch),
-                )
-            }
-            Expression::ParallelOp { rhe, .. } => {
-                self.evaluate_expression(&DebugExpression(*rhe.clone()))
-            }
-            Expression::ArrayInLine { meta: _, values } => {
-                let elements = values
-                    .iter()
-                    .map(|v| self.evaluate_expression(&DebugExpression(v.clone())))
-                    .collect();
-                SymbolicValue::Array(elements)
-            }
-            Expression::Tuple { meta: _, values } => {
-                let elements = values
-                    .iter()
-                    .map(|v| self.evaluate_expression(&DebugExpression(v.clone())))
-                    .collect();
-                SymbolicValue::Array(elements)
-            }
-            Expression::UniformArray {
-                value, dimension, ..
-            } => {
-                let evaluated_value = self.evaluate_expression(&DebugExpression(*value.clone()));
-                let evaluated_dimension =
-                    self.evaluate_expression(&DebugExpression(*dimension.clone()));
-                SymbolicValue::UniformArray(
-                    Box::new(evaluated_value),
-                    Box::new(evaluated_dimension),
-                )
-            }
-            Expression::Call { id, args, .. } => {
-                let evaluated_args = args
-                    .iter()
-                    .map(|arg| self.evaluate_expression(&DebugExpression(arg.clone())))
+                    .map(|arg| {
+                        self.evaluate_expression(&DebugExpression(arg.clone()), substiture_var)
+                    })
                     .collect();
                 SymbolicValue::Call(id.clone(), evaluated_args)
             }
