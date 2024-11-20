@@ -421,6 +421,7 @@ impl SymbolicExecutor {
     }
 
     pub fn execute(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
+        debug!("aaaa");
         if cur_bid < statements.len() {
             debug!("cur_bid={:?}: {:?}", cur_bid, statements[cur_bid]);
             self.max_depth = max(self.max_depth, self.cur_state.get_depth());
