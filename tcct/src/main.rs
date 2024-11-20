@@ -2,16 +2,15 @@
 mod input_user;
 mod parser_user;
 mod symbolic_execution;
-use log::{debug, error, info, warn};
 mod type_analysis_user;
 
 use ansi_term::Colour;
+use env_logger;
 use input_user::Input;
+use log::{debug, info};
 use parser_user::ExtendedStatement;
 use std::env;
-use symbolic_execution::{
-    print_constraint_summary_statistics, simplify_statement, SymbolicExecutor,
-};
+use symbolic_execution::{simplify_statement, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -21,7 +20,7 @@ fn main() {
         eprintln!("{}", Colour::Red.paint("previous errors were found"));
         std::process::exit(1);
     } else {
-        //println!("{}", Colour::Green.paint("Everything went okay"));
+        println!("{}", Colour::Green.paint("Everything went okay"));
         //std::process::exit(0);
     }
 }
@@ -33,16 +32,13 @@ fn start() -> Result<(), ()> {
     let mut program_archive = parser_user::parse_project(&user_input)?;
     type_analysis_user::analyse_project(&mut program_archive)?;
 
-    env::set_var("RUST_LOG", "debug");
-    error!("22222");
-    info!("aaaa");
-    debug!("aaaaaa {}", "111");
+    env_logger::init();
 
     for (k, v) in program_archive.templates.clone().into_iter() {
-        //println!(
-        //    " body: {:?}",
-        //    ExtendedStatement::DebugStatement(v.get_body().clone())
-        //);
+        debug!(
+            " body: {:?}",
+            ExtendedStatement::DebugStatement(v.get_body().clone())
+        );
 
         let mut sexe = SymbolicExecutor::new();
         let body = simplify_statement(&v.get_body().clone());
@@ -54,9 +50,9 @@ fn start() -> Result<(), ()> {
             0,
         );
 
-        //for s in &sexe.final_states {
-        //    println!("final_state: {:?}", s);
-        //}
+        for s in &sexe.final_states {
+            info!("final_state: {:?}", s);
+        }
         //println!("template_name,num_of_params,max_depth");
         //println!("{},{},{}", k, v.get_num_of_params(), sexe.max_depth);
         //print_constraint_summary_statistics(&sexe.trace_constraint_stats);

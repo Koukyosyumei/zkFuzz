@@ -2,7 +2,7 @@ use crate::parser_user::{
     DebugAccess, DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode,
     ExtendedStatement,
 };
-use log::debug;
+use log::{debug, trace};
 use num_bigint_dig::BigInt;
 use program_structure::ast::Access;
 use program_structure::ast::AssignOp;
@@ -421,9 +421,8 @@ impl SymbolicExecutor {
     }
 
     pub fn execute(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
-        debug!("aaaa");
         if cur_bid < statements.len() {
-            debug!("cur_bid={:?}: {:?}", cur_bid, statements[cur_bid]);
+            trace!("cur_bid={:?}: {:?}", cur_bid, statements[cur_bid]);
             self.max_depth = max(self.max_depth, self.cur_state.get_depth());
             match &statements[cur_bid] {
                 ExtendedStatement::DebugStatement(stmt) => {
