@@ -774,6 +774,7 @@ impl SymbolicExecutor {
         }
     }
 
+
     fn evaluate_expression(&self, expr: &DebugExpression) -> SymbolicValue {
         match &expr.0 {
             Expression::Number(_meta, value) => SymbolicValue::Constant(value.clone()),
