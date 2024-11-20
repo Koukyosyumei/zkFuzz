@@ -36,7 +36,7 @@ fn start() -> Result<(), ()> {
 
     for (k, v) in program_archive.templates.clone().into_iter() {
         debug!(
-            " body: {:?}",
+            "body:\n{:?}",
             ExtendedStatement::DebugStatement(v.get_body().clone())
         );
 

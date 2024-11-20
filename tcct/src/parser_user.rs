@@ -115,7 +115,6 @@ impl DebugExpression {
                 )?;
                 writeln!(f, "{}  Left-Hand Expression:", indentation)?;
                 DebugExpression(*lhe.clone()).pretty_fmt(f, indent + 2)?;
-                writeln!(f, "")?;
                 writeln!(f, "{}  Right-Hand Expression:", indentation)?;
                 DebugExpression(*rhe.clone()).pretty_fmt(f, indent + 2)
             }
@@ -138,7 +137,7 @@ impl DebugExpression {
             Expression::Variable { name, access, .. } => {
                 writeln!(f, "{}Variable:", indentation)?;
                 writeln!(f, "{}  Name: {}", indentation, name)?;
-                write!(
+                writeln!(
                     f,
                     "{}  Access: {:?}",
                     indentation,
