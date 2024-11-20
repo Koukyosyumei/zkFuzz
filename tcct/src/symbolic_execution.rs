@@ -597,8 +597,18 @@ impl SymbolicExecutor {
                             self.cur_state.push_trace_constraint(cont.clone());
                             self.trace_constraint_stats.update(&cont);
                             if let AssignOp::AssignConstraintSignal = op {
-                                self.cur_state.push_side_constraint(cont.clone());
-                                self.side_constraint_stats.update(&cont);
+                                let simple_lhs =
+                                    self.simple_evaluate_expression(&DebugExpression(lhe.clone()));
+                                let simple_rhs =
+                                    self.simple_evaluate_expression(&DebugExpression(rhe.clone()));
+                                // Handle multiple substitution (simplified)
+                                let simple_cont = SymbolicValue::BinaryOp(
+                                    Box::new(simple_lhs),
+                                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                    Box::new(simple_rhs),
+                                );
+                                self.cur_state.push_side_constraint(simple_cont.clone());
+                                self.side_constraint_stats.update(&simple_cont);
                             }
                             self.execute(statements, cur_bid + 1);
                         }

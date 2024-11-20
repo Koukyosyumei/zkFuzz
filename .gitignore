@@ -1,3 +1,5 @@
+tcct/experiment/
+
 # circom
 *.r1cs
 *.wasm
