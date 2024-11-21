@@ -245,9 +245,11 @@ impl ExtendedStatement {
                 }
                 Statement::Block { stmts, .. } => {
                     writeln!(f, "{}Block:", indentation)?;
+                    writeln!(f, "{}    ------------------------", indentation)?;
                     for stmt in stmts {
                         ExtendedStatement::DebugStatement(stmt.clone())
                             .pretty_fmt(f, indent + 2)?;
+                        writeln!(f, "{}    ------------------------", indentation)?;
                     }
                     writeln!(f, "")
                 }
@@ -256,6 +258,38 @@ impl ExtendedStatement {
                     writeln!(f, "{}  Argument:", indentation)?;
                     DebugExpression(arg.clone()).pretty_fmt(f, indent + 2)?;
                     writeln!(f, "")
+                }
+                Statement::InitializationBlock {
+                    meta: _,
+                    xtype: _,
+                    initializations,
+                } => {
+                    writeln!(f, "{}InitializationBlock", indentation)?;
+                    writeln!(f, "{}  initializations:", indentation,)?;
+                    for i in initializations {
+                        ExtendedStatement::DebugStatement(i.clone()).pretty_fmt(f, indent + 2)?;
+                    }
+                    Ok(())
+                }
+                Statement::Declaration {
+                    meta: _,
+                    xtype: _,
+                    name,
+                    dimensions,
+                    is_constant,
+                } => {
+                    writeln!(f, "{}Declaration", indentation)?;
+                    writeln!(f, "{}  name: {}", indentation, name)?;
+                    writeln!(
+                        f,
+                        "{}  dimensions: {:?}",
+                        indentation,
+                        &dimensions
+                            .iter()
+                            .map(|arg0: &Expression| DebugExpression(arg0.clone()))
+                            .collect::<Vec<_>>(),
+                    )?;
+                    writeln!(f, "{}  is_constant: {}", indentation, is_constant)
                 }
                 _ => writeln!(f, "{}Unhandled Statement", indentation),
             },
