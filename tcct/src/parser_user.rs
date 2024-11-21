@@ -224,7 +224,6 @@ impl DebugExpression {
                 }
                 Ok(())
             }
-            _ => writeln!(f, "{}Unhandled Expression", indentation),
         }
     }
 }
