@@ -443,7 +443,7 @@ impl SymbolicExecutor {
                             );
                         }
                         Statement::Block { meta, stmts, .. } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             if cur_bid < stmts.len() {
                                 self.execute(
                                     &stmts
@@ -468,7 +468,7 @@ impl SymbolicExecutor {
                             else_case,
                             ..
                         } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             let condition =
                                 self.evaluate_expression(&DebugExpression(cond.clone()), true);
                             self.trace_constraint_stats.update(&condition);
@@ -504,7 +504,7 @@ impl SymbolicExecutor {
                         Statement::While {
                             meta, cond, stmt, ..
                         } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             // Symbolic execution of loops is complex. This is a simplified approach.
                             let condition =
                                 self.evaluate_expression(&DebugExpression(cond.clone()), true);
@@ -523,7 +523,7 @@ impl SymbolicExecutor {
                             // Note: This doesn't handle loop invariants or fixed-point computation
                         }
                         Statement::Return { meta, value, .. } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             let return_value =
                                 self.evaluate_expression(&DebugExpression(value.clone()), true);
                             // Handle return value (e.g., store in a special "return" variable)
@@ -558,7 +558,7 @@ impl SymbolicExecutor {
                             op,
                             rhe,
                         } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             let original_value =
                                 self.evaluate_expression(&DebugExpression(rhe.clone()), false);
                             let value =
@@ -601,7 +601,7 @@ impl SymbolicExecutor {
                         Statement::MultSubstitution {
                             meta, lhe, op, rhe, ..
                         } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             let simple_lhs =
                                 self.evaluate_expression(&DebugExpression(lhe.clone()), false);
                             let simple_rhs =
@@ -630,7 +630,7 @@ impl SymbolicExecutor {
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::ConstraintEquality { meta, lhe, rhe } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             let original_lhs =
                                 self.evaluate_expression(&DebugExpression(lhe.clone()), false);
                             let original_rhs =
@@ -657,7 +657,7 @@ impl SymbolicExecutor {
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::Assert { meta, arg, .. } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             let condition =
                                 self.evaluate_expression(&DebugExpression(arg.clone()), true);
                             self.cur_state.push_trace_constraint(condition.clone());
@@ -670,11 +670,11 @@ impl SymbolicExecutor {
                             rhe: _,
                             ..
                         } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             // Underscore substitution doesn't affect the symbolic state
                         }
                         Statement::LogCall { meta, args: _, .. } => {
-                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+                            trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
                             // Logging doesn't affect the symbolic state
                         }
                     }
