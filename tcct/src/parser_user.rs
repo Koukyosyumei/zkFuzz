@@ -162,15 +162,11 @@ impl DebugExpression {
             Expression::Call { id, args, .. } => {
                 writeln!(f, "{}Call", indentation)?;
                 writeln!(f, "{}  id: {}", indentation, id)?;
-                writeln!(
-                    f,
-                    "{}  args: {:?}",
-                    indentation,
-                    &args
-                        .iter()
-                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
-                        .collect::<Vec<_>>()
-                )
+                writeln!(f, "{}  args:", indentation)?;
+                for arg0 in args {
+                    DebugExpression(arg0.clone()).pretty_fmt(f, indent + 2)?;
+                }
+                Ok(())
             }
             _ => writeln!(f, "{}Unhandled Expression", indentation),
         }
@@ -276,15 +272,10 @@ impl ExtendedStatement {
                 } => {
                     writeln!(f, "{}Declaration", indentation)?;
                     writeln!(f, "{}  name: {}", indentation, name)?;
-                    writeln!(
-                        f,
-                        "{}  dimensions: {:?}",
-                        indentation,
-                        &dimensions
-                            .iter()
-                            .map(|arg0: &Expression| DebugExpression(arg0.clone()))
-                            .collect::<Vec<_>>(),
-                    )?;
+                    writeln!(f, "{}  dimensions:", indentation)?;
+                    for dim in dimensions {
+                        DebugExpression(dim.clone()).pretty_fmt(f, indent + 2)?;
+                    }
                     writeln!(f, "{}  is_constant: {}", indentation, is_constant)
                 }
                 Statement::MultSubstitution { lhe, op, rhe, .. } => {
