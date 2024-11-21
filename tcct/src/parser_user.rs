@@ -291,6 +291,34 @@ impl ExtendedStatement {
                     )?;
                     writeln!(f, "{}  is_constant: {}", indentation, is_constant)
                 }
+                Statement::MultSubstitution { lhe, op, rhe, .. } => {
+                    writeln!(f, "{}MultSubstitution", indentation)?;
+                    writeln!(f, "{}  Op: {:?}", indentation, DebugAssignOp(op.clone()))?;
+                    writeln!(f, "{}  Left-Hand Expression:", indentation)?;
+                    DebugExpression(lhe.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "{}  Right-Hand Expression:", indentation)?;
+                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "")
+                }
+                Statement::UnderscoreSubstitution { op, rhe, .. } => {
+                    writeln!(f, "{}UnderscoreSubstitution", indentation)?;
+                    writeln!(f, "{}  Op: {:?}", indentation, DebugAssignOp(op.clone()))?;
+                    writeln!(f, "{}  Right-Hand Expression:", indentation)?;
+                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "")
+                }
+                Statement::ConstraintEquality { lhe, rhe, .. } => {
+                    writeln!(f, "{}ConstraintEquality", indentation)?;
+                    writeln!(f, "{}  Left-Hand Expression:", indentation)?;
+                    DebugExpression(lhe.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "{}  Right-Hand Expression:", indentation)?;
+                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)?;
+                    writeln!(f, "")
+                }
+                Statement::LogCall { args, .. } => {
+                    writeln!(f, "{}LogCall", indentation)
+                    //writeln!(f, "{}  args: {:?}", indentation, args)
+                }
                 _ => writeln!(f, "{}Unhandled Statement", indentation),
             },
             ExtendedStatement::Ret => writeln!(f, "{}Ret", indentation),
