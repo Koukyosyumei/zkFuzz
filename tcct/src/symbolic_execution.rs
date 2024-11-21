@@ -122,12 +122,23 @@ impl fmt::Debug for SymbolicValue {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct SymbolicState {
     values: HashMap<String, SymbolicValue>,
     trace_constraints: Vec<SymbolicValue>,
     side_constraints: Vec<SymbolicValue>,
     depth: usize,
+}
+
+impl fmt::Debug for SymbolicState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "SymbolicState [")?;
+        writeln!(f, "  values: {:?}", self.values)?;
+        writeln!(f, "  trace_constraints: {:?}", self.trace_constraints)?;
+        writeln!(f, "  sidec_constraints: {:?}", self.side_constraints)?;
+        writeln!(f, "  depth: {:?}", self.depth)?;
+        write!(f, "]")
+    }
 }
 
 impl SymbolicState {
@@ -405,7 +416,7 @@ impl SymbolicExecutor {
         }
     }
 
-    fn execute_next_block(
+    fn expand_all_stack_states(
         &mut self,
         statements: &Vec<ExtendedStatement>,
         cur_bid: usize,
@@ -416,7 +427,7 @@ impl SymbolicExecutor {
         for state in &stack_states.clone() {
             self.cur_state = state.clone();
             self.cur_state.set_depth(depth);
-            self.execute(statements, cur_bid + 1);
+            self.execute(statements, cur_bid);
         }
     }
 
@@ -436,9 +447,9 @@ impl SymbolicExecutor {
                                 );
                             }
                             self.block_end_states = vec![self.cur_state.clone()];
-                            self.execute_next_block(
+                            self.expand_all_stack_states(
                                 statements,
-                                cur_bid,
+                                cur_bid + 1,
                                 self.cur_state.get_depth(),
                             );
                         }
@@ -454,9 +465,9 @@ impl SymbolicExecutor {
                                         .collect::<Vec<_>>(),
                                     0,
                                 );
-                                self.execute_next_block(
+                                self.expand_all_stack_states(
                                     statements,
-                                    cur_bid,
+                                    cur_bid + 1,
                                     self.cur_state.get_depth(),
                                 );
                             }
@@ -485,7 +496,7 @@ impl SymbolicExecutor {
                                 &vec![ExtendedStatement::DebugStatement(*if_case.clone())],
                                 0,
                             );
-                            self.execute_next_block(statements, cur_bid, cur_depth);
+                            self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
 
                             if let Some(else_stmt) = else_case {
                                 else_state.push_trace_constraint(SymbolicValue::UnaryOp(
@@ -498,7 +509,7 @@ impl SymbolicExecutor {
                                     &vec![ExtendedStatement::DebugStatement(*else_stmt.clone())],
                                     0,
                                 );
-                                self.execute_next_block(statements, cur_bid, cur_depth);
+                                self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
                             }
                         }
                         Statement::While {
@@ -515,9 +526,9 @@ impl SymbolicExecutor {
                                 &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
                                 0,
                             );
-                            self.execute_next_block(
+                            self.expand_all_stack_states(
                                 statements,
-                                cur_bid,
+                                cur_bid + 1,
                                 self.cur_state.get_depth(),
                             );
                             // Note: This doesn't handle loop invariants or fixed-point computation

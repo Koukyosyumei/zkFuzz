@@ -35,13 +35,16 @@ fn start() -> Result<(), ()> {
     env_logger::init();
 
     for (k, v) in program_archive.templates.clone().into_iter() {
-        debug!(
-            "body:\n{:?}",
-            ExtendedStatement::DebugStatement(v.get_body().clone())
-        );
-
+        // debug!(
+        //     "body:\n{:?}",
+        //     ExtendedStatement::DebugStatement(v.get_body().clone())
+        // );
         let mut sexe = SymbolicExecutor::new();
         let body = simplify_statement(&v.get_body().clone());
+        debug!(
+            "body:\n{:?}",
+            ExtendedStatement::DebugStatement(body.clone())
+        );
         sexe.execute(
             &vec![
                 ExtendedStatement::DebugStatement(body),
