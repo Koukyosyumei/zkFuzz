@@ -26,15 +26,22 @@ pub enum ExtendedStatement {
 
 impl fmt::Debug for DebugAccess {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.pretty_fmt(f, 0)
+    }
+}
+
+impl DebugAccess {
+    fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+        let indentation = "  ".repeat(indent);
         match &self.0 {
-            Access::ComponentAccess(name) => f
-                .debug_struct("ComponentAccess")
-                .field("name", &name)
-                .finish(),
-            Access::ArrayAccess(expr) => f
-                .debug_struct("ArrayAccess")
-                .field("expr", &DebugExpression(expr.clone()))
-                .finish(),
+            Access::ComponentAccess(name) => {
+                writeln!(f, "{}ComponentAccess", indentation)?;
+                writeln!(f, "{}  name: {}", indentation, name)
+            }
+            Access::ArrayAccess(expr) => {
+                writeln!(f, "{}ArrayAccess:", indentation)?;
+                DebugExpression(expr.clone()).pretty_fmt(f, indent + 2)
+            }
         }
     }
 }
@@ -167,15 +174,11 @@ impl DebugExpression {
             Expression::Variable { name, access, .. } => {
                 writeln!(f, "{}{}Variable:{}", indentation, GREEN, RESET)?;
                 writeln!(f, "{}  Name: {}", indentation, name)?;
-                writeln!(
-                    f,
-                    "{}  Access: {:?}",
-                    indentation,
-                    &access
-                        .iter()
-                        .map(|arg0: &Access| DebugAccess(arg0.clone()))
-                        .collect::<Vec<_>>()
-                )
+                writeln!(f, "{}  Access:", indentation)?;
+                for arg0 in access {
+                    DebugAccess(arg0.clone()).pretty_fmt(f, indent + 2)?;
+                }
+                Ok(())
             }
             Expression::InlineSwitchOp {
                 cond: _,
@@ -323,17 +326,10 @@ impl ExtendedStatement {
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(f, "{}  {}Variable:{} {}", indentation, BLUE, RESET, var)?;
-                    writeln!(
-                        f,
-                        "{}  {}Access:{} {:?}",
-                        indentation,
-                        MAGENTA,
-                        RESET,
-                        &access
-                            .iter()
-                            .map(|arg0: &Access| DebugAccess(arg0.clone()))
-                            .collect::<Vec<_>>()
-                    )?;
+                    writeln!(f, "{}  {}Access:{}", indentation, MAGENTA, RESET)?;
+                    for arg0 in access {
+                        DebugAccess(arg0.clone()).pretty_fmt(f, indent + 2)?;
+                    }
                     writeln!(
                         f,
                         "{}  {}Operation:{} {:?}",
