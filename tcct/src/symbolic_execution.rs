@@ -2,6 +2,7 @@ use crate::parser_user::{
     DebugAccess, DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode,
     ExtendedStatement,
 };
+use colored::Colorize;
 use log::{debug, trace};
 use num_bigint_dig::BigInt;
 use program_structure::ast::Access;
@@ -115,12 +116,25 @@ impl fmt::Debug for SymbolicValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SymbolicValue::Constant(value) => write!(f, "{}", value),
-            SymbolicValue::Variable(name) => write!(f, "{}", name),
-            SymbolicValue::BinaryOp(lhs, op, rhs) => write!(f, "({:?} {:?} {:?})", op, lhs, rhs),
+            SymbolicValue::Variable(name) => write!(f, "{}", name.yellow()),
+            SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
+                ExpressionInfixOpcode::Eq => {
+                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
+                }
+                ExpressionInfixOpcode::NotEq => {
+                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
+                }
+                _ => write!(f, "({} {:?} {:?})", format!("{:?}", op), lhs, rhs),
+            },
             SymbolicValue::Conditional(cond, if_branch, else_branch) => {
                 write!(f, "({:?} {:?} {:?})", cond, if_branch, else_branch)
             }
-            SymbolicValue::UnaryOp(op, expr) => write!(f, "({:?} {:?})", op, expr),
+            SymbolicValue::UnaryOp(op, expr) => match &op.0 {
+                ExpressionPrefixOpcode::BoolNot => {
+                    write!(f, "({} {:?})", format!("{:?}", op).red(), expr)
+                }
+                _ => write!(f, "({} {:?})", format!("{:?}", op), expr),
+            },
             _ => write!(f, "unknown symbolic value"),
         }
     }
