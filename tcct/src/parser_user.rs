@@ -324,6 +324,11 @@ impl ExtendedStatement {
                     )?;
                     writeln!(f, "{}  {}Variable:{} {}", indentation, BLUE, RESET, var)?;
                     writeln!(
+                        f,
+                        "{}  {}Access:{} {:?}",
+                        indentation,
+                        MAGENTA,
+                        RESET,
                         &access
                             .iter()
                             .map(|arg0: &Access| DebugAccess(arg0.clone()))
@@ -446,7 +451,6 @@ impl ExtendedStatement {
                 Statement::UnderscoreSubstitution { op, rhe, meta, .. } => {
                     writeln!(
                         f,
-<<<<<<< HEAD
                         "{}{}UnderscoreSubstitution{} (sid={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
@@ -486,24 +490,6 @@ impl ExtendedStatement {
                 }
                 Statement::LogCall { args, .. } => {
                     writeln!(f, "{}{}LogCall{}", indentation, GREEN, RESET)
-=======
-                        "{}UnderscoreSubstitution ({})",
-                        indentation, meta.elem_id
-                    )?;
-                    writeln!(f, "{}  Op: {:?}", indentation, DebugAssignOp(op.clone()))?;
-                    writeln!(f, "{}  Right-Hand Expression:", indentation)?;
-                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                }
-                Statement::ConstraintEquality { lhe, rhe, meta, .. } => {
-                    writeln!(f, "{}ConstraintEquality ({})", indentation, meta.elem_id)?;
-                    writeln!(f, "{}  Left-Hand Expression:", indentation)?;
-                    DebugExpression(lhe.clone()).pretty_fmt(f, indent + 2)?;
-                    writeln!(f, "{}  Right-Hand Expression:", indentation)?;
-                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                }
-                Statement::LogCall { args, .. } => {
-                    writeln!(f, "{}LogCall", indentation)
->>>>>>> main
                 }
             },
             ExtendedStatement::Ret => writeln!(f, "{}{}Ret{}", indentation, BLUE, RESET),
