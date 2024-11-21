@@ -2,6 +2,7 @@ use std::path::PathBuf;
 
 pub struct Input {
     pub input_program: PathBuf,
+    /*
     pub out_r1cs: PathBuf,
     pub out_json_constraints: PathBuf,
     pub out_json_substitutions: PathBuf,
@@ -32,11 +33,12 @@ pub struct Input {
     pub inspect_constraints_flag: bool,
     pub no_rounds: usize,
     pub flag_verbose: bool,
+        */
     pub prime: String,
     pub link_libraries : Vec<PathBuf>
 }
 
-
+/*
 const R1CS: &'static str = "r1cs";
 const WAT: &'static str = "wat";
 const WASM: &'static str = "wasm";
@@ -45,30 +47,31 @@ const JS: &'static str = "js";
 const DAT: &'static str = "dat";
 const SYM: &'static str = "sym";
 const JSON: &'static str = "json";
-
+*/
 
 impl Input {
     pub fn new() -> Result<Input, ()> {
         use ansi_term::Colour;
-        use input_processing::SimplificationStyle;
+        //use input_processing::SimplificationStyle;
         let matches = input_processing::view();
         let input = input_processing::get_input(&matches)?;
-        let mut file_name = input.file_stem().unwrap().to_str().unwrap().to_string();
-        let output_path = input_processing::get_output_path(&matches)?;
+        let file_name = input.file_stem().unwrap().to_str().unwrap().to_string();
+        //let output_path = input_processing::get_output_path(&matches)?;
 
         let c_flag = input_processing::get_c(&matches);
 
         if c_flag && (file_name == "main" || file_name == "fr" || file_name == "calcwit"){
             println!("{}", Colour::Yellow.paint(format!("The name {} is reserved in Circom when using de --c flag. The files generated for your circuit will use the name {}_c instead of {}.", file_name, file_name, file_name)));
-            file_name = format!("{}_c", file_name)
+            //file_name = format!("{}_c", file_name)
         };
-        let output_c_path = Input::build_folder(&output_path, &file_name, CPP);
-        let output_js_path = Input::build_folder(&output_path, &file_name, JS);
-        let o_style = input_processing::get_simplification_style(&matches)?;
+        //let output_c_path = Input::build_folder(&output_path, &file_name, CPP);
+        //let output_js_path = Input::build_folder(&output_path, &file_name, JS);
+        //let o_style = input_processing::get_simplification_style(&matches)?;
         let link_libraries = input_processing::get_link_libraries(&matches);
         Result::Ok(Input {
             //field: P_BN128,
             input_program: input,
+            /*
             out_r1cs: Input::build_output(&output_path, &file_name, R1CS),
             out_wat_code: Input::build_output(&output_js_path, &file_name, WAT),
             out_wasm_code: Input::build_output(&output_js_path, &file_name, WASM),
@@ -106,11 +109,13 @@ impl Input {
             inspect_constraints_flag: input_processing::get_inspect_constraints(&matches),
             flag_old_heuristics: input_processing::get_flag_old_heuristics(&matches),
             flag_verbose: input_processing::get_flag_verbose(&matches), 
+            */
             prime: input_processing::get_prime(&matches)?,
             link_libraries
         })
     }
 
+    /*
     fn build_folder(output_path: &PathBuf, filename: &str, ext: &str) -> PathBuf {
         let mut file = output_path.clone();
 	    let folder_name = format!("{}_{}",filename,ext);
@@ -122,7 +127,7 @@ impl Input {
         let mut file = output_path.clone();
         file.push(format!("{}.{}",filename,ext));
         file
-    }
+    }*/
 
     pub fn get_link_libraries(&self) -> &Vec<PathBuf> {
         &self.link_libraries
@@ -131,6 +136,7 @@ impl Input {
     pub fn input_file(&self) -> &str {
         &self.input_program.to_str().unwrap()
     }
+    /*
     pub fn r1cs_file(&self) -> &str {
         self.out_r1cs.to_str().unwrap()
     }
@@ -219,7 +225,7 @@ impl Input {
     }
     pub fn no_rounds(&self) -> usize {
         self.no_rounds
-    }
+    }*/
     pub fn prime(&self) -> String{
         self.prime.clone()
     }
@@ -240,6 +246,7 @@ mod input_processing {
         }
     }
 
+    /*
     pub fn get_output_path(matches: &ArgMatches) -> Result<PathBuf, ()> {
         let route = Path::new(matches.value_of("output").unwrap()).to_path_buf();
         if route.is_dir() {
@@ -247,8 +254,9 @@ mod input_processing {
         } else {
             Result::Err(eprintln!("{}", Colour::Red.paint("invalid output path")))
         }
-    }
+    }*/
 
+    /*
     #[derive(Copy, Clone, Eq, PartialEq)]
     pub enum SimplificationStyle { O0, O1, O2(usize) }
     pub fn get_simplification_style(matches: &ArgMatches) -> Result<SimplificationStyle, ()> {
@@ -271,8 +279,9 @@ mod input_processing {
             (false, false, false, true) => Ok(SimplificationStyle::O2(usize::MAX)),
             (false, false, false, false) => Ok(SimplificationStyle::O1),
         }
-    }
+    }*/
 
+    /*
     pub fn get_json_constraints(matches: &ArgMatches) -> bool {
         matches.is_present("print_json_c")
     }
@@ -295,12 +304,12 @@ mod input_processing {
 
     pub fn get_wat(matches: &ArgMatches) -> bool {
         matches.is_present("print_wat")
-    }
+    }*/
 
     pub fn get_c(matches: &ArgMatches) -> bool {
         matches.is_present("print_c")
     }
-
+    /* 
     pub fn get_main_inputs_log(matches: &ArgMatches) -> bool {
         matches.is_present("main_inputs_log")
     }
@@ -326,7 +335,7 @@ mod input_processing {
 
     pub fn get_flag_old_heuristics(matches: &ArgMatches) -> bool {
         matches.is_present("flag_old_heuristics")
-    }
+    }*/
     pub fn get_prime(matches: &ArgMatches) -> Result<String, ()> {
         
         match matches.is_present("prime"){

@@ -34,7 +34,7 @@ fn start() -> Result<(), ()> {
 
     env_logger::init();
 
-    for (k, v) in program_archive.templates.clone().into_iter() {
+    for (_k, v) in program_archive.templates.clone().into_iter() {
         // debug!(
         //     "body:\n{:?}",
         //     ExtendedStatement::DebugStatement(v.get_body().clone())

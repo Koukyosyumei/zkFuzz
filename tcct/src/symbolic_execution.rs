@@ -3,7 +3,7 @@ use crate::parser_user::{
     ExtendedStatement,
 };
 use colored::Colorize;
-use log::{debug, trace};
+use log::trace;
 use num_bigint_dig::BigInt;
 use program_structure::ast::Access;
 use program_structure::ast::AssignOp;
@@ -274,6 +274,7 @@ impl ConstraintStatistics {
     }
 }
 
+/*
 pub fn print_constraint_statistics(constraint_stats: &ConstraintStatistics) {
     println!("Constraint Statistics:");
     println!("Total constraints: {}", constraint_stats.total_constraints);
@@ -294,7 +295,7 @@ pub fn print_constraint_statistics(constraint_stats: &ConstraintStatistics) {
         "Function call counts: {:?}",
         constraint_stats.function_call_counts
     );
-}
+}*/
 
 pub fn print_constraint_summary_statistics(constraint_stats: &ConstraintStatistics) {
     let headers = vec![

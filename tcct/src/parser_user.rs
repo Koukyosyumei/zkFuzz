@@ -178,7 +178,7 @@ impl DebugExpression {
                 )
             }
             Expression::InlineSwitchOp {
-                cond,
+                cond: _,
                 if_true,
                 if_false,
                 ..
@@ -237,7 +237,7 @@ impl DebugExpression {
                 is_parallel,
                 params,
                 signals,
-                names,
+                names: _,
                 ..
             } => {
                 writeln!(f, "{}AnonymousComp", indentation)?;
@@ -488,7 +488,7 @@ impl ExtendedStatement {
                     )?;
                     DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
                 }
-                Statement::LogCall { args, .. } => {
+                Statement::LogCall { args: _, .. } => {
                     writeln!(f, "{}{}LogCall{}", indentation, GREEN, RESET)
                 }
             },
