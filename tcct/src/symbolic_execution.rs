@@ -443,7 +443,11 @@ impl SymbolicExecutor {
                             );
                         }
                         Statement::Block { meta, stmts, .. } => {
+<<<<<<< HEAD
                             trace!("(sid={}) {:?}", meta.elem_id, self.cur_state);
+=======
+                            trace!("({}) {:?}", meta.elem_id, self.cur_state);
+>>>>>>> main
                             if cur_bid < stmts.len() {
                                 self.execute(
                                     &stmts
