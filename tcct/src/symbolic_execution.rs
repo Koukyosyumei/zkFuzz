@@ -151,7 +151,10 @@ pub struct SymbolicState {
 impl fmt::Debug for SymbolicState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "SymbolicState [")?;
-        writeln!(f, "  values: {:?}", self.values)?;
+        writeln!(f, "  values:")?;
+        for (k, v) in self.values.clone().into_iter() {
+            writeln!(f, "    {}: {:?}", k, v.clone())?;
+        }
         writeln!(f, "  trace_constraints: {:?}", self.trace_constraints)?;
         writeln!(f, "  sidec_constraints: {:?}", self.side_constraints)?;
         writeln!(f, "  depth: {:?}", self.depth)?;
