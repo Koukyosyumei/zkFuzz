@@ -272,7 +272,7 @@ impl ExtendedStatement {
                 } => {
                     writeln!(
                         f,
-                        "{}{}IfThenElse{} (sid={}):",
+                        "{}{}IfThenElse{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(f, "{}  {}Condition:{}:", indentation, CYAN, RESET)?;
@@ -292,7 +292,7 @@ impl ExtendedStatement {
                 } => {
                     writeln!(
                         f,
-                        "{}{}While{} (sid={}):",
+                        "{}{}While{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(f, "{}  {}Condition:{}:", indentation, CYAN, RESET)?;
@@ -303,7 +303,7 @@ impl ExtendedStatement {
                 Statement::Return { value, meta, .. } => {
                     writeln!(
                         f,
-                        "{}{}Return{} (sid={}):",
+                        "{}{}Return{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(f, "{}  {}Value:{}:", indentation, MAGENTA, RESET)?;
@@ -319,7 +319,7 @@ impl ExtendedStatement {
                 } => {
                     writeln!(
                         f,
-                        "{}{}Substitution{} (sid={}):",
+                        "{}{}Substitution{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(f, "{}  {}Variable:{} {}", indentation, BLUE, RESET, var)?;
@@ -352,12 +352,12 @@ impl ExtendedStatement {
                 Statement::Block { stmts, meta, .. } => {
                     writeln!(
                         f,
-                        "{}{}Block{} (sid={}):",
+                        "{}{}Block{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(
                         f,
-                        "{}    {}------------------------{}",
+                        "{}    {}-------------------------------{}",
                         indentation, RED, RESET
                     )?;
                     for stmt in stmts {
@@ -365,7 +365,7 @@ impl ExtendedStatement {
                             .pretty_fmt(f, indent + 2)?;
                         writeln!(
                             f,
-                            "{}    {}------------------------{}",
+                            "{}    {}-------------------------------{}",
                             indentation, RED, RESET
                         )?;
                     }
@@ -374,7 +374,7 @@ impl ExtendedStatement {
                 Statement::Assert { arg, meta, .. } => {
                     writeln!(
                         f,
-                        "{}{}Assert{} (sid={}):",
+                        "{}{}Assert{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(f, "{}  {}Argument:{}:", indentation, YELLOW, RESET)?;
@@ -387,7 +387,7 @@ impl ExtendedStatement {
                 } => {
                     writeln!(
                         f,
-                        "{}{}InitializationBlock{} (sid={}):",
+                        "{}{}InitializationBlock{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(f, "{}  {}Initializations:{}:", indentation, YELLOW, RESET)?;
@@ -405,7 +405,7 @@ impl ExtendedStatement {
                 } => {
                     writeln!(
                         f,
-                        "{}{}Declaration{} (sid={}):",
+                        "{}{}Declaration{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(f, "{}  {}Name:{} {}", indentation, MAGENTA, RESET, name)?;
@@ -424,7 +424,7 @@ impl ExtendedStatement {
                 } => {
                     writeln!(
                         f,
-                        "{}{}MultSubstitution{} (sid={}):",
+                        "{}{}MultSubstitution{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(
@@ -451,7 +451,7 @@ impl ExtendedStatement {
                 Statement::UnderscoreSubstitution { op, rhe, meta, .. } => {
                     writeln!(
                         f,
-                        "{}{}UnderscoreSubstitution{} (sid={}):",
+                        "{}{}UnderscoreSubstitution{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(
@@ -472,7 +472,7 @@ impl ExtendedStatement {
                 Statement::ConstraintEquality { lhe, rhe, meta, .. } => {
                     writeln!(
                         f,
-                        "{}{}ConstraintEquality{} (sid={}):",
+                        "{}{}ConstraintEquality{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
                     writeln!(
