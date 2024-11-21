@@ -10,7 +10,9 @@ use input_user::Input;
 use log::{debug, info};
 use parser_user::ExtendedStatement;
 use std::env;
-use symbolic_execution::{simplify_statement, SymbolicExecutor};
+use symbolic_execution::{
+    print_constraint_summary_statistics, simplify_statement, SymbolicExecutor,
+};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -34,11 +36,7 @@ fn start() -> Result<(), ()> {
 
     env_logger::init();
 
-    for (_k, v) in program_archive.templates.clone().into_iter() {
-        // debug!(
-        //     "body:\n{:?}",
-        //     ExtendedStatement::DebugStatement(v.get_body().clone())
-        // );
+    for (k, v) in program_archive.templates.clone().into_iter() {
         let mut sexe = SymbolicExecutor::new();
         let body = simplify_statement(&v.get_body().clone());
         debug!(
@@ -56,10 +54,10 @@ fn start() -> Result<(), ()> {
         for s in &sexe.final_states {
             info!("final_state: {:?}", s);
         }
-        //println!("template_name,num_of_params,max_depth");
-        //println!("{},{},{}", k, v.get_num_of_params(), sexe.max_depth);
-        //print_constraint_summary_statistics(&sexe.trace_constraint_stats);
-        //print_constraint_summary_statistics(&sexe.side_constraint_stats);
+        println!("template_name,num_of_params,max_depth");
+        println!("{},{},{}", k, v.get_num_of_params(), sexe.max_depth);
+        print_constraint_summary_statistics(&sexe.trace_constraint_stats);
+        print_constraint_summary_statistics(&sexe.side_constraint_stats);
     }
 
     /*
