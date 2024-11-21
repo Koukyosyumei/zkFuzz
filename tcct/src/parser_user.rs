@@ -237,9 +237,10 @@ impl ExtendedStatement {
                     cond,
                     if_case,
                     else_case,
+                    meta,
                     ..
                 } => {
-                    writeln!(f, "{}IfThenElse:", indentation)?;
+                    writeln!(f, "{}IfThenElse ({}):", indentation, meta.elem_id)?;
                     writeln!(f, "{}  Condition:", indentation)?;
                     DebugExpression(cond.clone()).pretty_fmt(f, indent + 2)?;
                     writeln!(f, "{}  If Case:", indentation)?;
@@ -252,15 +253,17 @@ impl ExtendedStatement {
                     }
                     Ok(())
                 }
-                Statement::While { cond, stmt, .. } => {
-                    writeln!(f, "{}While:", indentation)?;
+                Statement::While {
+                    cond, stmt, meta, ..
+                } => {
+                    writeln!(f, "{}While ({}):", indentation, meta.elem_id)?;
                     writeln!(f, "{}  Condition:", indentation)?;
                     DebugExpression(cond.clone()).pretty_fmt(f, indent + 2)?;
                     writeln!(f, "{}  Statement:", indentation)?;
                     ExtendedStatement::DebugStatement(*stmt.clone()).pretty_fmt(f, indent + 2)
                 }
-                Statement::Return { value, .. } => {
-                    writeln!(f, "{}Return:", indentation)?;
+                Statement::Return { value, meta, .. } => {
+                    writeln!(f, "{}Return ({}):", indentation, meta.elem_id)?;
                     writeln!(f, "{}  Value:", indentation)?;
                     DebugExpression(value.clone()).pretty_fmt(f, indent + 2)
                 }
@@ -269,9 +272,10 @@ impl ExtendedStatement {
                     access,
                     op,
                     rhe,
+                    meta,
                     ..
                 } => {
-                    writeln!(f, "{}Substitution:", indentation)?;
+                    writeln!(f, "{}Substitution ({}):", indentation, meta.elem_id)?;
                     writeln!(f, "{}  Variable: {}", indentation, var)?;
                     writeln!(
                         f,
@@ -291,8 +295,8 @@ impl ExtendedStatement {
                     writeln!(f, "{}  Right-Hand Expression:", indentation)?;
                     DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
                 }
-                Statement::Block { stmts, .. } => {
-                    writeln!(f, "{}Block:", indentation)?;
+                Statement::Block { stmts, meta, .. } => {
+                    writeln!(f, "{}Block ({}):", indentation, meta.elem_id)?;
                     writeln!(f, "{}    ------------------------", indentation)?;
                     for stmt in stmts {
                         ExtendedStatement::DebugStatement(stmt.clone())
@@ -301,17 +305,17 @@ impl ExtendedStatement {
                     }
                     Ok(())
                 }
-                Statement::Assert { arg, .. } => {
-                    writeln!(f, "{}Assert:", indentation)?;
+                Statement::Assert { arg, meta, .. } => {
+                    writeln!(f, "{}Assert ({}):", indentation, meta.elem_id)?;
                     writeln!(f, "{}  Argument:", indentation)?;
                     DebugExpression(arg.clone()).pretty_fmt(f, indent + 2)
                 }
                 Statement::InitializationBlock {
-                    meta: _,
+                    meta,
                     xtype: _,
                     initializations,
                 } => {
-                    writeln!(f, "{}InitializationBlock", indentation)?;
+                    writeln!(f, "{}InitializationBlock ({})", indentation, meta.elem_id)?;
                     writeln!(f, "{}  initializations:", indentation,)?;
                     for i in initializations {
                         ExtendedStatement::DebugStatement(i.clone()).pretty_fmt(f, indent + 2)?;
@@ -319,13 +323,13 @@ impl ExtendedStatement {
                     Ok(())
                 }
                 Statement::Declaration {
-                    meta: _,
+                    meta,
                     xtype: _,
                     name,
                     dimensions,
                     is_constant,
                 } => {
-                    writeln!(f, "{}Declaration", indentation)?;
+                    writeln!(f, "{}Declaration ({})", indentation, meta.elem_id)?;
                     writeln!(f, "{}  name: {}", indentation, name)?;
                     writeln!(f, "{}  dimensions:", indentation)?;
                     for dim in dimensions {
@@ -333,22 +337,28 @@ impl ExtendedStatement {
                     }
                     writeln!(f, "{}  is_constant: {}", indentation, is_constant)
                 }
-                Statement::MultSubstitution { lhe, op, rhe, .. } => {
-                    writeln!(f, "{}MultSubstitution", indentation)?;
+                Statement::MultSubstitution {
+                    lhe, op, rhe, meta, ..
+                } => {
+                    writeln!(f, "{}MultSubstitution ({})", indentation, meta.elem_id)?;
                     writeln!(f, "{}  Op: {:?}", indentation, DebugAssignOp(op.clone()))?;
                     writeln!(f, "{}  Left-Hand Expression:", indentation)?;
                     DebugExpression(lhe.clone()).pretty_fmt(f, indent + 2)?;
                     writeln!(f, "{}  Right-Hand Expression:", indentation)?;
                     DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
                 }
-                Statement::UnderscoreSubstitution { op, rhe, .. } => {
-                    writeln!(f, "{}UnderscoreSubstitution", indentation)?;
+                Statement::UnderscoreSubstitution { op, rhe, meta, .. } => {
+                    writeln!(
+                        f,
+                        "{}UnderscoreSubstitution ({})",
+                        indentation, meta.elem_id
+                    )?;
                     writeln!(f, "{}  Op: {:?}", indentation, DebugAssignOp(op.clone()))?;
                     writeln!(f, "{}  Right-Hand Expression:", indentation)?;
                     DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
                 }
-                Statement::ConstraintEquality { lhe, rhe, .. } => {
-                    writeln!(f, "{}ConstraintEquality", indentation)?;
+                Statement::ConstraintEquality { lhe, rhe, meta, .. } => {
+                    writeln!(f, "{}ConstraintEquality ({})", indentation, meta.elem_id)?;
                     writeln!(f, "{}  Left-Hand Expression:", indentation)?;
                     DebugExpression(lhe.clone()).pretty_fmt(f, indent + 2)?;
                     writeln!(f, "{}  Right-Hand Expression:", indentation)?;
