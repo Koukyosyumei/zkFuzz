@@ -496,9 +496,11 @@ impl SymbolicExecutor {
                                 &vec![ExtendedStatement::DebugStatement(*if_case.clone())],
                                 0,
                             );
+                            let stack_states = self.block_end_states.clone();
                             self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
 
                             if let Some(else_stmt) = else_case {
+                                self.block_end_states = stack_states;
                                 else_state.push_trace_constraint(SymbolicValue::UnaryOp(
                                     DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
                                     Box::new(condition),
