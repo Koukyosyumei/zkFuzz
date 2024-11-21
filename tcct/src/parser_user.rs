@@ -200,7 +200,6 @@ impl ExtendedStatement {
                             .pretty_fmt(f, indent + 2)?;
                     }
                     Ok(())
-                    //writeln!(f, "")
                 }
                 Statement::While { cond, stmt, .. } => {
                     writeln!(f, "{}While:", indentation)?;
@@ -208,13 +207,11 @@ impl ExtendedStatement {
                     DebugExpression(cond.clone()).pretty_fmt(f, indent + 2)?;
                     writeln!(f, "{}  Statement:", indentation)?;
                     ExtendedStatement::DebugStatement(*stmt.clone()).pretty_fmt(f, indent + 2)
-                    //writeln!(f, "")
                 }
                 Statement::Return { value, .. } => {
                     writeln!(f, "{}Return:", indentation)?;
                     writeln!(f, "{}  Value:", indentation)?;
                     DebugExpression(value.clone()).pretty_fmt(f, indent + 2)
-                    //writeln!(f, "")
                 }
                 Statement::Substitution {
                     var,
@@ -242,7 +239,6 @@ impl ExtendedStatement {
                     )?;
                     writeln!(f, "{}  Right-Hand Expression:", indentation)?;
                     DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                    //writeln!(f, "")
                 }
                 Statement::Block { stmts, .. } => {
                     writeln!(f, "{}Block:", indentation)?;
@@ -253,13 +249,11 @@ impl ExtendedStatement {
                         writeln!(f, "{}    ------------------------", indentation)?;
                     }
                     Ok(())
-                    //writeln!(f, "")
                 }
                 Statement::Assert { arg, .. } => {
                     writeln!(f, "{}Assert:", indentation)?;
                     writeln!(f, "{}  Argument:", indentation)?;
                     DebugExpression(arg.clone()).pretty_fmt(f, indent + 2)
-                    //writeln!(f, "")
                 }
                 Statement::InitializationBlock {
                     meta: _,
@@ -300,14 +294,12 @@ impl ExtendedStatement {
                     DebugExpression(lhe.clone()).pretty_fmt(f, indent + 2)?;
                     writeln!(f, "{}  Right-Hand Expression:", indentation)?;
                     DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                    // writeln!(f, "")
                 }
                 Statement::UnderscoreSubstitution { op, rhe, .. } => {
                     writeln!(f, "{}UnderscoreSubstitution", indentation)?;
                     writeln!(f, "{}  Op: {:?}", indentation, DebugAssignOp(op.clone()))?;
                     writeln!(f, "{}  Right-Hand Expression:", indentation)?;
                     DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                    //writeln!(f, "")
                 }
                 Statement::ConstraintEquality { lhe, rhe, .. } => {
                     writeln!(f, "{}ConstraintEquality", indentation)?;
@@ -315,13 +307,10 @@ impl ExtendedStatement {
                     DebugExpression(lhe.clone()).pretty_fmt(f, indent + 2)?;
                     writeln!(f, "{}  Right-Hand Expression:", indentation)?;
                     DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                    //writeln!(f, "")
                 }
                 Statement::LogCall { args, .. } => {
                     writeln!(f, "{}LogCall", indentation)
-                    //writeln!(f, "{}  args: {:?}", indentation, args)
                 }
-                _ => writeln!(f, "{}Unhandled Statement", indentation),
             },
             ExtendedStatement::Ret => writeln!(f, "{}Ret", indentation),
         }
