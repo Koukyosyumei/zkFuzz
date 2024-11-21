@@ -46,6 +46,22 @@ impl DebugAccess {
     }
 }
 
+impl DebugAccess {
+    fn compact_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+        let indentation = "  ".repeat(indent);
+        match &self.0 {
+            Access::ComponentAccess(name) => {
+                writeln!(f, "{}ComponentAccess", indentation)?;
+                writeln!(f, "{}  name: {}", indentation, name)
+            }
+            Access::ArrayAccess(expr) => {
+                writeln!(f, "{}ArrayAccess:", indentation)?;
+                DebugExpression(expr.clone()).pretty_fmt(f, indent + 2)
+            }
+        }
+    }
+}
+
 impl fmt::Debug for DebugAssignOp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {

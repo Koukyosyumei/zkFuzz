@@ -153,10 +153,31 @@ impl fmt::Debug for SymbolicState {
         writeln!(f, "SymbolicState [")?;
         writeln!(f, "  values:")?;
         for (k, v) in self.values.clone().into_iter() {
-            writeln!(f, "    {}: {:?}", k, v.clone())?;
+            writeln!(
+                f,
+                "    {}: {}",
+                k.replace("\n", "").replace("  ", " "),
+                format!("{:?}", v.clone())
+                    .replace("\n", "")
+                    .replace("  ", " ")
+            )?;
         }
-        writeln!(f, "  trace_constraints: {:?}", self.trace_constraints)?;
-        writeln!(f, "  sidec_constraints: {:?}", self.side_constraints)?;
+        writeln!(
+            f,
+            "  trace_constraints: {}",
+            format!("{:?}", self.trace_constraints)
+                .replace("\n", "")
+                .replace("  ", " ")
+                .replace("  ", " ")
+        )?;
+        writeln!(
+            f,
+            "  sidec_constraints: {}",
+            format!("{:?}", self.side_constraints)
+                .replace("\n", "")
+                .replace("  ", " ")
+                .replace("  ", " ")
+        )?;
         writeln!(f, "  depth: {:?}", self.depth)?;
         write!(f, "]")
     }
