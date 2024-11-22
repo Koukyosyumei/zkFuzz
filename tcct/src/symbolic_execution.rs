@@ -6,6 +6,7 @@ use colored::Colorize;
 use log::{trace, warn};
 use num_bigint_dig::BigInt;
 use program_structure::ast::Access;
+use program_structure::ast::Access::ComponentAccess;
 use program_structure::ast::AssignOp;
 use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
@@ -448,6 +449,8 @@ pub struct Template {
 pub struct Component {
     pub name: String,
     pub inputs: HashMap<String, Option<SymbolicValue>>,
+    pub states: Vec<SymbolicState>,
+    pub is_done: bool,
 }
 
 pub struct SymbolicExecutor {
@@ -712,12 +715,23 @@ impl SymbolicExecutor {
 
                             self.cur_state.set_symval(var_name.clone(), value.clone());
 
-                            /*
                             if !access.is_empty() {
                                 for acc in access {
-                                    if let ComponentAccess(name) = acc {}
+                                    if let Access::ComponentAccess(tmp_name) = acc {
+                                        if let Some(component) =
+                                            self.components_store.get_mut(var.as_str())
+                                        {
+                                            component
+                                                .inputs
+                                                .insert(tmp_name.clone(), Some(value.clone()));
+                                        }
+                                    }
                                 }
-                            }*/
+                            }
+
+                            if self.is_ready(var.to_string()) {
+                                if !self.components_store[var].is_done {}
+                            }
 
                             match value {
                                 SymbolicValue::Call(callee_name, _args) => {
@@ -731,6 +745,8 @@ impl SymbolicExecutor {
                                     let c = Component {
                                         name: callee_name.clone(),
                                         inputs: comp_inputs,
+                                        states: Vec::new(),
+                                        is_done: false,
                                     };
                                     self.components_store.insert(callee_name, c);
                                 }
