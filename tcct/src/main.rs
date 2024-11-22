@@ -46,7 +46,7 @@ fn start() -> Result<(), ()> {
 
     match &program_archive.initial_template_call {
         Expression::Call { id, args, .. } => {
-            let v = program_archive.templates["LessThan"].clone();
+            let v = program_archive.templates[id].clone();
             let body = simplify_statement(&v.get_body().clone());
             debug!(
                 "body:\n{:?}",

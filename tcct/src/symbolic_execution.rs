@@ -439,7 +439,7 @@ pub fn print_constraint_summary_statistics(constraint_stats: &ConstraintStatisti
     println!("{}", values.join(","));
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct Template {
     pub name: String,
     pub inputs: Vec<String>,
@@ -447,7 +447,7 @@ pub struct Template {
     pub body: Vec<ExtendedStatement>,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Clone, Debug)]
 pub struct Component {
     pub var_name: String,
     pub template_name: String,
@@ -733,6 +733,7 @@ impl SymbolicExecutor {
                                 if self.is_ready(var.to_string()) {
                                     if !self.components_store[var].is_done {
                                         let mut subse = SymbolicExecutor::new();
+                                        subse.template_library = self.template_library.clone();
                                         for (k, v) in
                                             self.components_store[var].inputs.clone().into_iter()
                                         {
