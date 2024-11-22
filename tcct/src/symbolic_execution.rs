@@ -447,12 +447,12 @@ pub struct Template {
 
 pub struct Component {
     pub name: String,
-    pub input_is_filled: Vec<bool>,
+    pub inputs: HashMap<String, Option<SymbolicValue>>,
 }
 
 pub struct SymbolicExecutor {
     pub template_library: HashMap<String, Template>,
-    pub components: HashMap<String, Component>,
+    pub components_store: HashMap<String, Component>,
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
@@ -467,7 +467,7 @@ impl SymbolicExecutor {
     pub fn new() -> Self {
         SymbolicExecutor {
             template_library: HashMap::new(),
-            components: HashMap::new(),
+            components_store: HashMap::new(),
             cur_state: SymbolicState::new(),
             block_end_states: Vec::new(),
             final_states: Vec::new(),
@@ -477,7 +477,14 @@ impl SymbolicExecutor {
         }
     }
 
-    fn register_library(&mut self, name: String, body: Statement) {
+    fn is_ready(&self, name: String) -> bool {
+        self.components_store[&name]
+            .inputs
+            .iter()
+            .all(|(_, v)| v.is_some())
+    }
+
+    pub fn register_library(&mut self, name: String, body: Statement) {
         let mut inputs: Vec<String> = vec![];
         let mut outputs: Vec<String> = vec![];
         match &body {
@@ -662,7 +669,7 @@ impl SymbolicExecutor {
                             } else {
                                 //"todo".to_string()
                                 format!(
-                                    "{}[{:?}]",
+                                    "{}<{:?}>",
                                     name,
                                     &dimensions
                                         .iter()
@@ -704,23 +711,50 @@ impl SymbolicExecutor {
                             };
 
                             self.cur_state.set_symval(var_name.clone(), value.clone());
-                            let cont = SymbolicValue::BinaryOp(
-                                Box::new(SymbolicValue::Variable(var_name.clone())),
-                                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                Box::new(value),
-                            );
-                            self.cur_state.push_trace_constraint(cont.clone());
-                            self.trace_constraint_stats.update(&cont);
 
-                            if let AssignOp::AssignConstraintSignal = op {
-                                let original_cont = SymbolicValue::BinaryOp(
-                                    Box::new(SymbolicValue::Variable(var_name.clone())),
-                                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                    Box::new(original_value),
-                                );
-                                self.cur_state.push_side_constraint(original_cont.clone());
-                                self.side_constraint_stats.update(&original_cont);
+                            /*
+                            if !access.is_empty() {
+                                for acc in access {
+                                    if let ComponentAccess(name) = acc {}
+                                }
+                            }*/
+
+                            match value {
+                                SymbolicValue::Call(callee_name, _args) => {
+                                    let mut comp_inputs: HashMap<String, Option<SymbolicValue>> =
+                                        HashMap::new();
+                                    for inp_name in
+                                        &self.template_library[&callee_name].inputs.clone()
+                                    {
+                                        comp_inputs.insert(inp_name.clone(), None);
+                                    }
+                                    let c = Component {
+                                        name: callee_name.clone(),
+                                        inputs: comp_inputs,
+                                    };
+                                    self.components_store.insert(callee_name, c);
+                                }
+                                _ => {
+                                    let cont = SymbolicValue::BinaryOp(
+                                        Box::new(SymbolicValue::Variable(var_name.clone())),
+                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                        Box::new(value),
+                                    );
+                                    self.cur_state.push_trace_constraint(cont.clone());
+                                    self.trace_constraint_stats.update(&cont);
+
+                                    if let AssignOp::AssignConstraintSignal = op {
+                                        let original_cont = SymbolicValue::BinaryOp(
+                                            Box::new(SymbolicValue::Variable(var_name.clone())),
+                                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                            Box::new(original_value),
+                                        );
+                                        self.cur_state.push_side_constraint(original_cont.clone());
+                                        self.side_constraint_stats.update(&original_cont);
+                                    }
+                                }
                             }
+
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::MultSubstitution {

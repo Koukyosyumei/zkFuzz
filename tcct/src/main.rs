@@ -37,11 +37,16 @@ fn start() -> Result<(), ()> {
     type_analysis_user::analyse_project(&mut program_archive)?;
 
     env_logger::init();
+    let mut sexe = SymbolicExecutor::new();
+
+    for (k, v) in program_archive.templates.clone().into_iter() {
+        let body = simplify_statement(&v.get_body().clone());
+        sexe.register_library(k, body);
+    }
 
     match &program_archive.initial_template_call {
         Expression::Call { id, args, .. } => {
-            let v = program_archive.templates[id].clone();
-            let mut sexe = SymbolicExecutor::new();
+            let v = program_archive.templates["LessThan"].clone();
             let body = simplify_statement(&v.get_body().clone());
             debug!(
                 "body:\n{:?}",
