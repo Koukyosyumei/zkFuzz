@@ -7,6 +7,7 @@ use program_structure::constants::UsefulConstants;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 use std::fmt;
+use std::fmt::format;
 
 #[derive(Clone)]
 pub struct DebugAccess(pub Access);
@@ -30,6 +31,12 @@ impl fmt::Debug for DebugAccess {
     }
 }
 
+impl fmt::Display for DebugAccess {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.compact_fmt(f)
+    }
+}
+
 impl DebugAccess {
     fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
         let indentation = "  ".repeat(indent);
@@ -47,16 +54,19 @@ impl DebugAccess {
 }
 
 impl DebugAccess {
-    fn compact_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
-        let indentation = "  ".repeat(indent);
+    fn compact_fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             Access::ComponentAccess(name) => {
-                writeln!(f, "{}ComponentAccess", indentation)?;
-                writeln!(f, "{}  name: {}", indentation, name)
+                write!(f, ".{}", name)
             }
             Access::ArrayAccess(expr) => {
-                writeln!(f, "{}ArrayAccess:", indentation)?;
-                DebugExpression(expr.clone()).pretty_fmt(f, indent + 2)
+                write!(
+                    f,
+                    "[{}]",
+                    format!("{:?}", DebugExpression(expr.clone()))
+                        .replace("\n", "")
+                        .replace("  ", " ")
+                )
             }
         }
     }

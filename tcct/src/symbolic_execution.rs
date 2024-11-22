@@ -3,14 +3,16 @@ use crate::parser_user::{
     ExtendedStatement,
 };
 use colored::Colorize;
-use log::trace;
+use log::{trace, warn};
 use num_bigint_dig::BigInt;
 use program_structure::ast::Access;
 use program_structure::ast::AssignOp;
 use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
+use program_structure::ast::SignalType;
 use program_structure::ast::Statement;
+use program_structure::ast::VariableType;
 use std::cmp::max;
 use std::collections::HashMap;
 use std::fmt;
@@ -436,8 +438,21 @@ pub fn print_constraint_summary_statistics(constraint_stats: &ConstraintStatisti
     println!("{}", values.join(","));
 }
 
+pub struct Template {
+    pub name: String,
+    pub inputs: Vec<String>,
+    pub outputs: Vec<String>,
+    pub body: Vec<ExtendedStatement>,
+}
+
+pub struct Component {
+    pub name: String,
+    pub input_is_filled: Vec<bool>,
+}
+
 pub struct SymbolicExecutor {
-    pub library: HashMap<String, Vec<ExtendedStatement>>,
+    pub template_library: HashMap<String, Template>,
+    pub components: HashMap<String, Component>,
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
@@ -451,7 +466,8 @@ pub struct SymbolicExecutor {
 impl SymbolicExecutor {
     pub fn new() -> Self {
         SymbolicExecutor {
-            library: HashMap::new(),
+            template_library: HashMap::new(),
+            components: HashMap::new(),
             cur_state: SymbolicState::new(),
             block_end_states: Vec::new(),
             final_states: Vec::new(),
@@ -459,6 +475,51 @@ impl SymbolicExecutor {
             side_constraint_stats: ConstraintStatistics::new(),
             max_depth: 0,
         }
+    }
+
+    fn register_library(&mut self, name: String, body: Statement) {
+        let mut inputs: Vec<String> = vec![];
+        let mut outputs: Vec<String> = vec![];
+        match &body {
+            Statement::Block { stmts, .. } => {
+                for s in stmts {
+                    if let Statement::InitializationBlock {
+                        initializations, ..
+                    } = s.clone()
+                    {
+                        for init in initializations {
+                            if let Statement::Declaration { name, xtype, .. } = init.clone() {
+                                if let VariableType::Signal(typ, taglist) = xtype.clone() {
+                                    match typ {
+                                        SignalType::Input => {
+                                            inputs.push(name);
+                                        }
+                                        SignalType::Output => {
+                                            outputs.push(name);
+                                        }
+                                        SignalType::Intermediate => {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            _ => {
+                warn!("Cannot Find Block Statement");
+            }
+        }
+
+        let template = Template {
+            name: name.clone(),
+            inputs: inputs,
+            outputs: outputs,
+            body: vec![
+                ExtendedStatement::DebugStatement(body),
+                ExtendedStatement::Ret,
+            ],
+        };
+        self.template_library.insert(name, template);
     }
 
     fn expand_all_stack_states(
@@ -631,12 +692,14 @@ impl SymbolicExecutor {
                             } else {
                                 //format!("{}", var)
                                 format!(
-                                    "{}{:?}",
+                                    "{}{}",
                                     var,
                                     &access
                                         .iter()
                                         .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                                        .map(|debug_access| debug_access.to_string())
                                         .collect::<Vec<_>>()
+                                        .join("")
                                 )
                             };
 
@@ -769,12 +832,14 @@ impl SymbolicExecutor {
                     }
                 } else {
                     SymbolicValue::Variable(format!(
-                        "{}{:?}",
+                        "{}{}",
                         name,
                         &access
                             .iter()
                             .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                            .map(|debug_access| debug_access.to_string())
                             .collect::<Vec<_>>()
+                            .join("")
                     ))
                 }
             }
