@@ -437,6 +437,7 @@ pub fn print_constraint_summary_statistics(constraint_stats: &ConstraintStatisti
 }
 
 pub struct SymbolicExecutor {
+    pub library: HashMap<String, Vec<ExtendedStatement>>,
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
@@ -450,6 +451,7 @@ pub struct SymbolicExecutor {
 impl SymbolicExecutor {
     pub fn new() -> Self {
         SymbolicExecutor {
+            library: HashMap::new(),
             cur_state: SymbolicState::new(),
             block_end_states: Vec::new(),
             final_states: Vec::new(),

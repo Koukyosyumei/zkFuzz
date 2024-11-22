@@ -7,8 +7,9 @@ mod type_analysis_user;
 use ansi_term::Colour;
 use env_logger;
 use input_user::Input;
-use log::{debug, info};
+use log::{debug, info, warn};
 use parser_user::ExtendedStatement;
+use program_structure::ast::Expression;
 use std::env;
 use symbolic_execution::{
     print_constraint_summary_statistics, simplify_statement, SymbolicExecutor,
@@ -28,6 +29,7 @@ fn main() {
 }
 
 fn start() -> Result<(), ()> {
+    use crate::parser_user::DebugExpression;
     //use compilation_user::CompilerConfig;
 
     let user_input = Input::new()?;
@@ -36,6 +38,37 @@ fn start() -> Result<(), ()> {
 
     env_logger::init();
 
+    match &program_archive.initial_template_call {
+        Expression::Call { id, args, .. } => {
+            let v = program_archive.templates[id].clone();
+            let mut sexe = SymbolicExecutor::new();
+            let body = simplify_statement(&v.get_body().clone());
+            debug!(
+                "body:\n{:?}",
+                ExtendedStatement::DebugStatement(body.clone())
+            );
+            sexe.execute(
+                &vec![
+                    ExtendedStatement::DebugStatement(body),
+                    ExtendedStatement::Ret,
+                ],
+                0,
+            );
+
+            for s in &sexe.final_states {
+                info!("final_state: {:?}", s);
+            }
+            println!("template_name,num_of_params,max_depth");
+            //println!("{},{},{}", k, v.get_num_of_params(), sexe.max_depth);
+            print_constraint_summary_statistics(&sexe.trace_constraint_stats);
+            print_constraint_summary_statistics(&sexe.side_constraint_stats);
+        }
+        _ => {
+            warn!("Cannot Find Main Call");
+        }
+    }
+
+    /*
     for (k, v) in program_archive.templates.clone().into_iter() {
         let mut sexe = SymbolicExecutor::new();
         let body = simplify_statement(&v.get_body().clone());
@@ -58,7 +91,7 @@ fn start() -> Result<(), ()> {
         println!("{},{},{}", k, v.get_num_of_params(), sexe.max_depth);
         print_constraint_summary_statistics(&sexe.trace_constraint_stats);
         print_constraint_summary_statistics(&sexe.side_constraint_stats);
-    }
+    }*/
 
     /*
     let config = ExecutionConfig {
