@@ -3,7 +3,7 @@ use crate::parser_user::{
     ExtendedStatement,
 };
 use colored::Colorize;
-use log::{trace, warn};
+use log::{debug, trace, warn};
 use num_bigint_dig::BigInt;
 use program_structure::ast::Access;
 use program_structure::ast::Access::ComponentAccess;
@@ -439,6 +439,7 @@ pub fn print_constraint_summary_statistics(constraint_stats: &ConstraintStatisti
     println!("{}", values.join(","));
 }
 
+#[derive(Default, Debug)]
 pub struct Template {
     pub name: String,
     pub inputs: Vec<String>,
@@ -446,8 +447,10 @@ pub struct Template {
     pub body: Vec<ExtendedStatement>,
 }
 
+#[derive(Default, Debug)]
 pub struct Component {
-    pub name: String,
+    pub var_name: String,
+    pub template_name: String,
     pub inputs: HashMap<String, Option<SymbolicValue>>,
     pub states: Vec<SymbolicState>,
     pub is_done: bool,
@@ -481,10 +484,11 @@ impl SymbolicExecutor {
     }
 
     fn is_ready(&self, name: String) -> bool {
-        self.components_store[&name]
-            .inputs
-            .iter()
-            .all(|(_, v)| v.is_some())
+        self.components_store.contains_key(&name)
+            && self.components_store[&name]
+                .inputs
+                .iter()
+                .all(|(_, v)| v.is_some())
     }
 
     pub fn register_library(&mut self, name: String, body: Statement) {
@@ -727,10 +731,41 @@ impl SymbolicExecutor {
                                         }
                                     }
                                 }
-                            }
 
-                            if self.is_ready(var.to_string()) {
-                                if !self.components_store[var].is_done {}
+                                if self.is_ready(var.to_string()) {
+                                    if !self.components_store[var].is_done {
+                                        let mut subse = SymbolicExecutor::new();
+                                        for (k, v) in
+                                            self.components_store[var].inputs.clone().into_iter()
+                                        {
+                                            subse.cur_state.values.insert(k, v.unwrap());
+                                        }
+                                        trace!(
+                                            "{}",
+                                            format!("{}", "===========================").cyan()
+                                        );
+                                        trace!("Call {}", self.components_store[var].template_name);
+
+                                        debug!(
+                                            "body:\n{:?}",
+                                            &self.template_library
+                                                [&self.components_store[var].template_name]
+                                                .body
+                                        );
+
+                                        subse.execute(
+                                            &self.template_library
+                                                [&self.components_store[var].template_name]
+                                                .body,
+                                            0,
+                                        );
+                                        trace!("Ret");
+                                        trace!(
+                                            "{}",
+                                            format!("{}", "===========================").cyan()
+                                        );
+                                    }
+                                }
                             }
 
                             match value {
@@ -743,12 +778,13 @@ impl SymbolicExecutor {
                                         comp_inputs.insert(inp_name.clone(), None);
                                     }
                                     let c = Component {
-                                        name: callee_name.clone(),
+                                        var_name: callee_name.clone(),
+                                        template_name: callee_name.clone(),
                                         inputs: comp_inputs,
                                         states: Vec::new(),
                                         is_done: false,
                                     };
-                                    self.components_store.insert(callee_name, c);
+                                    self.components_store.insert(var.to_string(), c);
                                 }
                                 _ => {
                                     let cont = SymbolicValue::BinaryOp(
