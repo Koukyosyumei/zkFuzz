@@ -575,22 +575,20 @@ impl SymbolicExecutor {
                         }
                         Statement::Block { meta, stmts, .. } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            if cur_bid < stmts.len() {
-                                self.execute(
-                                    &stmts
-                                        .iter()
-                                        .map(|arg0: &Statement| {
-                                            ExtendedStatement::DebugStatement(arg0.clone())
-                                        })
-                                        .collect::<Vec<_>>(),
-                                    0,
-                                );
-                                self.expand_all_stack_states(
-                                    statements,
-                                    cur_bid + 1,
-                                    self.cur_state.get_depth(),
-                                );
-                            }
+                            self.execute(
+                                &stmts
+                                    .iter()
+                                    .map(|arg0: &Statement| {
+                                        ExtendedStatement::DebugStatement(arg0.clone())
+                                    })
+                                    .collect::<Vec<_>>(),
+                                0,
+                            );
+                            self.expand_all_stack_states(
+                                statements,
+                                cur_bid + 1,
+                                self.cur_state.get_depth(),
+                            );
                         }
                         Statement::IfThenElse {
                             meta,
