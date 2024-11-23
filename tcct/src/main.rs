@@ -39,10 +39,6 @@ fn start() -> Result<(), ()> {
     let mut sexe = SymbolicExecutor::new();
 
     for (k, v) in program_archive.templates.clone().into_iter() {
-        for n in v.get_name_of_params() {
-            println!("name of params: {}", n);
-        }
-
         let body = simplify_statement(&v.get_body().clone());
         sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
 
@@ -56,11 +52,6 @@ fn start() -> Result<(), ()> {
     match &program_archive.initial_template_call {
         Expression::Call { id, .. } => {
             let v = program_archive.templates[id].clone();
-
-            for n in v.get_name_of_params() {
-                println!("name of params: {}", n);
-            }
-
             let body = simplify_statement(&v.get_body().clone());
 
             sexe.cur_state.set_owner("main".to_string());
