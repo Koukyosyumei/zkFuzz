@@ -965,17 +965,12 @@ impl SymbolicExecutor {
                 meta: _,
             } => {
                 if access.is_empty() {
+                    let resolved_name = format!("{}.{}", self.cur_state.get_owner(), name.clone());
                     if substiture_var {
                         self.cur_state
-                            .get_symval(&name)
+                            .get_symval(&resolved_name)
                             .cloned()
-                            .unwrap_or_else(|| {
-                                SymbolicValue::Variable(format!(
-                                    "{}.{}",
-                                    self.cur_state.get_owner(),
-                                    name.clone()
-                                ))
-                            })
+                            .unwrap_or_else(|| SymbolicValue::Variable(resolved_name))
                     } else {
                         SymbolicValue::Variable(format!(
                             "{}.{}",
