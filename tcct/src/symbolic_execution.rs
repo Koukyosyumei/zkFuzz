@@ -132,7 +132,7 @@ impl fmt::Debug for SymbolicValue {
                 | ExpressionInfixOpcode::BitXor => {
                     write!(f, "({} {:?} {:?})", format!("{:?}", op).red(), lhs, rhs)
                 }
-                _ => write!(f, "({} {:?} {:?})", format!("{:?}", op), lhs, rhs),
+                _ => write!(f, "({} {:?} {:?})", format!("{:?}", op).yellow(), lhs, rhs),
             },
             SymbolicValue::Conditional(cond, if_branch, else_branch) => {
                 write!(f, "({:?} {:?} {:?})", cond, if_branch, else_branch)
