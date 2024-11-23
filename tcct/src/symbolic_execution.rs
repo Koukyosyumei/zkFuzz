@@ -3,7 +3,7 @@ use crate::parser_user::{
     ExtendedStatement,
 };
 use colored::Colorize;
-use log::{debug, trace, warn};
+use log::{trace, warn};
 use num_bigint_dig::BigInt;
 use program_structure::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,

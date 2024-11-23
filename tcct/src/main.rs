@@ -7,7 +7,7 @@ mod type_analysis_user;
 use ansi_term::Colour;
 use env_logger;
 use input_user::Input;
-use log::{debug, info, warn};
+use log::{info, warn};
 use parser_user::ExtendedStatement;
 use program_structure::ast::Expression;
 use std::env;
@@ -29,7 +29,7 @@ fn main() {
 }
 
 fn start() -> Result<(), ()> {
-    use crate::parser_user::DebugExpression;
+    
     //use compilation_user::CompilerConfig;
 
     let user_input = Input::new()?;
@@ -51,7 +51,7 @@ fn start() -> Result<(), ()> {
     }
 
     match &program_archive.initial_template_call {
-        Expression::Call { id, args, .. } => {
+        Expression::Call { id,  .. } => {
             let v = program_archive.templates[id].clone();
             let body = simplify_statement(&v.get_body().clone());
             sexe.execute(

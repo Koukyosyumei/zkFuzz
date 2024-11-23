@@ -7,7 +7,6 @@ use program_structure::constants::UsefulConstants;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 use std::fmt;
-use std::fmt::format;
 
 #[derive(Clone)]
 pub struct DebugAccess(pub Access);
