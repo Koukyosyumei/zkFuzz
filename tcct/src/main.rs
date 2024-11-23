@@ -1,6 +1,7 @@
 //mod execution_user;
 mod input_user;
 mod parser_user;
+mod stats;
 mod symbolic_execution;
 mod type_analysis_user;
 
@@ -10,10 +11,9 @@ use input_user::Input;
 use log::{info, warn};
 use parser_user::ExtendedStatement;
 use program_structure::ast::Expression;
+use stats::print_constraint_summary_statistics_pretty;
 use std::env;
-use symbolic_execution::{
-    print_constraint_summary_statistics_pretty, simplify_statement, SymbolicExecutor,
-};
+use symbolic_execution::{simplify_statement, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
@@ -39,6 +39,10 @@ fn start() -> Result<(), ()> {
     let mut sexe = SymbolicExecutor::new();
 
     for (k, v) in program_archive.templates.clone().into_iter() {
+        for n in v.get_name_of_params() {
+            println!("name of params: {}", n);
+        }
+
         let body = simplify_statement(&v.get_body().clone());
         sexe.register_library(k.clone(), body.clone());
 
@@ -52,6 +56,11 @@ fn start() -> Result<(), ()> {
     match &program_archive.initial_template_call {
         Expression::Call { id, .. } => {
             let v = program_archive.templates[id].clone();
+
+            for n in v.get_name_of_params() {
+                println!("name of params: {}", n);
+            }
+
             let body = simplify_statement(&v.get_body().clone());
 
             sexe.cur_state.set_owner("main".to_string());
