@@ -301,13 +301,6 @@ impl ConstraintStatistics {
 }
 
 pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintStatistics) {
-    let headers = vec![
-        "Variable_Avg_Count",
-        "Variable_Max_Count",
-        "Function_Avg_Count",
-        "Function_Max_Count",
-    ];
-
     println!("Total_Constraints: {}", constraint_stats.total_constraints);
     println!("Constant_Counts: {}", constraint_stats.constant_counts);
     println!(
@@ -532,7 +525,7 @@ impl SymbolicExecutor {
                     {
                         for init in initializations {
                             if let Statement::Declaration { name, xtype, .. } = init.clone() {
-                                if let VariableType::Signal(typ, taglist) = xtype.clone() {
+                                if let VariableType::Signal(typ, _taglist) = xtype.clone() {
                                     match typ {
                                         SignalType::Input => {
                                             inputs.push(name);
