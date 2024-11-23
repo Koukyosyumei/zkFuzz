@@ -197,7 +197,7 @@ impl DebugExpression {
                 DebugExpression(*rhe.clone()).pretty_fmt(f, indent + 2)
             }
             Expression::Variable { name, access, .. } => {
-                writeln!(f, "{}{}Variable:{}", indentation, GREEN, RESET)?;
+                writeln!(f, "{}{}Variable:{}", indentation, BLUE, RESET)?;
                 writeln!(f, "{}  Name: {}", indentation, name)?;
                 writeln!(f, "{}  Access:", indentation)?;
                 for arg0 in access {

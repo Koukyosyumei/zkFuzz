@@ -115,25 +115,22 @@ impl fmt::Debug for SymbolicValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             SymbolicValue::Constant(value) => write!(f, "{}", value),
-            SymbolicValue::Variable(name) => write!(f, "{}", name.yellow()),
+            SymbolicValue::Variable(name) => write!(f, "{}", name),
             SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
-                ExpressionInfixOpcode::Eq => {
+                ExpressionInfixOpcode::Eq
+                | ExpressionInfixOpcode::NotEq
+                | ExpressionInfixOpcode::LesserEq
+                | ExpressionInfixOpcode::GreaterEq
+                | ExpressionInfixOpcode::Lesser
+                | ExpressionInfixOpcode::Greater => {
                     write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
                 }
-                ExpressionInfixOpcode::NotEq => {
-                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
-                }
-                ExpressionInfixOpcode::LesserEq => {
-                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
-                }
-                ExpressionInfixOpcode::GreaterEq => {
-                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
-                }
-                ExpressionInfixOpcode::Lesser => {
-                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
-                }
-                ExpressionInfixOpcode::Greater => {
-                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
+                ExpressionInfixOpcode::ShiftL
+                | ExpressionInfixOpcode::ShiftR
+                | ExpressionInfixOpcode::BitAnd
+                | ExpressionInfixOpcode::BitOr
+                | ExpressionInfixOpcode::BitXor => {
+                    write!(f, "({} {:?} {:?})", format!("{:?}", op).red(), lhs, rhs)
                 }
                 _ => write!(f, "({} {:?} {:?})", format!("{:?}", op), lhs, rhs),
             },
