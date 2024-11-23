@@ -745,13 +745,6 @@ impl SymbolicExecutor {
                                         );
                                         trace!("Call {}", self.components_store[var].template_name);
 
-                                        debug!(
-                                            "body:\n{:?}",
-                                            &self.template_library
-                                                [&self.components_store[var].template_name]
-                                                .body
-                                        );
-
                                         subse.execute(
                                             &self.template_library
                                                 [&self.components_store[var].template_name]

@@ -34,6 +34,7 @@ pub struct Input {
     pub no_rounds: usize,
     pub flag_verbose: bool,
         */
+    pub flag_printout_ast: bool,
     pub prime: String,
     pub link_libraries : Vec<PathBuf>
 }
@@ -110,6 +111,7 @@ impl Input {
             flag_old_heuristics: input_processing::get_flag_old_heuristics(&matches),
             flag_verbose: input_processing::get_flag_verbose(&matches), 
             */
+            flag_printout_ast: input_processing::get_ast(&matches),
             prime: input_processing::get_prime(&matches)?,
             link_libraries
         })
@@ -309,6 +311,11 @@ mod input_processing {
     pub fn get_c(matches: &ArgMatches) -> bool {
         matches.is_present("print_c")
     }
+
+    pub fn get_ast(matches: &ArgMatches) -> bool {
+        matches.is_present("print_ast")
+    }
+
     /* 
     pub fn get_main_inputs_log(matches: &ArgMatches) -> bool {
         matches.is_present("main_inputs_log")
@@ -486,6 +493,14 @@ mod input_processing {
                     .takes_value(false)
                     .display_order(150)
                     .help("Compiles the circuit to c"),
+            )
+            .arg(
+                Arg::with_name("print_ast")
+                    .long("ast")
+                    .short("ast")
+                    .takes_value(false)
+                    .display_order(150)
+                    .help("Printouts AST"),
             )
             .arg(
                 Arg::with_name("parallel_simplification")
