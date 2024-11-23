@@ -44,7 +44,7 @@ fn start() -> Result<(), ()> {
         }
 
         let body = simplify_statement(&v.get_body().clone());
-        sexe.register_library(k.clone(), body.clone());
+        sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
             println!("{}", k);

@@ -245,6 +245,7 @@ impl SymbolicState {
 
 #[derive(Default, Clone, Debug)]
 pub struct SymbolicTemplate {
+    pub template_parameter_names: Vec<String>,
     pub inputs: Vec<String>,
     pub body: Vec<ExtendedStatement>,
 }
@@ -373,7 +374,12 @@ impl SymbolicExecutor {
                 .all(|(_, v)| v.is_some())
     }
 
-    pub fn register_library(&mut self, name: String, body: Statement) {
+    pub fn register_library(
+        &mut self,
+        name: String,
+        body: Statement,
+        template_parameter_names: &Vec<String>,
+    ) {
         let mut inputs: Vec<String> = vec![];
         match &body {
             Statement::Block { stmts, .. } => {
@@ -404,6 +410,7 @@ impl SymbolicExecutor {
         }
 
         let template = SymbolicTemplate {
+            template_parameter_names: template_parameter_names.clone(),
             inputs: inputs,
             body: vec![
                 ExtendedStatement::DebugStatement(body),
@@ -620,6 +627,20 @@ impl SymbolicExecutor {
                                             var.clone()
                                         ));
 
+                                        let templ = &self.template_library
+                                            [&self.components_store[var].template_name];
+
+                                        for i in 0..(templ.template_parameter_names.len()) {
+                                            subse.cur_state.set_symval(
+                                                format!(
+                                                    "{}.{}",
+                                                    subse.cur_state.get_owner(),
+                                                    templ.template_parameter_names[i]
+                                                ),
+                                                self.components_store[var].args[i].clone(),
+                                            );
+                                        }
+
                                         for (k, v) in
                                             self.components_store[var].inputs.clone().into_iter()
                                         {
@@ -635,12 +656,7 @@ impl SymbolicExecutor {
                                         );
                                         trace!("Call {}", self.components_store[var].template_name);
 
-                                        subse.execute(
-                                            &self.template_library
-                                                [&self.components_store[var].template_name]
-                                                .body,
-                                            0,
-                                        );
+                                        subse.execute(&templ.body, 0);
 
                                         let mut sub_trace_constraints =
                                             subse.final_states[0].trace_constraints.clone();
