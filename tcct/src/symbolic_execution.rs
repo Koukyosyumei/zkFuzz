@@ -490,15 +490,14 @@ pub fn print_constraint_summary_statistics_csv(constraint_stats: &ConstraintStat
 #[derive(Default, Clone, Debug)]
 pub struct Template {
     pub inputs: Vec<String>,
-    pub outputs: Vec<String>,
     pub body: Vec<ExtendedStatement>,
 }
 
 #[derive(Default, Clone, Debug)]
 pub struct Component {
     pub template_name: String,
+    pub args: Vec<SymbolicValue>,
     pub inputs: HashMap<String, Option<SymbolicValue>>,
-    pub states: Vec<SymbolicState>,
     pub is_done: bool,
 }
 
@@ -539,7 +538,6 @@ impl SymbolicExecutor {
 
     pub fn register_library(&mut self, name: String, body: Statement) {
         let mut inputs: Vec<String> = vec![];
-        let mut outputs: Vec<String> = vec![];
         match &body {
             Statement::Block { stmts, .. } => {
                 for s in stmts {
@@ -554,9 +552,7 @@ impl SymbolicExecutor {
                                         SignalType::Input => {
                                             inputs.push(name);
                                         }
-                                        SignalType::Output => {
-                                            outputs.push(name);
-                                        }
+                                        SignalType::Output => {}
                                         SignalType::Intermediate => {}
                                     }
                                 }
@@ -572,7 +568,6 @@ impl SymbolicExecutor {
 
         let template = Template {
             inputs: inputs,
-            outputs: outputs,
             body: vec![
                 ExtendedStatement::DebugStatement(body),
                 ExtendedStatement::Ret,
@@ -780,20 +775,23 @@ impl SymbolicExecutor {
                                 if self.is_ready(var.to_string()) {
                                     if !self.components_store[var].is_done {
                                         let mut subse = SymbolicExecutor::new();
+
                                         subse.template_library = self.template_library.clone();
                                         subse.cur_state.set_owner(format!(
                                             "{}.{}",
                                             self.cur_state.get_owner(),
                                             var.clone()
                                         ));
+
                                         for (k, v) in
                                             self.components_store[var].inputs.clone().into_iter()
                                         {
-                                            subse.cur_state.values.insert(
+                                            subse.cur_state.set_symval(
                                                 format!("{}.{}", subse.cur_state.get_owner(), k),
                                                 v.unwrap(),
                                             );
                                         }
+
                                         trace!(
                                             "{}",
                                             format!("{}", "===========================").cyan()
@@ -826,7 +824,7 @@ impl SymbolicExecutor {
                             }
 
                             match value {
-                                SymbolicValue::Call(callee_name, _args) => {
+                                SymbolicValue::Call(callee_name, args) => {
                                     let mut comp_inputs: HashMap<String, Option<SymbolicValue>> =
                                         HashMap::new();
                                     for inp_name in
@@ -836,8 +834,8 @@ impl SymbolicExecutor {
                                     }
                                     let c = Component {
                                         template_name: callee_name.clone(),
+                                        args: args.clone(),
                                         inputs: comp_inputs,
-                                        states: Vec::new(),
                                         is_done: false,
                                     };
                                     self.components_store.insert(var.to_string(), c);
