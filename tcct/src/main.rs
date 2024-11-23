@@ -12,7 +12,7 @@ use parser_user::ExtendedStatement;
 use program_structure::ast::Expression;
 use std::env;
 use symbolic_execution::{
-    print_constraint_summary_statistics, simplify_statement, SymbolicExecutor,
+    print_constraint_summary_statistics_pretty, simplify_statement, SymbolicExecutor,
 };
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -66,10 +66,10 @@ fn start() -> Result<(), ()> {
             for s in &sexe.final_states {
                 info!("final_state: {:?}", s);
             }
-            println!("template_name,num_of_params,max_depth");
-            //println!("{},{},{}", k, v.get_num_of_params(), sexe.max_depth);
-            print_constraint_summary_statistics(&sexe.trace_constraint_stats);
-            print_constraint_summary_statistics(&sexe.side_constraint_stats);
+            println!("----------------------\n*Stats of Trace Constraint*");
+            print_constraint_summary_statistics_pretty(&sexe.trace_constraint_stats);
+            println!("----------------------\n*Stats of Side Constraint*");
+            print_constraint_summary_statistics_pretty(&sexe.side_constraint_stats);
         }
         _ => {
             warn!("Cannot Find Main Call");

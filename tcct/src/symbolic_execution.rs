@@ -301,30 +301,80 @@ impl ConstraintStatistics {
     }
 }
 
-/*
-pub fn print_constraint_statistics(constraint_stats: &ConstraintStatistics) {
-    println!("Constraint Statistics:");
-    println!("Total constraints: {}", constraint_stats.total_constraints);
+pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintStatistics) {
+    let headers = vec![
+        "Variable_Avg_Count",
+        "Variable_Max_Count",
+        "Function_Avg_Count",
+        "Function_Max_Count",
+    ];
+
+    println!("Total_Constraints: {}", constraint_stats.total_constraints);
+    println!("Constant_Counts: {}", constraint_stats.constant_counts);
     println!(
-        "Constraint depths: {:?}",
-        constraint_stats.constraint_depths
-    );
-    println!("Operator counts: {:?}", constraint_stats.operator_counts);
-    println!("Variable counts: {:?}", constraint_stats.variable_counts);
-    println!("Constant counts: {}", constraint_stats.constant_counts);
-    println!(
-        "Conditional counts: {}",
+        "Conditional_Counts: {}",
         constraint_stats.conditional_counts
     );
-    println!("Array counts: {}", constraint_stats.array_counts);
-    println!("Tuple counts: {}", constraint_stats.tuple_counts);
-    println!(
-        "Function call counts: {:?}",
-        constraint_stats.function_call_counts
-    );
-}*/
+    println!("Array_Counts: {}", constraint_stats.array_counts);
+    println!("Tuple_Counts: {}", constraint_stats.tuple_counts);
 
-pub fn print_constraint_summary_statistics(constraint_stats: &ConstraintStatistics) {
+    let avg_depth = if !constraint_stats.constraint_depths.is_empty() {
+        constraint_stats.constraint_depths.iter().sum::<usize>() as f64
+            / constraint_stats.constraint_depths.len() as f64
+    } else {
+        0.0
+    };
+    println!("Avg_Depth: {}", avg_depth);
+    println!(
+        "Max_Depth: {}",
+        constraint_stats
+            .constraint_depths
+            .iter()
+            .max()
+            .unwrap_or(&0)
+    );
+
+    for op in &[
+        "Mul", "Div", "Add", "Sub", "Pow", "IntDiv", "Mod", "ShL", "ShR", "LEq", "GEq", "Lt", "Gt",
+        "Eq", "NEq", "BoolOr", "BoolAnd", "BitOr", "BitAnd", "BitXor",
+    ] {
+        println!(
+            "Count_{}: {}",
+            op,
+            constraint_stats.operator_counts.get(*op).unwrap_or(&0)
+        );
+    }
+
+    let var_counts: Vec<usize> = constraint_stats.variable_counts.values().cloned().collect();
+    let var_avg = if !var_counts.is_empty() {
+        var_counts.iter().sum::<usize>() as f64 / var_counts.len() as f64
+    } else {
+        0.0
+    };
+    println!("Variable_Avg_Count: {}", var_avg);
+    println!(
+        "Variable_Max_Count: {}",
+        var_counts.iter().max().unwrap_or(&0)
+    );
+
+    let func_counts: Vec<usize> = constraint_stats
+        .function_call_counts
+        .values()
+        .cloned()
+        .collect();
+    let func_avg = if !func_counts.is_empty() {
+        func_counts.iter().sum::<usize>() as f64 / func_counts.len() as f64
+    } else {
+        0.0
+    };
+    println!("Function_Avg_Count: {}", func_avg);
+    println!(
+        "Function_Max_Count: {}",
+        func_counts.iter().max().unwrap_or(&0)
+    );
+}
+
+pub fn print_constraint_summary_statistics_csv(constraint_stats: &ConstraintStatistics) {
     let headers = vec![
         "Total_Constraints",
         "Constant_Counts",
