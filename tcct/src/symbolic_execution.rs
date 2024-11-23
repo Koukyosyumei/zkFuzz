@@ -969,13 +969,24 @@ impl SymbolicExecutor {
                         self.cur_state
                             .get_symval(&name)
                             .cloned()
-                            .unwrap_or_else(|| SymbolicValue::Variable(name.clone()))
+                            .unwrap_or_else(|| {
+                                SymbolicValue::Variable(format!(
+                                    "{}.{}",
+                                    self.cur_state.get_owner(),
+                                    name.clone()
+                                ))
+                            })
                     } else {
-                        SymbolicValue::Variable(name.clone())
+                        SymbolicValue::Variable(format!(
+                            "{}.{}",
+                            self.cur_state.get_owner(),
+                            name.clone()
+                        ))
                     }
                 } else {
                     SymbolicValue::Variable(format!(
-                        "{}{}",
+                        "{}.{}{}",
+                        self.cur_state.get_owner(),
                         name,
                         &access
                             .iter()
