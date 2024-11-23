@@ -163,9 +163,14 @@ pub struct SymbolicState {
 impl fmt::Debug for SymbolicState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", format!("{}", "SymbolicState [").cyan())?;
-        writeln!(f, "  owner: {}", self.owner_name.magenta())?;
-        writeln!(f, "  depth: {}", self.depth)?;
-        writeln!(f, "  values:")?;
+        writeln!(
+            f,
+            "  {} {}",
+            format!("{}", "owner:").cyan(),
+            self.owner_name.magenta()
+        )?;
+        writeln!(f, "  {} {}", format!("{}", "depth:").cyan(), self.depth)?;
+        writeln!(f, "  {}", format!("{}", "values:").cyan())?;
         for (k, v) in self.values.clone().into_iter() {
             writeln!(
                 f,
@@ -178,7 +183,8 @@ impl fmt::Debug for SymbolicState {
         }
         writeln!(
             f,
-            "  trace_constraints: {}",
+            "  {} {}",
+            format!("{}", "trace_constraints:").cyan(),
             format!("{:?}", self.trace_constraints)
                 .replace("\n", "")
                 .replace("  ", " ")
@@ -186,7 +192,8 @@ impl fmt::Debug for SymbolicState {
         )?;
         writeln!(
             f,
-            "  sidec_constraints: {}",
+            "  {} {}",
+            format!("{}", "side_constraints:").cyan(),
             format!("{:?}", self.side_constraints)
                 .replace("\n", "")
                 .replace("  ", " ")
