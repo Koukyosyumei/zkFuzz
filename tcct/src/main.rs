@@ -29,7 +29,6 @@ fn main() {
 }
 
 fn start() -> Result<(), ()> {
-    
     //use compilation_user::CompilerConfig;
 
     let user_input = Input::new()?;
@@ -51,9 +50,11 @@ fn start() -> Result<(), ()> {
     }
 
     match &program_archive.initial_template_call {
-        Expression::Call { id,  .. } => {
+        Expression::Call { id, .. } => {
             let v = program_archive.templates[id].clone();
             let body = simplify_statement(&v.get_body().clone());
+
+            sexe.cur_state.set_owner("main".to_string());
             sexe.execute(
                 &vec![
                     ExtendedStatement::DebugStatement(body),

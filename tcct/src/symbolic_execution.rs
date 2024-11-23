@@ -144,15 +144,18 @@ impl fmt::Debug for SymbolicValue {
 
 #[derive(Clone)]
 pub struct SymbolicState {
+    owner_name: String,
+    depth: usize,
     values: HashMap<String, SymbolicValue>,
     trace_constraints: Vec<SymbolicValue>,
     side_constraints: Vec<SymbolicValue>,
-    depth: usize,
 }
 
 impl fmt::Debug for SymbolicState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "SymbolicState [")?;
+        writeln!(f, "  owner: {:?}", self.owner_name)?;
+        writeln!(f, "  depth: {:?}", self.depth)?;
         writeln!(f, "  values:")?;
         for (k, v) in self.values.clone().into_iter() {
             writeln!(
@@ -180,7 +183,6 @@ impl fmt::Debug for SymbolicState {
                 .replace("  ", " ")
                 .replace("  ", " ")
         )?;
-        writeln!(f, "  depth: {:?}", self.depth)?;
         write!(f, "]")
     }
 }
@@ -188,11 +190,28 @@ impl fmt::Debug for SymbolicState {
 impl SymbolicState {
     pub fn new() -> Self {
         SymbolicState {
+            owner_name: "".to_string(),
+            depth: 0_usize,
             values: HashMap::new(),
             trace_constraints: Vec::new(),
             side_constraints: Vec::new(),
-            depth: 0_usize,
         }
+    }
+
+    pub fn set_owner(&mut self, name: String) {
+        self.owner_name = name;
+    }
+
+    pub fn get_owner(&self) -> String {
+        self.owner_name.clone()
+    }
+
+    pub fn set_depth(&mut self, d: usize) {
+        self.depth = d;
+    }
+
+    pub fn get_depth(&self) -> usize {
+        self.depth
     }
 
     pub fn set_symval(&mut self, name: String, value: SymbolicValue) {
@@ -209,13 +228,6 @@ impl SymbolicState {
 
     pub fn push_side_constraint(&mut self, constraint: SymbolicValue) {
         self.side_constraints.push(constraint);
-    }
-
-    pub fn set_depth(&mut self, d: usize) {
-        self.depth = d;
-    }
-    pub fn get_depth(&self) -> usize {
-        self.depth
     }
 }
 
@@ -691,11 +703,12 @@ impl SymbolicExecutor {
                             name, dimensions, ..
                         } => {
                             let var_name = if dimensions.is_empty() {
-                                name.clone()
+                                format!("{}.{}", self.cur_state.get_owner(), name.clone())
                             } else {
                                 //"todo".to_string()
                                 format!(
-                                    "{}<{:?}>",
+                                    "{}.{}<{:?}>",
+                                    self.cur_state.get_owner(),
                                     name,
                                     &dimensions
                                         .iter()
@@ -721,11 +734,12 @@ impl SymbolicExecutor {
                                 self.evaluate_expression(&DebugExpression(rhe.clone()), true);
 
                             let var_name = if access.is_empty() {
-                                var.clone()
+                                format!("{}.{}", self.cur_state.get_owner(), var.clone())
                             } else {
                                 //format!("{}", var)
                                 format!(
-                                    "{}{}",
+                                    "{}.{}{}",
+                                    self.cur_state.get_owner(),
                                     var,
                                     &access
                                         .iter()
@@ -760,6 +774,11 @@ impl SymbolicExecutor {
                                         {
                                             subse.cur_state.values.insert(k, v.unwrap());
                                         }
+                                        subse.cur_state.set_owner(format!(
+                                            "{}.{}",
+                                            self.cur_state.get_owner(),
+                                            var.clone()
+                                        ));
                                         trace!(
                                             "{}",
                                             format!("{}", "===========================").cyan()
