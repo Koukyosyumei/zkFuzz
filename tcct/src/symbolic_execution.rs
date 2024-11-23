@@ -5,15 +5,11 @@ use crate::parser_user::{
 use colored::Colorize;
 use log::{debug, trace, warn};
 use num_bigint_dig::BigInt;
-use program_structure::ast::Access;
-use program_structure::ast::Access::ComponentAccess;
-use program_structure::ast::AssignOp;
-use program_structure::ast::Expression;
-use program_structure::ast::ExpressionInfixOpcode;
-use program_structure::ast::ExpressionPrefixOpcode;
-use program_structure::ast::SignalType;
-use program_structure::ast::Statement;
-use program_structure::ast::VariableType;
+use program_structure::ast::{
+    Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
+    Statement, VariableType,
+};
+
 use std::cmp::max;
 use std::collections::HashMap;
 use std::fmt;
@@ -476,7 +472,6 @@ pub fn print_constraint_summary_statistics_csv(constraint_stats: &ConstraintStat
 
 #[derive(Default, Clone, Debug)]
 pub struct Template {
-    pub name: String,
     pub inputs: Vec<String>,
     pub outputs: Vec<String>,
     pub body: Vec<ExtendedStatement>,
@@ -484,7 +479,6 @@ pub struct Template {
 
 #[derive(Default, Clone, Debug)]
 pub struct Component {
-    pub var_name: String,
     pub template_name: String,
     pub inputs: HashMap<String, Option<SymbolicValue>>,
     pub states: Vec<SymbolicState>,
@@ -560,7 +554,6 @@ impl SymbolicExecutor {
         }
 
         let template = Template {
-            name: name.clone(),
             inputs: inputs,
             outputs: outputs,
             body: vec![
@@ -804,7 +797,6 @@ impl SymbolicExecutor {
                                         comp_inputs.insert(inp_name.clone(), None);
                                     }
                                     let c = Component {
-                                        var_name: callee_name.clone(),
                                         template_name: callee_name.clone(),
                                         inputs: comp_inputs,
                                         states: Vec::new(),
