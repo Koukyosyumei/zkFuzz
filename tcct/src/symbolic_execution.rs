@@ -123,6 +123,18 @@ impl fmt::Debug for SymbolicValue {
                 ExpressionInfixOpcode::NotEq => {
                     write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
                 }
+                ExpressionInfixOpcode::LesserEq => {
+                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
+                }
+                ExpressionInfixOpcode::GreaterEq => {
+                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
+                }
+                ExpressionInfixOpcode::Lesser => {
+                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
+                }
+                ExpressionInfixOpcode::Greater => {
+                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
+                }
                 _ => write!(f, "({} {:?} {:?})", format!("{:?}", op), lhs, rhs),
             },
             SymbolicValue::Conditional(cond, if_branch, else_branch) => {
@@ -154,8 +166,8 @@ pub struct SymbolicState {
 impl fmt::Debug for SymbolicState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "SymbolicState [")?;
-        writeln!(f, "  owner: {:?}", self.owner_name)?;
-        writeln!(f, "  depth: {:?}", self.depth)?;
+        writeln!(f, "  owner: {}", self.owner_name.magenta())?;
+        writeln!(f, "  depth: {}", self.depth)?;
         writeln!(f, "  values:")?;
         for (k, v) in self.values.clone().into_iter() {
             writeln!(
@@ -921,7 +933,7 @@ impl SymbolicExecutor {
                     }
                 }
                 ExtendedStatement::Ret => {
-                    trace!("Ret: {:?}", self.cur_state);
+                    trace!("{} {:?}", format!("{}", "Ret:").red(), self.cur_state);
                     self.final_states.push(self.cur_state.clone());
                 }
             }
