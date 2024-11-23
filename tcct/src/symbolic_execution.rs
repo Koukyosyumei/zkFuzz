@@ -434,26 +434,8 @@ pub fn print_constraint_summary_statistics_csv(constraint_stats: &ConstraintStat
     );
 
     for op in &[
-        "Mul",
-        "Div",
-        "Add",
-        "Sub",
-        "Pow",
-        "IntDiv",
-        "Mod",
-        "ShiftL",
-        "ShiftR",
-        "LesserEq",
-        "GreaterEq",
-        "Lesser",
-        "Greater",
-        "Eq",
-        "NotEq",
-        "BoolOr",
-        "BoolAnd",
-        "BitOr",
-        "BitAnd",
-        "BitXor",
+        "Mul", "Div", "Add", "Sub", "Pow", "IntDiv", "Mod", "ShL", "ShR", "LEq", "GEq", "Lt", "Gt",
+        "Eq", "NEq", "BoolOr", "BoolAnd", "BitOr", "BitAnd", "BitXor",
     ] {
         values.push(
             constraint_stats

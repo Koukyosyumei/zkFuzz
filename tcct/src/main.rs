@@ -66,10 +66,13 @@ fn start() -> Result<(), ()> {
             for s in &sexe.final_states {
                 info!("final_state: {:?}", s);
             }
-            println!("----------------------\n*Stats of Trace Constraint*");
-            print_constraint_summary_statistics_pretty(&sexe.trace_constraint_stats);
-            println!("----------------------\n*Stats of Side Constraint*");
-            print_constraint_summary_statistics_pretty(&sexe.side_constraint_stats);
+
+            if user_input.flag_printout_stats {
+                println!("----------------------\n*Stats of Trace Constraint*");
+                print_constraint_summary_statistics_pretty(&sexe.trace_constraint_stats);
+                println!("----------------------\n*Stats of Side Constraint*");
+                print_constraint_summary_statistics_pretty(&sexe.side_constraint_stats);
+            }
         }
         _ => {
             warn!("Cannot Find Main Call");

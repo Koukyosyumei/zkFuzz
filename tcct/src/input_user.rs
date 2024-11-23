@@ -35,6 +35,7 @@ pub struct Input {
     pub flag_verbose: bool,
         */
     pub flag_printout_ast: bool,
+    pub flag_printout_stats: bool,
     pub prime: String,
     pub link_libraries : Vec<PathBuf>
 }
@@ -112,6 +113,7 @@ impl Input {
             flag_verbose: input_processing::get_flag_verbose(&matches), 
             */
             flag_printout_ast: input_processing::get_ast(&matches),
+            flag_printout_stats: input_processing::get_stats(&matches),
             prime: input_processing::get_prime(&matches)?,
             link_libraries
         })
@@ -316,6 +318,10 @@ mod input_processing {
         matches.is_present("print_ast")
     }
 
+    pub fn get_stats(matches: &ArgMatches) -> bool {
+        matches.is_present("print_stats")
+    }
+
     /* 
     pub fn get_main_inputs_log(matches: &ArgMatches) -> bool {
         matches.is_present("main_inputs_log")
@@ -501,6 +507,14 @@ mod input_processing {
                     .takes_value(false)
                     .display_order(150)
                     .help("Printouts AST"),
+            )
+            .arg(
+                Arg::with_name("print_stats")
+                    .long("stats")
+                    .short("stats")
+                    .takes_value(false)
+                    .display_order(150)
+                    .help("Printouts Stats of Constraints"),
             )
             .arg(
                 Arg::with_name("parallel_simplification")
