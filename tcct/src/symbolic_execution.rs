@@ -165,7 +165,7 @@ pub struct SymbolicState {
 
 impl fmt::Debug for SymbolicState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "SymbolicState [")?;
+        writeln!(f, "{}", format!("{}", "SymbolicState [").cyan())?;
         writeln!(f, "  owner: {}", self.owner_name.magenta())?;
         writeln!(f, "  depth: {}", self.depth)?;
         writeln!(f, "  values:")?;
@@ -195,7 +195,7 @@ impl fmt::Debug for SymbolicState {
                 .replace("  ", " ")
                 .replace("  ", " ")
         )?;
-        write!(f, "]")
+        write!(f, "{}", format!("{}", "]").cyan())
     }
 }
 
