@@ -488,13 +488,13 @@ pub fn print_constraint_summary_statistics_csv(constraint_stats: &ConstraintStat
 }
 
 #[derive(Default, Clone, Debug)]
-pub struct Template {
+pub struct SymbolicTemplate {
     pub inputs: Vec<String>,
     pub body: Vec<ExtendedStatement>,
 }
 
 #[derive(Default, Clone, Debug)]
-pub struct Component {
+pub struct SymbolicComponent {
     pub template_name: String,
     pub args: Vec<SymbolicValue>,
     pub inputs: HashMap<String, Option<SymbolicValue>>,
@@ -502,8 +502,8 @@ pub struct Component {
 }
 
 pub struct SymbolicExecutor {
-    pub template_library: HashMap<String, Template>,
-    pub components_store: HashMap<String, Component>,
+    pub template_library: HashMap<String, SymbolicTemplate>,
+    pub components_store: HashMap<String, SymbolicComponent>,
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
@@ -566,7 +566,7 @@ impl SymbolicExecutor {
             }
         }
 
-        let template = Template {
+        let template = SymbolicTemplate {
             inputs: inputs,
             body: vec![
                 ExtendedStatement::DebugStatement(body),
@@ -832,7 +832,7 @@ impl SymbolicExecutor {
                                     {
                                         comp_inputs.insert(inp_name.clone(), None);
                                     }
-                                    let c = Component {
+                                    let c = SymbolicComponent {
                                         template_name: callee_name.clone(),
                                         args: args.clone(),
                                         inputs: comp_inputs,
