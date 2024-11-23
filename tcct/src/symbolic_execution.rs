@@ -751,7 +751,6 @@ impl SymbolicExecutor {
                                                 .body,
                                             0,
                                         );
-                                        trace!("Ret");
                                         trace!(
                                             "{}",
                                             format!("{}", "===========================").cyan()
@@ -883,6 +882,7 @@ impl SymbolicExecutor {
                     }
                 }
                 ExtendedStatement::Ret => {
+                    trace!("Ret: {:?}", self.cur_state);
                     self.final_states.push(self.cur_state.clone());
                 }
             }

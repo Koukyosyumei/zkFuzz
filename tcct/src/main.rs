@@ -62,6 +62,7 @@ fn start() -> Result<(), ()> {
                 0,
             );
 
+            info!("============================================================");
             for s in &sexe.final_states {
                 info!("final_state: {:?}", s);
             }
