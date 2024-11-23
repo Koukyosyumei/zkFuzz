@@ -781,16 +781,19 @@ impl SymbolicExecutor {
                                     if !self.components_store[var].is_done {
                                         let mut subse = SymbolicExecutor::new();
                                         subse.template_library = self.template_library.clone();
-                                        for (k, v) in
-                                            self.components_store[var].inputs.clone().into_iter()
-                                        {
-                                            subse.cur_state.values.insert(k, v.unwrap());
-                                        }
                                         subse.cur_state.set_owner(format!(
                                             "{}.{}",
                                             self.cur_state.get_owner(),
                                             var.clone()
                                         ));
+                                        for (k, v) in
+                                            self.components_store[var].inputs.clone().into_iter()
+                                        {
+                                            subse.cur_state.values.insert(
+                                                format!("{}.{}", subse.cur_state.get_owner(), k),
+                                                v.unwrap(),
+                                            );
+                                        }
                                         trace!(
                                             "{}",
                                             format!("{}", "===========================").cyan()
@@ -803,6 +806,17 @@ impl SymbolicExecutor {
                                                 .body,
                                             0,
                                         );
+
+                                        let mut sub_trace_constraints =
+                                            subse.final_states[0].trace_constraints.clone();
+                                        let mut sub_side_constraints =
+                                            subse.final_states[0].side_constraints.clone();
+                                        self.cur_state
+                                            .trace_constraints
+                                            .append(&mut sub_trace_constraints);
+                                        self.cur_state
+                                            .side_constraints
+                                            .append(&mut sub_side_constraints);
                                         trace!(
                                             "{}",
                                             format!("{}", "===========================").cyan()
