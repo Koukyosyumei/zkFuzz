@@ -1,19 +1,5 @@
-use crate::parser_user::{
-    DebugAccess, DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode,
-    ExtendedStatement,
-};
-use crate::symbolic_execution::{ConstraintStatistics, SymbolicValue};
-use colored::Colorize;
-use log::{trace, warn};
-use num_bigint_dig::BigInt;
-use program_structure::ast::{
-    Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
-    Statement, VariableType,
-};
+use crate::symbolic_execution::ConstraintStatistics;
 
-use std::cmp::max;
-use std::collections::HashMap;
-use std::fmt;
 
 pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintStatistics) {
     println!("Total_Constraints: {}", constraint_stats.total_constraints);
