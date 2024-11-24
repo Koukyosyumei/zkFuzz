@@ -1057,9 +1057,15 @@ impl<'a> SymbolicExecutor<'a> {
                 match (&lhs, &rhs) {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                         match &infix_op {
-                            ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt(lv + rv),
-                            ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt(lv - rv),
-                            ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt(lv * rv),
+                            ExpressionInfixOpcode::Add => {
+                                SymbolicValue::ConstantInt((lv + rv) % self.prime.clone())
+                            }
+                            ExpressionInfixOpcode::Sub => {
+                                SymbolicValue::ConstantInt((lv - rv) % self.prime.clone())
+                            }
+                            ExpressionInfixOpcode::Mul => {
+                                SymbolicValue::ConstantInt((lv * rv) % self.prime.clone())
+                            }
                             ExpressionInfixOpcode::ShiftL => {
                                 SymbolicValue::ConstantInt(lv << rv.to_usize().unwrap())
                             }
