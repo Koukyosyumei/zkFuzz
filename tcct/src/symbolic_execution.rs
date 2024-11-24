@@ -98,7 +98,8 @@ pub fn simplify_statement(statement: &Statement) -> Statement {
 
 #[derive(Clone)]
 pub enum SymbolicValue {
-    Constant(BigInt),
+    ConstantInt(BigInt),
+    ConstantBool(bool),
     Variable(String),
     BinaryOp(
         Box<SymbolicValue>,
@@ -116,7 +117,10 @@ pub enum SymbolicValue {
 impl fmt::Debug for SymbolicValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SymbolicValue::Constant(value) => write!(f, "{}", value),
+            SymbolicValue::ConstantInt(value) => write!(f, "{}", value),
+            SymbolicValue::ConstantBool(flag) => {
+                write!(f, "{} {}", if *flag { "✅" } else { "❌" }, flag)
+            }
             SymbolicValue::Variable(name) => write!(f, "{}", name),
             SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
                 ExpressionInfixOpcode::Eq
@@ -284,7 +288,10 @@ impl ConstraintStatistics {
 
     fn update_from_symbolic_value(&mut self, value: &SymbolicValue, depth: usize) {
         match value {
-            SymbolicValue::Constant(_) => {
+            SymbolicValue::ConstantInt(_) => {
+                self.constant_counts += 1;
+            }
+            SymbolicValue::ConstantBool(_) => {
                 self.constant_counts += 1;
             }
             SymbolicValue::Variable(name) => {
@@ -851,7 +858,7 @@ impl SymbolicExecutor {
         substiture_const: bool,
     ) -> SymbolicValue {
         match &expr.0 {
-            Expression::Number(_meta, value) => SymbolicValue::Constant(value.clone()),
+            Expression::Number(_meta, value) => SymbolicValue::ConstantInt(value.clone()),
             Expression::Variable {
                 name,
                 access,
@@ -868,8 +875,8 @@ impl SymbolicExecutor {
                     } else if substiture_const {
                         let sv = self.cur_state.get_symval(&resolved_name).clone();
                         if sv.is_some() {
-                            if let SymbolicValue::Constant(v) = sv.unwrap() {
-                                return SymbolicValue::Constant(v.clone());
+                            if let SymbolicValue::ConstantInt(v) = sv.unwrap() {
+                                return SymbolicValue::ConstantInt(v.clone());
                             }
                         }
                     }
@@ -908,41 +915,25 @@ impl SymbolicExecutor {
                     substiture_var,
                     substiture_const,
                 );
-                if let SymbolicValue::Constant(ref lv) = lhs {
-                    if let SymbolicValue::Constant(ref rv) = rhs {
+                if let SymbolicValue::ConstantInt(ref lv) = lhs {
+                    if let SymbolicValue::ConstantInt(ref rv) = rhs {
                         let c = match &infix_op {
-                            ExpressionInfixOpcode::Add => SymbolicValue::Constant(lv + rv),
-                            ExpressionInfixOpcode::Sub => SymbolicValue::Constant(lv - rv),
-                            ExpressionInfixOpcode::Mul => SymbolicValue::Constant(lv * rv),
+                            ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt(lv + rv),
+                            ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt(lv - rv),
+                            ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt(lv * rv),
                             ExpressionInfixOpcode::ShiftL => {
-                                SymbolicValue::Constant(lv << rv.to_usize().unwrap())
+                                SymbolicValue::ConstantInt(lv << rv.to_usize().unwrap())
                             }
                             ExpressionInfixOpcode::ShiftR => {
-                                SymbolicValue::Constant(lv >> rv.to_usize().unwrap())
+                                SymbolicValue::ConstantInt(lv >> rv.to_usize().unwrap())
                             }
-                            ExpressionInfixOpcode::Lesser => SymbolicValue::Constant(if lv < rv {
-                                BigInt::one()
-                            } else {
-                                BigInt::zero()
-                            }),
-                            ExpressionInfixOpcode::Greater => SymbolicValue::Constant(if lv > rv {
-                                BigInt::one()
-                            } else {
-                                BigInt::zero()
-                            }),
+                            ExpressionInfixOpcode::Lesser => SymbolicValue::ConstantBool(lv < rv),
+                            ExpressionInfixOpcode::Greater => SymbolicValue::ConstantBool(lv > rv),
                             ExpressionInfixOpcode::LesserEq => {
-                                SymbolicValue::Constant(if lv <= rv {
-                                    BigInt::one()
-                                } else {
-                                    BigInt::zero()
-                                })
+                                SymbolicValue::ConstantBool(lv <= rv)
                             }
                             ExpressionInfixOpcode::GreaterEq => {
-                                SymbolicValue::Constant(if lv >= rv {
-                                    BigInt::one()
-                                } else {
-                                    BigInt::zero()
-                                })
+                                SymbolicValue::ConstantBool(lv >= rv)
                             }
                             _ => SymbolicValue::BinaryOp(
                                 Box::new(lhs),
