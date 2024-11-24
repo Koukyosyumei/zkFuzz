@@ -1009,9 +1009,9 @@ impl<'a> SymbolicExecutor<'a> {
                     substiture_var,
                     substiture_const,
                 );
-                if let SymbolicValue::ConstantInt(ref lv) = lhs {
-                    if let SymbolicValue::ConstantInt(ref rv) = rhs {
-                        let c = match &infix_op {
+                match (&lhs, &rhs) {
+                    (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
+                        match &infix_op {
                             ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt(lv + rv),
                             ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt(lv - rv),
                             ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt(lv * rv),
@@ -1036,29 +1036,29 @@ impl<'a> SymbolicExecutor<'a> {
                                 DebugExpressionInfixOpcode(infix_op.clone()),
                                 Box::new(rhs),
                             ),
-                        };
-                        return c;
+                        }
                     }
-                }
-                if let SymbolicValue::ConstantBool(lv) = lhs {
-                    if let SymbolicValue::ConstantBool(rv) = rhs {
-                        let c = match &infix_op {
-                            ExpressionInfixOpcode::BoolAnd => SymbolicValue::ConstantBool(lv && rv),
-                            ExpressionInfixOpcode::BoolOr => SymbolicValue::ConstantBool(lv || rv),
+                    (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => {
+                        match &infix_op {
+                            ExpressionInfixOpcode::BoolAnd => {
+                                SymbolicValue::ConstantBool(*lv && *rv)
+                            }
+                            ExpressionInfixOpcode::BoolOr => {
+                                SymbolicValue::ConstantBool(*lv || *rv)
+                            }
                             _ => SymbolicValue::BinaryOp(
                                 Box::new(lhs),
                                 DebugExpressionInfixOpcode(infix_op.clone()),
                                 Box::new(rhs),
                             ),
-                        };
-                        return c;
+                        }
                     }
+                    _ => SymbolicValue::BinaryOp(
+                        Box::new(lhs),
+                        DebugExpressionInfixOpcode(infix_op.clone()),
+                        Box::new(rhs),
+                    ),
                 }
-                SymbolicValue::BinaryOp(
-                    Box::new(lhs),
-                    DebugExpressionInfixOpcode(infix_op.clone()),
-                    Box::new(rhs),
-                )
             }
             Expression::PrefixOp {
                 meta: _,
