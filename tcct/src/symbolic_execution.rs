@@ -418,6 +418,15 @@ impl<'a> SymbolicExecutor<'a> {
                 .all(|(_, v)| v.is_some())
     }
 
+    pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
+        for (n, a) in names.iter().zip(args.iter()) {
+            self.cur_state.set_symval(
+                format!("{}.{}", self.cur_state.get_owner(), n.to_string()),
+                self.evaluate_expression(&DebugExpression(a.clone()), false, false),
+            );
+        }
+    }
+
     pub fn register_library(
         &mut self,
         name: String,

@@ -53,11 +53,12 @@ fn start() -> Result<(), ()> {
     }
 
     match &program_archive.initial_template_call {
-        Expression::Call { id, .. } => {
-            let v = program_archive.templates[id].clone();
-            let body = simplify_statement(&v.get_body().clone());
+        Expression::Call { id, args, .. } => {
+            let template = program_archive.templates[id].clone();
+            let body = simplify_statement(&template.get_body().clone());
 
             sexe.cur_state.set_owner("main".to_string());
+            sexe.feed_arguments(template.get_name_of_params(), args);
             sexe.execute(
                 &vec![
                     ExtendedStatement::DebugStatement(body),
