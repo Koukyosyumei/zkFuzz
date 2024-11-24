@@ -43,7 +43,7 @@ fn start() -> Result<(), ()> {
         sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
-            println!("{}", k);
+            println!("🌳 AST Tree for {}", k);
             println!("{:?}", ExtendedStatement::DebugStatement(body.clone()));
             println!("========================================")
         }
