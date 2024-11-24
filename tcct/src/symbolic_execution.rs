@@ -670,7 +670,10 @@ impl SymbolicExecutor {
                                             "{}",
                                             format!("{}", "===========================").cyan()
                                         );
-                                        trace!("Call {}", self.components_store[var].template_name);
+                                        trace!(
+                                            "📞 Call {}",
+                                            self.components_store[var].template_name
+                                        );
 
                                         subse.execute(&templ.body, 0);
 
