@@ -540,7 +540,6 @@ impl<'a> SymbolicExecutor<'a> {
                                 true,
                                 true,
                             );
-                            self.trace_constraint_stats.update(&evaled_condition);
 
                             // Save the current state
                             let cur_depth = self.cur_state.get_depth();
@@ -560,6 +559,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     .yellow()
                                 );
                             } else {
+                                self.trace_constraint_stats.update(&evaled_condition);
                                 if_state.push_trace_constraint(evaled_condition.clone());
                                 if_state.set_depth(cur_depth + 1);
                                 self.cur_state = if_state.clone();
@@ -618,13 +618,13 @@ impl<'a> SymbolicExecutor<'a> {
                         } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             // Symbolic execution of loops is complex. This is a simplified approach.
-                            let condition = self.evaluate_expression(
+                            let evaled_condition = self.evaluate_expression(
                                 &DebugExpression(cond.clone()),
                                 true,
                                 true,
                             );
 
-                            if let SymbolicValue::ConstantBool(flag) = condition {
+                            if let SymbolicValue::ConstantBool(flag) = evaled_condition {
                                 self.execute(
                                     &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
                                     0,
@@ -636,8 +636,8 @@ impl<'a> SymbolicExecutor<'a> {
                                     // trace!("Break From While");
                                 }
                             } else {
-                                self.trace_constraint_stats.update(&condition);
-                                self.cur_state.push_trace_constraint(condition);
+                                self.trace_constraint_stats.update(&evaled_condition);
+                                self.cur_state.push_trace_constraint(evaled_condition);
 
                                 self.execute(
                                     &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
