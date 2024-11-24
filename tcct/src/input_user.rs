@@ -37,6 +37,7 @@ pub struct Input {
     pub flag_printout_ast: bool,
     pub flag_printout_stats: bool,
     pub prime: String,
+    pub debug_prime: String,
     pub link_libraries : Vec<PathBuf>
 }
 
@@ -115,6 +116,7 @@ impl Input {
             flag_printout_ast: input_processing::get_ast(&matches),
             flag_printout_stats: input_processing::get_stats(&matches),
             prime: input_processing::get_prime(&matches)?,
+            debug_prime: input_processing::get_debug_prime(&matches)?,
             link_libraries
         })
     }
@@ -232,6 +234,9 @@ impl Input {
     }*/
     pub fn prime(&self) -> String{
         self.prime.clone()
+    }
+    pub fn debug_prime(&self) -> String{
+        self.debug_prime.clone()
     }
 }
 mod input_processing {
@@ -371,6 +376,13 @@ mod input_processing {
                }
                
             false => Ok(String::from("bn128")),
+        }
+    }
+
+    pub fn get_debug_prime(matches: &ArgMatches) -> Result<String, ()> {
+        match matches.is_present("debug_prime") {
+            true => Ok(String::from(matches.value_of("debug_prime").unwrap())),
+            false => Ok(String::from("21888242871839275222246405745257275088548364400416034343698204186575808495617"))
         }
     }
 

@@ -9,10 +9,13 @@ use ansi_term::Colour;
 use env_logger;
 use input_user::Input;
 use log::{info, warn};
-use parser_user::ExtendedStatement;
-use program_structure::ast::Expression;
+use num_bigint_dig::BigInt;
 use stats::print_constraint_summary_statistics_pretty;
 use std::env;
+use std::str::FromStr;
+
+use parser_user::ExtendedStatement;
+use program_structure::ast::Expression;
 use symbolic_execution::{simplify_statement, ConstraintStatistics, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -39,7 +42,11 @@ fn start() -> Result<(), ()> {
 
     let mut ts = ConstraintStatistics::new();
     let mut ss = ConstraintStatistics::new();
-    let mut sexe = SymbolicExecutor::new(&mut ts, &mut ss);
+    let mut sexe = SymbolicExecutor::new(
+        BigInt::from_str(&user_input.debug_prime()).unwrap(),
+        &mut ts,
+        &mut ss,
+    );
 
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());

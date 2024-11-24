@@ -1,20 +1,21 @@
-use crate::parser_user::{
-    DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugVariableType,
-    ExtendedStatement,
-};
 use colored::Colorize;
 use log::{trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::{One, Zero};
+use std::cmp::max;
+use std::collections::HashMap;
+use std::fmt;
+
 use program_structure::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
     Statement, VariableType,
 };
 
-use std::cmp::max;
-use std::collections::HashMap;
-use std::fmt;
+use crate::parser_user::{
+    DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugVariableType,
+    ExtendedStatement,
+};
 
 pub fn simplify_statement(statement: &Statement) -> Statement {
     match &statement {
@@ -385,6 +386,7 @@ pub struct SymbolicExecutor<'a> {
     pub template_library: HashMap<String, SymbolicTemplate>,
     pub components_store: HashMap<String, SymbolicComponent>,
     pub variable_types: HashMap<String, DebugVariableType>,
+    pub prime: BigInt,
     // states
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
@@ -396,11 +398,16 @@ pub struct SymbolicExecutor<'a> {
 }
 
 impl<'a> SymbolicExecutor<'a> {
-    pub fn new(ts: &'a mut ConstraintStatistics, ss: &'a mut ConstraintStatistics) -> Self {
+    pub fn new(
+        prime: BigInt,
+        ts: &'a mut ConstraintStatistics,
+        ss: &'a mut ConstraintStatistics,
+    ) -> Self {
         SymbolicExecutor {
             template_library: HashMap::new(),
             components_store: HashMap::new(),
             variable_types: HashMap::new(),
+            prime: prime,
             cur_state: SymbolicState::new(),
             block_end_states: Vec::new(),
             final_states: Vec::new(),
@@ -745,6 +752,7 @@ impl<'a> SymbolicExecutor<'a> {
                                 if self.is_ready(var.to_string()) {
                                     if !self.components_store[var].is_done {
                                         let mut subse = SymbolicExecutor::new(
+                                            self.prime.clone(),
                                             self.trace_constraint_stats,
                                             self.side_constraint_stats,
                                         );

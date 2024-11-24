@@ -1,5 +1,5 @@
-use super::input_user::Input;
-use crate::VERSION;
+use std::fmt;
+
 use program_structure::abstract_syntax_tree::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
     Statement, VariableType,
@@ -7,7 +7,9 @@ use program_structure::abstract_syntax_tree::ast::{
 use program_structure::constants::UsefulConstants;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
-use std::fmt;
+
+use super::input_user::Input;
+use crate::VERSION;
 
 #[derive(Clone)]
 pub struct DebugSignalType(pub SignalType);
