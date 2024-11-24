@@ -1,13 +1,18 @@
 use super::input_user::Input;
 use crate::VERSION;
 use program_structure::abstract_syntax_tree::ast::{
-    Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Statement,
+    Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
+    Statement, VariableType,
 };
 use program_structure::constants::UsefulConstants;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 use std::fmt;
 
+#[derive(Clone)]
+pub struct DebugSignalType(pub SignalType);
+#[derive(Clone)]
+pub struct DebugVariableType(pub VariableType);
 #[derive(Clone)]
 pub struct DebugAccess(pub Access);
 #[derive(Clone)]
@@ -22,6 +27,55 @@ pub struct DebugExpression(pub Expression);
 pub enum ExtendedStatement {
     DebugStatement(Statement),
     Ret,
+}
+
+impl fmt::Debug for DebugSignalType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.0 {
+            SignalType::Output => {
+                write!(f, "Output")
+            }
+            SignalType::Input => {
+                write!(f, "Input")
+            }
+            SignalType::Intermediate => {
+                write!(f, "Intermediate")
+            }
+        }
+    }
+}
+
+impl fmt::Debug for DebugVariableType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.0 {
+            VariableType::Var => {
+                write!(f, "Var")
+            }
+            VariableType::Signal(signaltype, taglist) => {
+                write!(
+                    f,
+                    "Signal: {:?} {:?}",
+                    &DebugSignalType(*signaltype),
+                    &taglist
+                )
+            }
+            VariableType::Component => {
+                write!(f, "Component")
+            }
+            VariableType::AnonymousComponent => {
+                write!(f, "AnonymousComponent")
+            }
+            VariableType::Bus(name, signaltype, taglist) => {
+                write!(
+                    f,
+                    "Bus: {} {:?} {:?}",
+                    name,
+                    &DebugSignalType(*signaltype),
+                    &taglist
+                )
+            }
+        }
+    }
 }
 
 impl fmt::Debug for DebugAccess {
@@ -403,7 +457,7 @@ impl ExtendedStatement {
                 }
                 Statement::InitializationBlock {
                     meta,
-                    xtype: _,
+                    xtype,
                     initializations,
                 } => {
                     writeln!(
@@ -411,7 +465,15 @@ impl ExtendedStatement {
                         "{}{}InitializationBlock{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
                     )?;
-                    writeln!(f, "{}  {}Initializations:{}:", indentation, YELLOW, RESET)?;
+                    writeln!(
+                        f,
+                        "{}  {}Type:{} {:?}",
+                        indentation,
+                        CYAN,
+                        RESET,
+                        &DebugVariableType(xtype.clone())
+                    )?;
+                    writeln!(f, "{}  {}Initializations:{}", indentation, YELLOW, RESET)?;
                     for i in initializations {
                         ExtendedStatement::DebugStatement(i.clone()).pretty_fmt(f, indent + 2)?;
                     }
@@ -419,7 +481,7 @@ impl ExtendedStatement {
                 }
                 Statement::Declaration {
                     meta,
-                    xtype: _,
+                    xtype,
                     name,
                     dimensions,
                     is_constant,
@@ -428,6 +490,14 @@ impl ExtendedStatement {
                         f,
                         "{}{}Declaration{} (elem_id={}):",
                         indentation, GREEN, RESET, meta.elem_id
+                    )?;
+                    writeln!(
+                        f,
+                        "{}  {}Type:{} {:?}",
+                        indentation,
+                        CYAN,
+                        RESET,
+                        &DebugVariableType(xtype.clone())
                     )?;
                     writeln!(f, "{}  {}Name:{} {}", indentation, MAGENTA, RESET, name)?;
                     writeln!(f, "{}  {}Dimensions:{}:", indentation, YELLOW, RESET)?;
