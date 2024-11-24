@@ -65,7 +65,7 @@ fn start() -> Result<(), ()> {
 
             info!("============================================================");
             for s in &sexe.final_states {
-                info!("final_state: {:?}", s);
+                info!("Final State: {:?}", s);
             }
 
             if user_input.flag_printout_stats {
