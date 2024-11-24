@@ -546,13 +546,25 @@ impl SymbolicExecutor {
                                 true,
                                 true,
                             );
-                            self.trace_constraint_stats.update(&condition);
 
-                            self.cur_state.push_trace_constraint(condition);
-                            self.execute(
-                                &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
-                                0,
-                            );
+                            if let SymbolicValue::ConstantBool(flag) = condition {
+                                self.execute(
+                                    &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
+                                    0,
+                                );
+                                if flag {
+                                    self.execute(statements, cur_bid);
+                                }
+                            } else {
+                                self.trace_constraint_stats.update(&condition);
+                                self.cur_state.push_trace_constraint(condition);
+
+                                self.execute(
+                                    &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
+                                    0,
+                                );
+                            }
+
                             self.expand_all_stack_states(
                                 statements,
                                 cur_bid + 1,
