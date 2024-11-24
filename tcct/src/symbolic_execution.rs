@@ -562,10 +562,17 @@ impl<'a> SymbolicExecutor<'a> {
                             if let Some(else_stmt) = else_case {
                                 let mut stack_states_if_true = self.block_end_states.clone();
                                 self.block_end_states = stack_states;
-                                else_state.push_trace_constraint(SymbolicValue::UnaryOp(
-                                    DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
-                                    Box::new(condition),
-                                ));
+                                if let SymbolicValue::ConstantBool(v) = condition {
+                                    else_state
+                                        .push_trace_constraint(SymbolicValue::ConstantBool(!v));
+                                } else {
+                                    else_state.push_trace_constraint(SymbolicValue::UnaryOp(
+                                        DebugExpressionPrefixOpcode(
+                                            ExpressionPrefixOpcode::BoolNot,
+                                        ),
+                                        Box::new(condition),
+                                    ));
+                                }
                                 else_state.set_depth(cur_depth + 1);
                                 self.cur_state = else_state;
                                 self.execute(
@@ -1070,10 +1077,26 @@ impl<'a> SymbolicExecutor<'a> {
                     substiture_var,
                     substiture_const,
                 );
-                SymbolicValue::UnaryOp(
-                    DebugExpressionPrefixOpcode(prefix_op.clone()),
-                    Box::new(expr),
-                )
+                match &expr {
+                    SymbolicValue::ConstantInt(rv) => match prefix_op {
+                        ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
+                        _ => SymbolicValue::UnaryOp(
+                            DebugExpressionPrefixOpcode(prefix_op.clone()),
+                            Box::new(expr),
+                        ),
+                    },
+                    SymbolicValue::ConstantBool(rv) => match prefix_op {
+                        ExpressionPrefixOpcode::BoolNot => SymbolicValue::ConstantBool(!rv),
+                        _ => SymbolicValue::UnaryOp(
+                            DebugExpressionPrefixOpcode(prefix_op.clone()),
+                            Box::new(expr),
+                        ),
+                    },
+                    _ => SymbolicValue::UnaryOp(
+                        DebugExpressionPrefixOpcode(prefix_op.clone()),
+                        Box::new(expr),
+                    ),
+                }
             }
             Expression::InlineSwitchOp {
                 meta: _,
