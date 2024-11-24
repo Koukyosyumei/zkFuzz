@@ -74,6 +74,14 @@ fn start() -> Result<(), ()> {
             println!("================ TCCT Report ================");
             println!("📊 Execution Summary:");
             println!("  - Total Paths Explored: {}", sexe.final_states.len());
+            println!(
+                "  - Compression Rate    : {:.2}% ({}/{})",
+                (sexe.side_constraint_stats.constant_counts as f64
+                    / sexe.trace_constraint_stats.constant_counts as f64)
+                    * 100 as f64,
+                sexe.side_constraint_stats.constant_counts,
+                sexe.trace_constraint_stats.constant_counts
+            );
 
             if user_input.flag_printout_stats {
                 println!(
