@@ -830,7 +830,7 @@ impl SymbolicExecutor {
                     }
                 }
                 ExtendedStatement::Ret => {
-                    trace!("{} {:?}", format!("{}", "Ret:").red(), self.cur_state);
+                    trace!("{} {:?}", format!("{}", "🔙 Ret:").red(), self.cur_state);
                     self.final_states.push(self.cur_state.clone());
                 }
             }
