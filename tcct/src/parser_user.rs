@@ -131,7 +131,7 @@ impl fmt::Debug for ExtendedStatement {
 }
 
 const RESET: &str = "\x1b[0m";
-const BLUE: &str = "\x1b[34m";
+const BLUE: &str = "\x1b[34m"; //94
 const GREEN: &str = "\x1b[32m";
 const YELLOW: &str = "\x1b[33m";
 const CYAN: &str = "\x1b[36m";
