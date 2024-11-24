@@ -1,5 +1,6 @@
 use crate::parser_user::{
-    DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, ExtendedStatement,
+    DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugVariableType,
+    ExtendedStatement,
 };
 use colored::Colorize;
 use log::{trace, warn};
@@ -383,13 +384,14 @@ impl ConstraintStatistics {
 pub struct SymbolicExecutor<'a> {
     pub template_library: HashMap<String, SymbolicTemplate>,
     pub components_store: HashMap<String, SymbolicComponent>,
+    pub variable_types: HashMap<String, DebugVariableType>,
+    // states
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
-    // constraints
+    // stats
     pub trace_constraint_stats: &'a mut ConstraintStatistics,
     pub side_constraint_stats: &'a mut ConstraintStatistics,
-    // useful stats
     pub max_depth: usize,
 }
 
@@ -398,6 +400,7 @@ impl<'a> SymbolicExecutor<'a> {
         SymbolicExecutor {
             template_library: HashMap::new(),
             components_store: HashMap::new(),
+            variable_types: HashMap::new(),
             cur_state: SymbolicState::new(),
             block_end_states: Vec::new(),
             final_states: Vec::new(),
@@ -616,7 +619,10 @@ impl<'a> SymbolicExecutor<'a> {
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::Declaration {
-                            name, dimensions, ..
+                            name,
+                            dimensions,
+                            xtype,
+                            ..
                         } => {
                             let var_name = if dimensions.is_empty() {
                                 format!("{}.{}", self.cur_state.get_owner(), name.clone())
@@ -632,6 +638,8 @@ impl<'a> SymbolicExecutor<'a> {
                                         .collect::<Vec<_>>()
                                 )
                             };
+                            self.variable_types
+                                .insert(name.to_string(), DebugVariableType(xtype.clone()));
                             let value = SymbolicValue::Variable(var_name.clone());
                             self.cur_state.set_symval(var_name, value);
                             self.execute(statements, cur_bid + 1);
@@ -774,22 +782,27 @@ impl<'a> SymbolicExecutor<'a> {
                                     self.components_store.insert(var.to_string(), c);
                                 }
                                 _ => {
-                                    let cont = SymbolicValue::BinaryOp(
-                                        Box::new(SymbolicValue::Variable(var_name.clone())),
-                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                        Box::new(value),
-                                    );
-                                    self.cur_state.push_trace_constraint(cont.clone());
-                                    self.trace_constraint_stats.update(&cont);
-
-                                    if let AssignOp::AssignConstraintSignal = op {
-                                        let original_cont = SymbolicValue::BinaryOp(
+                                    if self.variable_types[var].0 != VariableType::Var {
+                                        let cont = SymbolicValue::BinaryOp(
                                             Box::new(SymbolicValue::Variable(var_name.clone())),
                                             DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                            Box::new(original_value),
+                                            Box::new(value),
                                         );
-                                        self.cur_state.push_side_constraint(original_cont.clone());
-                                        self.side_constraint_stats.update(&original_cont);
+                                        self.cur_state.push_trace_constraint(cont.clone());
+                                        self.trace_constraint_stats.update(&cont);
+
+                                        if let AssignOp::AssignConstraintSignal = op {
+                                            let original_cont = SymbolicValue::BinaryOp(
+                                                Box::new(SymbolicValue::Variable(var_name.clone())),
+                                                DebugExpressionInfixOpcode(
+                                                    ExpressionInfixOpcode::Eq,
+                                                ),
+                                                Box::new(original_value),
+                                            );
+                                            self.cur_state
+                                                .push_side_constraint(original_cont.clone());
+                                            self.side_constraint_stats.update(&original_cont);
+                                        }
                                     }
                                 }
                             }
