@@ -1029,6 +1029,22 @@ impl<'a> SymbolicExecutor<'a> {
                             ExpressionInfixOpcode::GreaterEq => {
                                 SymbolicValue::ConstantBool(lv >= rv)
                             }
+                            ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(lv == rv),
+                            ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(lv != rv),
+                            _ => SymbolicValue::BinaryOp(
+                                Box::new(lhs),
+                                DebugExpressionInfixOpcode(infix_op.clone()),
+                                Box::new(rhs),
+                            ),
+                        };
+                        return c;
+                    }
+                }
+                if let SymbolicValue::ConstantBool(lv) = lhs {
+                    if let SymbolicValue::ConstantBool(rv) = rhs {
+                        let c = match &infix_op {
+                            ExpressionInfixOpcode::BoolAnd => SymbolicValue::ConstantBool(lv && rv),
+                            ExpressionInfixOpcode::BoolOr => SymbolicValue::ConstantBool(lv || rv),
                             _ => SymbolicValue::BinaryOp(
                                 Box::new(lhs),
                                 DebugExpressionInfixOpcode(infix_op.clone()),
