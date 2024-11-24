@@ -1,6 +1,5 @@
 use crate::parser_user::{
-    DebugAccess, DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode,
-    ExtendedStatement,
+    DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, ExtendedStatement,
 };
 use colored::Colorize;
 use log::{trace, warn};
@@ -662,7 +661,11 @@ impl SymbolicExecutor {
                                     var,
                                     &access
                                         .iter()
-                                        .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                                        .map(|arg0: &Access| self.evaluate_access(
+                                            &arg0.clone(),
+                                            true,
+                                            true
+                                        ))
                                         .map(|debug_access| debug_access.to_string())
                                         .collect::<Vec<_>>()
                                         .join("")
@@ -905,7 +908,7 @@ impl SymbolicExecutor {
             Access::ArrayAccess(expr) => SymbolicAccess::ArrayAccess(self.evaluate_expression(
                 &DebugExpression(expr.clone()),
                 substiture_var,
-                true,
+                substiture_const,
             )),
         }
     }
