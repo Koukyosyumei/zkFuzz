@@ -535,12 +535,12 @@ impl<'a> SymbolicExecutor<'a> {
                             ..
                         } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            let condition = self.evaluate_expression(
+                            let evaled_condition = self.evaluate_expression(
                                 &DebugExpression(cond.clone()),
                                 true,
                                 true,
                             );
-                            self.trace_constraint_stats.update(&condition);
+                            self.trace_constraint_stats.update(&evaled_condition);
 
                             // Save the current state
                             let cur_depth = self.cur_state.get_depth();
@@ -550,39 +550,67 @@ impl<'a> SymbolicExecutor<'a> {
                             let mut if_state = self.cur_state.clone();
                             let mut else_state = self.cur_state.clone();
 
-                            if_state.push_trace_constraint(condition.clone());
-                            if_state.set_depth(cur_depth + 1);
-                            self.cur_state = if_state.clone();
-                            self.execute(
-                                &vec![ExtendedStatement::DebugStatement(*if_case.clone())],
-                                0,
-                            );
-                            self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
+                            if let SymbolicValue::ConstantBool(false) = evaled_condition {
+                                trace!(
+                                    "{}",
+                                    format!(
+                                        "(elem_id={}) 🚧 Unreachable `Then` Branch",
+                                        meta.elem_id
+                                    )
+                                    .yellow()
+                                );
+                            } else {
+                                if_state.push_trace_constraint(evaled_condition.clone());
+                                if_state.set_depth(cur_depth + 1);
+                                self.cur_state = if_state.clone();
+                                self.execute(
+                                    &vec![ExtendedStatement::DebugStatement(*if_case.clone())],
+                                    0,
+                                );
+                                self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
+                            }
 
                             if let Some(else_stmt) = else_case {
                                 let mut stack_states_if_true = self.block_end_states.clone();
                                 self.block_end_states = stack_states;
-                                let neg_condition =
-                                    if let SymbolicValue::ConstantBool(v) = condition {
+                                let neg_evaled_condition =
+                                    if let SymbolicValue::ConstantBool(v) = evaled_condition {
                                         SymbolicValue::ConstantBool(!v)
                                     } else {
                                         SymbolicValue::UnaryOp(
                                             DebugExpressionPrefixOpcode(
                                                 ExpressionPrefixOpcode::BoolNot,
                                             ),
-                                            Box::new(condition),
+                                            Box::new(evaled_condition),
                                         )
                                     };
-                                self.trace_constraint_stats.update(&neg_condition);
-                                else_state.push_trace_constraint(neg_condition);
-                                else_state.set_depth(cur_depth + 1);
-                                self.cur_state = else_state;
-                                self.execute(
-                                    &vec![ExtendedStatement::DebugStatement(*else_stmt.clone())],
-                                    0,
-                                );
-                                self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
-                                self.block_end_states.append(&mut stack_states_if_true);
+                                if let SymbolicValue::ConstantBool(false) = neg_evaled_condition {
+                                    trace!(
+                                        "{}",
+                                        format!(
+                                            "(elem_id={}) 🚧 Unreachable `Else` Branch",
+                                            meta.elem_id
+                                        )
+                                        .yellow()
+                                    );
+                                } else {
+                                    self.trace_constraint_stats.update(&neg_evaled_condition);
+                                    else_state.push_trace_constraint(neg_evaled_condition);
+                                    else_state.set_depth(cur_depth + 1);
+                                    self.cur_state = else_state;
+                                    self.execute(
+                                        &vec![ExtendedStatement::DebugStatement(
+                                            *else_stmt.clone(),
+                                        )],
+                                        0,
+                                    );
+                                    self.expand_all_stack_states(
+                                        statements,
+                                        cur_bid + 1,
+                                        cur_depth,
+                                    );
+                                    self.block_end_states.append(&mut stack_states_if_true);
+                                }
                             }
                         }
                         Statement::While {
