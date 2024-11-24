@@ -144,9 +144,9 @@ impl fmt::Debug for SymbolicValue {
                 _ => write!(f, "({} {:?})", format!("{:?}", op), expr),
             },
             SymbolicValue::Call(name, args) => {
-                write!(f, "{}({:?})", name, args)
+                write!(f, "📞 {}({:?})", name, args)
             }
-            _ => write!(f, "unknown symbolic value"),
+            _ => write!(f, "❓Unknown symbolic value"),
         }
     }
 }
@@ -162,19 +162,19 @@ pub struct SymbolicState {
 
 impl fmt::Debug for SymbolicState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", format!("{}", "SymbolicState [").cyan())?;
+        writeln!(f, "🛠️ {}", format!("{}", "SymbolicState [").cyan())?;
         writeln!(
             f,
             "  {} {}",
-            format!("{}", "owner:").cyan(),
+            format!("👤 {}", "owner:").cyan(),
             self.owner_name.magenta()
         )?;
-        writeln!(f, "  {} {}", format!("{}", "depth:").cyan(), self.depth)?;
-        writeln!(f, "  {}", format!("{}", "values:").cyan())?;
+        writeln!(f, "  📏 {} {}", format!("{}", "depth:").cyan(), self.depth)?;
+        writeln!(f, "  📋 {}", format!("{}", "values:").cyan())?;
         for (k, v) in self.values.clone().into_iter() {
             writeln!(
                 f,
-                "    {}: {}",
+                "      {}: {}",
                 k.replace("\n", "").replace("  ", " "),
                 format!("{:?}", v.clone())
                     .replace("\n", "")
@@ -184,7 +184,7 @@ impl fmt::Debug for SymbolicState {
         writeln!(
             f,
             "  {} {}",
-            format!("{}", "trace_constraints:").cyan(),
+            format!("{}", "🪶 trace_constraints:").cyan(),
             format!("{:?}", self.trace_constraints)
                 .replace("\n", "")
                 .replace("  ", " ")
@@ -193,7 +193,7 @@ impl fmt::Debug for SymbolicState {
         writeln!(
             f,
             "  {} {}",
-            format!("{}", "side_constraints:").cyan(),
+            format!("{}", "⛓️ side_constraints:").cyan(),
             format!("{:?}", self.side_constraints)
                 .replace("\n", "")
                 .replace("  ", " ")
