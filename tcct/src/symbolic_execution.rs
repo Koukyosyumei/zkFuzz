@@ -581,6 +581,7 @@ impl SymbolicExecutor {
                                     0,
                                 );
                                 if flag {
+                                    self.block_end_states.pop();
                                     self.execute(statements, cur_bid);
                                 } else {
                                     // trace!("Break From While");
