@@ -6,6 +6,7 @@ use colored::Colorize;
 use log::{trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
+use num_traits::{One, Zero};
 use program_structure::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
     Statement, VariableType,
@@ -915,6 +916,33 @@ impl SymbolicExecutor {
                             ExpressionInfixOpcode::Mul => SymbolicValue::Constant(lv * rv),
                             ExpressionInfixOpcode::ShiftL => {
                                 SymbolicValue::Constant(lv << rv.to_usize().unwrap())
+                            }
+                            ExpressionInfixOpcode::ShiftR => {
+                                SymbolicValue::Constant(lv >> rv.to_usize().unwrap())
+                            }
+                            ExpressionInfixOpcode::Lesser => SymbolicValue::Constant(if lv < rv {
+                                BigInt::one()
+                            } else {
+                                BigInt::zero()
+                            }),
+                            ExpressionInfixOpcode::Greater => SymbolicValue::Constant(if lv > rv {
+                                BigInt::one()
+                            } else {
+                                BigInt::zero()
+                            }),
+                            ExpressionInfixOpcode::LesserEq => {
+                                SymbolicValue::Constant(if lv <= rv {
+                                    BigInt::one()
+                                } else {
+                                    BigInt::zero()
+                                })
+                            }
+                            ExpressionInfixOpcode::GreaterEq => {
+                                SymbolicValue::Constant(if lv >= rv {
+                                    BigInt::one()
+                                } else {
+                                    BigInt::zero()
+                                })
                             }
                             _ => SymbolicValue::BinaryOp(
                                 Box::new(lhs),
