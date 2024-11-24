@@ -17,6 +17,16 @@ use crate::parser_user::{
     ExtendedStatement,
 };
 
+/// Simplifies a given statement by transforming certain structures into more straightforward forms.
+/// Specifically, it handles inline switch operations within substitution statements.
+///
+/// # Arguments
+///
+/// * `statement` - A reference to the `Statement` to be simplified.
+///
+/// # Returns
+///
+/// A simplified `Statement`.
 pub fn simplify_statement(statement: &Statement) -> Statement {
     match &statement {
         Statement::Substitution {
@@ -97,6 +107,8 @@ pub fn simplify_statement(statement: &Statement) -> Statement {
     }
 }
 
+/// Represents a symbolic value used in symbolic execution, which can be a constant, variable, or an operation.
+/// It supports various operations like binary, unary, conditional, arrays, tuples, uniform arrays, and function calls.
 #[derive(Clone)]
 pub enum SymbolicValue {
     ConstantInt(BigInt),
@@ -115,6 +127,7 @@ pub enum SymbolicValue {
     Call(String, Vec<SymbolicValue>),
 }
 
+/// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
 impl fmt::Debug for SymbolicValue {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
@@ -158,6 +171,7 @@ impl fmt::Debug for SymbolicValue {
     }
 }
 
+/// Represents the access type within a symbolic expression, such as component or array access.
 #[derive(Clone, Debug)]
 pub enum SymbolicAccess {
     ComponentAccess(String),
@@ -171,6 +185,7 @@ impl fmt::Display for SymbolicAccess {
 }
 
 impl SymbolicAccess {
+    /// Provides a compact format for displaying symbolic access in expressions.
     fn compact_fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             SymbolicAccess::ComponentAccess(name) => {
@@ -187,6 +202,8 @@ impl SymbolicAccess {
     }
 }
 
+/// Represents the state of symbolic execution, holding symbolic values,
+/// trace constraints, side constraints, and depth information.
 #[derive(Clone)]
 pub struct SymbolicState {
     owner_name: String,
@@ -196,6 +213,7 @@ pub struct SymbolicState {
     side_constraints: Vec<SymbolicValue>,
 }
 
+/// Implements the `Debug` trait for `SymbolicState` to provide detailed state information during debugging.
 impl fmt::Debug for SymbolicState {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "🛠️ {}", format!("{}", "SymbolicState [").cyan())?;
@@ -240,6 +258,7 @@ impl fmt::Debug for SymbolicState {
 }
 
 impl SymbolicState {
+    /// Creates a new `SymbolicState` with default values.
     pub fn new() -> Self {
         SymbolicState {
             owner_name: "".to_string(),
@@ -250,39 +269,85 @@ impl SymbolicState {
         }
     }
 
+    /// Sets the owner name of the current symbolic state.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the owner to set.
     pub fn set_owner(&mut self, name: String) {
         self.owner_name = name;
     }
 
+    /// Retrieves the owner name of the current symbolic state.
+    ///
+    /// # Returns
+    ///
+    /// The owner name as a string.
     pub fn get_owner(&self) -> String {
         self.owner_name.clone()
     }
 
+    /// Sets the current depth of the symbolic state.
+    ///
+    /// # Arguments
+    ///
+    /// * `d` - The depth level to set.
     pub fn set_depth(&mut self, d: usize) {
         self.depth = d;
     }
 
+    /// Retrieves the current depth of the symbolic state.
+    ///
+    /// # Returns
+    ///
+    /// The depth as an unsigned integer.
     pub fn get_depth(&self) -> usize {
         self.depth
     }
 
+    /// Sets a symbolic value for a given variable name in the state.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the variable.
+    /// * `value` - The symbolic value to associate with the variable.
     pub fn set_symval(&mut self, name: String, value: SymbolicValue) {
         self.values.insert(name, value);
     }
 
+    /// Retrieves a symbolic value associated with a given variable name.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the variable to retrieve.
+    ///
+    /// # Returns
+    ///
+    /// An optional reference to the symbolic value if it exists.
     pub fn get_symval(&self, name: &str) -> Option<&SymbolicValue> {
         self.values.get(name)
     }
 
+    /// Adds a trace constraint to the current state.
+    ///
+    /// # Arguments
+    ///
+    /// * `constraint` - The symbolic value representing the constraint.
     pub fn push_trace_constraint(&mut self, constraint: SymbolicValue) {
         self.trace_constraints.push(constraint);
     }
 
+    /// Adds a side constraint to the current state.
+    ///
+    /// # Arguments
+    ///
+    /// * `constraint` - The symbolic value representing the constraint.
     pub fn push_side_constraint(&mut self, constraint: SymbolicValue) {
         self.side_constraints.push(constraint);
     }
 }
 
+/// Represents a symbolic template used in the symbolic execution process.
 #[derive(Default, Clone, Debug)]
 pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<String>,
@@ -290,6 +355,7 @@ pub struct SymbolicTemplate {
     pub body: Vec<ExtendedStatement>,
 }
 
+/// Represents a symbolic component used in the symbolic execution process.
 #[derive(Default, Clone, Debug)]
 pub struct SymbolicComponent {
     pub template_name: String,
@@ -298,6 +364,7 @@ pub struct SymbolicComponent {
     pub is_done: bool,
 }
 
+/// Collects statistics about constraints encountered during symbolic execution.
 #[derive(Default, Debug)]
 pub struct ConstraintStatistics {
     pub total_constraints: usize,
@@ -312,10 +379,17 @@ pub struct ConstraintStatistics {
 }
 
 impl ConstraintStatistics {
+    /// Creates a new instance of `ConstraintStatistics` with default values.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Updates statistics based on a given symbolic value and its depth in the expression tree.
+    ///
+    /// # Arguments
+    ///
+    /// * `value` - The symbolic value to analyze.
+    /// * `depth` - The depth level of this value in its expression tree.
     fn update_from_symbolic_value(&mut self, value: &SymbolicValue, depth: usize) {
         match value {
             SymbolicValue::ConstantInt(_) => {
@@ -376,12 +450,35 @@ impl ConstraintStatistics {
         }
     }
 
+    /// Updates overall statistics with a new constraint.
+    ///
+    /// # Arguments
+    ///
+    /// * `constraint` - The symbolic value representing the constraint to add
     pub fn update(&mut self, constraint: &SymbolicValue) {
         self.total_constraints += 1;
         self.update_from_symbolic_value(constraint, 0);
     }
 }
 
+/// Executes symbolic execution on a series of statements while maintaining multiple states.
+/// It handles branching logic and updates constraints accordingly during execution flow.
+///
+/// This struct is parameterized over a lifetime `'a`, which is used for borrowing constraint statistics references.
+///
+/// # Fields
+///
+/// * `template_library` - A library storing templates for execution.
+/// * `components_store` - A store for components used in execution.
+/// * `variable_types` - A map storing types of variables.
+/// * `prime` - A prime number used in computations.
+/// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
+/// * `trace_constraint_stats`, `side_constraint_stats` - Statistics collectors for constraints encountered.
+/// * `max_depth` - Tracks maximum depth reached during execution.
+///
+/// # Lifetime Parameters
+///
+/// `'a`: Lifetime associated with borrowed references to constraint statistics objects.
 pub struct SymbolicExecutor<'a> {
     pub template_library: HashMap<String, SymbolicTemplate>,
     pub components_store: HashMap<String, SymbolicComponent>,
@@ -398,6 +495,7 @@ pub struct SymbolicExecutor<'a> {
 }
 
 impl<'a> SymbolicExecutor<'a> {
+    /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
     pub fn new(
         prime: BigInt,
         ts: &'a mut ConstraintStatistics,
@@ -417,6 +515,15 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    // Checks if a component is ready based on its inputs being fully specified.
+    //
+    // # Arguments
+    //
+    // * 'name' - Name of the component to check readiness for.
+    //
+    // # Returns
+    //
+    // A boolean indicating readiness status.
     fn is_ready(&self, name: String) -> bool {
         self.components_store.contains_key(&name)
             && self.components_store[&name]
@@ -425,6 +532,12 @@ impl<'a> SymbolicExecutor<'a> {
                 .all(|(_, v)| v.is_some())
     }
 
+    // Feeds arguments into current state variables based on provided names and expressions.
+    //
+    // # Arguments
+    //
+    // * 'names' : Vector containing names corresponding with expressions being fed as arguments.
+    // * 'args' : Vector containing expressions whose evaluated results will be assigned as argument values.
     pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
         for (n, a) in names.iter().zip(args.iter()) {
             self.cur_state.set_symval(
@@ -434,6 +547,13 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    // Registers library template by extracting input signals from block statement body provided along with template parameter names list.
+    //
+    // # Arguments
+    //
+    // * 'name' : Name under which template will be registered within library .
+    // * 'body' : Block statement serving as main logic body defining behavior captured by template .
+    // * 'template_parameter_names': List containing names identifying parameters used within template logic .
     pub fn register_library(
         &mut self,
         name: String,
@@ -480,6 +600,14 @@ impl<'a> SymbolicExecutor<'a> {
         self.template_library.insert(name, template);
     }
 
+    /// Expands all stack states by executing each statement block recursively,
+    /// updating depth and managing branching paths in execution flow.
+    ///
+    /// # Arguments
+    ///
+    /// * `statements` - A vector of extended statements to execute symbolically.
+    /// * `cur_bid` - Current block index being executed.
+    /// * `depth` - Current depth level in execution flow for tracking purposes.
     fn expand_all_stack_states(
         &mut self,
         statements: &Vec<ExtendedStatement>,
@@ -495,6 +623,13 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Executes a sequence of statements symbolically from a specified starting block index,
+    /// updating internal states and handling control structures like if-else and loops appropriately.
+    ///
+    /// # Arguments
+    ///
+    /// * `statements` - A vector of extended statements representing program logic to execute symbolically.
+    /// * `cur_bid` - Current block index to start execution from.
     pub fn execute(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
         if cur_bid < statements.len() {
             self.max_depth = max(self.max_depth, self.cur_state.get_depth());
@@ -970,6 +1105,17 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Evaluates a symbolic access expression, converting it into a `SymbolicAccess` value.
+    ///
+    /// # Arguments
+    ///
+    /// * `access` - The `Access` to evaluate.
+    /// * `substiture_var` - A boolean flag indicating whether to substitute variables.
+    /// * `substiture_const` - A boolean flag indicating whether to substitute constants.
+    ///
+    /// # Returns
+    ///
+    /// A `SymbolicAccess` representing the evaluated access.
     fn evaluate_access(
         &self,
         access: &Access,
@@ -986,6 +1132,20 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Evaluates a symbolic expression, converting it into a `SymbolicValue`.
+    ///
+    /// This function handles various types of expressions, including constants, variables,
+    /// and complex operations. It recursively evaluates sub-expressions as needed.
+    ///
+    /// # Arguments
+    ///
+    /// * `expr` - The `DebugExpression` to evaluate.
+    /// * `substiture_var` - A boolean flag indicating whether to substitute variables.
+    /// * `substiture_const` - A boolean flag indicating whether to substitute constants.
+    ///
+    /// # Returns
+    ///
+    /// A `SymbolicValue` representing the evaluated expression.
     fn evaluate_expression(
         &self,
         expr: &DebugExpression,
