@@ -1226,22 +1226,35 @@ impl<'a> SymbolicExecutor<'a> {
                             ExpressionInfixOpcode::Mul => {
                                 SymbolicValue::ConstantInt((lv * rv) % self.prime.clone())
                             }
+                            ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
+                            ExpressionInfixOpcode::Mod => SymbolicValue::ConstantInt(lv % rv),
+                            ExpressionInfixOpcode::BitOr => SymbolicValue::ConstantInt(lv | rv),
+                            ExpressionInfixOpcode::BitAnd => SymbolicValue::ConstantInt(lv & rv),
+                            ExpressionInfixOpcode::BitXor => SymbolicValue::ConstantInt(lv ^ rv),
                             ExpressionInfixOpcode::ShiftL => {
                                 SymbolicValue::ConstantInt(lv << rv.to_usize().unwrap())
                             }
                             ExpressionInfixOpcode::ShiftR => {
                                 SymbolicValue::ConstantInt(lv >> rv.to_usize().unwrap())
                             }
-                            ExpressionInfixOpcode::Lesser => SymbolicValue::ConstantBool(lv < rv),
-                            ExpressionInfixOpcode::Greater => SymbolicValue::ConstantBool(lv > rv),
-                            ExpressionInfixOpcode::LesserEq => {
-                                SymbolicValue::ConstantBool(lv <= rv)
-                            }
-                            ExpressionInfixOpcode::GreaterEq => {
-                                SymbolicValue::ConstantBool(lv >= rv)
-                            }
-                            ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(lv == rv),
-                            ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(lv != rv),
+                            ExpressionInfixOpcode::Lesser => SymbolicValue::ConstantBool(
+                                lv % self.prime.clone() < rv % self.prime.clone(),
+                            ),
+                            ExpressionInfixOpcode::Greater => SymbolicValue::ConstantBool(
+                                lv % self.prime.clone() > rv % self.prime.clone(),
+                            ),
+                            ExpressionInfixOpcode::LesserEq => SymbolicValue::ConstantBool(
+                                lv % self.prime.clone() <= rv % self.prime.clone(),
+                            ),
+                            ExpressionInfixOpcode::GreaterEq => SymbolicValue::ConstantBool(
+                                lv % self.prime.clone() >= rv % self.prime.clone(),
+                            ),
+                            ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(
+                                lv % self.prime.clone() == rv % self.prime.clone(),
+                            ),
+                            ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(
+                                lv % self.prime.clone() != rv % self.prime.clone(),
+                            ),
                             _ => SymbolicValue::BinaryOp(
                                 Box::new(lhs),
                                 DebugExpressionInfixOpcode(infix_op.clone()),
