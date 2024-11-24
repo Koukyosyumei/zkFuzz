@@ -562,17 +562,19 @@ impl<'a> SymbolicExecutor<'a> {
                             if let Some(else_stmt) = else_case {
                                 let mut stack_states_if_true = self.block_end_states.clone();
                                 self.block_end_states = stack_states;
-                                if let SymbolicValue::ConstantBool(v) = condition {
-                                    else_state
-                                        .push_trace_constraint(SymbolicValue::ConstantBool(!v));
-                                } else {
-                                    else_state.push_trace_constraint(SymbolicValue::UnaryOp(
-                                        DebugExpressionPrefixOpcode(
-                                            ExpressionPrefixOpcode::BoolNot,
-                                        ),
-                                        Box::new(condition),
-                                    ));
-                                }
+                                let neg_condition =
+                                    if let SymbolicValue::ConstantBool(v) = condition {
+                                        SymbolicValue::ConstantBool(!v)
+                                    } else {
+                                        SymbolicValue::UnaryOp(
+                                            DebugExpressionPrefixOpcode(
+                                                ExpressionPrefixOpcode::BoolNot,
+                                            ),
+                                            Box::new(condition),
+                                        )
+                                    };
+                                self.trace_constraint_stats.update(&neg_condition);
+                                else_state.push_trace_constraint(neg_condition);
                                 else_state.set_depth(cur_depth + 1);
                                 self.cur_state = else_state;
                                 self.execute(
