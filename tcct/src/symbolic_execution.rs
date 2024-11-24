@@ -855,41 +855,24 @@ impl SymbolicExecutor {
                 if access.is_empty() {
                     let resolved_name = format!("{}.{}", self.cur_state.get_owner(), name.clone());
                     if substiture_var {
-                        self.cur_state
+                        return self
+                            .cur_state
                             .get_symval(&resolved_name)
                             .cloned()
-                            .unwrap_or_else(|| SymbolicValue::Variable(resolved_name))
+                            .unwrap_or_else(|| SymbolicValue::Variable(resolved_name));
                     } else if substiture_const {
                         let sv = self.cur_state.get_symval(&resolved_name).clone();
                         if sv.is_some() {
                             if let SymbolicValue::Constant(v) = sv.unwrap() {
-                                SymbolicValue::Variable(format!(
-                                    "{}.{}",
-                                    self.cur_state.get_owner(),
-                                    name.clone()
-                                ))
-                            } else {
-                                SymbolicValue::Variable(format!(
-                                    "{}.{}",
-                                    self.cur_state.get_owner(),
-                                    name.clone()
-                                ))
+                                return SymbolicValue::Constant(v.clone());
                             }
-                        } else {
-                            SymbolicValue::Variable(format!(
-                                "{}.{}",
-                                self.cur_state.get_owner(),
-                                name.clone()
-                            ))
                         }
                     }
-                    {
-                        SymbolicValue::Variable(format!(
-                            "{}.{}",
-                            self.cur_state.get_owner(),
-                            name.clone()
-                        ))
-                    }
+                    SymbolicValue::Variable(format!(
+                        "{}.{}",
+                        self.cur_state.get_owner(),
+                        name.clone()
+                    ))
                 } else {
                     SymbolicValue::Variable(format!(
                         "{}.{}{}",
