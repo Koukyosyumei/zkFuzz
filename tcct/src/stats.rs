@@ -1,15 +1,17 @@
 use crate::symbolic_execution::ConstraintStatistics;
 
-
 pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintStatistics) {
-    println!("Total_Constraints: {}", constraint_stats.total_constraints);
-    println!("Constant_Counts: {}", constraint_stats.constant_counts);
     println!(
-        "Conditional_Counts: {}",
+        "  - Total_Constraints: {}",
+        constraint_stats.total_constraints
+    );
+    println!("  - Constant_Counts: {}", constraint_stats.constant_counts);
+    println!(
+        "  - Conditional_Counts: {}",
         constraint_stats.conditional_counts
     );
-    println!("Array_Counts: {}", constraint_stats.array_counts);
-    println!("Tuple_Counts: {}", constraint_stats.tuple_counts);
+    println!("  - Array_Counts: {}", constraint_stats.array_counts);
+    println!("  - Tuple_Counts: {}", constraint_stats.tuple_counts);
 
     let avg_depth = if !constraint_stats.constraint_depths.is_empty() {
         constraint_stats.constraint_depths.iter().sum::<usize>() as f64
@@ -17,9 +19,9 @@ pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintS
     } else {
         0.0
     };
-    println!("Avg_Depth: {}", avg_depth);
+    println!("  - Avg_Depth: {}", avg_depth);
     println!(
-        "Max_Depth: {}",
+        "  - Max_Depth: {}",
         constraint_stats
             .constraint_depths
             .iter()
@@ -32,7 +34,7 @@ pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintS
         "Eq", "NEq", "BoolOr", "BoolAnd", "BitOr", "BitAnd", "BitXor",
     ] {
         println!(
-            "Count_{}: {}",
+            "  - Count_{}: {}",
             op,
             constraint_stats.operator_counts.get(*op).unwrap_or(&0)
         );
@@ -44,9 +46,9 @@ pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintS
     } else {
         0.0
     };
-    println!("Variable_Avg_Count: {}", var_avg);
+    println!("  - Variable_Avg_Count: {}", var_avg);
     println!(
-        "Variable_Max_Count: {}",
+        "  - Variable_Max_Count: {}",
         var_counts.iter().max().unwrap_or(&0)
     );
 
@@ -60,9 +62,9 @@ pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintS
     } else {
         0.0
     };
-    println!("Function_Avg_Count: {}", func_avg);
+    println!("  - Function_Avg_Count: {}", func_avg);
     println!(
-        "Function_Max_Count: {}",
+        "  - Function_Max_Count: {}",
         func_counts.iter().max().unwrap_or(&0)
     );
 }

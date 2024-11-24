@@ -380,29 +380,29 @@ impl ConstraintStatistics {
     }
 }
 
-pub struct SymbolicExecutor {
+pub struct SymbolicExecutor<'a> {
     pub template_library: HashMap<String, SymbolicTemplate>,
     pub components_store: HashMap<String, SymbolicComponent>,
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
     // constraints
-    pub trace_constraint_stats: ConstraintStatistics,
-    pub side_constraint_stats: ConstraintStatistics,
+    pub trace_constraint_stats: &'a mut ConstraintStatistics,
+    pub side_constraint_stats: &'a mut ConstraintStatistics,
     // useful stats
     pub max_depth: usize,
 }
 
-impl SymbolicExecutor {
-    pub fn new() -> Self {
+impl<'a> SymbolicExecutor<'a> {
+    pub fn new(ts: &'a mut ConstraintStatistics, ss: &'a mut ConstraintStatistics) -> Self {
         SymbolicExecutor {
             template_library: HashMap::new(),
             components_store: HashMap::new(),
             cur_state: SymbolicState::new(),
             block_end_states: Vec::new(),
             final_states: Vec::new(),
-            trace_constraint_stats: ConstraintStatistics::new(),
-            side_constraint_stats: ConstraintStatistics::new(),
+            trace_constraint_stats: ts,
+            side_constraint_stats: ss,
             max_depth: 0,
         }
     }
@@ -690,7 +690,10 @@ impl SymbolicExecutor {
 
                                 if self.is_ready(var.to_string()) {
                                     if !self.components_store[var].is_done {
-                                        let mut subse = SymbolicExecutor::new();
+                                        let mut subse = SymbolicExecutor::new(
+                                            self.trace_constraint_stats,
+                                            self.side_constraint_stats,
+                                        );
 
                                         subse.template_library = self.template_library.clone();
                                         subse.cur_state.set_owner(format!(
@@ -698,6 +701,8 @@ impl SymbolicExecutor {
                                             self.cur_state.get_owner(),
                                             var.clone()
                                         ));
+                                        //subse.trace_constraint_stats = self.trace_constraint_stats;
+                                        //subse.side_constraint_stats = self.side_constraint_stats;
 
                                         let templ = &self.template_library
                                             [&self.components_store[var].template_name];
