@@ -76,9 +76,13 @@ fn start() -> Result<(), ()> {
             println!("  - Total Paths Explored: {}", sexe.final_states.len());
 
             if user_input.flag_printout_stats {
-                println!("----------------------\n*Stats of Trace Constraint*");
+                println!(
+                    "--------------------------------------------\n🪶 Stats of Trace Constraint"
+                );
                 print_constraint_summary_statistics_pretty(&sexe.trace_constraint_stats);
-                println!("----------------------\n*Stats of Side Constraint*");
+                println!(
+                    "--------------------------------------------\n⛓️ Stats of Side Constraint*"
+                );
                 print_constraint_summary_statistics_pretty(&sexe.side_constraint_stats);
             }
             println!("=============================================");
