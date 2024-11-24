@@ -1,5 +1,9 @@
 use crate::symbolic_execution::ConstraintStatistics;
 
+const RESET: &str = "\x1b[0m";
+const WHITE: &str = "\x1b[37m";
+const BBLACK: &str = "\x1b[90m";
+
 pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintStatistics) {
     println!(
         "  - Total_Constraints: {}",
@@ -33,10 +37,13 @@ pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintS
         "Mul", "Div", "Add", "Sub", "Pow", "IntDiv", "Mod", "ShL", "ShR", "LEq", "GEq", "Lt", "Gt",
         "Eq", "NEq", "BoolOr", "BoolAnd", "BitOr", "BitAnd", "BitXor",
     ] {
+        let c = constraint_stats.operator_counts.get(*op).unwrap_or(&0);
         println!(
-            "  - Count_{}: {}",
+            "  - Count_{}: {}{}{}",
             op,
-            constraint_stats.operator_counts.get(*op).unwrap_or(&0)
+            if *c != 0 { WHITE } else { BBLACK },
+            c,
+            RESET
         );
     }
 
