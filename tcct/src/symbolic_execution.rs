@@ -903,6 +903,19 @@ impl SymbolicExecutor {
                     substiture_var,
                     substiture_const,
                 );
+                if let SymbolicValue::Constant(ref lv) = lhs {
+                    if let SymbolicValue::Constant(ref rv) = rhs {
+                        let c = match &infix_op {
+                            ExpressionInfixOpcode::Add => SymbolicValue::Constant(lv + rv),
+                            _ => SymbolicValue::BinaryOp(
+                                Box::new(lhs),
+                                DebugExpressionInfixOpcode(infix_op.clone()),
+                                Box::new(rhs),
+                            ),
+                        };
+                        return c;
+                    }
+                }
                 SymbolicValue::BinaryOp(
                     Box::new(lhs),
                     DebugExpressionInfixOpcode(infix_op.clone()),
