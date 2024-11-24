@@ -157,6 +157,35 @@ impl fmt::Debug for SymbolicValue {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum SymbolicAccess {
+    ComponentAccess(String),
+    ArrayAccess(SymbolicValue),
+}
+
+impl fmt::Display for SymbolicAccess {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.compact_fmt(f)
+    }
+}
+
+impl SymbolicAccess {
+    fn compact_fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self {
+            SymbolicAccess::ComponentAccess(name) => {
+                write!(f, ".{}", name)
+            }
+            SymbolicAccess::ArrayAccess(val) => {
+                write!(
+                    f,
+                    "[{}]",
+                    format!("{:?}", val).replace("\n", "").replace("  ", " ")
+                )
+            }
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct SymbolicState {
     owner_name: String,
@@ -554,6 +583,8 @@ impl SymbolicExecutor {
                                 );
                                 if flag {
                                     self.execute(statements, cur_bid);
+                                } else {
+                                    // trace!("Break From While");
                                 }
                             } else {
                                 self.trace_constraint_stats.update(&condition);
@@ -863,6 +894,22 @@ impl SymbolicExecutor {
         }
     }
 
+    fn evaluate_access(
+        &self,
+        access: &Access,
+        substiture_var: bool,
+        substiture_const: bool,
+    ) -> SymbolicAccess {
+        match &access {
+            Access::ComponentAccess(name) => SymbolicAccess::ComponentAccess(name.clone()),
+            Access::ArrayAccess(expr) => SymbolicAccess::ArrayAccess(self.evaluate_expression(
+                &DebugExpression(expr.clone()),
+                substiture_var,
+                true,
+            )),
+        }
+    }
+
     fn evaluate_expression(
         &self,
         expr: &DebugExpression,
@@ -904,7 +951,11 @@ impl SymbolicExecutor {
                         name,
                         &access
                             .iter()
-                            .map(|arg0: &Access| DebugAccess(arg0.clone()))
+                            .map(|arg0: &Access| self.evaluate_access(
+                                &arg0.clone(),
+                                substiture_var,
+                                substiture_const
+                            ))
                             .map(|debug_access| debug_access.to_string())
                             .collect::<Vec<_>>()
                             .join("")
