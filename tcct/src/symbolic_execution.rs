@@ -5,6 +5,7 @@ use crate::parser_user::{
 use colored::Colorize;
 use log::{trace, warn};
 use num_bigint_dig::BigInt;
+use num_traits::cast::ToPrimitive;
 use program_structure::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
     Statement, VariableType,
@@ -910,6 +911,11 @@ impl SymbolicExecutor {
                     if let SymbolicValue::Constant(ref rv) = rhs {
                         let c = match &infix_op {
                             ExpressionInfixOpcode::Add => SymbolicValue::Constant(lv + rv),
+                            ExpressionInfixOpcode::Sub => SymbolicValue::Constant(lv - rv),
+                            ExpressionInfixOpcode::Mul => SymbolicValue::Constant(lv * rv),
+                            ExpressionInfixOpcode::ShiftL => {
+                                SymbolicValue::Constant(lv << rv.to_usize().unwrap())
+                            }
                             _ => SymbolicValue::BinaryOp(
                                 Box::new(lhs),
                                 DebugExpressionInfixOpcode(infix_op.clone()),
