@@ -483,6 +483,7 @@ impl ConstraintStatistics {
 /// `'a`: Lifetime associated with borrowed references to constraint statistics objects.
 pub struct SymbolicExecutor<'a> {
     pub template_library: HashMap<String, SymbolicTemplate>,
+    pub function_library: HashMap<String, Vec<ExtendedStatement>>,
     pub components_store: HashMap<String, SymbolicComponent>,
     pub variable_types: HashMap<String, DebugVariableType>,
     pub prime: BigInt,
@@ -505,6 +506,7 @@ impl<'a> SymbolicExecutor<'a> {
     ) -> Self {
         SymbolicExecutor {
             template_library: HashMap::new(),
+            function_library: HashMap::new(),
             components_store: HashMap::new(),
             variable_types: HashMap::new(),
             prime: prime,
@@ -600,6 +602,16 @@ impl<'a> SymbolicExecutor<'a> {
             ],
         };
         self.template_library.insert(name, template);
+    }
+
+    pub fn register_function(&mut self, name: String, body: Statement) {
+        self.function_library.insert(
+            name,
+            vec![
+                ExtendedStatement::DebugStatement(body),
+                ExtendedStatement::Ret,
+            ],
+        );
     }
 
     /// Expands all stack states by executing each statement block recursively,
@@ -1420,7 +1432,13 @@ impl<'a> SymbolicExecutor<'a> {
                         )
                     })
                     .collect();
-                SymbolicValue::Call(id.clone(), evaluated_args)
+                if self.template_library.contains_key(id) {
+                    SymbolicValue::Call(id.clone(), evaluated_args)
+                } else if self.function_library.contains_key(id) {
+                    SymbolicValue::Call(id.clone(), evaluated_args)
+                } else {
+                    panic!("Unknown Callee: {}", id)
+                }
             }
             /*
             DebugExpression::BusCall { id, args, .. } => {
