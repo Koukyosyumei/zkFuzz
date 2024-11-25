@@ -66,7 +66,9 @@ fn start() -> Result<(), ()> {
             let body = simplify_statement(&template.get_body().clone());
 
             sexe.cur_state.set_owner("main".to_string());
-            sexe.feed_arguments(template.get_name_of_params(), args);
+            if !user_input.flag_symbolic_template_params {
+                sexe.feed_arguments(template.get_name_of_params(), args);
+            }
             sexe.execute(
                 &vec![
                     ExtendedStatement::DebugStatement(body),
