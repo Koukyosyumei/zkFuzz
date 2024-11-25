@@ -10,7 +10,7 @@ mod utils;
 use ansi_term::Colour;
 use env_logger;
 use input_user::Input;
-use log::{info, warn};
+use log::{error, info, warn};
 use num_bigint_dig::BigInt;
 use stats::print_constraint_summary_statistics_pretty;
 use std::env;
@@ -152,7 +152,7 @@ fn start() -> Result<(), ()> {
                     &s.side_constraints.clone(),
                 );
                 if assignment.is_some() {
-                    println!("Malformed TCCT Instance:");
+                    error!("☠️ Malformed TCCT Instance:");
                     is_safe = "NOT SAFE";
                     for (k, v) in assignment.unwrap().into_iter() {
                         println!("  - {}: {}", k, v);
