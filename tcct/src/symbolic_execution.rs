@@ -210,9 +210,9 @@ impl SymbolicAccess {
 pub struct SymbolicState {
     owner_name: String,
     depth: usize,
-    values: HashMap<String, SymbolicValue>,
-    trace_constraints: Vec<SymbolicValue>,
-    side_constraints: Vec<SymbolicValue>,
+    pub values: HashMap<String, SymbolicValue>,
+    pub trace_constraints: Vec<SymbolicValue>,
+    pub side_constraints: Vec<SymbolicValue>,
 }
 
 /// Implements the `Debug` trait for `SymbolicState` to provide detailed state information during debugging.
@@ -354,6 +354,7 @@ impl SymbolicState {
 pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<String>,
     pub inputs: Vec<String>,
+    pub outputs: Vec<String>,
     pub body: Vec<ExtendedStatement>,
 }
 
@@ -496,6 +497,8 @@ pub struct SymbolicExecutor<'a> {
     pub variable_types: HashMap<String, DebugVariableType>,
     pub prime: BigInt,
     pub propagate_substitution: bool,
+    pub skip_initialization_blocks: bool,
+    pub off_trace: bool,
     // states
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
@@ -522,6 +525,8 @@ impl<'a> SymbolicExecutor<'a> {
             variable_types: HashMap::new(),
             prime: prime,
             propagate_substitution: propagate_substitution,
+            skip_initialization_blocks: false,
+            off_trace: false,
             cur_state: SymbolicState::new(),
             block_end_states: Vec::new(),
             final_states: Vec::new(),
@@ -529,6 +534,15 @@ impl<'a> SymbolicExecutor<'a> {
             side_constraint_stats: ss,
             max_depth: 0,
         }
+    }
+
+    pub fn clear(&mut self) {
+        self.function_counter.clear();
+        self.components_store.clear();
+        self.cur_state = SymbolicState::new();
+        self.block_end_states.clear();
+        self.final_states.clear();
+        self.max_depth = 0;
     }
 
     // Checks if a component is ready based on its inputs being fully specified.
@@ -578,6 +592,7 @@ impl<'a> SymbolicExecutor<'a> {
         template_parameter_names: &Vec<String>,
     ) {
         let mut inputs: Vec<String> = vec![];
+        let mut outputs: Vec<String> = vec![];
         match &body {
             Statement::Block { stmts, .. } => {
                 for s in stmts {
@@ -592,7 +607,9 @@ impl<'a> SymbolicExecutor<'a> {
                                         SignalType::Input => {
                                             inputs.push(name);
                                         }
-                                        SignalType::Output => {}
+                                        SignalType::Output => {
+                                            outputs.push(name);
+                                        }
                                         SignalType::Intermediate => {}
                                     }
                                 }
@@ -609,6 +626,7 @@ impl<'a> SymbolicExecutor<'a> {
         let template = SymbolicTemplate {
             template_parameter_names: template_parameter_names.clone(),
             inputs: inputs,
+            outputs: outputs,
             body: vec![
                 ExtendedStatement::DebugStatement(body),
                 ExtendedStatement::Ret,
@@ -673,13 +691,23 @@ impl<'a> SymbolicExecutor<'a> {
                 ExtendedStatement::DebugStatement(stmt) => {
                     match stmt {
                         Statement::InitializationBlock {
-                            initializations, ..
+                            initializations,
+                            xtype,
+                            ..
                         } => {
-                            for init in initializations {
-                                self.execute(
-                                    &vec![ExtendedStatement::DebugStatement(init.clone())],
-                                    0,
-                                );
+                            let mut is_input = false;
+                            if let VariableType::Signal(SignalType::Input, _taglist) = xtype.clone()
+                            {
+                                is_input = true;
+                            }
+
+                            if !(self.skip_initialization_blocks && is_input) {
+                                for init in initializations {
+                                    self.execute(
+                                        &vec![ExtendedStatement::DebugStatement(init.clone())],
+                                        0,
+                                    );
+                                }
                             }
                             self.block_end_states = vec![self.cur_state.clone()];
                             self.expand_all_stack_states(
@@ -689,7 +717,9 @@ impl<'a> SymbolicExecutor<'a> {
                             );
                         }
                         Statement::Block { meta, stmts, .. } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
                             self.execute(
                                 &stmts
                                     .iter()
@@ -712,8 +742,11 @@ impl<'a> SymbolicExecutor<'a> {
                             else_case,
                             ..
                         } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
                             let tmp_cond = self.evaluate_expression(&DebugExpression(cond.clone()));
+                            let original_evaled_condition = self.fold_variables(&tmp_cond, true);
                             let evaled_condition =
                                 self.fold_variables(&tmp_cond, !self.propagate_substitution);
 
@@ -726,17 +759,20 @@ impl<'a> SymbolicExecutor<'a> {
                             let mut else_state = self.cur_state.clone();
 
                             if let SymbolicValue::ConstantBool(false) = evaled_condition {
-                                trace!(
-                                    "{}",
-                                    format!(
-                                        "(elem_id={}) 🚧 Unreachable `Then` Branch",
-                                        meta.elem_id
-                                    )
-                                    .yellow()
-                                );
+                                if !self.off_trace {
+                                    trace!(
+                                        "{}",
+                                        format!(
+                                            "(elem_id={}) 🚧 Unreachable `Then` Branch",
+                                            meta.elem_id
+                                        )
+                                        .yellow()
+                                    );
+                                }
                             } else {
                                 self.trace_constraint_stats.update(&evaled_condition);
                                 if_state.push_trace_constraint(evaled_condition.clone());
+                                if_state.push_side_constraint(original_evaled_condition.clone());
                                 if_state.set_depth(cur_depth + 1);
                                 self.cur_state = if_state.clone();
                                 self.execute(
@@ -760,18 +796,34 @@ impl<'a> SymbolicExecutor<'a> {
                                             Box::new(evaled_condition),
                                         )
                                     };
-                                if let SymbolicValue::ConstantBool(false) = neg_evaled_condition {
-                                    trace!(
-                                        "{}",
-                                        format!(
-                                            "(elem_id={}) 🚧 Unreachable `Else` Branch",
-                                            meta.elem_id
+                                let original_neg_evaled_condition =
+                                    if let SymbolicValue::ConstantBool(v) =
+                                        original_evaled_condition
+                                    {
+                                        SymbolicValue::ConstantBool(!v)
+                                    } else {
+                                        SymbolicValue::UnaryOp(
+                                            DebugExpressionPrefixOpcode(
+                                                ExpressionPrefixOpcode::BoolNot,
+                                            ),
+                                            Box::new(original_evaled_condition),
                                         )
-                                        .yellow()
-                                    );
+                                    };
+                                if let SymbolicValue::ConstantBool(false) = neg_evaled_condition {
+                                    if !self.off_trace {
+                                        trace!(
+                                            "{}",
+                                            format!(
+                                                "(elem_id={}) 🚧 Unreachable `Else` Branch",
+                                                meta.elem_id
+                                            )
+                                            .yellow()
+                                        );
+                                    }
                                 } else {
                                     self.trace_constraint_stats.update(&neg_evaled_condition);
                                     else_state.push_trace_constraint(neg_evaled_condition);
+                                    else_state.push_side_constraint(original_neg_evaled_condition);
                                     else_state.set_depth(cur_depth + 1);
                                     self.cur_state = else_state;
                                     self.execute(
@@ -785,14 +837,16 @@ impl<'a> SymbolicExecutor<'a> {
                                         cur_bid + 1,
                                         cur_depth,
                                     );
-                                    self.block_end_states.append(&mut stack_states_if_true);
                                 }
+                                self.block_end_states.append(&mut stack_states_if_true);
                             }
                         }
                         Statement::While {
                             meta, cond, stmt, ..
                         } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
                             // Symbolic execution of loops is complex. This is a simplified approach.
                             let tmp_cond = self.evaluate_expression(&DebugExpression(cond.clone()));
                             let evaled_condition =
@@ -819,7 +873,9 @@ impl<'a> SymbolicExecutor<'a> {
                             // Note: This doesn't handle loop invariants or fixed-point computation
                         }
                         Statement::Return { meta, value, .. } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
                             let tmp_val = self.evaluate_expression(&DebugExpression(value.clone()));
                             let return_value =
                                 self.fold_variables(&tmp_val, !self.propagate_substitution);
@@ -863,7 +919,9 @@ impl<'a> SymbolicExecutor<'a> {
                             op,
                             rhe,
                         } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
                             let expr = self.evaluate_expression(&DebugExpression(rhe.clone()));
                             let original_value = self.fold_variables(&expr, true);
                             let value = self.fold_variables(&expr, !self.propagate_substitution);
@@ -941,14 +999,16 @@ impl<'a> SymbolicExecutor<'a> {
                                             );
                                         }
 
-                                        trace!(
-                                            "{}",
-                                            format!("{}", "===========================").cyan()
-                                        );
-                                        trace!(
-                                            "📞 Call {}",
-                                            self.components_store[var].template_name
-                                        );
+                                        if !self.off_trace {
+                                            trace!(
+                                                "{}",
+                                                format!("{}", "===========================").cyan()
+                                            );
+                                            trace!(
+                                                "📞 Call {}",
+                                                self.components_store[var].template_name
+                                            );
+                                        }
 
                                         subse.execute(&templ.body, 0);
 
@@ -965,10 +1025,12 @@ impl<'a> SymbolicExecutor<'a> {
                                         self.cur_state
                                             .side_constraints
                                             .append(&mut sub_side_constraints);
-                                        trace!(
-                                            "{}",
-                                            format!("{}", "===========================").cyan()
-                                        );
+                                        if !self.off_trace {
+                                            trace!(
+                                                "{}",
+                                                format!("{}", "===========================").cyan()
+                                            );
+                                        }
                                     }
                                 }
                             }
@@ -1022,7 +1084,9 @@ impl<'a> SymbolicExecutor<'a> {
                         Statement::MultSubstitution {
                             meta, lhe, op, rhe, ..
                         } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
 
                             let lhe_val = self.evaluate_expression(&DebugExpression(lhe.clone()));
                             let rhe_val = self.evaluate_expression(&DebugExpression(rhe.clone()));
@@ -1052,7 +1116,9 @@ impl<'a> SymbolicExecutor<'a> {
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::ConstraintEquality { meta, lhe, rhe } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
 
                             let lhe_val = self.evaluate_expression(&DebugExpression(lhe.clone()));
                             let rhe_val = self.evaluate_expression(&DebugExpression(rhe.clone()));
@@ -1080,7 +1146,9 @@ impl<'a> SymbolicExecutor<'a> {
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::Assert { meta, arg, .. } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
                             let expr = self.evaluate_expression(&DebugExpression(arg.clone()));
                             let condition =
                                 self.fold_variables(&expr, !self.propagate_substitution);
@@ -1094,17 +1162,23 @@ impl<'a> SymbolicExecutor<'a> {
                             rhe: _,
                             ..
                         } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
                             // Underscore substitution doesn't affect the symbolic state
                         }
                         Statement::LogCall { meta, args: _, .. } => {
-                            trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            if !self.off_trace {
+                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                            }
                             // Logging doesn't affect the symbolic state
                         }
                     }
                 }
                 ExtendedStatement::Ret => {
-                    trace!("{} {:?}", format!("{}", "🔙 Ret:").red(), self.cur_state);
+                    if !self.off_trace {
+                        trace!("{} {:?}", format!("{}", "🔙 Ret:").red(), self.cur_state);
+                    }
                     self.final_states.push(self.cur_state.clone());
                 }
             }
@@ -1434,8 +1508,10 @@ impl<'a> SymbolicExecutor<'a> {
                         );
                     }
 
-                    trace!("{}", format!("{}", "===========================").cyan());
-                    trace!("📞 Call {}", id);
+                    if !self.off_trace {
+                        trace!("{}", format!("{}", "===========================").cyan());
+                        trace!("📞 Call {}", id);
+                    }
 
                     subse.execute(&func.body, 0);
 
@@ -1450,7 +1526,9 @@ impl<'a> SymbolicExecutor<'a> {
                     self.cur_state
                         .side_constraints
                         .append(&mut sub_side_constraints);
-                    trace!("{}", format!("{}", "===========================").cyan());
+                    if !self.off_trace {
+                        trace!("{}", format!("{}", "===========================").cyan());
+                    }
 
                     self.function_counter
                         .insert(id.to_string(), self.function_counter[id] + 1);
@@ -1482,7 +1560,7 @@ impl<'a> SymbolicExecutor<'a> {
             }*/
             // Handle other expression types
             _ => {
-                println!("Unhandled expression type: {:?}", expr);
+                error!("Unhandled expression type: {:?}", expr);
                 SymbolicValue::Variable(format!("Unhandled({:?})", expr))
             }
         }

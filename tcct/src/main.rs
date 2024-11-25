@@ -1,6 +1,7 @@
 //mod execution_user;
 mod input_user;
 mod parser_user;
+mod solver;
 mod stats;
 mod symbolic_execution;
 mod type_analysis_user;
@@ -18,6 +19,7 @@ use std::time;
 
 use parser_user::ExtendedStatement;
 use program_structure::ast::Expression;
+use solver::brute_force_search;
 use symbolic_execution::{simplify_statement, ConstraintStatistics, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -107,6 +109,56 @@ fn start() -> Result<(), ()> {
             for s in &sexe.final_states {
                 info!("Final State: {:?}", s);
             }
+            println!("===========================================================");
+
+            println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
+            let mut sub_ts = ConstraintStatistics::new();
+            let mut sub_ss = ConstraintStatistics::new();
+            let mut sub_sexe = SymbolicExecutor::new(
+                user_input.flag_propagate_substitution,
+                BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                &mut sub_ts,
+                &mut sub_ss,
+            );
+            for (k, v) in program_archive.templates.clone().into_iter() {
+                let body = simplify_statement(&v.get_body().clone());
+                sub_sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
+            }
+            for (k, v) in program_archive.functions.clone().into_iter() {
+                let body = simplify_statement(&v.get_body().clone());
+                sub_sexe.register_function(k.clone(), body.clone(), v.get_name_of_params());
+            }
+            let mut main_template_id = "";
+            match &program_archive.initial_template_call {
+                Expression::Call { id, args, .. } => {
+                    main_template_id = id;
+                    let template = program_archive.templates[id].clone();
+                    let body = simplify_statement(&template.get_body().clone());
+                    sub_sexe.cur_state.set_owner("main".to_string());
+                    if !user_input.flag_symbolic_template_params {
+                        sub_sexe.feed_arguments(template.get_name_of_params(), args);
+                    }
+                }
+                _ => unimplemented!(),
+            }
+
+            let mut is_safe = "unknown";
+            for s in &sexe.final_states {
+                let assignment = brute_force_search(
+                    BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                    main_template_id.to_string(),
+                    &mut sub_sexe,
+                    &s.trace_constraints.clone(),
+                    &s.side_constraints.clone(),
+                );
+                if assignment.is_some() {
+                    println!("Malformed TCCT Instance:");
+                    is_safe = "NOT SAFE";
+                    for (k, v) in assignment.unwrap().into_iter() {
+                        println!("  - {}: {}", k, v);
+                    }
+                }
+            }
 
             println!(
                 "{}",
@@ -122,6 +174,7 @@ fn start() -> Result<(), ()> {
                 sexe.side_constraint_stats.total_constraints,
                 sexe.trace_constraint_stats.total_constraints
             );
+            println!("  - Verification        : {}", is_safe);
             println!("  - Execution Time      : {:?}", start_time.elapsed());
 
             if user_input.flag_printout_stats {
