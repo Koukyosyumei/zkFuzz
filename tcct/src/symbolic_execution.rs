@@ -776,8 +776,6 @@ impl<'a> SymbolicExecutor<'a> {
                                 if flag {
                                     self.block_end_states.pop();
                                     self.execute(statements, cur_bid);
-                                } else {
-                                    // trace!("Break From While");
                                 }
                             } else {
                                 self.trace_constraint_stats.update(&evaled_condition);
@@ -937,6 +935,9 @@ impl<'a> SymbolicExecutor<'a> {
 
                                         subse.execute(&templ.body, 0);
 
+                                        if subse.final_states.len() > 1 {
+                                            warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
+                                        }
                                         let mut sub_trace_constraints =
                                             subse.final_states[0].trace_constraints.clone();
                                         let mut sub_side_constraints =
