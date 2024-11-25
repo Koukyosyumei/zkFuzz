@@ -490,7 +490,7 @@ impl ConstraintStatistics {
 /// `'a`: Lifetime associated with borrowed references to constraint statistics objects.
 pub struct SymbolicExecutor<'a> {
     pub template_library: HashMap<String, Box<SymbolicTemplate>>,
-    pub function_library: HashMap<String, SymbolicFunction>,
+    pub function_library: HashMap<String, Box<SymbolicFunction>>,
     pub function_counter: HashMap<String, usize>,
     pub components_store: HashMap<String, SymbolicComponent>,
     pub variable_types: HashMap<String, DebugVariableType>,
@@ -622,13 +622,13 @@ impl<'a> SymbolicExecutor<'a> {
     ) {
         self.function_library.insert(
             name.clone(),
-            SymbolicFunction {
+            Box::new(SymbolicFunction {
                 function_argument_names: function_argument_names.clone(),
                 body: vec![
                     ExtendedStatement::DebugStatement(body),
                     ExtendedStatement::Ret,
                 ],
-            },
+            }),
         );
         self.function_counter.insert(name.clone(), 0_usize);
     }
