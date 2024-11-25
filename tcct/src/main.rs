@@ -142,21 +142,18 @@ fn start() -> Result<(), ()> {
                 _ => unimplemented!(),
             }
 
-            let mut is_safe = "🆗 Probably Safe";
+            let mut is_safe = true; //"🆗 Probably Safe";
             for s in &sexe.final_states {
-                let assignment = brute_force_search(
+                let counterexample = brute_force_search(
                     BigInt::from_str(&user_input.debug_prime()).unwrap(),
                     main_template_id.to_string(),
                     &mut sub_sexe,
                     &s.trace_constraints.clone(),
                     &s.side_constraints.clone(),
                 );
-                if assignment.is_some() {
-                    error!("Malformed TCCT Instance:");
-                    is_safe = "💥 NOT SAFE 💥";
-                    for (k, v) in assignment.unwrap().into_iter() {
-                        println!("  - {}: {}", k, v);
-                    }
+                if counterexample.is_some() {
+                    is_safe = false;
+                    error!("{:?}", counterexample.unwrap());
                 }
             }
 
@@ -175,7 +172,14 @@ fn start() -> Result<(), ()> {
                 sexe.side_constraint_stats.total_constraints,
                 sexe.trace_constraint_stats.total_constraints
             );
-            println!("  - Verification        : {}", is_safe);
+            println!(
+                "  - Verification        : {}",
+                if is_safe {
+                    Colour::Green.paint("🆗 Probably Safe")
+                } else {
+                    Colour::Red.paint("💥 NOT SAFE 💥")
+                }
+            );
             println!("  - Execution Time      : {:?}", start_time.elapsed());
 
             if user_input.flag_printout_stats {

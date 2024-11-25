@@ -1,8 +1,10 @@
+use colored::Colorize;
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::Signed;
 use num_traits::{One, Zero};
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
@@ -14,6 +16,46 @@ pub enum VerificationResult {
     UnderConstrained,
     OverConstrained,
     WellConstrained,
+}
+
+impl fmt::Display for VerificationResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let output = match self {
+            VerificationResult::UnderConstrained => "🔥 UnderConstrained 🔥".red().bold(),
+            VerificationResult::OverConstrained => "💣 OverConstrained 💣".yellow().bold(),
+            VerificationResult::WellConstrained => "✅ WellConstrained ✅".green().bold(),
+        };
+        write!(f, "{output}")
+    }
+}
+
+pub struct CounterExample {
+    flag: VerificationResult,
+    assignment: HashMap<String, BigInt>,
+}
+
+impl fmt::Debug for CounterExample {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "🚨 {}",
+            "Counter Example:".on_bright_red().white().bold()
+        )?;
+        writeln!(f, "{}", self.flag);
+        writeln!(f, "{}", "🔍 Assignment Details:".blue().bold())?;
+
+        for (var, value) in &self.assignment {
+            writeln!(
+                f,
+                "  {} {} = {}",
+                "➡️".cyan(),
+                var.magenta().bold(),
+                value.to_string().bright_yellow()
+            )?;
+        }
+
+        Ok(())
+    }
 }
 
 fn is_vulnerable(vr: &VerificationResult) -> bool {
@@ -30,7 +72,7 @@ pub fn brute_force_search(
     sexe: &mut SymbolicExecutor,
     trace_constraints: &Vec<SymbolicValue>,
     side_constraints: &Vec<SymbolicValue>,
-) -> Option<HashMap<String, BigInt>> {
+) -> Option<CounterExample> {
     let mut trace_variables = extract_variables(trace_constraints);
     let mut side_variables = extract_variables(side_constraints);
     let mut variables = Vec::new();
@@ -119,7 +161,7 @@ pub fn brute_force_search(
         VerificationResult::WellConstrained
     }
 
-    if is_vulnerable(&search(
+    let flag = search(
         prime.clone(),
         id,
         sexe,
@@ -128,8 +170,12 @@ pub fn brute_force_search(
         &mut assignment,
         &trace_constraints,
         &side_constraints,
-    )) {
-        Some(assignment)
+    );
+    if is_vulnerable(&flag) {
+        Some(CounterExample {
+            flag: flag,
+            assignment: assignment,
+        })
     } else {
         None
     }
