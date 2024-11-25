@@ -20,6 +20,8 @@ use program_structure::ast::Expression;
 use symbolic_execution::{simplify_statement, ConstraintStatistics, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const RESET: &str = "\x1b[0m";
+const BACK_GRAY_SCRIPT_BLACK: &str = "\x1b[30;100m"; //94
 
 fn main() {
     let result = start();
@@ -49,15 +51,28 @@ fn start() -> Result<(), ()> {
         &mut ss,
     );
 
-    println!("{}", Colour::Green.paint("Parsing Templates..."));
+    println!("{}", Colour::Green.paint("🧩 Parsing Templates..."));
     for (k, v) in program_archive.templates.clone().into_iter() {
+        let body = simplify_statement(&v.get_body().clone());
+        sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
+
+        if user_input.flag_printout_ast {
+            println!(
+                "{}{} {}{}",
+                BACK_GRAY_SCRIPT_BLACK, "🌳 AST Tree for", k, RESET
+            );
+            println!("{:?}", ExtendedStatement::DebugStatement(body.clone()));
+        }
+    }
+
+    println!("{}", Colour::Green.paint("⚙️ Parsing Function..."));
+    for (k, v) in program_archive.functions.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
         sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
             println!("🌳 AST Tree for {}", k);
             println!("{:?}", ExtendedStatement::DebugStatement(body.clone()));
-            println!("============================================================")
         }
     }
 
@@ -82,7 +97,7 @@ fn start() -> Result<(), ()> {
                 0,
             );
 
-            println!("============================================================");
+            println!("===========================================================");
             for s in &sexe.final_states {
                 info!("Final State: {:?}", s);
             }
