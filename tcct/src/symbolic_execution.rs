@@ -495,6 +495,7 @@ pub struct SymbolicExecutor<'a> {
     pub components_store: HashMap<String, SymbolicComponent>,
     pub variable_types: HashMap<String, DebugVariableType>,
     pub prime: BigInt,
+    pub propagate_substitution: bool,
     // states
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<SymbolicState>,
@@ -508,6 +509,7 @@ pub struct SymbolicExecutor<'a> {
 impl<'a> SymbolicExecutor<'a> {
     /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
     pub fn new(
+        propagate_substitution: bool,
         prime: BigInt,
         ts: &'a mut ConstraintStatistics,
         ss: &'a mut ConstraintStatistics,
@@ -519,6 +521,7 @@ impl<'a> SymbolicExecutor<'a> {
             components_store: HashMap::new(),
             variable_types: HashMap::new(),
             prime: prime,
+            propagate_substitution: propagate_substitution,
             cur_state: SymbolicState::new(),
             block_end_states: Vec::new(),
             final_states: Vec::new(),
@@ -711,7 +714,7 @@ impl<'a> SymbolicExecutor<'a> {
                         } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             let tmp_cond = self.evaluate_expression(&DebugExpression(cond.clone()));
-                            let evaled_condition = self.substitute_expression(&tmp_cond, false);
+                            let evaled_condition = self.substitute_variable(&tmp_cond, false);
 
                             // Save the current state
                             let cur_depth = self.cur_state.get_depth();
@@ -791,7 +794,7 @@ impl<'a> SymbolicExecutor<'a> {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             // Symbolic execution of loops is complex. This is a simplified approach.
                             let tmp_val = self.evaluate_expression(&DebugExpression(cond.clone()));
-                            let evaled_condition = self.substitute_expression(&tmp_val, false);
+                            let evaled_condition = self.substitute_variable(&tmp_val, false);
 
                             if let SymbolicValue::ConstantBool(flag) = evaled_condition {
                                 self.execute(
@@ -816,7 +819,7 @@ impl<'a> SymbolicExecutor<'a> {
                         Statement::Return { meta, value, .. } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             let tmp_val = self.evaluate_expression(&DebugExpression(value.clone()));
-                            let return_value = self.substitute_expression(&tmp_val, false);
+                            let return_value = self.substitute_variable(&tmp_val, false);
                             // Handle return value (e.g., store in a special "return" variable)
                             self.cur_state.set_symval(
                                 format!("{}.__return__", self.cur_state.get_owner()).to_string(),
@@ -859,8 +862,8 @@ impl<'a> SymbolicExecutor<'a> {
                         } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             let expr = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                            let original_value = self.substitute_expression(&expr, true);
-                            let value = self.substitute_expression(&expr, false);
+                            let original_value = self.substitute_variable(&expr, true);
+                            let value = self.substitute_variable(&expr, false);
 
                             let var_name = if access.is_empty() {
                                 format!("{}.{}", self.cur_state.get_owner(), var.clone())
@@ -897,6 +900,7 @@ impl<'a> SymbolicExecutor<'a> {
                                 if self.is_ready(var.to_string()) {
                                     if !self.components_store[var].is_done {
                                         let mut subse = SymbolicExecutor::new(
+                                            self.propagate_substitution,
                                             self.prime.clone(),
                                             self.trace_constraint_stats,
                                             self.side_constraint_stats,
@@ -1019,10 +1023,10 @@ impl<'a> SymbolicExecutor<'a> {
 
                             let lhe_val = self.evaluate_expression(&DebugExpression(lhe.clone()));
                             let rhe_val = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                            let simple_lhs = self.substitute_expression(&lhe_val, true);
-                            let lhs = self.substitute_expression(&lhe_val, false);
-                            let simple_rhs = self.substitute_expression(&rhe_val, true);
-                            let rhs = self.substitute_expression(&rhe_val, false);
+                            let simple_lhs = self.substitute_variable(&lhe_val, true);
+                            let lhs = self.substitute_variable(&lhe_val, false);
+                            let simple_rhs = self.substitute_variable(&rhe_val, true);
+                            let rhs = self.substitute_variable(&rhe_val, false);
 
                             // Handle multiple substitution (simplified)
                             let cont = SymbolicValue::BinaryOp(
@@ -1049,10 +1053,10 @@ impl<'a> SymbolicExecutor<'a> {
 
                             let lhe_val = self.evaluate_expression(&DebugExpression(lhe.clone()));
                             let rhe_val = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                            let original_lhs = self.substitute_expression(&lhe_val, true);
-                            let lhs = self.substitute_expression(&lhe_val, false);
-                            let original_rhs = self.substitute_expression(&rhe_val, true);
-                            let rhs = self.substitute_expression(&rhe_val, false);
+                            let original_lhs = self.substitute_variable(&lhe_val, true);
+                            let lhs = self.substitute_variable(&lhe_val, false);
+                            let original_rhs = self.substitute_variable(&rhe_val, true);
+                            let rhs = self.substitute_variable(&rhe_val, false);
 
                             let original_cond = SymbolicValue::BinaryOp(
                                 Box::new(original_lhs),
@@ -1075,7 +1079,7 @@ impl<'a> SymbolicExecutor<'a> {
                         Statement::Assert { meta, arg, .. } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             let expr = self.evaluate_expression(&DebugExpression(arg.clone()));
-                            let condition = self.substitute_expression(&expr, false);
+                            let condition = self.substitute_variable(&expr, false);
                             self.cur_state.push_trace_constraint(condition.clone());
                             self.trace_constraint_stats.update(&condition);
                             self.execute(statements, cur_bid + 1);
@@ -1110,8 +1114,6 @@ impl<'a> SymbolicExecutor<'a> {
     /// # Arguments
     ///
     /// * `access` - The `Access` to evaluate.
-    /// * `substitute_var` - A boolean flag indicating whether to substitute variables.
-    /// * `substitute_const` - A boolean flag indicating whether to substitute constants.
     ///
     /// # Returns
     ///
@@ -1121,28 +1123,12 @@ impl<'a> SymbolicExecutor<'a> {
             Access::ComponentAccess(name) => SymbolicAccess::ComponentAccess(name.clone()),
             Access::ArrayAccess(expr) => {
                 let tmp_e = self.evaluate_expression(&DebugExpression(expr.clone()));
-                SymbolicAccess::ArrayAccess(self.substitute_expression(&tmp_e, false))
+                SymbolicAccess::ArrayAccess(self.substitute_variable(&tmp_e, false))
             }
         }
     }
 
-    /*
-        ConstantInt(BigInt),
-    ConstantBool(bool),
-    Variable(String),
-    BinaryOp(
-        Box<SymbolicValue>,
-        DebugExpressionInfixOpcode,
-        Box<SymbolicValue>,
-    ),
-    Conditional(Box<SymbolicValue>, Box<SymbolicValue>, Box<SymbolicValue>),
-    UnaryOp(DebugExpressionPrefixOpcode, Box<SymbolicValue>),
-    Array(Vec<SymbolicValue>),
-    Tuple(Vec<SymbolicValue>),
-    UniformArray(Box<SymbolicValue>, Box<SymbolicValue>),
-    Call(String, Vec<SymbolicValue>),
-     */
-    fn substitute_expression(
+    fn substitute_variable(
         &self,
         symval: &SymbolicValue,
         substitute_only_constatant: bool,
@@ -1165,8 +1151,8 @@ impl<'a> SymbolicExecutor<'a> {
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
-                let lhs = self.substitute_expression(lv, substitute_only_constatant);
-                let rhs = self.substitute_expression(rv, substitute_only_constatant);
+                let lhs = self.substitute_variable(lv, substitute_only_constatant);
+                let rhs = self.substitute_variable(rv, substitute_only_constatant);
                 match (&lhs, &rhs) {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                         match &infix_op.0 {
@@ -1252,12 +1238,12 @@ impl<'a> SymbolicExecutor<'a> {
                 }
             }
             SymbolicValue::Conditional(cond, then_val, else_val) => SymbolicValue::Conditional(
-                Box::new(self.substitute_expression(cond, substitute_only_constatant)),
-                Box::new(self.substitute_expression(then_val, substitute_only_constatant)),
-                Box::new(self.substitute_expression(else_val, substitute_only_constatant)),
+                Box::new(self.substitute_variable(cond, substitute_only_constatant)),
+                Box::new(self.substitute_variable(then_val, substitute_only_constatant)),
+                Box::new(self.substitute_variable(else_val, substitute_only_constatant)),
             ),
             SymbolicValue::UnaryOp(prefix_op, value) => {
-                let expr = self.substitute_expression(value, substitute_only_constatant);
+                let expr = self.substitute_variable(value, substitute_only_constatant);
                 match &expr {
                     SymbolicValue::ConstantInt(rv) => match prefix_op.0 {
                         ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
@@ -1273,23 +1259,23 @@ impl<'a> SymbolicExecutor<'a> {
             SymbolicValue::Array(elements) => SymbolicValue::Array(
                 elements
                     .iter()
-                    .map(|e| self.substitute_expression(e, substitute_only_constatant))
+                    .map(|e| self.substitute_variable(e, substitute_only_constatant))
                     .collect(),
             ),
             SymbolicValue::Tuple(elements) => SymbolicValue::Tuple(
                 elements
                     .iter()
-                    .map(|e| self.substitute_expression(e, substitute_only_constatant))
+                    .map(|e| self.substitute_variable(e, substitute_only_constatant))
                     .collect(),
             ),
             SymbolicValue::UniformArray(element, count) => SymbolicValue::UniformArray(
-                Box::new(self.substitute_expression(element, substitute_only_constatant)),
-                Box::new(self.substitute_expression(count, substitute_only_constatant)),
+                Box::new(self.substitute_variable(element, substitute_only_constatant)),
+                Box::new(self.substitute_variable(count, substitute_only_constatant)),
             ),
             SymbolicValue::Call(func_name, args) => SymbolicValue::Call(
                 func_name.clone(),
                 args.iter()
-                    .map(|arg| self.substitute_expression(arg, substitute_only_constatant))
+                    .map(|arg| self.substitute_variable(arg, substitute_only_constatant))
                     .collect(),
             ),
             _ => symval.clone(),
@@ -1304,8 +1290,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// # Arguments
     ///
     /// * `expr` - The `DebugExpression` to evaluate.
-    /// * `substitute_var` - A boolean flag indicating whether to substitute variables.
-    /// * `substitute_const` - A boolean flag indicating whether to substitute constants.
+
     ///
     /// # Returns
     ///
@@ -1412,12 +1397,13 @@ impl<'a> SymbolicExecutor<'a> {
                     .collect();
                 let evaluated_args = tmp_args
                     .iter()
-                    .map(|arg| self.substitute_expression(&arg, false))
+                    .map(|arg| self.substitute_variable(&arg, false))
                     .collect();
                 if self.template_library.contains_key(id) {
                     SymbolicValue::Call(id.clone(), evaluated_args)
                 } else if self.function_library.contains_key(id) {
                     let mut subse = SymbolicExecutor::new(
+                        self.propagate_substitution,
                         self.prime.clone(),
                         self.trace_constraint_stats,
                         self.side_constraint_stats,

@@ -47,6 +47,7 @@ fn start() -> Result<(), ()> {
     let mut ts = ConstraintStatistics::new();
     let mut ss = ConstraintStatistics::new();
     let mut sexe = SymbolicExecutor::new(
+        true,
         BigInt::from_str(&user_input.debug_prime()).unwrap(),
         &mut ts,
         &mut ss,
