@@ -113,11 +113,11 @@ fn start() -> Result<(), ()> {
             println!("  - Total Paths Explored: {}", sexe.final_states.len());
             println!(
                 "  - Compression Rate    : {:.2}% ({}/{})",
-                (sexe.side_constraint_stats.constant_counts as f64
-                    / sexe.trace_constraint_stats.constant_counts as f64)
+                (sexe.side_constraint_stats.total_constraints as f64
+                    / sexe.trace_constraint_stats.total_constraints as f64)
                     * 100 as f64,
-                sexe.side_constraint_stats.constant_counts,
-                sexe.trace_constraint_stats.constant_counts
+                sexe.side_constraint_stats.total_constraints,
+                sexe.trace_constraint_stats.total_constraints
             );
 
             if user_input.flag_printout_stats {
