@@ -1141,8 +1141,8 @@ impl<'a> SymbolicExecutor<'a> {
     /// # Arguments
     ///
     /// * `access` - The `Access` to evaluate.
-    /// * `substiture_var` - A boolean flag indicating whether to substitute variables.
-    /// * `substiture_const` - A boolean flag indicating whether to substitute constants.
+    /// * `substitute_var` - A boolean flag indicating whether to substitute variables.
+    /// * `substitute_const` - A boolean flag indicating whether to substitute constants.
     ///
     /// # Returns
     ///
@@ -1150,15 +1150,15 @@ impl<'a> SymbolicExecutor<'a> {
     fn evaluate_access(
         &mut self,
         access: &Access,
-        substiture_var: bool,
-        substiture_const: bool,
+        substitute_var: bool,
+        substitute_const: bool,
     ) -> SymbolicAccess {
         match &access {
             Access::ComponentAccess(name) => SymbolicAccess::ComponentAccess(name.clone()),
             Access::ArrayAccess(expr) => SymbolicAccess::ArrayAccess(self.evaluate_expression(
                 &DebugExpression(expr.clone()),
-                substiture_var,
-                substiture_const,
+                substitute_var,
+                substitute_const,
             )),
         }
     }
@@ -1171,8 +1171,8 @@ impl<'a> SymbolicExecutor<'a> {
     /// # Arguments
     ///
     /// * `expr` - The `DebugExpression` to evaluate.
-    /// * `substiture_var` - A boolean flag indicating whether to substitute variables.
-    /// * `substiture_const` - A boolean flag indicating whether to substitute constants.
+    /// * `substitute_var` - A boolean flag indicating whether to substitute variables.
+    /// * `substitute_const` - A boolean flag indicating whether to substitute constants.
     ///
     /// # Returns
     ///
@@ -1180,8 +1180,8 @@ impl<'a> SymbolicExecutor<'a> {
     fn evaluate_expression(
         &mut self,
         expr: &DebugExpression,
-        substiture_var: bool,
-        substiture_const: bool,
+        substitute_var: bool,
+        substitute_const: bool,
     ) -> SymbolicValue {
         match &expr.0 {
             Expression::Number(_meta, value) => {
@@ -1194,13 +1194,13 @@ impl<'a> SymbolicExecutor<'a> {
             } => {
                 if access.is_empty() {
                     let resolved_name = format!("{}.{}", self.cur_state.get_owner(), name.clone());
-                    if substiture_var {
+                    if substitute_var {
                         return self
                             .cur_state
                             .get_symval(&resolved_name)
                             .cloned()
                             .unwrap_or_else(|| SymbolicValue::Variable(resolved_name));
-                    } else if substiture_const {
+                    } else if substitute_const {
                         let sv = self.cur_state.get_symval(&resolved_name).clone();
                         if sv.is_some() {
                             if let SymbolicValue::ConstantInt(v) = sv.unwrap() {
@@ -1222,8 +1222,8 @@ impl<'a> SymbolicExecutor<'a> {
                             .iter()
                             .map(|arg0: &Access| self.evaluate_access(
                                 &arg0.clone(),
-                                substiture_var,
-                                substiture_const
+                                substitute_var,
+                                substitute_const
                             ))
                             .map(|debug_access| debug_access.to_string())
                             .collect::<Vec<_>>()
@@ -1239,13 +1239,13 @@ impl<'a> SymbolicExecutor<'a> {
             } => {
                 let lhs = self.evaluate_expression(
                     &DebugExpression(*lhe.clone()),
-                    substiture_var,
-                    substiture_const,
+                    substitute_var,
+                    substitute_const,
                 );
                 let rhs = self.evaluate_expression(
                     &DebugExpression(*rhe.clone()),
-                    substiture_var,
-                    substiture_const,
+                    substitute_var,
+                    substitute_const,
                 );
                 match (&lhs, &rhs) {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
@@ -1342,8 +1342,8 @@ impl<'a> SymbolicExecutor<'a> {
             } => {
                 let expr = self.evaluate_expression(
                     &DebugExpression(*rhe.clone()),
-                    substiture_var,
-                    substiture_const,
+                    substitute_var,
+                    substitute_const,
                 );
                 match &expr {
                     SymbolicValue::ConstantInt(rv) => match prefix_op {
@@ -1374,18 +1374,18 @@ impl<'a> SymbolicExecutor<'a> {
             } => {
                 let condition = self.evaluate_expression(
                     &DebugExpression(*cond.clone()),
-                    substiture_var,
-                    substiture_const,
+                    substitute_var,
+                    substitute_const,
                 );
                 let true_branch = self.evaluate_expression(
                     &DebugExpression(*if_true.clone()),
-                    substiture_var,
-                    substiture_const,
+                    substitute_var,
+                    substitute_const,
                 );
                 let false_branch = self.evaluate_expression(
                     &DebugExpression(*if_false.clone()),
-                    substiture_var,
-                    substiture_const,
+                    substitute_var,
+                    substitute_const,
                 );
                 SymbolicValue::Conditional(
                     Box::new(condition),
@@ -1395,8 +1395,8 @@ impl<'a> SymbolicExecutor<'a> {
             }
             Expression::ParallelOp { rhe, .. } => self.evaluate_expression(
                 &DebugExpression(*rhe.clone()),
-                substiture_var,
-                substiture_const,
+                substitute_var,
+                substitute_const,
             ),
             Expression::ArrayInLine { meta: _, values } => {
                 let elements = values
@@ -1404,8 +1404,8 @@ impl<'a> SymbolicExecutor<'a> {
                     .map(|v| {
                         self.evaluate_expression(
                             &DebugExpression(v.clone()),
-                            substiture_var,
-                            substiture_const,
+                            substitute_var,
+                            substitute_const,
                         )
                     })
                     .collect();
@@ -1417,8 +1417,8 @@ impl<'a> SymbolicExecutor<'a> {
                     .map(|v| {
                         self.evaluate_expression(
                             &DebugExpression(v.clone()),
-                            substiture_var,
-                            substiture_const,
+                            substitute_var,
+                            substitute_const,
                         )
                     })
                     .collect();
@@ -1429,13 +1429,13 @@ impl<'a> SymbolicExecutor<'a> {
             } => {
                 let evaluated_value = self.evaluate_expression(
                     &DebugExpression(*value.clone()),
-                    substiture_var,
-                    substiture_const,
+                    substitute_var,
+                    substitute_const,
                 );
                 let evaluated_dimension = self.evaluate_expression(
                     &DebugExpression(*dimension.clone()),
-                    substiture_var,
-                    substiture_const,
+                    substitute_var,
+                    substitute_const,
                 );
                 SymbolicValue::UniformArray(
                     Box::new(evaluated_value),
@@ -1448,8 +1448,8 @@ impl<'a> SymbolicExecutor<'a> {
                     .map(|arg| {
                         self.evaluate_expression(
                             &DebugExpression(arg.clone()),
-                            substiture_var,
-                            substiture_const,
+                            substitute_var,
+                            substitute_const,
                         )
                     })
                     .collect();
