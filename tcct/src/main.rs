@@ -71,7 +71,10 @@ fn start() -> Result<(), ()> {
         sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
-            println!("🌳 AST Tree for {}", k);
+            println!(
+                "{}{} {}{}",
+                BACK_GRAY_SCRIPT_BLACK, "🌴 AST Tree for", k, RESET
+            );
             println!("{:?}", ExtendedStatement::DebugStatement(body.clone()));
         }
     }
