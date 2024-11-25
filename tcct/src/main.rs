@@ -49,6 +49,7 @@ fn start() -> Result<(), ()> {
         &mut ss,
     );
 
+    println!("{}", Colour::Green.paint("Parsing Templates..."));
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
         sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
@@ -56,7 +57,7 @@ fn start() -> Result<(), ()> {
         if user_input.flag_printout_ast {
             println!("🌳 AST Tree for {}", k);
             println!("{:?}", ExtendedStatement::DebugStatement(body.clone()));
-            println!("========================================")
+            println!("============================================================")
         }
     }
 
@@ -65,6 +66,10 @@ fn start() -> Result<(), ()> {
             let template = program_archive.templates[id].clone();
             let body = simplify_statement(&template.get_body().clone());
 
+            println!(
+                "{}",
+                Colour::Green.paint("Gathering Trace/Side Constraints...")
+            );
             sexe.cur_state.set_owner("main".to_string());
             if !user_input.flag_symbolic_template_params {
                 sexe.feed_arguments(template.get_name_of_params(), args);
@@ -77,12 +82,15 @@ fn start() -> Result<(), ()> {
                 0,
             );
 
-            info!("============================================================");
+            println!("============================================================");
             for s in &sexe.final_states {
                 info!("Final State: {:?}", s);
             }
 
-            println!("================ TCCT Report ================");
+            println!(
+                "{}",
+                Colour::Green.paint("======================= TCCT Report =======================")
+            );
             println!("📊 Execution Summary:");
             println!("  - Total Paths Explored: {}", sexe.final_states.len());
             println!(
@@ -104,7 +112,7 @@ fn start() -> Result<(), ()> {
                 );
                 print_constraint_summary_statistics_pretty(&sexe.side_constraint_stats);
             }
-            println!("=============================================");
+            println!("===========================================================");
         }
         _ => {
             warn!("Cannot Find Main Call");
