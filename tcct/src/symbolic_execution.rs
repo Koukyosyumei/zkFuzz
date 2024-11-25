@@ -166,7 +166,7 @@ impl fmt::Debug for SymbolicValue {
                 _ => write!(f, "({} {:?})", format!("{:?}", op), expr),
             },
             SymbolicValue::Call(name, args) => {
-                write!(f, "📞 {}({:?})", name, args)
+                write!(f, "📞{}({:?})", name, args)
             }
             _ => write!(f, "❓Unknown symbolic value"),
         }
