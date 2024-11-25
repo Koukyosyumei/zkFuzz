@@ -37,6 +37,7 @@ pub struct Input {
     pub flag_printout_ast: bool,
     pub flag_printout_stats: bool,
     pub flag_symbolic_template_params: bool,
+    pub flag_propagate_substitution: bool,
     pub prime: String,
     pub debug_prime: String,
     pub link_libraries : Vec<PathBuf>
@@ -117,6 +118,7 @@ impl Input {
             flag_printout_ast: input_processing::get_ast(&matches),
             flag_printout_stats: input_processing::get_stats(&matches),
             flag_symbolic_template_params: input_processing::get_symbolic_template_params(&matches),
+            flag_propagate_substitution: input_processing::get_propagate_substitution(&matches),
             prime: input_processing::get_prime(&matches)?,
             debug_prime: input_processing::get_debug_prime(&matches)?,
             link_libraries
@@ -333,6 +335,10 @@ mod input_processing {
         matches.is_present("symbolic_template_params")
     }
 
+    pub fn get_propagate_substitution(matches: &ArgMatches) -> bool {
+        matches.is_present("propagate_substitution")
+    }
+
     /* 
     pub fn get_main_inputs_log(matches: &ArgMatches) -> bool {
         matches.is_present("main_inputs_log")
@@ -522,22 +528,29 @@ mod input_processing {
                 Arg::with_name("print_ast")
                     .long("print_ast")
                     .takes_value(false)
-                    .display_order(150)
+                    .display_order(1000)
                     .help("Prints AST"),
             )
             .arg(
                 Arg::with_name("print_stats")
                     .long("print_stats")
                     .takes_value(false)
-                    .display_order(150)
+                    .display_order(1010)
                     .help("Prints the stats of constraints"),
             )
             .arg(
                 Arg::with_name("symbolic_template_params")
                     .long("symbolic_template_params")
                     .takes_value(false)
-                    .display_order(150)
+                    .display_order(1020)
                     .help("Treats the template parameters of the main template as symbolic values"),
+            )
+            .arg(
+                Arg::with_name("propagate_substitution")
+                .long("propagate_substitution")
+                .takes_value(false)
+                .display_order(1030)
+                .help("Propagate variable substitution as much as possible"),
             )
             .arg(
                 Arg::with_name("parallel_simplification")
