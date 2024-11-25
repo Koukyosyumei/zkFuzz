@@ -14,6 +14,7 @@ use num_bigint_dig::BigInt;
 use stats::print_constraint_summary_statistics_pretty;
 use std::env;
 use std::str::FromStr;
+use std::time;
 
 use parser_user::ExtendedStatement;
 use program_structure::ast::Expression;
@@ -81,6 +82,7 @@ fn start() -> Result<(), ()> {
 
     match &program_archive.initial_template_call {
         Expression::Call { id, args, .. } => {
+            let start_time = time::Instant::now();
             let template = program_archive.templates[id].clone();
             let body = simplify_statement(&template.get_body().clone());
 
@@ -119,6 +121,7 @@ fn start() -> Result<(), ()> {
                 sexe.side_constraint_stats.total_constraints,
                 sexe.trace_constraint_stats.total_constraints
             );
+            println!("  - Execution Time      : {:?}", start_time.elapsed());
 
             if user_input.flag_printout_stats {
                 println!(

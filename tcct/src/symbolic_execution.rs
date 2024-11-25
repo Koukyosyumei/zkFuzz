@@ -489,7 +489,7 @@ impl ConstraintStatistics {
 ///
 /// `'a`: Lifetime associated with borrowed references to constraint statistics objects.
 pub struct SymbolicExecutor<'a> {
-    pub template_library: HashMap<String, SymbolicTemplate>,
+    pub template_library: HashMap<String, Box<SymbolicTemplate>>,
     pub function_library: HashMap<String, SymbolicFunction>,
     pub function_counter: HashMap<String, usize>,
     pub components_store: HashMap<String, SymbolicComponent>,
@@ -611,7 +611,7 @@ impl<'a> SymbolicExecutor<'a> {
                 ExtendedStatement::Ret,
             ],
         };
-        self.template_library.insert(name, template);
+        self.template_library.insert(name, Box::new(template));
     }
 
     pub fn register_function(
