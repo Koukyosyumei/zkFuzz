@@ -19,6 +19,10 @@ use crate::parser_user::{
 };
 use crate::utils::extended_euclidean;
 
+fn italic(text: &str) -> String {
+    format!("\x1b[3m{}\x1b[0m", text)
+}
+
 /// Simplifies a given statement by transforming certain structures into more straightforward forms.
 /// Specifically, it handles inline switch operations within substitution statements.
 ///
@@ -223,7 +227,7 @@ impl fmt::Debug for SymbolicState {
             f,
             "  {} {}",
             format!("👤 {}", "owner:").cyan(),
-            self.owner_name.magenta()
+            italic(&self.owner_name).magenta()
         )?;
         writeln!(f, "  📏 {} {}", format!("{}", "depth:").cyan(), self.depth)?;
         writeln!(f, "  📋 {}", format!("{}", "values:").cyan())?;
