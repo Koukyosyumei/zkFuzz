@@ -714,7 +714,8 @@ impl<'a> SymbolicExecutor<'a> {
                         } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             let tmp_cond = self.evaluate_expression(&DebugExpression(cond.clone()));
-                            let evaled_condition = self.fold_variables(&tmp_cond, false);
+                            let evaled_condition =
+                                self.fold_variables(&tmp_cond, !self.propagate_substitution);
 
                             // Save the current state
                             let cur_depth = self.cur_state.get_depth();
@@ -793,8 +794,9 @@ impl<'a> SymbolicExecutor<'a> {
                         } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             // Symbolic execution of loops is complex. This is a simplified approach.
-                            let tmp_val = self.evaluate_expression(&DebugExpression(cond.clone()));
-                            let evaled_condition = self.fold_variables(&tmp_val, false);
+                            let tmp_cond = self.evaluate_expression(&DebugExpression(cond.clone()));
+                            let evaled_condition =
+                                self.fold_variables(&tmp_cond, !self.propagate_substitution);
 
                             if let SymbolicValue::ConstantBool(flag) = evaled_condition {
                                 self.execute(
@@ -819,7 +821,8 @@ impl<'a> SymbolicExecutor<'a> {
                         Statement::Return { meta, value, .. } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             let tmp_val = self.evaluate_expression(&DebugExpression(value.clone()));
-                            let return_value = self.fold_variables(&tmp_val, false);
+                            let return_value =
+                                self.fold_variables(&tmp_val, !self.propagate_substitution);
                             // Handle return value (e.g., store in a special "return" variable)
                             self.cur_state.set_symval(
                                 format!("{}.__return__", self.cur_state.get_owner()).to_string(),
@@ -863,7 +866,7 @@ impl<'a> SymbolicExecutor<'a> {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             let expr = self.evaluate_expression(&DebugExpression(rhe.clone()));
                             let original_value = self.fold_variables(&expr, true);
-                            let value = self.fold_variables(&expr, false);
+                            let value = self.fold_variables(&expr, !self.propagate_substitution);
 
                             let var_name = if access.is_empty() {
                                 format!("{}.{}", self.cur_state.get_owner(), var.clone())
@@ -1024,9 +1027,9 @@ impl<'a> SymbolicExecutor<'a> {
                             let lhe_val = self.evaluate_expression(&DebugExpression(lhe.clone()));
                             let rhe_val = self.evaluate_expression(&DebugExpression(rhe.clone()));
                             let simple_lhs = self.fold_variables(&lhe_val, true);
-                            let lhs = self.fold_variables(&lhe_val, false);
+                            let lhs = self.fold_variables(&lhe_val, !self.propagate_substitution);
                             let simple_rhs = self.fold_variables(&rhe_val, true);
-                            let rhs = self.fold_variables(&rhe_val, false);
+                            let rhs = self.fold_variables(&rhe_val, !self.propagate_substitution);
 
                             // Handle multiple substitution (simplified)
                             let cont = SymbolicValue::BinaryOp(
@@ -1054,9 +1057,9 @@ impl<'a> SymbolicExecutor<'a> {
                             let lhe_val = self.evaluate_expression(&DebugExpression(lhe.clone()));
                             let rhe_val = self.evaluate_expression(&DebugExpression(rhe.clone()));
                             let original_lhs = self.fold_variables(&lhe_val, true);
-                            let lhs = self.fold_variables(&lhe_val, false);
+                            let lhs = self.fold_variables(&lhe_val, !self.propagate_substitution);
                             let original_rhs = self.fold_variables(&rhe_val, true);
-                            let rhs = self.fold_variables(&rhe_val, false);
+                            let rhs = self.fold_variables(&rhe_val, !self.propagate_substitution);
 
                             let original_cond = SymbolicValue::BinaryOp(
                                 Box::new(original_lhs),
@@ -1079,7 +1082,8 @@ impl<'a> SymbolicExecutor<'a> {
                         Statement::Assert { meta, arg, .. } => {
                             trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
                             let expr = self.evaluate_expression(&DebugExpression(arg.clone()));
-                            let condition = self.fold_variables(&expr, false);
+                            let condition =
+                                self.fold_variables(&expr, !self.propagate_substitution);
                             self.cur_state.push_trace_constraint(condition.clone());
                             self.trace_constraint_stats.update(&condition);
                             self.execute(statements, cur_bid + 1);
@@ -1131,11 +1135,11 @@ impl<'a> SymbolicExecutor<'a> {
     fn fold_variables(
         &self,
         symval: &SymbolicValue,
-        substitute_only_constatant: bool,
+        only_constatant_folding: bool,
     ) -> SymbolicValue {
         match &symval {
             SymbolicValue::Variable(name) => {
-                if substitute_only_constatant {
+                if only_constatant_folding {
                     let sv = self.cur_state.get_symval(&name).clone();
                     if sv.is_some() {
                         if let SymbolicValue::ConstantInt(v) = sv.unwrap() {
@@ -1151,8 +1155,8 @@ impl<'a> SymbolicExecutor<'a> {
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
-                let lhs = self.fold_variables(lv, substitute_only_constatant);
-                let rhs = self.fold_variables(rv, substitute_only_constatant);
+                let lhs = self.fold_variables(lv, only_constatant_folding);
+                let rhs = self.fold_variables(rv, only_constatant_folding);
                 match (&lhs, &rhs) {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                         match &infix_op.0 {
@@ -1238,12 +1242,12 @@ impl<'a> SymbolicExecutor<'a> {
                 }
             }
             SymbolicValue::Conditional(cond, then_val, else_val) => SymbolicValue::Conditional(
-                Box::new(self.fold_variables(cond, substitute_only_constatant)),
-                Box::new(self.fold_variables(then_val, substitute_only_constatant)),
-                Box::new(self.fold_variables(else_val, substitute_only_constatant)),
+                Box::new(self.fold_variables(cond, only_constatant_folding)),
+                Box::new(self.fold_variables(then_val, only_constatant_folding)),
+                Box::new(self.fold_variables(else_val, only_constatant_folding)),
             ),
             SymbolicValue::UnaryOp(prefix_op, value) => {
-                let folded_symval = self.fold_variables(value, substitute_only_constatant);
+                let folded_symval = self.fold_variables(value, only_constatant_folding);
                 match &folded_symval {
                     SymbolicValue::ConstantInt(rv) => match prefix_op.0 {
                         ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
@@ -1259,23 +1263,23 @@ impl<'a> SymbolicExecutor<'a> {
             SymbolicValue::Array(elements) => SymbolicValue::Array(
                 elements
                     .iter()
-                    .map(|e| self.fold_variables(e, substitute_only_constatant))
+                    .map(|e| self.fold_variables(e, only_constatant_folding))
                     .collect(),
             ),
             SymbolicValue::Tuple(elements) => SymbolicValue::Tuple(
                 elements
                     .iter()
-                    .map(|e| self.fold_variables(e, substitute_only_constatant))
+                    .map(|e| self.fold_variables(e, only_constatant_folding))
                     .collect(),
             ),
             SymbolicValue::UniformArray(element, count) => SymbolicValue::UniformArray(
-                Box::new(self.fold_variables(element, substitute_only_constatant)),
-                Box::new(self.fold_variables(count, substitute_only_constatant)),
+                Box::new(self.fold_variables(element, only_constatant_folding)),
+                Box::new(self.fold_variables(count, only_constatant_folding)),
             ),
             SymbolicValue::Call(func_name, args) => SymbolicValue::Call(
                 func_name.clone(),
                 args.iter()
-                    .map(|arg| self.fold_variables(arg, substitute_only_constatant))
+                    .map(|arg| self.fold_variables(arg, only_constatant_folding))
                     .collect(),
             ),
             _ => symval.clone(),
