@@ -525,34 +525,6 @@ mod input_processing {
                     .help("Compiles the circuit to c"),
             )
             .arg(
-                Arg::with_name("print_ast")
-                    .long("print_ast")
-                    .takes_value(false)
-                    .display_order(1000)
-                    .help("Prints AST"),
-            )
-            .arg(
-                Arg::with_name("print_stats")
-                    .long("print_stats")
-                    .takes_value(false)
-                    .display_order(1010)
-                    .help("Prints the stats of constraints"),
-            )
-            .arg(
-                Arg::with_name("symbolic_template_params")
-                    .long("symbolic_template_params")
-                    .takes_value(false)
-                    .display_order(1020)
-                    .help("Treats the template parameters of the main template as symbolic values"),
-            )
-            .arg(
-                Arg::with_name("propagate_substitution")
-                .long("propagate_substitution")
-                .takes_value(false)
-                .display_order(1030)
-                .help("Propagate variable substitution as much as possible"),
-            )
-            .arg(
                 Arg::with_name("parallel_simplification")
                     .long("parallel")
                     .takes_value(false)
@@ -598,6 +570,42 @@ mod input_processing {
                     .default_value("bn128")
                     .display_order(300)
                     .help("To choose the prime number to use to generate the circuit. Receives the name of the curve (bn128, bls12381, goldilocks, grumpkin, pallas, vesta, secq256r1)"),
+            )
+            .arg(
+                Arg::with_name("print_ast")
+                    .long("print_ast")
+                    .takes_value(false)
+                    .display_order(1000)
+                    .help("(TCCT) Prints AST"),
+            )
+            .arg(
+                Arg::with_name("print_stats")
+                    .long("print_stats")
+                    .takes_value(false)
+                    .display_order(1010)
+                    .help("(TCCT) Prints the stats of constraints"),
+            )
+            .arg(
+                Arg::with_name("symbolic_template_params")
+                    .long("symbolic_template_params")
+                    .takes_value(false)
+                    .display_order(1020)
+                    .help("(TCCT) Treats the template parameters of the main template as symbolic values"),
+            )
+            .arg(
+                Arg::with_name("propagate_substitution")
+                .long("propagate_substitution")
+                .takes_value(false)
+                .display_order(1030)
+                .help("(TCCT) Propagate variable substitution as much as possible"),
+            )
+            .arg (
+                Arg::with_name("debug_prime")
+                    .long("debug_prime")
+                    .takes_value(true)
+                    .default_value("21888242871839275222246405745257275088548364400416034343698204186575808495617")
+                    .display_order(1050)
+                    .help("(TCCT) Prime number for TCCT debugging"),
             )
             .get_matches()
     }
