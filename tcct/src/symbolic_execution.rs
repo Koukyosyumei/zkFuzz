@@ -2,6 +2,7 @@ use colored::Colorize;
 use log::{trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
+use num_traits::Signed;
 use num_traits::{One, Zero};
 use std::cmp::max;
 use std::collections::HashMap;
@@ -16,6 +17,7 @@ use crate::parser_user::{
     DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugVariableType,
     ExtendedStatement,
 };
+use crate::utils::extended_euclidean;
 
 /// Simplifies a given statement by transforming certain structures into more straightforward forms.
 /// Specifically, it handles inline switch operations within substitution statements.
@@ -1153,7 +1155,9 @@ impl<'a> SymbolicExecutor<'a> {
         substiture_const: bool,
     ) -> SymbolicValue {
         match &expr.0 {
-            Expression::Number(_meta, value) => SymbolicValue::ConstantInt(value.clone()),
+            Expression::Number(_meta, value) => {
+                SymbolicValue::ConstantInt(value.clone() % self.prime.clone())
+            }
             Expression::Variable {
                 name,
                 access,
@@ -1225,6 +1229,24 @@ impl<'a> SymbolicExecutor<'a> {
                             }
                             ExpressionInfixOpcode::Mul => {
                                 SymbolicValue::ConstantInt((lv * rv) % self.prime.clone())
+                            }
+                            ExpressionInfixOpcode::Div => {
+                                let mut r = self.prime.clone();
+                                let mut new_r = rv.clone();
+                                if r.is_negative() {
+                                    r += self.prime.clone();
+                                }
+                                if new_r.is_negative() {
+                                    new_r += self.prime.clone();
+                                }
+
+                                let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
+                                rv_inv %= self.prime.clone();
+                                if rv_inv.is_negative() {
+                                    rv_inv += self.prime.clone();
+                                }
+
+                                SymbolicValue::ConstantInt((lv * rv_inv) % self.prime.clone())
                             }
                             ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
                             ExpressionInfixOpcode::Mod => SymbolicValue::ConstantInt(lv % rv),

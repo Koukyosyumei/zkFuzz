@@ -4,6 +4,7 @@ mod parser_user;
 mod stats;
 mod symbolic_execution;
 mod type_analysis_user;
+mod utils;
 
 use ansi_term::Colour;
 use env_logger;
