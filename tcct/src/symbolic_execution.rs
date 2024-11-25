@@ -160,10 +160,7 @@ impl fmt::Debug for SymbolicValue {
                 write!(f, "({:?} {:?} {:?})", cond, if_branch, else_branch)
             }
             SymbolicValue::UnaryOp(op, expr) => match &op.0 {
-                ExpressionPrefixOpcode::BoolNot => {
-                    write!(f, "({} {:?})", format!("{:?}", op).red(), expr)
-                }
-                _ => write!(f, "({} {:?})", format!("{:?}", op), expr),
+                _ => write!(f, "({} {:?})", format!("{:?}", op).magenta(), expr),
             },
             SymbolicValue::Call(name, args) => {
                 write!(f, "📞{}({:?})", name, args)
