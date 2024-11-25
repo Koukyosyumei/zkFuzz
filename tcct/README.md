@@ -28,8 +28,8 @@ RUST_LOG=trace ./target/debug/tcct ../sample/iszero_safe.circom
 Example output:
 
 <div style="display: flex; align-items: flex-start; justify-content: space-around;">
-  <img src="img/ast.png" alt="AST" style="width: 20%; margin-right: 10px;">
-  <img src="img/se.png" alt="Traces" style="width: 50%; margin-right: 10px;">
+  <img src="img/ast.png" alt="AST" style="width: 20%; margin-right: 5px;">
+  <img src="img/se.png" alt="Traces" style="width: 50%; margin-right: 5px;">
   <img src="img/result.png" alt="Summary Reports" style="width: 20%;">
 </div>
 
