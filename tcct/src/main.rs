@@ -89,7 +89,7 @@ fn start() -> Result<(), ()> {
 
             println!(
                 "{}",
-                Colour::Green.paint("Gathering Trace/Side Constraints...")
+                Colour::Green.paint("🛒 Gathering Trace/Side Constraints...")
             );
             sexe.cur_state.set_owner("main".to_string());
             if !user_input.flag_symbolic_template_params {
