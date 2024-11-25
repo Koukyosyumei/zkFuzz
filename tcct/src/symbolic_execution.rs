@@ -952,6 +952,7 @@ impl<'a> SymbolicExecutor<'a> {
 
                             match value {
                                 SymbolicValue::Call(callee_name, args) => {
+                                    // Initializing the Template Component
                                     let mut comp_inputs: HashMap<String, Option<SymbolicValue>> =
                                         HashMap::new();
                                     for inp_name in
