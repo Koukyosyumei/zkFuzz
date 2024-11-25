@@ -38,6 +38,7 @@ pub struct Input {
     pub flag_printout_stats: bool,
     pub flag_symbolic_template_params: bool,
     pub flag_propagate_substitution: bool,
+    pub flag_search_counter_example: bool,
     pub prime: String,
     pub debug_prime: String,
     pub link_libraries : Vec<PathBuf>
@@ -119,6 +120,7 @@ impl Input {
             flag_printout_stats: input_processing::get_stats(&matches),
             flag_symbolic_template_params: input_processing::get_symbolic_template_params(&matches),
             flag_propagate_substitution: input_processing::get_propagate_substitution(&matches),
+            flag_search_counter_example: input_processing::get_search_counter_example(&matches),
             prime: input_processing::get_prime(&matches)?,
             debug_prime: input_processing::get_debug_prime(&matches)?,
             link_libraries
@@ -337,6 +339,10 @@ mod input_processing {
 
     pub fn get_propagate_substitution(matches: &ArgMatches) -> bool {
         matches.is_present("propagate_substitution")
+    }
+
+    pub fn get_search_counter_example(matches: &ArgMatches) -> bool {
+        matches.is_present("search_counter_example")
     }
 
     /* 
@@ -598,6 +604,13 @@ mod input_processing {
                 .takes_value(false)
                 .display_order(1030)
                 .help("(TCCT) Propagate variable substitution as much as possible"),
+            )
+            .arg(
+                Arg::with_name("search_counter_example")
+                .long("search_counter_example")
+                .takes_value(false)
+                .display_order(1040)
+                .help("(TCCT) Search counter examples to check whether the given circuit is well-constrained or not"),
             )
             .arg (
                 Arg::with_name("debug_prime")

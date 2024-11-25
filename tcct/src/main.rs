@@ -111,49 +111,49 @@ fn start() -> Result<(), ()> {
             }
             println!("===========================================================");
 
-            println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
-            let mut sub_ts = ConstraintStatistics::new();
-            let mut sub_ss = ConstraintStatistics::new();
-            let mut sub_sexe = SymbolicExecutor::new(
-                user_input.flag_propagate_substitution,
-                BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                &mut sub_ts,
-                &mut sub_ss,
-            );
-            for (k, v) in program_archive.templates.clone().into_iter() {
-                let body = simplify_statement(&v.get_body().clone());
-                sub_sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
-            }
-            for (k, v) in program_archive.functions.clone().into_iter() {
-                let body = simplify_statement(&v.get_body().clone());
-                sub_sexe.register_function(k.clone(), body.clone(), v.get_name_of_params());
-            }
-            let mut main_template_id = "";
-            match &program_archive.initial_template_call {
-                Expression::Call { id, args, .. } => {
-                    main_template_id = id;
-                    let template = program_archive.templates[id].clone();
-                    let body = simplify_statement(&template.get_body().clone());
-                    sub_sexe.cur_state.set_owner("main".to_string());
-                    if !user_input.flag_symbolic_template_params {
-                        sub_sexe.feed_arguments(template.get_name_of_params(), args);
-                    }
-                }
-                _ => unimplemented!(),
-            }
-
-            let mut is_safe = true; //"🆗 Probably Safe";
-            for s in &sexe.final_states {
-                let counterexample = brute_force_search(
+            let mut is_safe = true;
+            if user_input.flag_search_counter_example {
+                println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
+                let mut sub_ts = ConstraintStatistics::new();
+                let mut sub_ss = ConstraintStatistics::new();
+                let mut sub_sexe = SymbolicExecutor::new(
+                    user_input.flag_propagate_substitution,
                     BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                    main_template_id.to_string(),
-                    &mut sub_sexe,
-                    &s.trace_constraints.clone(),
-                    &s.side_constraints.clone(),
+                    &mut sub_ts,
+                    &mut sub_ss,
                 );
-                if counterexample.is_some() {
-                    is_safe = false;
-                    error!("{:?}", counterexample.unwrap());
+                for (k, v) in program_archive.templates.clone().into_iter() {
+                    let body = simplify_statement(&v.get_body().clone());
+                    sub_sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
+                }
+                for (k, v) in program_archive.functions.clone().into_iter() {
+                    let body = simplify_statement(&v.get_body().clone());
+                    sub_sexe.register_function(k.clone(), body.clone(), v.get_name_of_params());
+                }
+                let mut main_template_id = "";
+                match &program_archive.initial_template_call {
+                    Expression::Call { id, args, .. } => {
+                        main_template_id = id;
+                        let template = program_archive.templates[id].clone();
+                        sub_sexe.cur_state.set_owner("main".to_string());
+                        if !user_input.flag_symbolic_template_params {
+                            sub_sexe.feed_arguments(template.get_name_of_params(), args);
+                        }
+                    }
+                    _ => unimplemented!(),
+                }
+                for s in &sexe.final_states {
+                    let counterexample = brute_force_search(
+                        BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                        main_template_id.to_string(),
+                        &mut sub_sexe,
+                        &s.trace_constraints.clone(),
+                        &s.side_constraints.clone(),
+                    );
+                    if counterexample.is_some() {
+                        is_safe = false;
+                        error!("{:?}", counterexample.unwrap());
+                    }
                 }
             }
 
@@ -175,7 +175,7 @@ fn start() -> Result<(), ()> {
             println!(
                 "  - Verification        : {}",
                 if is_safe {
-                    Colour::Green.paint("🆗 Probably Safe")
+                    Colour::Green.paint("🆗 No Counter Example Found")
                 } else {
                     Colour::Red.paint("💥 NOT SAFE 💥")
                 }
