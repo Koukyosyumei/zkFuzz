@@ -1,5 +1,5 @@
 use colored::Colorize;
-use log::{trace, warn};
+use log::{error, trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::Signed;
@@ -357,6 +357,13 @@ pub struct SymbolicTemplate {
     pub body: Vec<ExtendedStatement>,
 }
 
+/// Represents a symbolic function used in the symbolic execution process.
+#[derive(Default, Clone, Debug)]
+pub struct SymbolicFunction {
+    pub function_argument_names: Vec<String>,
+    pub body: Vec<ExtendedStatement>,
+}
+
 /// Represents a symbolic component used in the symbolic execution process.
 #[derive(Default, Clone, Debug)]
 pub struct SymbolicComponent {
@@ -483,7 +490,8 @@ impl ConstraintStatistics {
 /// `'a`: Lifetime associated with borrowed references to constraint statistics objects.
 pub struct SymbolicExecutor<'a> {
     pub template_library: HashMap<String, SymbolicTemplate>,
-    pub function_library: HashMap<String, Vec<ExtendedStatement>>,
+    pub function_library: HashMap<String, SymbolicFunction>,
+    pub function_counter: HashMap<String, usize>,
     pub components_store: HashMap<String, SymbolicComponent>,
     pub variable_types: HashMap<String, DebugVariableType>,
     pub prime: BigInt,
@@ -507,6 +515,7 @@ impl<'a> SymbolicExecutor<'a> {
         SymbolicExecutor {
             template_library: HashMap::new(),
             function_library: HashMap::new(),
+            function_counter: HashMap::new(),
             components_store: HashMap::new(),
             variable_types: HashMap::new(),
             prime: prime,
@@ -544,9 +553,10 @@ impl<'a> SymbolicExecutor<'a> {
     // * 'args' : Vector containing expressions whose evaluated results will be assigned as argument values.
     pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
         for (n, a) in names.iter().zip(args.iter()) {
+            let evaled_a = self.evaluate_expression(&DebugExpression(a.clone()), false, false);
             self.cur_state.set_symval(
                 format!("{}.{}", self.cur_state.get_owner(), n.to_string()),
-                self.evaluate_expression(&DebugExpression(a.clone()), false, false),
+                evaled_a,
             );
         }
     }
@@ -604,14 +614,23 @@ impl<'a> SymbolicExecutor<'a> {
         self.template_library.insert(name, template);
     }
 
-    pub fn register_function(&mut self, name: String, body: Statement) {
+    pub fn register_function(
+        &mut self,
+        name: String,
+        body: Statement,
+        function_argument_names: &Vec<String>,
+    ) {
         self.function_library.insert(
-            name,
-            vec![
-                ExtendedStatement::DebugStatement(body),
-                ExtendedStatement::Ret,
-            ],
+            name.clone(),
+            SymbolicFunction {
+                function_argument_names: function_argument_names.clone(),
+                body: vec![
+                    ExtendedStatement::DebugStatement(body),
+                    ExtendedStatement::Ret,
+                ],
+            },
         );
+        self.function_counter.insert(name.clone(), 0_usize);
     }
 
     /// Expands all stack states by executing each statement block recursively,
@@ -808,8 +827,10 @@ impl<'a> SymbolicExecutor<'a> {
                                 true,
                             );
                             // Handle return value (e.g., store in a special "return" variable)
-                            self.cur_state
-                                .set_symval("__return__".to_string(), return_value);
+                            self.cur_state.set_symval(
+                                format!("{}.__return__", self.cur_state.get_owner()).to_string(),
+                                return_value,
+                            );
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::Declaration {
@@ -1127,7 +1148,7 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// A `SymbolicAccess` representing the evaluated access.
     fn evaluate_access(
-        &self,
+        &mut self,
         access: &Access,
         substiture_var: bool,
         substiture_const: bool,
@@ -1157,7 +1178,7 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// A `SymbolicValue` representing the evaluated expression.
     fn evaluate_expression(
-        &self,
+        &mut self,
         expr: &DebugExpression,
         substiture_var: bool,
         substiture_const: bool,
@@ -1435,9 +1456,60 @@ impl<'a> SymbolicExecutor<'a> {
                 if self.template_library.contains_key(id) {
                     SymbolicValue::Call(id.clone(), evaluated_args)
                 } else if self.function_library.contains_key(id) {
-                    SymbolicValue::Call(id.clone(), evaluated_args)
+                    let mut subse = SymbolicExecutor::new(
+                        self.prime.clone(),
+                        self.trace_constraint_stats,
+                        self.side_constraint_stats,
+                    );
+                    subse.cur_state.set_owner(format!(
+                        "{}.{}.{}",
+                        self.cur_state.get_owner(),
+                        id.clone(),
+                        self.function_counter[id]
+                    ));
+                    subse.template_library = self.template_library.clone();
+                    subse.function_library = self.function_library.clone();
+                    subse.function_counter = self.function_counter.clone();
+
+                    let func = &self.function_library[id];
+                    for i in 0..(func.function_argument_names.len()) {
+                        subse.cur_state.set_symval(
+                            format!(
+                                "{}.{}",
+                                subse.cur_state.get_owner(),
+                                func.function_argument_names[i]
+                            ),
+                            evaluated_args[i].clone(),
+                        );
+                    }
+
+                    trace!("{}", format!("{}", "===========================").cyan());
+                    trace!("📞 Call {}", id);
+
+                    subse.execute(&func.body, 0);
+
+                    if subse.final_states.len() > 1 {
+                        warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
+                    }
+                    let mut sub_trace_constraints = subse.final_states[0].trace_constraints.clone();
+                    let mut sub_side_constraints = subse.final_states[0].side_constraints.clone();
+                    self.cur_state
+                        .trace_constraints
+                        .append(&mut sub_trace_constraints);
+                    self.cur_state
+                        .side_constraints
+                        .append(&mut sub_side_constraints);
+                    trace!("{}", format!("{}", "===========================").cyan());
+
+                    self.function_counter
+                        .insert(id.to_string(), self.function_counter[id] + 1);
+
+                    subse.final_states[0].values
+                        [&format!("{}.__return__", subse.final_states[0].get_owner()).to_string()]
+                        .clone()
                 } else {
-                    panic!("Unknown Callee: {}", id)
+                    error!("Unknown Callee: {}", id);
+                    SymbolicValue::Call(id.clone(), evaluated_args)
                 }
             }
             /*

@@ -68,7 +68,7 @@ fn start() -> Result<(), ()> {
     println!("{}", Colour::Green.paint("⚙️ Parsing Function..."));
     for (k, v) in program_archive.functions.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
-        sexe.register_function(k.clone(), body.clone());
+        sexe.register_function(k.clone(), body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
             println!(
