@@ -1243,17 +1243,17 @@ impl<'a> SymbolicExecutor<'a> {
                 Box::new(self.fold_variables(else_val, substitute_only_constatant)),
             ),
             SymbolicValue::UnaryOp(prefix_op, value) => {
-                let expr = self.fold_variables(value, substitute_only_constatant);
-                match &expr {
+                let folded_symval = self.fold_variables(value, substitute_only_constatant);
+                match &folded_symval {
                     SymbolicValue::ConstantInt(rv) => match prefix_op.0 {
                         ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
-                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(expr)),
+                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(folded_symval)),
                     },
                     SymbolicValue::ConstantBool(rv) => match prefix_op.0 {
                         ExpressionPrefixOpcode::BoolNot => SymbolicValue::ConstantBool(!rv),
-                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(expr)),
+                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(folded_symval)),
                     },
-                    _ => SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(expr)),
+                    _ => SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(folded_symval)),
                 }
             }
             SymbolicValue::Array(elements) => SymbolicValue::Array(
