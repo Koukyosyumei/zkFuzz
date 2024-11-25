@@ -142,7 +142,7 @@ fn start() -> Result<(), ()> {
                 _ => unimplemented!(),
             }
 
-            let mut is_safe = "unknown";
+            let mut is_safe = "🆗 Probably Safe";
             for s in &sexe.final_states {
                 let assignment = brute_force_search(
                     BigInt::from_str(&user_input.debug_prime()).unwrap(),
@@ -152,8 +152,8 @@ fn start() -> Result<(), ()> {
                     &s.side_constraints.clone(),
                 );
                 if assignment.is_some() {
-                    error!("☠️ Malformed TCCT Instance:");
-                    is_safe = "NOT SAFE";
+                    error!("Malformed TCCT Instance:");
+                    is_safe = "💥 NOT SAFE 💥";
                     for (k, v) in assignment.unwrap().into_iter() {
                         println!("  - {}: {}", k, v);
                     }
@@ -165,6 +165,7 @@ fn start() -> Result<(), ()> {
                 Colour::Green.paint("======================= TCCT Report =======================")
             );
             println!("📊 Execution Summary:");
+            println!("  - Prime Number        : {}", user_input.debug_prime());
             println!("  - Total Paths Explored: {}", sexe.final_states.len());
             println!(
                 "  - Compression Rate    : {:.2}% ({}/{})",
