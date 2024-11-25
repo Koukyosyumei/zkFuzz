@@ -778,13 +778,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     self.execute(statements, cur_bid);
                                 }
                             } else {
-                                self.trace_constraint_stats.update(&evaled_condition);
-                                self.cur_state.push_trace_constraint(evaled_condition);
-
-                                self.execute(
-                                    &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
-                                    0,
-                                );
+                                panic!("This tool currently cannot handle the symbolic condition of While Loop");
                             }
 
                             self.expand_all_stack_states(
