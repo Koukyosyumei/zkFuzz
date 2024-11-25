@@ -27,3 +27,7 @@ where
 
     (r0, s0, t0)
 }
+
+pub fn italic(text: &str) -> String {
+    format!("\x1b[3m{}\x1b[0m", text)
+}

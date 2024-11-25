@@ -17,11 +17,7 @@ use crate::parser_user::{
     DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugVariableType,
     ExtendedStatement,
 };
-use crate::utils::extended_euclidean;
-
-fn italic(text: &str) -> String {
-    format!("\x1b[3m{}\x1b[0m", text)
-}
+use crate::utils::{extended_euclidean, italic};
 
 /// Simplifies a given statement by transforming certain structures into more straightforward forms.
 /// Specifically, it handles inline switch operations within substitution statements.
