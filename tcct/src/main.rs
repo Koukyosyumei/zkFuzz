@@ -152,7 +152,7 @@ fn start() -> Result<(), ()> {
                     );
                     if counterexample.is_some() {
                         is_safe = false;
-                        error!("{:?}", counterexample.unwrap());
+                        println!("{:?}", counterexample.unwrap());
                     }
                 }
             }

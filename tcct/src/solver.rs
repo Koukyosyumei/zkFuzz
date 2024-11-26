@@ -38,16 +38,16 @@ impl fmt::Debug for CounterExample {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            "🚨 {}",
+            "   🚨 {}",
             "Counter Example:".on_bright_red().white().bold()
         )?;
-        writeln!(f, "{}", self.flag);
-        writeln!(f, "{}", "🔍 Assignment Details:".blue().bold())?;
+        writeln!(f, "      {}", self.flag);
+        writeln!(f, "      {}", "🔍 Assignment Details:".blue().bold())?;
 
         for (var, value) in &self.assignment {
             writeln!(
                 f,
-                "  {} {} = {}",
+                "           {} {} = {}",
                 "➡️".cyan(),
                 var.magenta().bold(),
                 value.to_string().bright_yellow()
