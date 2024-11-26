@@ -19,6 +19,8 @@ pub enum VerificationResult {
 }
 
 impl fmt::Display for VerificationResult {
+    /// Provides a user-friendly string representation of the `VerificationResult`,
+    /// with colored highlights to indicate the constraint status.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output = match self {
             VerificationResult::UnderConstrained => "🔥 UnderConstrained 🔥".red().bold(),
@@ -29,12 +31,17 @@ impl fmt::Display for VerificationResult {
     }
 }
 
+/// A structure representing a counterexample when constraints are invalid.
 pub struct CounterExample {
+    /// The verification result indicating the type of constraint violation.
     flag: VerificationResult,
+    /// A mapping of variable names to their assigned values that led to the violation.
     assignment: HashMap<String, BigInt>,
 }
 
 impl fmt::Debug for CounterExample {
+    /// Provides a detailed, user-friendly debug output for a counterexample,
+    /// including variable assignments.
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
@@ -58,6 +65,13 @@ impl fmt::Debug for CounterExample {
     }
 }
 
+/// Determines if a given verification result indicates vulnerability.
+///
+/// # Parameters
+/// - `vr`: The verification result to evaluate.
+///
+/// # Returns
+/// `true` if the result indicates a vulnerability, otherwise `false`.
 fn is_vulnerable(vr: &VerificationResult) -> bool {
     match vr {
         VerificationResult::UnderConstrained => true,
@@ -66,6 +80,17 @@ fn is_vulnerable(vr: &VerificationResult) -> bool {
     }
 }
 
+/// Performs brute-force search over variable assignments to evaluate constraints.
+///
+/// # Parameters
+/// - `prime`: The prime modulus for computations.
+/// - `id`: The identifier of the symbolic executor's current context.
+/// - `sexe`: A mutable reference to the symbolic executor.
+/// - `trace_constraints`: The constraints representing the program trace.
+/// - `side_constraints`: Additional constraints for validation.
+///
+/// # Returns
+/// A `CounterExample` if constraints are invalid, otherwise `None`.
 pub fn brute_force_search(
     prime: BigInt,
     id: String,
@@ -181,6 +206,13 @@ pub fn brute_force_search(
     }
 }
 
+/// Extracts all unique variable names referenced in a set of constraints.
+///
+/// # Parameters
+/// - `constraints`: A slice of symbolic values representing the constraints.
+///
+/// # Returns
+/// A vector of unique variable names referenced in the constraints.
 fn extract_variables(constraints: &[SymbolicValue]) -> Vec<String> {
     let mut variables = Vec::new();
     for constraint in constraints {
@@ -191,6 +223,11 @@ fn extract_variables(constraints: &[SymbolicValue]) -> Vec<String> {
     variables
 }
 
+/// Recursively extracts variable names from a symbolic value.
+///
+/// # Parameters
+/// - `value`: The symbolic value to analyze.
+/// - `variables`: A mutable reference to a vector where variable names will be stored.
 fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut Vec<String>) {
     match value {
         SymbolicValue::Variable(name) => variables.push(name.clone()),
