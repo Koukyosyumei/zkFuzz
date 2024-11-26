@@ -29,15 +29,15 @@ ARGS:
     <input>    Path to a circuit with a main component [default: ./circuit.circom]
 ```
 
-Example command:
+**Example command:**
 
 ```bash
-RUST_LOG=error ./target/debug/tcct ../sample/iszero_vuln.circom --debug_prime 3 --search_counter_example
+./target/debug/tcct ../sample/iszero_vuln.circom --debug_prime 3 --search_counter_example
 ```
 
-Example output:
+**Example output:**
 
-```
+```bash
 🧩 Parsing Templates...
 ⚙️ Parsing Function...
 🛒 Gathering Trace/Side Constraints...
@@ -69,13 +69,13 @@ This tool also provides multiple verbosity levels for detailed analysis:
 - `debug`: Includes everything from `info` and adds the full AST (Abstract Syntax Tree).
 - `trace`: Includes everything from `debug` and outputs all intermediate trace states during execution.
 
-Example command:
+**Example Command with Verbosity:**
 
 ```bash
 RUST_LOG=trace ./target/debug/tcct ../sample/lessthan3.circom --print_ast --print_stats
 ```
 
-Example output:
+**Example output:**
 
 <div style="display: flex; align-items: flex-start; justify-content: space-around;">
   <img src="img/ast.png" alt="AST" style="width: 20%; margin-right: 5px;">
