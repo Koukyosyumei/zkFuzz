@@ -109,7 +109,7 @@ pub fn brute_force_search(
     let mut assignment = HashMap::new();
 
     fn search(
-        prime: BigInt,
+        prime: &BigInt,
         id: String,
         sexe: &mut SymbolicExecutor,
         index: usize,
@@ -119,7 +119,7 @@ pub fn brute_force_search(
         side_constraints: &[SymbolicValue],
     ) -> VerificationResult {
         if index == variables.len() {
-            let is_satisfy_tc = evaluate_constraints(prime.clone(), trace_constraints, assignment);
+            let is_satisfy_tc = evaluate_constraints(prime, trace_constraints, assignment);
             let is_satisfy_sc = evaluate_constraints(prime, side_constraints, assignment);
 
             if is_satisfy_tc && !is_satisfy_sc {
@@ -165,10 +165,10 @@ pub fn brute_force_search(
 
         let var = &variables[index];
         let mut value = BigInt::zero();
-        while value < prime {
+        while value < *prime {
             assignment.insert(var.clone(), value.clone());
             let result = search(
-                prime.clone(),
+                prime,
                 id.clone(),
                 sexe,
                 index + 1,
@@ -187,7 +187,7 @@ pub fn brute_force_search(
     }
 
     let flag = search(
-        prime.clone(),
+        &prime,
         id,
         sexe,
         0,
@@ -260,12 +260,12 @@ fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut 
 }
 
 fn evaluate_constraints(
-    prime: BigInt,
+    prime: &BigInt,
     constraints: &[SymbolicValue],
     assignment: &HashMap<String, BigInt>,
 ) -> bool {
     constraints.iter().all(|constraint| {
-        let sv = evaluate_symbolic_value(prime.clone(), constraint, assignment);
+        let sv = evaluate_symbolic_value(prime, constraint, assignment);
         match sv {
             SymbolicValue::ConstantBool(b) => b,
             _ => panic!("Non-bool output value is detected when evaluating a constraint"),
@@ -274,7 +274,7 @@ fn evaluate_constraints(
 }
 
 fn evaluate_symbolic_value(
-    prime: BigInt,
+    prime: &BigInt,
     value: &SymbolicValue,
     assignment: &HashMap<String, BigInt>,
 ) -> SymbolicValue {
@@ -285,36 +285,30 @@ fn evaluate_symbolic_value(
             SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
         }
         SymbolicValue::BinaryOp(lhs, op, rhs) => {
-            let lhs_val = evaluate_symbolic_value(prime.clone(), lhs, assignment);
-            let rhs_val = evaluate_symbolic_value(prime.clone(), rhs, assignment);
+            let lhs_val = evaluate_symbolic_value(prime, lhs, assignment);
+            let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
             match (&lhs_val, &rhs_val) {
                 (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match op.0 {
-                    ExpressionInfixOpcode::Add => {
-                        SymbolicValue::ConstantInt((lv + rv) % prime.clone())
-                    }
-                    ExpressionInfixOpcode::Sub => {
-                        SymbolicValue::ConstantInt((lv - rv) % prime.clone())
-                    }
-                    ExpressionInfixOpcode::Mul => {
-                        SymbolicValue::ConstantInt((lv * rv) % prime.clone())
-                    }
+                    ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt((lv + rv) % prime),
+                    ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt((lv - rv) % prime),
+                    ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt((lv * rv) % prime),
                     ExpressionInfixOpcode::Div => {
                         let mut r = prime.clone();
                         let mut new_r = rv.clone();
                         if r.is_negative() {
-                            r += prime.clone();
+                            r += prime;
                         }
                         if new_r.is_negative() {
-                            new_r += prime.clone();
+                            new_r += prime;
                         }
 
                         let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
-                        rv_inv %= prime.clone();
+                        rv_inv %= prime;
                         if rv_inv.is_negative() {
-                            rv_inv += prime.clone();
+                            rv_inv += prime;
                         }
 
-                        SymbolicValue::ConstantInt((lv * rv_inv) % prime.clone())
+                        SymbolicValue::ConstantInt((lv * rv_inv) % prime)
                     }
                     ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
                     ExpressionInfixOpcode::Mod => SymbolicValue::ConstantInt(lv % rv),
@@ -328,22 +322,22 @@ fn evaluate_symbolic_value(
                         SymbolicValue::ConstantInt(lv >> rv.to_usize().unwrap())
                     }
                     ExpressionInfixOpcode::Lesser => {
-                        SymbolicValue::ConstantBool(lv % prime.clone() < rv % prime.clone())
+                        SymbolicValue::ConstantBool(lv % prime < rv % prime)
                     }
                     ExpressionInfixOpcode::Greater => {
-                        SymbolicValue::ConstantBool(lv % prime.clone() > rv % prime.clone())
+                        SymbolicValue::ConstantBool(lv % prime > rv % prime)
                     }
                     ExpressionInfixOpcode::LesserEq => {
-                        SymbolicValue::ConstantBool(lv % prime.clone() <= rv % prime.clone())
+                        SymbolicValue::ConstantBool(lv % prime <= rv % prime)
                     }
                     ExpressionInfixOpcode::GreaterEq => {
-                        SymbolicValue::ConstantBool(lv % prime.clone() >= rv % prime.clone())
+                        SymbolicValue::ConstantBool(lv % prime >= rv % prime)
                     }
                     ExpressionInfixOpcode::Eq => {
-                        SymbolicValue::ConstantBool(lv % prime.clone() == rv % prime.clone())
+                        SymbolicValue::ConstantBool(lv % prime == rv % prime)
                     }
                     ExpressionInfixOpcode::NotEq => {
-                        SymbolicValue::ConstantBool(lv % prime.clone() != rv % prime.clone())
+                        SymbolicValue::ConstantBool(lv % prime != rv % prime)
                     }
                     _ => todo!(),
                 },
@@ -356,7 +350,7 @@ fn evaluate_symbolic_value(
             }
         }
         SymbolicValue::UnaryOp(op, expr) => {
-            let expr_val = evaluate_symbolic_value(prime.clone(), expr, assignment);
+            let expr_val = evaluate_symbolic_value(prime, expr, assignment);
             match &expr_val {
                 SymbolicValue::ConstantInt(rv) => match op.0 {
                     ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
