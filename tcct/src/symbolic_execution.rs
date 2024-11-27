@@ -208,8 +208,8 @@ pub struct SymbolicState {
     owner_name: String,
     depth: usize,
     pub values: HashMap<String, SymbolicValue>,
-    pub trace_constraints: Vec<SymbolicValue>,
-    pub side_constraints: Vec<SymbolicValue>,
+    pub trace_constraints: Vec<Box<SymbolicValue>>,
+    pub side_constraints: Vec<Box<SymbolicValue>>,
 }
 
 /// Implements the `Debug` trait for `SymbolicState` to provide detailed state information during debugging.
@@ -332,8 +332,8 @@ impl SymbolicState {
     /// # Arguments
     ///
     /// * `constraint` - The symbolic value representing the constraint.
-    pub fn push_trace_constraint(&mut self, constraint: SymbolicValue) {
-        self.trace_constraints.push(constraint);
+    pub fn push_trace_constraint(&mut self, constraint: &SymbolicValue) {
+        self.trace_constraints.push(Box::new(constraint.clone()));
     }
 
     /// Adds a side constraint to the current state.
@@ -341,8 +341,8 @@ impl SymbolicState {
     /// # Arguments
     ///
     /// * `constraint` - The symbolic value representing the constraint.
-    pub fn push_side_constraint(&mut self, constraint: SymbolicValue) {
-        self.side_constraints.push(constraint);
+    pub fn push_side_constraint(&mut self, constraint: &SymbolicValue) {
+        self.side_constraints.push(Box::new(constraint.clone()));
     }
 }
 
@@ -768,8 +768,8 @@ impl<'a> SymbolicExecutor<'a> {
                                 }
                             } else {
                                 self.trace_constraint_stats.update(&evaled_condition);
-                                if_state.push_trace_constraint(evaled_condition.clone());
-                                if_state.push_side_constraint(original_evaled_condition.clone());
+                                if_state.push_trace_constraint(&evaled_condition);
+                                if_state.push_side_constraint(&original_evaled_condition);
                                 if_state.set_depth(cur_depth + 1);
                                 self.cur_state = if_state.clone();
                                 self.execute(
@@ -819,8 +819,8 @@ impl<'a> SymbolicExecutor<'a> {
                                     }
                                 } else {
                                     self.trace_constraint_stats.update(&neg_evaled_condition);
-                                    else_state.push_trace_constraint(neg_evaled_condition);
-                                    else_state.push_side_constraint(original_neg_evaled_condition);
+                                    else_state.push_trace_constraint(&neg_evaled_condition);
+                                    else_state.push_side_constraint(&original_neg_evaled_condition);
                                     else_state.set_depth(cur_depth + 1);
                                     self.cur_state = else_state;
                                     self.execute(
@@ -1057,7 +1057,7 @@ impl<'a> SymbolicExecutor<'a> {
                                             DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                             Box::new(value),
                                         );
-                                        self.cur_state.push_trace_constraint(cont.clone());
+                                        self.cur_state.push_trace_constraint(&cont);
                                         self.trace_constraint_stats.update(&cont);
 
                                         if let AssignOp::AssignConstraintSignal = op {
@@ -1068,8 +1068,7 @@ impl<'a> SymbolicExecutor<'a> {
                                                 ),
                                                 Box::new(original_value),
                                             );
-                                            self.cur_state
-                                                .push_side_constraint(original_cont.clone());
+                                            self.cur_state.push_side_constraint(&original_cont);
                                             self.side_constraint_stats.update(&original_cont);
                                         }
                                     }
@@ -1098,7 +1097,7 @@ impl<'a> SymbolicExecutor<'a> {
                                 DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                 Box::new(rhs),
                             );
-                            self.cur_state.push_trace_constraint(cont.clone());
+                            self.cur_state.push_trace_constraint(&cont);
                             self.trace_constraint_stats.update(&cont);
                             if let AssignOp::AssignConstraintSignal = op {
                                 // Handle multiple substitution (simplified)
@@ -1107,7 +1106,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                     Box::new(simple_rhs),
                                 );
-                                self.cur_state.push_side_constraint(simple_cont.clone());
+                                self.cur_state.push_side_constraint(&simple_cont);
                                 self.side_constraint_stats.update(&simple_cont);
                             }
                             self.execute(statements, cur_bid + 1);
@@ -1135,9 +1134,9 @@ impl<'a> SymbolicExecutor<'a> {
                                 Box::new(rhs),
                             );
 
-                            self.cur_state.push_trace_constraint(cond.clone());
+                            self.cur_state.push_trace_constraint(&cond);
                             self.trace_constraint_stats.update(&cond);
-                            self.cur_state.push_side_constraint(original_cond.clone());
+                            self.cur_state.push_side_constraint(&original_cond);
                             self.side_constraint_stats.update(&original_cond);
 
                             self.execute(statements, cur_bid + 1);
@@ -1149,7 +1148,7 @@ impl<'a> SymbolicExecutor<'a> {
                             let expr = self.evaluate_expression(&DebugExpression(arg.clone()));
                             let condition =
                                 self.fold_variables(&expr, !self.propagate_substitution);
-                            self.cur_state.push_trace_constraint(condition.clone());
+                            self.cur_state.push_trace_constraint(&condition);
                             self.trace_constraint_stats.update(&condition);
                             self.execute(statements, cur_bid + 1);
                         }

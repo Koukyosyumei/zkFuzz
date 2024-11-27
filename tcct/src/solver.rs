@@ -95,8 +95,8 @@ pub fn brute_force_search(
     prime: BigInt,
     id: String,
     sexe: &mut SymbolicExecutor,
-    trace_constraints: &Vec<SymbolicValue>,
-    side_constraints: &Vec<SymbolicValue>,
+    trace_constraints: &Vec<Box<SymbolicValue>>,
+    side_constraints: &Vec<Box<SymbolicValue>>,
 ) -> Option<CounterExample> {
     let mut trace_variables = extract_variables(trace_constraints);
     let mut side_variables = extract_variables(side_constraints);
@@ -115,8 +115,8 @@ pub fn brute_force_search(
         index: usize,
         variables: &[String],
         assignment: &mut HashMap<String, BigInt>,
-        trace_constraints: &[SymbolicValue],
-        side_constraints: &[SymbolicValue],
+        trace_constraints: &[Box<SymbolicValue>],
+        side_constraints: &[Box<SymbolicValue>],
     ) -> VerificationResult {
         if index == variables.len() {
             let is_satisfy_tc = evaluate_constraints(prime, trace_constraints, assignment);
@@ -213,7 +213,7 @@ pub fn brute_force_search(
 ///
 /// # Returns
 /// A vector of unique variable names referenced in the constraints.
-fn extract_variables(constraints: &[SymbolicValue]) -> Vec<String> {
+fn extract_variables(constraints: &[Box<SymbolicValue>]) -> Vec<String> {
     let mut variables = Vec::new();
     for constraint in constraints {
         extract_variables_from_symbolic_value(constraint, &mut variables);
@@ -228,31 +228,31 @@ fn extract_variables(constraints: &[SymbolicValue]) -> Vec<String> {
 /// # Parameters
 /// - `value`: The symbolic value to analyze.
 /// - `variables`: A mutable reference to a vector where variable names will be stored.
-fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut Vec<String>) {
-    match value {
+fn extract_variables_from_symbolic_value(value: &Box<SymbolicValue>, variables: &mut Vec<String>) {
+    match *value.clone() {
         SymbolicValue::Variable(name) => variables.push(name.clone()),
         SymbolicValue::BinaryOp(lhs, _, rhs) => {
-            extract_variables_from_symbolic_value(lhs, variables);
-            extract_variables_from_symbolic_value(rhs, variables);
+            extract_variables_from_symbolic_value(&lhs, variables);
+            extract_variables_from_symbolic_value(&rhs, variables);
         }
         SymbolicValue::Conditional(cond, if_true, if_false) => {
-            extract_variables_from_symbolic_value(cond, variables);
-            extract_variables_from_symbolic_value(if_true, variables);
-            extract_variables_from_symbolic_value(if_false, variables);
+            extract_variables_from_symbolic_value(&cond, variables);
+            extract_variables_from_symbolic_value(&if_true, variables);
+            extract_variables_from_symbolic_value(&if_false, variables);
         }
-        SymbolicValue::UnaryOp(_, expr) => extract_variables_from_symbolic_value(expr, variables),
+        SymbolicValue::UnaryOp(_, expr) => extract_variables_from_symbolic_value(&expr, variables),
         SymbolicValue::Array(elements) | SymbolicValue::Tuple(elements) => {
             for elem in elements {
-                extract_variables_from_symbolic_value(elem, variables);
+                extract_variables_from_symbolic_value(&Box::new(elem), variables);
             }
         }
         SymbolicValue::UniformArray(value, size) => {
-            extract_variables_from_symbolic_value(value, variables);
-            extract_variables_from_symbolic_value(size, variables);
+            extract_variables_from_symbolic_value(&value, variables);
+            extract_variables_from_symbolic_value(&size, variables);
         }
         SymbolicValue::Call(_, args) => {
             for arg in args {
-                extract_variables_from_symbolic_value(arg, variables);
+                extract_variables_from_symbolic_value(&Box::new(arg), variables);
             }
         }
         _ => {}
@@ -261,7 +261,7 @@ fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut 
 
 fn evaluate_constraints(
     prime: &BigInt,
-    constraints: &[SymbolicValue],
+    constraints: &[Box<SymbolicValue>],
     assignment: &HashMap<String, BigInt>,
 ) -> bool {
     constraints.iter().all(|constraint| {
