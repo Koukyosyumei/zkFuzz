@@ -110,7 +110,7 @@ pub fn brute_force_search(
 
     fn search(
         prime: &BigInt,
-        id: String,
+        id: &String,
         sexe: &mut SymbolicExecutor,
         index: usize,
         variables: &[String],
@@ -127,7 +127,7 @@ pub fn brute_force_search(
             } else if !is_satisfy_tc && is_satisfy_sc {
                 sexe.clear();
                 sexe.cur_state.set_owner("main".to_string());
-                for arg in &sexe.template_library[&id].inputs {
+                for arg in &sexe.template_library[id].inputs {
                     let vname = format!("{}.{}", sexe.cur_state.get_owner(), arg.to_string());
                     sexe.cur_state.set_symval(
                         vname.clone(),
@@ -137,11 +137,11 @@ pub fn brute_force_search(
 
                 sexe.skip_initialization_blocks = true;
                 sexe.off_trace = true;
-                sexe.execute(&sexe.template_library[&id].body.clone(), 0);
+                sexe.execute(&sexe.template_library[id].body.clone(), 0);
 
                 let mut flag = false;
                 if sexe.final_states.len() > 0 {
-                    for n in &sexe.template_library[&id].outputs {
+                    for n in &sexe.template_library[id].outputs {
                         let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
                         if let SymbolicValue::ConstantInt(v) = &sexe.final_states[0].values[&vname]
                         {
@@ -169,7 +169,7 @@ pub fn brute_force_search(
             assignment.insert(var.clone(), value.clone());
             let result = search(
                 prime,
-                id.clone(),
+                id,
                 sexe,
                 index + 1,
                 variables,
@@ -188,7 +188,7 @@ pub fn brute_force_search(
 
     let flag = search(
         &prime,
-        id,
+        &id,
         sexe,
         0,
         &variables,
