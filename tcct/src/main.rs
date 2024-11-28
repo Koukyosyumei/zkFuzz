@@ -101,10 +101,9 @@ fn start() -> Result<(), ()> {
                 0,
             );
 
+            println!("===========================================================");
             let mut ts = ConstraintStatistics::new();
             let mut ss = ConstraintStatistics::new();
-
-            println!("===========================================================");
             for s in &sexe.final_states {
                 for c in &s.trace_constraints {
                     ts.update(c);
