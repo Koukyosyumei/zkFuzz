@@ -384,10 +384,6 @@ pub struct SymbolicComponent {
 /// * `prime` - A prime number used in computations.
 /// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
 /// * `max_depth` - Tracks maximum depth reached during execution.
-///
-/// # Lifetime Parameters
-///
-/// `'a`: Lifetime associated with borrowed references to constraint statistics objects.
 pub struct SymbolicExecutor {
     pub template_library: HashMap<String, Box<SymbolicTemplate>>,
     pub function_library: HashMap<String, Box<SymbolicFunction>>,
@@ -400,8 +396,8 @@ pub struct SymbolicExecutor {
     pub off_trace: bool,
     // states
     pub cur_state: SymbolicState,
-    pub block_end_states: Vec<SymbolicState>,
-    pub final_states: Vec<SymbolicState>,
+    pub block_end_states: Vec<Box<SymbolicState>>,
+    pub final_states: Vec<Box<SymbolicState>>,
     // stats
     pub max_depth: usize,
 }
@@ -561,7 +557,7 @@ impl SymbolicExecutor {
         let stack_states = self.block_end_states.clone();
         self.block_end_states.clear();
         for state in &stack_states.clone() {
-            self.cur_state = state.clone();
+            self.cur_state = *state.clone();
             self.cur_state.set_depth(depth);
             self.execute(statements, cur_bid);
         }
@@ -599,7 +595,7 @@ impl SymbolicExecutor {
                                     );
                                 }
                             }
-                            self.block_end_states = vec![self.cur_state.clone()];
+                            self.block_end_states = vec![Box::new(self.cur_state.clone())];
                             self.expand_all_stack_states(
                                 statements,
                                 cur_bid + 1,
@@ -1055,11 +1051,11 @@ impl SymbolicExecutor {
                     if !self.off_trace {
                         trace!("{} {:?}", format!("{}", "🔙 Ret:").red(), self.cur_state);
                     }
-                    self.final_states.push(self.cur_state.clone());
+                    self.final_states.push(Box::new(self.cur_state.clone()));
                 }
             }
         } else {
-            self.block_end_states.push(self.cur_state.clone());
+            self.block_end_states.push(Box::new(self.cur_state.clone()));
         }
     }
 
