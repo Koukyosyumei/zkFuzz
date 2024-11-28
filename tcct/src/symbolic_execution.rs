@@ -371,103 +371,6 @@ pub struct SymbolicComponent {
     pub is_done: bool,
 }
 
-/// Collects statistics about constraints encountered during symbolic execution.
-#[derive(Default, Debug)]
-pub struct ConstraintStatistics {
-    pub total_constraints: usize,
-    pub constraint_depths: Vec<usize>,
-    pub operator_counts: HashMap<String, usize>,
-    pub variable_counts: HashMap<String, usize>,
-    pub constant_counts: usize,
-    pub conditional_counts: usize,
-    pub array_counts: usize,
-    pub tuple_counts: usize,
-    pub function_call_counts: HashMap<String, usize>,
-}
-
-impl ConstraintStatistics {
-    /// Creates a new instance of `ConstraintStatistics` with default values.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Updates statistics based on a given symbolic value and its depth in the expression tree.
-    ///
-    /// # Arguments
-    ///
-    /// * `value` - The symbolic value to analyze.
-    /// * `depth` - The depth level of this value in its expression tree.
-    fn update_from_symbolic_value(&mut self, value: &SymbolicValue, depth: usize) {
-        match value {
-            SymbolicValue::ConstantInt(_) => {
-                self.constant_counts += 1;
-            }
-            SymbolicValue::ConstantBool(_) => {
-                self.constant_counts += 1;
-            }
-            SymbolicValue::Variable(name) => {
-                *self.variable_counts.entry(name.clone()).or_insert(0) += 1;
-            }
-            SymbolicValue::BinaryOp(lhs, op, rhs) => {
-                let op_name = format!("{:?}", op);
-                *self.operator_counts.entry(op_name).or_insert(0) += 1;
-                self.update_from_symbolic_value(lhs, depth + 1);
-                self.update_from_symbolic_value(rhs, depth + 1);
-            }
-            SymbolicValue::Conditional(cond, if_true, if_false) => {
-                self.conditional_counts += 1;
-                self.update_from_symbolic_value(cond, depth + 1);
-                self.update_from_symbolic_value(if_true, depth + 1);
-                self.update_from_symbolic_value(if_false, depth + 1);
-            }
-            SymbolicValue::UnaryOp(op, expr) => {
-                let op_name = format!("{:?}", op);
-                *self.operator_counts.entry(op_name).or_insert(0) += 1;
-                self.update_from_symbolic_value(expr, depth + 1);
-            }
-            SymbolicValue::Array(elements) => {
-                self.array_counts += 1;
-                for elem in elements {
-                    self.update_from_symbolic_value(elem, depth + 1);
-                }
-            }
-            SymbolicValue::Tuple(elements) => {
-                self.tuple_counts += 1;
-                for elem in elements {
-                    self.update_from_symbolic_value(elem, depth + 1);
-                }
-            }
-            SymbolicValue::UniformArray(value, size) => {
-                self.array_counts += 1;
-                self.update_from_symbolic_value(value, depth + 1);
-                self.update_from_symbolic_value(size, depth + 1);
-            }
-            SymbolicValue::Call(name, args) => {
-                *self.function_call_counts.entry(name.clone()).or_insert(0) += 1;
-                for arg in args {
-                    self.update_from_symbolic_value(arg, depth + 1);
-                }
-            }
-        }
-
-        if self.constraint_depths.len() <= depth {
-            self.constraint_depths.push(1);
-        } else {
-            self.constraint_depths[depth] += 1;
-        }
-    }
-
-    /// Updates overall statistics with a new constraint.
-    ///
-    /// # Arguments
-    ///
-    /// * `constraint` - The symbolic value representing the constraint to add
-    pub fn update(&mut self, constraint: &SymbolicValue) {
-        self.total_constraints += 1;
-        self.update_from_symbolic_value(constraint, 0);
-    }
-}
-
 /// Executes symbolic execution on a series of statements while maintaining multiple states.
 /// It handles branching logic and updates constraints accordingly during execution flow.
 ///
@@ -480,13 +383,12 @@ impl ConstraintStatistics {
 /// * `variable_types` - A map storing types of variables.
 /// * `prime` - A prime number used in computations.
 /// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
-/// * `trace_constraint_stats`, `side_constraint_stats` - Statistics collectors for constraints encountered.
 /// * `max_depth` - Tracks maximum depth reached during execution.
 ///
 /// # Lifetime Parameters
 ///
 /// `'a`: Lifetime associated with borrowed references to constraint statistics objects.
-pub struct SymbolicExecutor<'a> {
+pub struct SymbolicExecutor {
     pub template_library: HashMap<String, Box<SymbolicTemplate>>,
     pub function_library: HashMap<String, Box<SymbolicFunction>>,
     pub function_counter: HashMap<String, usize>,
@@ -501,19 +403,12 @@ pub struct SymbolicExecutor<'a> {
     pub block_end_states: Vec<SymbolicState>,
     pub final_states: Vec<SymbolicState>,
     // stats
-    pub trace_constraint_stats: &'a mut ConstraintStatistics,
-    pub side_constraint_stats: &'a mut ConstraintStatistics,
     pub max_depth: usize,
 }
 
-impl<'a> SymbolicExecutor<'a> {
+impl SymbolicExecutor {
     /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
-    pub fn new(
-        propagate_substitution: bool,
-        prime: BigInt,
-        ts: &'a mut ConstraintStatistics,
-        ss: &'a mut ConstraintStatistics,
-    ) -> Self {
+    pub fn new(propagate_substitution: bool, prime: BigInt) -> Self {
         SymbolicExecutor {
             template_library: HashMap::new(),
             function_library: HashMap::new(),
@@ -527,8 +422,6 @@ impl<'a> SymbolicExecutor<'a> {
             cur_state: SymbolicState::new(),
             block_end_states: Vec::new(),
             final_states: Vec::new(),
-            trace_constraint_stats: ts,
-            side_constraint_stats: ss,
             max_depth: 0,
         }
     }
@@ -767,7 +660,6 @@ impl<'a> SymbolicExecutor<'a> {
                                     );
                                 }
                             } else {
-                                self.trace_constraint_stats.update(&evaled_condition);
                                 if_state.push_trace_constraint(&evaled_condition);
                                 if_state.push_side_constraint(&original_evaled_condition);
                                 if_state.set_depth(cur_depth + 1);
@@ -818,7 +710,6 @@ impl<'a> SymbolicExecutor<'a> {
                                         );
                                     }
                                 } else {
-                                    self.trace_constraint_stats.update(&neg_evaled_condition);
                                     else_state.push_trace_constraint(&neg_evaled_condition);
                                     else_state.push_side_constraint(&original_neg_evaled_condition);
                                     else_state.set_depth(cur_depth + 1);
@@ -960,8 +851,6 @@ impl<'a> SymbolicExecutor<'a> {
                                         let mut subse = SymbolicExecutor::new(
                                             self.propagate_substitution,
                                             self.prime.clone(),
-                                            self.trace_constraint_stats,
-                                            self.side_constraint_stats,
                                         );
 
                                         subse.template_library = self.template_library.clone();
@@ -970,8 +859,6 @@ impl<'a> SymbolicExecutor<'a> {
                                             self.cur_state.get_owner(),
                                             var.clone()
                                         ));
-                                        //subse.trace_constraint_stats = self.trace_constraint_stats;
-                                        //subse.side_constraint_stats = self.side_constraint_stats;
 
                                         let templ = &self.template_library
                                             [&self.components_store[var].template_name];
@@ -1058,7 +945,6 @@ impl<'a> SymbolicExecutor<'a> {
                                             Box::new(value),
                                         );
                                         self.cur_state.push_trace_constraint(&cont);
-                                        self.trace_constraint_stats.update(&cont);
 
                                         if let AssignOp::AssignConstraintSignal = op {
                                             let original_cont = SymbolicValue::BinaryOp(
@@ -1069,7 +955,6 @@ impl<'a> SymbolicExecutor<'a> {
                                                 Box::new(original_value),
                                             );
                                             self.cur_state.push_side_constraint(&original_cont);
-                                            self.side_constraint_stats.update(&original_cont);
                                         }
                                     }
                                 }
@@ -1098,7 +983,6 @@ impl<'a> SymbolicExecutor<'a> {
                                 Box::new(rhs),
                             );
                             self.cur_state.push_trace_constraint(&cont);
-                            self.trace_constraint_stats.update(&cont);
                             if let AssignOp::AssignConstraintSignal = op {
                                 // Handle multiple substitution (simplified)
                                 let simple_cont = SymbolicValue::BinaryOp(
@@ -1107,7 +991,6 @@ impl<'a> SymbolicExecutor<'a> {
                                     Box::new(simple_rhs),
                                 );
                                 self.cur_state.push_side_constraint(&simple_cont);
-                                self.side_constraint_stats.update(&simple_cont);
                             }
                             self.execute(statements, cur_bid + 1);
                         }
@@ -1135,9 +1018,7 @@ impl<'a> SymbolicExecutor<'a> {
                             );
 
                             self.cur_state.push_trace_constraint(&cond);
-                            self.trace_constraint_stats.update(&cond);
                             self.cur_state.push_side_constraint(&original_cond);
-                            self.side_constraint_stats.update(&original_cond);
 
                             self.execute(statements, cur_bid + 1);
                         }
@@ -1149,7 +1030,6 @@ impl<'a> SymbolicExecutor<'a> {
                             let condition =
                                 self.fold_variables(&expr, !self.propagate_substitution);
                             self.cur_state.push_trace_constraint(&condition);
-                            self.trace_constraint_stats.update(&condition);
                             self.execute(statements, cur_bid + 1);
                         }
                         Statement::UnderscoreSubstitution {
@@ -1476,12 +1356,8 @@ impl<'a> SymbolicExecutor<'a> {
                 if self.template_library.contains_key(id) {
                     SymbolicValue::Call(id.clone(), evaluated_args)
                 } else if self.function_library.contains_key(id) {
-                    let mut subse = SymbolicExecutor::new(
-                        self.propagate_substitution,
-                        self.prime.clone(),
-                        self.trace_constraint_stats,
-                        self.side_constraint_stats,
-                    );
+                    let mut subse =
+                        SymbolicExecutor::new(self.propagate_substitution, self.prime.clone());
                     subse.cur_state.set_owner(format!(
                         "{}.{}.{}",
                         self.cur_state.get_owner(),

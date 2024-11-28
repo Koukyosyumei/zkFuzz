@@ -12,7 +12,7 @@ use env_logger;
 use input_user::Input;
 use log::{error, info, warn};
 use num_bigint_dig::BigInt;
-use stats::print_constraint_summary_statistics_pretty;
+use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use std::env;
 use std::str::FromStr;
 use std::time;
@@ -20,7 +20,7 @@ use std::time;
 use parser_user::ExtendedStatement;
 use program_structure::ast::Expression;
 use solver::brute_force_search;
-use symbolic_execution::{simplify_statement, ConstraintStatistics, SymbolicExecutor};
+use symbolic_execution::{simplify_statement, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";
@@ -46,13 +46,9 @@ fn start() -> Result<(), ()> {
 
     env_logger::init();
 
-    let mut ts = ConstraintStatistics::new();
-    let mut ss = ConstraintStatistics::new();
     let mut sexe = SymbolicExecutor::new(
         user_input.flag_propagate_substitution,
         BigInt::from_str(&user_input.debug_prime()).unwrap(),
-        &mut ts,
-        &mut ss,
     );
 
     println!("{}", Colour::Green.paint("🧩 Parsing Templates..."));
@@ -105,8 +101,17 @@ fn start() -> Result<(), ()> {
                 0,
             );
 
+            let mut ts = ConstraintStatistics::new();
+            let mut ss = ConstraintStatistics::new();
+
             println!("===========================================================");
             for s in &sexe.final_states {
+                for c in &s.trace_constraints {
+                    ts.update(c);
+                }
+                for c in &s.side_constraints {
+                    ss.update(c);
+                }
                 info!("Final State: {:?}", s);
             }
             println!("===========================================================");
@@ -114,13 +119,9 @@ fn start() -> Result<(), ()> {
             let mut is_safe = true;
             if user_input.flag_search_counter_example {
                 println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
-                let mut sub_ts = ConstraintStatistics::new();
-                let mut sub_ss = ConstraintStatistics::new();
                 let mut sub_sexe = SymbolicExecutor::new(
                     user_input.flag_propagate_substitution,
                     BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                    &mut sub_ts,
-                    &mut sub_ss,
                 );
                 for (k, v) in program_archive.templates.clone().into_iter() {
                     let body = simplify_statement(&v.get_body().clone());
@@ -166,11 +167,9 @@ fn start() -> Result<(), ()> {
             println!("  - Total Paths Explored: {}", sexe.final_states.len());
             println!(
                 "  - Compression Rate    : {:.2}% ({}/{})",
-                (sexe.side_constraint_stats.total_constraints as f64
-                    / sexe.trace_constraint_stats.total_constraints as f64)
-                    * 100 as f64,
-                sexe.side_constraint_stats.total_constraints,
-                sexe.trace_constraint_stats.total_constraints
+                (ss.total_constraints as f64 / ts.total_constraints as f64) * 100 as f64,
+                ss.total_constraints,
+                ts.total_constraints
             );
             println!(
                 "  - Verification        : {}",
@@ -186,11 +185,11 @@ fn start() -> Result<(), ()> {
                 println!(
                     "--------------------------------------------\n🪶 Stats of Trace Constraint"
                 );
-                print_constraint_summary_statistics_pretty(&sexe.trace_constraint_stats);
+                print_constraint_summary_statistics_pretty(&ts);
                 println!(
-                    "--------------------------------------------\n⛓️ Stats of Side Constraint*"
+                    "--------------------------------------------\n⛓️ Stats of Side Constraint"
                 );
-                print_constraint_summary_statistics_pretty(&sexe.side_constraint_stats);
+                print_constraint_summary_statistics_pretty(&ss);
             }
             println!("===========================================================");
         }
