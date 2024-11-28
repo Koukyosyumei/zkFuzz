@@ -1,4 +1,5 @@
 use std::fmt;
+use std::hash::{Hash, Hasher};
 
 use program_structure::abstract_syntax_tree::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
@@ -29,6 +30,18 @@ pub struct DebugExpression(pub Expression);
 pub enum ExtendedStatement {
     DebugStatement(Statement),
     Ret,
+}
+
+impl Hash for DebugExpressionInfixOpcode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(&self.0).hash(state);
+    }
+}
+
+impl Hash for DebugExpressionPrefixOpcode {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        std::mem::discriminant(&self.0).hash(state);
+    }
 }
 
 impl fmt::Debug for DebugSignalType {
