@@ -90,6 +90,7 @@ fn start() -> Result<(), ()> {
                 Colour::Green.paint("🛒 Gathering Trace/Side Constraints...")
             );
             sexe.cur_state.set_owner("main".to_string());
+            sexe.cur_state.set_template_id(id.to_string());
             if !user_input.flag_symbolic_template_params {
                 sexe.feed_arguments(template.get_name_of_params(), args);
             }
@@ -136,6 +137,9 @@ fn start() -> Result<(), ()> {
                         main_template_id = id;
                         let template = program_archive.templates[id].clone();
                         sub_sexe.cur_state.set_owner("main".to_string());
+                        sub_sexe
+                            .cur_state
+                            .set_template_id(main_template_id.to_string());
                         if !user_input.flag_symbolic_template_params {
                             sub_sexe.feed_arguments(template.get_name_of_params(), args);
                         }

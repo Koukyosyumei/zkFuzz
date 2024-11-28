@@ -206,6 +206,7 @@ impl SymbolicAccess {
 #[derive(Clone)]
 pub struct SymbolicState {
     owner_name: String,
+    template_id: String,
     depth: usize,
     pub values: HashMap<String, Box<SymbolicValue>>,
     pub trace_constraints: Vec<Box<SymbolicValue>>,
@@ -261,6 +262,7 @@ impl SymbolicState {
     pub fn new() -> Self {
         SymbolicState {
             owner_name: "".to_string(),
+            template_id: "".to_string(),
             depth: 0_usize,
             values: HashMap::new(),
             trace_constraints: Vec::new(),
@@ -275,6 +277,10 @@ impl SymbolicState {
     /// * `name` - The name of the owner to set.
     pub fn set_owner(&mut self, name: String) {
         self.owner_name = name;
+    }
+
+    pub fn set_template_id(&mut self, name: String) {
+        self.template_id = name;
     }
 
     /// Retrieves the owner name of the current symbolic state.
@@ -347,11 +353,12 @@ impl SymbolicState {
 }
 
 /// Represents a symbolic template used in the symbolic execution process.
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone)]
 pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<String>,
     pub inputs: Vec<String>,
     pub outputs: Vec<String>,
+    pub var2type: HashMap<String, VariableType>,
     pub body: Vec<ExtendedStatement>,
 }
 
@@ -479,6 +486,7 @@ impl SymbolicExecutor {
     ) {
         let mut inputs: Vec<String> = vec![];
         let mut outputs: Vec<String> = vec![];
+        let mut var2type: HashMap<String, VariableType> = HashMap::new();
         match &body {
             Statement::Block { stmts, .. } => {
                 for s in stmts {
@@ -488,6 +496,7 @@ impl SymbolicExecutor {
                     {
                         for init in initializations {
                             if let Statement::Declaration { name, xtype, .. } = init.clone() {
+                                var2type.insert(name.clone(), xtype.clone());
                                 if let VariableType::Signal(typ, _taglist) = xtype.clone() {
                                     match typ {
                                         SignalType::Input => {
@@ -513,6 +522,7 @@ impl SymbolicExecutor {
             template_parameter_names: template_parameter_names.clone(),
             inputs: inputs,
             outputs: outputs,
+            var2type: var2type,
             body: vec![
                 ExtendedStatement::DebugStatement(body),
                 ExtendedStatement::Ret,
@@ -860,6 +870,9 @@ impl SymbolicExecutor {
 
                                         let templ = &self.template_library
                                             [&self.components_store[var].template_name];
+                                        subse.cur_state.set_template_id(
+                                            self.components_store[var].template_name.clone(),
+                                        );
 
                                         for i in 0..(templ.template_parameter_names.len()) {
                                             subse.cur_state.set_symval(
@@ -1067,13 +1080,18 @@ impl SymbolicExecutor {
         assignment: &HashMap<String, BigInt>,
         off_trace: bool,
     ) {
+        for (vname, value) in assignment.into_iter() {
+            self.cur_state
+                .set_symval(vname.clone(), SymbolicValue::ConstantInt(value.clone()));
+        }
+        /*
         for arg in &self.template_library[id].inputs {
             let vname = format!("{}.{}", self.cur_state.get_owner(), arg.to_string());
             self.cur_state.set_symval(
                 vname.clone(),
                 SymbolicValue::ConstantInt(assignment[&vname].clone()),
             );
-        }
+        }*/
 
         self.skip_initialization_blocks = true;
         self.off_trace = off_trace;
@@ -1106,10 +1124,28 @@ impl SymbolicExecutor {
     ) -> SymbolicValue {
         match &symval {
             SymbolicValue::Variable(name) => {
+                let original_var_name = if let Some(last_part) = name.split('.').last() {
+                    last_part.clone()
+                } else {
+                    &name.clone()
+                };
                 if only_constatant_folding {
                     if let Some(boxed_value) = self.cur_state.get_symval(&name) {
                         if let SymbolicValue::ConstantInt(v) = *boxed_value.clone() {
                             return SymbolicValue::ConstantInt(v);
+                        }
+                    }
+                    if self.template_library[&self.cur_state.template_id]
+                        .var2type
+                        .contains_key(&original_var_name.to_string())
+                    {
+                        let typ = self.template_library[&self.cur_state.template_id].var2type
+                            [&original_var_name.to_string()]
+                            .clone();
+                        if let VariableType::Var = typ {
+                            return *self.cur_state.get_symval(&name).cloned().unwrap_or_else(
+                                || Box::new(SymbolicValue::Variable(name.to_string())),
+                            );
                         }
                     }
                     symval.clone()
