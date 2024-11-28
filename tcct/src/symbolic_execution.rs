@@ -207,7 +207,7 @@ impl SymbolicAccess {
 pub struct SymbolicState {
     owner_name: String,
     depth: usize,
-    pub values: HashMap<String, SymbolicValue>,
+    pub values: HashMap<String, Box<SymbolicValue>>,
     pub trace_constraints: Vec<Box<SymbolicValue>>,
     pub side_constraints: Vec<Box<SymbolicValue>>,
 }
@@ -311,7 +311,7 @@ impl SymbolicState {
     /// * `name` - The name of the variable.
     /// * `value` - The symbolic value to associate with the variable.
     pub fn set_symval(&mut self, name: String, value: SymbolicValue) {
-        self.values.insert(name, value);
+        self.values.insert(name, Box::new(value));
     }
 
     /// Retrieves a symbolic value associated with a given variable name.
@@ -323,7 +323,7 @@ impl SymbolicState {
     /// # Returns
     ///
     /// An optional reference to the symbolic value if it exists.
-    pub fn get_symval(&self, name: &str) -> Option<&SymbolicValue> {
+    pub fn get_symval(&self, name: &str) -> Option<&Box<SymbolicValue>> {
         self.values.get(name)
     }
 
@@ -1091,17 +1091,18 @@ impl SymbolicExecutor {
             SymbolicValue::Variable(name) => {
                 if only_constatant_folding {
                     let sv = self.cur_state.get_symval(&name).clone();
-                    if sv.is_some() {
-                        if let SymbolicValue::ConstantInt(v) = sv.unwrap() {
-                            return SymbolicValue::ConstantInt(v.clone());
+                    if let Some(boxed_value) = sv {
+                        if let SymbolicValue::ConstantInt(v) = *boxed_value.clone() {
+                            return SymbolicValue::ConstantInt(v);
                         }
                     }
                     symval.clone()
                 } else {
-                    self.cur_state
+                    *self
+                        .cur_state
                         .get_symval(&name)
                         .cloned()
-                        .unwrap_or_else(|| SymbolicValue::Variable(name.to_string()))
+                        .unwrap_or_else(|| Box::new(SymbolicValue::Variable(name.to_string())))
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
@@ -1405,7 +1406,7 @@ impl SymbolicExecutor {
                     self.function_counter
                         .insert(id.to_string(), self.function_counter[id] + 1);
 
-                    subse.final_states[0].values
+                    *subse.final_states[0].values
                         [&format!("{}.__return__", subse.final_states[0].get_owner()).to_string()]
                         .clone()
                 } else {

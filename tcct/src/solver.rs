@@ -143,9 +143,9 @@ pub fn brute_force_search(
                 if sexe.final_states.len() > 0 {
                     for n in &sexe.template_library[id].outputs {
                         let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
-                        if let SymbolicValue::ConstantInt(v) = &sexe.final_states[0].values[&vname]
-                        {
-                            if *v != assignment[&vname] {
+                        let unboxed_value = sexe.final_states[0].values[&vname].clone();
+                        if let SymbolicValue::ConstantInt(v) = *unboxed_value {
+                            if v != assignment[&vname] {
                                 flag = true;
                                 break;
                             }
