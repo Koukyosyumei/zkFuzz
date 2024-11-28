@@ -737,13 +737,15 @@ impl SymbolicExecutor {
                                 self.fold_variables(&tmp_cond, !self.propagate_substitution);
 
                             if let SymbolicValue::ConstantBool(flag) = evaled_condition {
-                                self.execute(
-                                    &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
-                                    0,
-                                );
                                 if flag {
+                                    self.execute(
+                                        &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
+                                        0,
+                                    );
                                     self.block_end_states.pop();
                                     self.execute(statements, cur_bid);
+                                } else {
+                                    self.block_end_states.push(Box::new(self.cur_state.clone()));
                                 }
                             } else {
                                 panic!("This tool currently cannot handle the symbolic condition of While Loop: {:?}", evaled_condition);
