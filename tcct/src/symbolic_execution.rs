@@ -111,7 +111,7 @@ pub fn simplify_statement(statement: &Statement) -> Statement {
 
 /// Represents a symbolic value used in symbolic execution, which can be a constant, variable, or an operation.
 /// It supports various operations like binary, unary, conditional, arrays, tuples, uniform arrays, and function calls.
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, Eq, PartialEq)]
 pub enum SymbolicValue {
     ConstantInt(BigInt),
     ConstantBool(bool),

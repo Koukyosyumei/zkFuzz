@@ -1,5 +1,5 @@
 use crate::symbolic_execution::SymbolicValue;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 const RESET: &str = "\x1b[0m";
 const WHITE: &str = "\x1b[37m";
@@ -17,6 +17,7 @@ pub struct ConstraintStatistics {
     pub array_counts: usize,
     pub tuple_counts: usize,
     pub function_call_counts: HashMap<String, usize>,
+    pub cache: HashSet<SymbolicValue>,
 }
 
 impl ConstraintStatistics {
@@ -97,8 +98,11 @@ impl ConstraintStatistics {
     ///
     /// * `constraint` - The symbolic value representing the constraint to add
     pub fn update(&mut self, constraint: &SymbolicValue) {
-        self.total_constraints += 1;
-        self.update_from_symbolic_value(constraint, 0);
+        if !self.cache.contains(constraint) {
+            self.total_constraints += 1;
+            self.cache.insert(constraint.clone());
+            self.update_from_symbolic_value(constraint, 0);
+        }
     }
 }
 

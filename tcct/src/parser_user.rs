@@ -1,5 +1,6 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
+use std::mem;
 
 use program_structure::abstract_syntax_tree::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
@@ -20,9 +21,9 @@ pub struct DebugVariableType(pub VariableType);
 pub struct DebugAccess(pub Access);
 #[derive(Clone)]
 pub struct DebugAssignOp(pub AssignOp);
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct DebugExpressionInfixOpcode(pub ExpressionInfixOpcode);
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct DebugExpressionPrefixOpcode(pub ExpressionPrefixOpcode);
 #[derive(Clone)]
 pub struct DebugExpression(pub Expression);
@@ -38,11 +39,15 @@ impl Hash for DebugExpressionInfixOpcode {
     }
 }
 
+impl Eq for DebugExpressionInfixOpcode {}
+
 impl Hash for DebugExpressionPrefixOpcode {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(&self.0).hash(state);
     }
 }
+
+impl Eq for DebugExpressionPrefixOpcode {}
 
 impl fmt::Debug for DebugSignalType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
