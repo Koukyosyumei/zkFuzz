@@ -1059,6 +1059,25 @@ impl SymbolicExecutor {
         }
     }
 
+    pub fn concrete_execute(
+        &mut self,
+        id: &String,
+        assignment: &HashMap<String, BigInt>,
+        off_trace: bool,
+    ) {
+        for arg in &self.template_library[id].inputs {
+            let vname = format!("{}.{}", self.cur_state.get_owner(), arg.to_string());
+            self.cur_state.set_symval(
+                vname.clone(),
+                SymbolicValue::ConstantInt(assignment[&vname].clone()),
+            );
+        }
+
+        self.skip_initialization_blocks = true;
+        self.off_trace = off_trace;
+        self.execute(&self.template_library[id].body.clone(), 0);
+    }
+
     /// Evaluates a symbolic access expression, converting it into a `SymbolicAccess` value.
     ///
     /// # Arguments

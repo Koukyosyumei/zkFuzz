@@ -127,17 +127,7 @@ pub fn brute_force_search(
             } else if !is_satisfy_tc && is_satisfy_sc {
                 sexe.clear();
                 sexe.cur_state.set_owner("main".to_string());
-                for arg in &sexe.template_library[id].inputs {
-                    let vname = format!("{}.{}", sexe.cur_state.get_owner(), arg.to_string());
-                    sexe.cur_state.set_symval(
-                        vname.clone(),
-                        SymbolicValue::ConstantInt(assignment[&vname].clone()),
-                    );
-                }
-
-                sexe.skip_initialization_blocks = true;
-                sexe.off_trace = true;
-                sexe.execute(&sexe.template_library[id].body.clone(), 0);
+                sexe.concrete_execute(id, assignment, true);
 
                 let mut flag = false;
                 if sexe.final_states.len() > 0 {
