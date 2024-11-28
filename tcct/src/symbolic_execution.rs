@@ -1090,8 +1090,7 @@ impl SymbolicExecutor {
         match &symval {
             SymbolicValue::Variable(name) => {
                 if only_constatant_folding {
-                    let sv = self.cur_state.get_symval(&name).clone();
-                    if let Some(boxed_value) = sv {
+                    if let Some(boxed_value) = self.cur_state.get_symval(&name) {
                         if let SymbolicValue::ConstantInt(v) = *boxed_value.clone() {
                             return SymbolicValue::ConstantInt(v);
                         }
