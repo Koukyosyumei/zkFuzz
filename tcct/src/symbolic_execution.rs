@@ -6,6 +6,7 @@ use num_traits::Signed;
 use num_traits::{One, Zero};
 use std::cmp::max;
 use std::collections::HashMap;
+use std::collections::HashSet;
 use std::fmt;
 
 use program_structure::ast::{
@@ -358,6 +359,7 @@ pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<String>,
     pub inputs: Vec<String>,
     pub outputs: Vec<String>,
+    pub unrolled_outputs: HashSet<String>,
     pub var2type: HashMap<String, VariableType>,
     pub body: Vec<ExtendedStatement>,
 }
@@ -391,6 +393,7 @@ pub struct SymbolicComponent {
 /// * `prime` - A prime number used in computations.
 /// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
 /// * `max_depth` - Tracks maximum depth reached during execution.
+#[derive(Clone)]
 pub struct SymbolicExecutor {
     pub template_library: HashMap<String, Box<SymbolicTemplate>>,
     pub function_library: HashMap<String, Box<SymbolicFunction>>,
@@ -401,6 +404,7 @@ pub struct SymbolicExecutor {
     pub propagate_substitution: bool,
     pub skip_initialization_blocks: bool,
     pub off_trace: bool,
+    pub keep_track_unrolled_offset: bool,
     // states
     pub cur_state: SymbolicState,
     pub block_end_states: Vec<Box<SymbolicState>>,
@@ -426,6 +430,7 @@ impl SymbolicExecutor {
             block_end_states: Vec::new(),
             final_states: Vec::new(),
             max_depth: 0,
+            keep_track_unrolled_offset: true,
         }
     }
 
@@ -522,6 +527,7 @@ impl SymbolicExecutor {
             template_parameter_names: template_parameter_names.clone(),
             inputs: inputs,
             outputs: outputs,
+            unrolled_outputs: HashSet::new(),
             var2type: var2type,
             body: vec![
                 ExtendedStatement::DebugStatement(body),
@@ -838,6 +844,24 @@ impl SymbolicExecutor {
                                         .join("")
                                 )
                             };
+
+                            if self.keep_track_unrolled_offset {
+                                if self.template_library[&self.cur_state.template_id]
+                                    .var2type
+                                    .contains_key(&var.clone())
+                                {
+                                    if let VariableType::Signal(SignalType::Output, _) = self
+                                        .template_library[&self.cur_state.template_id]
+                                        .var2type[&var.clone()]
+                                    {
+                                        self.template_library
+                                            .get_mut(&self.cur_state.template_id)
+                                            .unwrap()
+                                            .unrolled_outputs
+                                            .insert(var_name.clone());
+                                    }
+                                }
+                            }
 
                             self.cur_state.set_symval(var_name.clone(), value.clone());
 
@@ -1312,11 +1336,10 @@ impl SymbolicExecutor {
                 access,
                 meta: _,
             } => {
-                if access.is_empty() {
-                    let resolved_name = format!("{}.{}", self.cur_state.get_owner(), name.clone());
-                    SymbolicValue::Variable(resolved_name)
+                let resolved_name = if access.is_empty() {
+                    format!("{}.{}", self.cur_state.get_owner(), name.clone())
                 } else {
-                    SymbolicValue::Variable(format!(
+                    format!(
                         "{}.{}{}",
                         self.cur_state.get_owner(),
                         name,
@@ -1326,8 +1349,9 @@ impl SymbolicExecutor {
                             .map(|debug_access| debug_access.to_string())
                             .collect::<Vec<_>>()
                             .join("")
-                    ))
-                }
+                    )
+                };
+                SymbolicValue::Variable(resolved_name)
             }
             Expression::InfixOp {
                 meta: _,

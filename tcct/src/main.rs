@@ -119,18 +119,9 @@ fn start() -> Result<(), ()> {
             let mut is_safe = true;
             if user_input.flag_search_counter_example {
                 println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
-                let mut sub_sexe = SymbolicExecutor::new(
-                    user_input.flag_propagate_substitution,
-                    BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                );
-                for (k, v) in program_archive.templates.clone().into_iter() {
-                    let body = simplify_statement(&v.get_body().clone());
-                    sub_sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
-                }
-                for (k, v) in program_archive.functions.clone().into_iter() {
-                    let body = simplify_statement(&v.get_body().clone());
-                    sub_sexe.register_function(k.clone(), body.clone(), v.get_name_of_params());
-                }
+                let mut sub_sexe = sexe.clone();
+                sub_sexe.clear();
+
                 let mut main_template_id = "";
                 match &program_archive.initial_template_call {
                     Expression::Call { id, args, .. } => {

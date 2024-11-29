@@ -127,15 +127,16 @@ pub fn brute_force_search(
             } else if !is_satisfy_tc && is_satisfy_sc {
                 sexe.clear();
                 sexe.cur_state.set_owner("main".to_string());
+                sexe.keep_track_unrolled_offset = false;
                 sexe.concrete_execute(id, assignment, true);
 
                 let mut flag = false;
                 if sexe.final_states.len() > 0 {
-                    for n in &sexe.template_library[id].outputs {
-                        let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
-                        let unboxed_value = sexe.final_states[0].values[&vname].clone();
+                    for vname in &sexe.template_library[id].unrolled_outputs {
+                        //let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
+                        let unboxed_value = sexe.final_states[0].values[&vname.clone()].clone();
                         if let SymbolicValue::ConstantInt(v) = *unboxed_value {
-                            if v != assignment[&vname] {
+                            if v != assignment[&vname.clone()] {
                                 flag = true;
                                 break;
                             }
