@@ -99,6 +99,11 @@ pub fn simplify_statement(statement: &Statement) -> Statement {
                 }
             }
         }
+        Statement::While { meta, cond, stmt } => Statement::While {
+            meta: meta.clone(),
+            cond: cond.clone(),
+            stmt: Box::new(simplify_statement(stmt)),
+        },
         Statement::Block { meta, stmts } => Statement::Block {
             meta: meta.clone(),
             stmts: stmts

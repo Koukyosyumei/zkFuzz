@@ -389,9 +389,7 @@ impl ExtendedStatement {
                     }
                     Ok(())
                 }
-                Statement::While {
-                    cond, stmt, meta, ..
-                } => {
+                Statement::While { cond, stmt, meta } => {
                     writeln!(
                         f,
                         "{}{}While{} (elem_id={}):",
