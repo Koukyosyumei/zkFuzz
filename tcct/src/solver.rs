@@ -127,7 +127,6 @@ pub fn brute_force_search(
             } else if !is_satisfy_tc && is_satisfy_sc {
                 sexe.clear();
                 sexe.cur_state.set_owner("main".to_string());
-                sexe.cur_state.template_id = id.to_string();
                 sexe.keep_track_unrolled_offset = false;
                 sexe.concrete_execute(id, assignment, true);
 

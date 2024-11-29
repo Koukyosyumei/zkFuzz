@@ -1104,6 +1104,7 @@ impl SymbolicExecutor {
         assignment: &HashMap<String, BigInt>,
         off_trace: bool,
     ) {
+        self.cur_state.template_id = id.to_string();
         for (vname, value) in assignment.into_iter() {
             self.cur_state
                 .set_symval(vname.clone(), SymbolicValue::ConstantInt(value.clone()));
