@@ -166,6 +166,12 @@ impl fmt::Debug for SymbolicValue {
             SymbolicValue::Call(name, args) => {
                 write!(f, "📞{}({:?})", name, args)
             }
+            SymbolicValue::Array(elems) => {
+                write!(f, "🧬 {:?}", elems)
+            }
+            SymbolicValue::UniformArray(elem, counts) => {
+                write!(f, "🧬 ({:?}, {:?})", elem, counts)
+            }
             _ => write!(f, "❓Unknown symbolic value"),
         }
     }
@@ -1344,6 +1350,26 @@ impl SymbolicExecutor {
                 let resolved_name = if access.is_empty() {
                     format!("{}.{}", self.cur_state.get_owner(), name.clone())
                 } else {
+                    let tmp_name = format!("{}.{}", self.cur_state.get_owner(), name);
+                    let sv = self.cur_state.get_symval(&tmp_name).cloned();
+                    let evaluated_access = access
+                        .iter()
+                        .map(|arg0: &Access| self.evaluate_access(&arg0.clone()))
+                        .collect::<Vec<_>>();
+
+                    if evaluated_access.len() == 1 && sv.is_some() {
+                        if let SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(a)) =
+                            &evaluated_access[0]
+                        {
+                            match *sv.unwrap().clone() {
+                                SymbolicValue::Array(values) => {
+                                    return values[a.to_usize().unwrap()].clone();
+                                }
+                                _ => {}
+                            }
+                        }
+                    }
+
                     format!(
                         "{}.{}{}",
                         self.cur_state.get_owner(),
