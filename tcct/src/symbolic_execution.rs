@@ -971,20 +971,24 @@ impl SymbolicExecutor {
                             match value {
                                 SymbolicValue::Call(callee_name, args) => {
                                     // Initializing the Template Component
-                                    let mut comp_inputs: HashMap<String, Option<SymbolicValue>> =
-                                        HashMap::new();
-                                    for inp_name in
-                                        &self.template_library[&callee_name].inputs.clone()
-                                    {
-                                        comp_inputs.insert(inp_name.clone(), None);
+                                    if self.template_library.contains_key(&callee_name) {
+                                        let mut comp_inputs: HashMap<
+                                            String,
+                                            Option<SymbolicValue>,
+                                        > = HashMap::new();
+                                        for inp_name in
+                                            &self.template_library[&callee_name].inputs.clone()
+                                        {
+                                            comp_inputs.insert(inp_name.clone(), None);
+                                        }
+                                        let c = SymbolicComponent {
+                                            template_name: callee_name.clone(),
+                                            args: args.clone(),
+                                            inputs: comp_inputs,
+                                            is_done: false,
+                                        };
+                                        self.components_store.insert(var.to_string(), c);
                                     }
-                                    let c = SymbolicComponent {
-                                        template_name: callee_name.clone(),
-                                        args: args.clone(),
-                                        inputs: comp_inputs,
-                                        is_done: false,
-                                    };
-                                    self.components_store.insert(var.to_string(), c);
                                 }
                                 _ => {
                                     if self.variable_types[var].0 != VariableType::Var {
