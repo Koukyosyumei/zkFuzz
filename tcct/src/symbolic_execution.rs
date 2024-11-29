@@ -694,63 +694,58 @@ impl SymbolicExecutor {
                                 self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
                             }
 
-                            if let Some(else_stmt) = else_case {
-                                let mut stack_states_if_true = self.block_end_states.clone();
-                                self.block_end_states = stack_states;
-                                let neg_evaled_condition =
-                                    if let SymbolicValue::ConstantBool(v) = evaled_condition {
-                                        SymbolicValue::ConstantBool(!v)
-                                    } else {
-                                        SymbolicValue::UnaryOp(
-                                            DebugExpressionPrefixOpcode(
-                                                ExpressionPrefixOpcode::BoolNot,
-                                            ),
-                                            Box::new(evaled_condition),
-                                        )
-                                    };
-                                let original_neg_evaled_condition =
-                                    if let SymbolicValue::ConstantBool(v) =
-                                        original_evaled_condition
-                                    {
-                                        SymbolicValue::ConstantBool(!v)
-                                    } else {
-                                        SymbolicValue::UnaryOp(
-                                            DebugExpressionPrefixOpcode(
-                                                ExpressionPrefixOpcode::BoolNot,
-                                            ),
-                                            Box::new(original_evaled_condition),
-                                        )
-                                    };
-                                if let SymbolicValue::ConstantBool(false) = neg_evaled_condition {
-                                    if !self.off_trace {
-                                        trace!(
-                                            "{}",
-                                            format!(
-                                                "(elem_id={}) 🚧 Unreachable `Else` Branch",
-                                                meta.elem_id
-                                            )
-                                            .yellow()
-                                        );
-                                    }
+                            let mut stack_states_if_true = self.block_end_states.clone();
+                            self.block_end_states = stack_states;
+                            let neg_evaled_condition = if let SymbolicValue::ConstantBool(v) =
+                                evaled_condition
+                            {
+                                SymbolicValue::ConstantBool(!v)
+                            } else {
+                                SymbolicValue::UnaryOp(
+                                    DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
+                                    Box::new(evaled_condition),
+                                )
+                            };
+                            let original_neg_evaled_condition =
+                                if let SymbolicValue::ConstantBool(v) = original_evaled_condition {
+                                    SymbolicValue::ConstantBool(!v)
                                 } else {
-                                    else_state.push_trace_constraint(&neg_evaled_condition);
-                                    else_state.push_side_constraint(&original_neg_evaled_condition);
-                                    else_state.set_depth(cur_depth + 1);
-                                    self.cur_state = else_state;
+                                    SymbolicValue::UnaryOp(
+                                        DebugExpressionPrefixOpcode(
+                                            ExpressionPrefixOpcode::BoolNot,
+                                        ),
+                                        Box::new(original_evaled_condition),
+                                    )
+                                };
+                            if let SymbolicValue::ConstantBool(false) = neg_evaled_condition {
+                                if !self.off_trace {
+                                    trace!(
+                                        "{}",
+                                        format!(
+                                            "(elem_id={}) 🚧 Unreachable `Else` Branch",
+                                            meta.elem_id
+                                        )
+                                        .yellow()
+                                    );
+                                }
+                            } else {
+                                else_state.push_trace_constraint(&neg_evaled_condition);
+                                else_state.push_side_constraint(&original_neg_evaled_condition);
+                                else_state.set_depth(cur_depth + 1);
+                                self.cur_state = else_state;
+                                if let Some(else_stmt) = else_case {
                                     self.execute(
                                         &vec![ExtendedStatement::DebugStatement(
                                             *else_stmt.clone(),
                                         )],
                                         0,
                                     );
-                                    self.expand_all_stack_states(
-                                        statements,
-                                        cur_bid + 1,
-                                        cur_depth,
-                                    );
+                                } else {
+                                    self.block_end_states = vec![Box::new(self.cur_state.clone())];
                                 }
-                                self.block_end_states.append(&mut stack_states_if_true);
+                                self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
                             }
+                            self.block_end_states.append(&mut stack_states_if_true);
                         }
                         Statement::While {
                             meta, cond, stmt, ..
@@ -900,6 +895,8 @@ impl SymbolicExecutor {
                                         );
 
                                         subse.template_library = self.template_library.clone();
+                                        subse.function_library = self.function_library.clone();
+                                        subse.function_counter = self.function_counter.clone();
                                         subse.cur_state.set_owner(format!(
                                             "{}.{}",
                                             self.cur_state.get_owner(),
@@ -1178,17 +1175,22 @@ impl SymbolicExecutor {
                             return SymbolicValue::ConstantInt(v);
                         }
                     }
-                    if self.template_library[&self.cur_state.template_id]
-                        .var2type
-                        .contains_key(&original_var_name.to_string())
+                    if self
+                        .template_library
+                        .contains_key(&self.cur_state.template_id)
                     {
-                        let typ = self.template_library[&self.cur_state.template_id].var2type
-                            [&original_var_name.to_string()]
-                            .clone();
-                        if let VariableType::Var = typ {
-                            return *self.cur_state.get_symval(&name).cloned().unwrap_or_else(
-                                || Box::new(SymbolicValue::Variable(name.to_string())),
-                            );
+                        if self.template_library[&self.cur_state.template_id]
+                            .var2type
+                            .contains_key(&original_var_name.to_string())
+                        {
+                            let typ = self.template_library[&self.cur_state.template_id].var2type
+                                [&original_var_name.to_string()]
+                                .clone();
+                            if let VariableType::Var = typ {
+                                return *self.cur_state.get_symval(&name).cloned().unwrap_or_else(
+                                    || Box::new(SymbolicValue::Variable(name.to_string())),
+                                );
+                            }
                         }
                     }
                     symval.clone()
