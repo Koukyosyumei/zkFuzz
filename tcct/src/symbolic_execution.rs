@@ -207,7 +207,7 @@ impl SymbolicAccess {
 #[derive(Clone)]
 pub struct SymbolicState {
     owner_name: String,
-    template_id: String,
+    pub template_id: String,
     depth: usize,
     pub values: HashMap<String, Box<SymbolicValue>>,
     pub trace_constraints: Vec<Box<SymbolicValue>>,
