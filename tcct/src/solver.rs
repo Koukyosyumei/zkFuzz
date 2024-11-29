@@ -284,22 +284,26 @@ fn evaluate_symbolic_value(
                     ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt((lv - rv) % prime),
                     ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt((lv * rv) % prime),
                     ExpressionInfixOpcode::Div => {
-                        let mut r = prime.clone();
-                        let mut new_r = rv.clone();
-                        if r.is_negative() {
-                            r += prime;
-                        }
-                        if new_r.is_negative() {
-                            new_r += prime;
-                        }
+                        if rv.is_zero() {
+                            SymbolicValue::ConstantInt(BigInt::zero())
+                        } else {
+                            let mut r = prime.clone();
+                            let mut new_r = rv.clone();
+                            if r.is_negative() {
+                                r += prime;
+                            }
+                            if new_r.is_negative() {
+                                new_r += prime;
+                            }
 
-                        let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
-                        rv_inv %= prime;
-                        if rv_inv.is_negative() {
-                            rv_inv += prime;
-                        }
+                            let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
+                            rv_inv %= prime;
+                            if rv_inv.is_negative() {
+                                rv_inv += prime;
+                            }
 
-                        SymbolicValue::ConstantInt((lv * rv_inv) % prime)
+                            SymbolicValue::ConstantInt((lv * rv_inv) % prime)
+                        }
                     }
                     ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
                     ExpressionInfixOpcode::Mod => SymbolicValue::ConstantInt(lv % rv),

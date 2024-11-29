@@ -1198,22 +1198,26 @@ impl SymbolicExecutor {
                                 SymbolicValue::ConstantInt((lv * rv) % self.prime.clone())
                             }
                             ExpressionInfixOpcode::Div => {
-                                let mut r = self.prime.clone();
-                                let mut new_r = rv.clone();
-                                if r.is_negative() {
-                                    r += self.prime.clone();
-                                }
-                                if new_r.is_negative() {
-                                    new_r += self.prime.clone();
-                                }
+                                if rv.is_zero() {
+                                    SymbolicValue::ConstantInt(BigInt::zero())
+                                } else {
+                                    let mut r = self.prime.clone();
+                                    let mut new_r = rv.clone();
+                                    if r.is_negative() {
+                                        r += self.prime.clone();
+                                    }
+                                    if new_r.is_negative() {
+                                        new_r += self.prime.clone();
+                                    }
 
-                                let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
-                                rv_inv %= self.prime.clone();
-                                if rv_inv.is_negative() {
-                                    rv_inv += self.prime.clone();
-                                }
+                                    let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
+                                    rv_inv %= self.prime.clone();
+                                    if rv_inv.is_negative() {
+                                        rv_inv += self.prime.clone();
+                                    }
 
-                                SymbolicValue::ConstantInt((lv * rv_inv) % self.prime.clone())
+                                    SymbolicValue::ConstantInt((lv * rv_inv) % self.prime.clone())
+                                }
                             }
                             ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
                             ExpressionInfixOpcode::Mod => SymbolicValue::ConstantInt(lv % rv),
