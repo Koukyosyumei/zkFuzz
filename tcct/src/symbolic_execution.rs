@@ -857,9 +857,12 @@ impl SymbolicExecutor {
                             };
 
                             if self.keep_track_unrolled_offset {
-                                if self.template_library[&self.cur_state.template_id]
-                                    .var2type
-                                    .contains_key(&var.clone())
+                                if self
+                                    .template_library
+                                    .contains_key(&self.cur_state.template_id)
+                                    && self.template_library[&self.cur_state.template_id]
+                                        .var2type
+                                        .contains_key(&var.clone())
                                 {
                                     if let VariableType::Signal(SignalType::Output, _) = self
                                         .template_library[&self.cur_state.template_id]
