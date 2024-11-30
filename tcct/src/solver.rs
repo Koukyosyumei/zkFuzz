@@ -1,10 +1,15 @@
 use colored::Colorize;
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
+use num_traits::Pow;
 use num_traits::Signed;
 use num_traits::{One, Zero};
 use std::collections::{HashMap, HashSet};
 use std::fmt;
+use std::io;
+use std::io::Write;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
 
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
@@ -108,6 +113,10 @@ pub fn brute_force_search(
 
     let mut assignment = HashMap::new();
 
+    let total_combinations = prime.pow(variables.len() as u32);
+    let current_iteration = Arc::new(AtomicUsize::new(0));
+    let progress_interval = 10000; // Update progress every 1000 iterations
+
     fn search(
         prime: &BigInt,
         id: &String,
@@ -117,8 +126,17 @@ pub fn brute_force_search(
         assignment: &mut HashMap<String, BigInt>,
         trace_constraints: &[Box<SymbolicValue>],
         side_constraints: &[Box<SymbolicValue>],
+        current_iteration: &Arc<AtomicUsize>,
+        total_combinations: &BigInt,
+        progress_interval: usize,
     ) -> VerificationResult {
         if index == variables.len() {
+            let iter = current_iteration.fetch_add(1, Ordering::SeqCst);
+            if iter % progress_interval == 0 {
+                print!("\rProgress: {} / {}", iter, total_combinations);
+                io::stdout().flush().unwrap();
+            }
+
             let is_satisfy_tc = evaluate_constraints(prime, trace_constraints, assignment);
             let is_satisfy_sc = evaluate_constraints(prime, side_constraints, assignment);
 
@@ -167,6 +185,9 @@ pub fn brute_force_search(
                 assignment,
                 trace_constraints,
                 side_constraints,
+                current_iteration,
+                total_combinations,
+                progress_interval,
             );
             if is_vulnerable(&result) {
                 return result;
@@ -186,7 +207,17 @@ pub fn brute_force_search(
         &mut assignment,
         &trace_constraints,
         &side_constraints,
+        &current_iteration,
+        &total_combinations,
+        progress_interval,
     );
+
+    println!(
+        "\nSearch completed. Total iterations: {} / {}",
+        current_iteration.load(Ordering::SeqCst),
+        total_combinations
+    );
+
     if is_vulnerable(&flag) {
         Some(CounterExample {
             flag: flag,

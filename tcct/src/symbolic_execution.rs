@@ -157,7 +157,9 @@ impl fmt::Debug for SymbolicValue {
                 | ExpressionInfixOpcode::ShiftR
                 | ExpressionInfixOpcode::BitAnd
                 | ExpressionInfixOpcode::BitOr
-                | ExpressionInfixOpcode::BitXor => {
+                | ExpressionInfixOpcode::BitXor
+                | ExpressionInfixOpcode::Div
+                | ExpressionInfixOpcode::IntDiv => {
                     write!(f, "({} {:?} {:?})", format!("{:?}", op).red(), lhs, rhs)
                 }
                 _ => write!(f, "({} {:?} {:?})", format!("{:?}", op).yellow(), lhs, rhs),
