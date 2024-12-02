@@ -126,6 +126,8 @@ fn start() -> Result<(), ()> {
                 sub_sexe.clear();
 
                 let mut main_template_id = "";
+                let mut template_param_names = Vec::new();
+                let mut template_param_values = Vec::new();
                 match &program_archive.initial_template_call {
                     Expression::Call { id, args, .. } => {
                         main_template_id = id;
@@ -135,6 +137,8 @@ fn start() -> Result<(), ()> {
                             .cur_state
                             .set_template_id(main_template_id.to_string());
                         if !user_input.flag_symbolic_template_params {
+                            template_param_names = template.get_name_of_params().clone();
+                            template_param_values = args.clone();
                             sub_sexe.feed_arguments(template.get_name_of_params(), args);
                         }
                     }
@@ -147,6 +151,9 @@ fn start() -> Result<(), ()> {
                         &mut sub_sexe,
                         &s.trace_constraints.clone(),
                         &s.side_constraints.clone(),
+                        true,
+                        &template_param_names,
+                        &template_param_values,
                     );
                     if counterexample.is_some() {
                         is_safe = false;

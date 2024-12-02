@@ -11,6 +11,7 @@ use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
+use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
 
@@ -102,6 +103,9 @@ pub fn brute_force_search(
     sexe: &mut SymbolicExecutor,
     trace_constraints: &Vec<Box<SymbolicValue>>,
     side_constraints: &Vec<Box<SymbolicValue>>,
+    quick_mode: bool,
+    template_param_names: &Vec<String>,
+    template_param_values: &Vec<Expression>,
 ) -> Option<CounterExample> {
     let mut trace_variables = extract_variables(trace_constraints);
     let mut side_variables = extract_variables(side_constraints);
@@ -127,6 +131,9 @@ pub fn brute_force_search(
         side_constraints: &[Box<SymbolicValue>],
         current_iteration: &Arc<AtomicUsize>,
         progress_interval: usize,
+        quick_mode: bool,
+        template_param_names: &Vec<String>,
+        template_param_values: &Vec<Expression>,
     ) -> VerificationResult {
         if index == variables.len() {
             let iter = current_iteration.fetch_add(1, Ordering::SeqCst);
@@ -144,6 +151,8 @@ pub fn brute_force_search(
                 sexe.clear();
                 sexe.cur_state.set_owner("main".to_string());
                 sexe.keep_track_unrolled_offset = false;
+                sexe.off_trace = true;
+                sexe.feed_arguments(template_param_names, template_param_values);
                 sexe.concrete_execute(id, assignment, true);
 
                 let mut flag = false;
@@ -171,26 +180,55 @@ pub fn brute_force_search(
         }
 
         let var = &variables[index];
-        let mut value = BigInt::zero();
-        while value < *prime {
-            assignment.insert(var.clone(), value.clone());
-            let result = search(
-                prime,
-                id,
-                sexe,
-                index + 1,
-                variables,
-                assignment,
-                trace_constraints,
-                side_constraints,
-                current_iteration,
-                progress_interval,
-            );
-            if is_vulnerable(&result) {
-                return result;
+        if quick_mode {
+            let candidates = vec![BigInt::zero(), BigInt::one(), -1 * BigInt::one()];
+            for c in candidates.into_iter() {
+                assignment.insert(var.clone(), c.clone());
+                let result = search(
+                    prime,
+                    id,
+                    sexe,
+                    index + 1,
+                    variables,
+                    assignment,
+                    trace_constraints,
+                    side_constraints,
+                    current_iteration,
+                    progress_interval,
+                    quick_mode,
+                    template_param_names,
+                    template_param_values,
+                );
+                if is_vulnerable(&result) {
+                    return result;
+                }
+                assignment.remove(var);
             }
-            assignment.remove(var);
-            value += BigInt::one();
+        } else {
+            let mut value = BigInt::zero();
+            while value < *prime {
+                assignment.insert(var.clone(), value.clone());
+                let result = search(
+                    prime,
+                    id,
+                    sexe,
+                    index + 1,
+                    variables,
+                    assignment,
+                    trace_constraints,
+                    side_constraints,
+                    current_iteration,
+                    progress_interval,
+                    quick_mode,
+                    template_param_names,
+                    template_param_values,
+                );
+                if is_vulnerable(&result) {
+                    return result;
+                }
+                assignment.remove(var);
+                value += BigInt::one();
+            }
         }
         VerificationResult::WellConstrained
     }
@@ -206,7 +244,18 @@ pub fn brute_force_search(
         &side_constraints,
         &current_iteration,
         progress_interval,
+        quick_mode,
+        template_param_names,
+        template_param_values,
     );
+
+    print!(
+        "\rProgress: {} / {}^{}",
+        current_iteration.load(Ordering::SeqCst),
+        prime,
+        variables.len()
+    );
+    io::stdout().flush().unwrap();
 
     println!(
         "\nSearch completed. Total iterations: {}",
