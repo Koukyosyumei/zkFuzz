@@ -113,7 +113,6 @@ pub fn brute_force_search(
 
     let mut assignment = HashMap::new();
 
-    let total_combinations = prime.pow(variables.len() as u32);
     let current_iteration = Arc::new(AtomicUsize::new(0));
     let progress_interval = 10000; // Update progress every 1000 iterations
 
@@ -127,13 +126,12 @@ pub fn brute_force_search(
         trace_constraints: &[Box<SymbolicValue>],
         side_constraints: &[Box<SymbolicValue>],
         current_iteration: &Arc<AtomicUsize>,
-        total_combinations: &BigInt,
         progress_interval: usize,
     ) -> VerificationResult {
         if index == variables.len() {
             let iter = current_iteration.fetch_add(1, Ordering::SeqCst);
             if iter % progress_interval == 0 {
-                print!("\rProgress: {} / {}", iter, total_combinations);
+                print!("\rProgress: {} / {}^{}", iter, prime, variables.len());
                 io::stdout().flush().unwrap();
             }
 
@@ -186,7 +184,6 @@ pub fn brute_force_search(
                 trace_constraints,
                 side_constraints,
                 current_iteration,
-                total_combinations,
                 progress_interval,
             );
             if is_vulnerable(&result) {
@@ -208,14 +205,12 @@ pub fn brute_force_search(
         &trace_constraints,
         &side_constraints,
         &current_iteration,
-        &total_combinations,
         progress_interval,
     );
 
     println!(
-        "\nSearch completed. Total iterations: {} / {}",
-        current_iteration.load(Ordering::SeqCst),
-        total_combinations
+        "\nSearch completed. Total iterations: {}",
+        current_iteration.load(Ordering::SeqCst)
     );
 
     if is_vulnerable(&flag) {
