@@ -269,7 +269,30 @@ pub fn adaptive_search(
             if is_satisfy_tc && !is_satisfy_sc {
                 return VerificationResult::OverConstrained;
             } else if !is_satisfy_tc && is_satisfy_sc {
-                return VerificationResult::UnderConstrained;
+                sexe.clear();
+                sexe.cur_state.set_owner("main".to_string());
+                sexe.keep_track_unrolled_offset = false;
+                sexe.concrete_execute(id, assignment, true);
+
+                let mut flag = false;
+                if sexe.final_states.len() > 0 {
+                    for vname in &sexe.template_library[id].unrolled_outputs {
+                        //let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
+                        let unboxed_value = sexe.final_states[0].values[&vname.clone()].clone();
+                        if let SymbolicValue::ConstantInt(v) = *unboxed_value {
+                            if v != assignment[&vname.clone()] {
+                                flag = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if flag {
+                    return VerificationResult::UnderConstrained;
+                } else {
+                    return VerificationResult::WellConstrained;
+                }
             } else {
                 return VerificationResult::WellConstrained;
             }
