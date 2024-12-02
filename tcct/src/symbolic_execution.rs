@@ -1149,13 +1149,13 @@ impl SymbolicExecutor {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                         match &infix_op.0 {
                             ExpressionInfixOpcode::Add => {
-                                SymbolicValue::ConstantInt((lv + rv) % self.prime.clone())
+                                SymbolicValue::ConstantInt((lv + rv) % &self.prime)
                             }
                             ExpressionInfixOpcode::Sub => {
-                                SymbolicValue::ConstantInt((lv - rv) % self.prime.clone())
+                                SymbolicValue::ConstantInt((lv - rv) % &self.prime)
                             }
                             ExpressionInfixOpcode::Mul => {
-                                SymbolicValue::ConstantInt((lv * rv) % self.prime.clone())
+                                SymbolicValue::ConstantInt((lv * rv) % &self.prime)
                             }
                             ExpressionInfixOpcode::Div => {
                                 if rv.is_zero() {
