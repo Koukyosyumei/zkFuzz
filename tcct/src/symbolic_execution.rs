@@ -1164,19 +1164,19 @@ impl SymbolicExecutor {
                                     let mut r = self.prime.clone();
                                     let mut new_r = rv.clone();
                                     if r.is_negative() {
-                                        r += self.prime.clone();
+                                        r += &self.prime;
                                     }
                                     if new_r.is_negative() {
-                                        new_r += self.prime.clone();
+                                        new_r += &self.prime;
                                     }
 
                                     let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
                                     rv_inv %= self.prime.clone();
                                     if rv_inv.is_negative() {
-                                        rv_inv += self.prime.clone();
+                                        rv_inv += &self.prime;
                                     }
 
-                                    SymbolicValue::ConstantInt((lv * rv_inv) % self.prime.clone())
+                                    SymbolicValue::ConstantInt((lv * rv_inv) % &self.prime)
                                 }
                             }
                             ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
@@ -1190,24 +1190,24 @@ impl SymbolicExecutor {
                             ExpressionInfixOpcode::ShiftR => {
                                 SymbolicValue::ConstantInt(lv >> rv.to_usize().unwrap())
                             }
-                            ExpressionInfixOpcode::Lesser => SymbolicValue::ConstantBool(
-                                lv % self.prime.clone() < rv % self.prime.clone(),
-                            ),
-                            ExpressionInfixOpcode::Greater => SymbolicValue::ConstantBool(
-                                lv % self.prime.clone() > rv % self.prime.clone(),
-                            ),
-                            ExpressionInfixOpcode::LesserEq => SymbolicValue::ConstantBool(
-                                lv % self.prime.clone() <= rv % self.prime.clone(),
-                            ),
-                            ExpressionInfixOpcode::GreaterEq => SymbolicValue::ConstantBool(
-                                lv % self.prime.clone() >= rv % self.prime.clone(),
-                            ),
-                            ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(
-                                lv % self.prime.clone() == rv % self.prime.clone(),
-                            ),
-                            ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(
-                                lv % self.prime.clone() != rv % self.prime.clone(),
-                            ),
+                            ExpressionInfixOpcode::Lesser => {
+                                SymbolicValue::ConstantBool(lv % &self.prime < rv % &self.prime)
+                            }
+                            ExpressionInfixOpcode::Greater => {
+                                SymbolicValue::ConstantBool(lv % &self.prime > rv % &self.prime)
+                            }
+                            ExpressionInfixOpcode::LesserEq => {
+                                SymbolicValue::ConstantBool(lv % &self.prime <= rv % &self.prime)
+                            }
+                            ExpressionInfixOpcode::GreaterEq => {
+                                SymbolicValue::ConstantBool(lv % &self.prime >= rv % &self.prime)
+                            }
+                            ExpressionInfixOpcode::Eq => {
+                                SymbolicValue::ConstantBool(lv % &self.prime == rv % &self.prime)
+                            }
+                            ExpressionInfixOpcode::NotEq => {
+                                SymbolicValue::ConstantBool(lv % &self.prime != rv % &self.prime)
+                            }
                             _ => SymbolicValue::BinaryOp(
                                 Box::new(lhs),
                                 infix_op.clone(),
@@ -1293,9 +1293,7 @@ impl SymbolicExecutor {
     /// A `SymbolicValue` representing the evaluated expression.
     fn evaluate_expression(&mut self, expr: &DebugExpression) -> SymbolicValue {
         match &expr {
-            DebugExpression::Number(_meta, value) => {
-                SymbolicValue::ConstantInt(value.clone() % self.prime.clone())
-            }
+            DebugExpression::Number(_meta, value) => SymbolicValue::ConstantInt(value.clone()),
             DebugExpression::Variable {
                 name,
                 access,
