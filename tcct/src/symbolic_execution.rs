@@ -15,8 +15,8 @@ use program_structure::ast::{
 };
 
 use crate::parser_user::{
-    DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugVariableType,
-    ExtendedStatement,
+    DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode,
+    DebugStatement, DebugVariableType,
 };
 use crate::utils::{extended_euclidean, italic};
 
@@ -374,14 +374,14 @@ pub struct SymbolicTemplate {
     pub outputs: Vec<String>,
     pub unrolled_outputs: HashSet<String>,
     pub var2type: HashMap<String, VariableType>,
-    pub body: Vec<ExtendedStatement>,
+    pub body: Vec<DebugStatement>,
 }
 
 /// Represents a symbolic function used in the symbolic execution process.
 #[derive(Default, Clone, Debug)]
 pub struct SymbolicFunction {
     pub function_argument_names: Vec<String>,
-    pub body: Vec<ExtendedStatement>,
+    pub body: Vec<DebugStatement>,
 }
 
 /// Represents a symbolic component used in the symbolic execution process.
@@ -481,7 +481,7 @@ impl SymbolicExecutor {
     // * 'args' : Vector containing expressions whose evaluated results will be assigned as argument values.
     pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
         for (n, a) in names.iter().zip(args.iter()) {
-            let evaled_a = self.evaluate_expression(&DebugExpression(a.clone()));
+            let evaled_a = self.evaluate_expression(&DebugExpression::from(a.clone()));
             self.cur_state.set_symval(
                 format!("{}.{}", self.cur_state.get_owner(), n.to_string()),
                 evaled_a,
@@ -542,10 +542,7 @@ impl SymbolicExecutor {
             outputs: outputs,
             unrolled_outputs: HashSet::new(),
             var2type: var2type,
-            body: vec![
-                ExtendedStatement::DebugStatement(body),
-                ExtendedStatement::Ret,
-            ],
+            body: vec![DebugStatement::from(body), DebugStatement::Ret],
         };
         self.template_library.insert(name, Box::new(template));
     }
@@ -560,10 +557,7 @@ impl SymbolicExecutor {
             name.clone(),
             Box::new(SymbolicFunction {
                 function_argument_names: function_argument_names.clone(),
-                body: vec![
-                    ExtendedStatement::DebugStatement(body),
-                    ExtendedStatement::Ret,
-                ],
+                body: vec![DebugStatement::from(body), DebugStatement::Ret],
             }),
         );
         self.function_counter.insert(name.clone(), 0_usize);
@@ -579,13 +573,13 @@ impl SymbolicExecutor {
     /// * `depth` - Current depth level in execution flow for tracking purposes.
     fn expand_all_stack_states(
         &mut self,
-        statements: &Vec<ExtendedStatement>,
+        statements: &Vec<DebugStatement>,
         cur_bid: usize,
         depth: usize,
     ) {
         let stack_states = self.block_end_states.clone();
         self.block_end_states.clear();
-        for state in &stack_states.clone() {
+        for state in &stack_states {
             self.cur_state = *state.clone();
             self.cur_state.set_depth(depth);
             self.execute(statements, cur_bid);
@@ -599,511 +593,455 @@ impl SymbolicExecutor {
     ///
     /// * `statements` - A vector of extended statements representing program logic to execute symbolically.
     /// * `cur_bid` - Current block index to start execution from.
-    pub fn execute(&mut self, statements: &Vec<ExtendedStatement>, cur_bid: usize) {
+    pub fn execute(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
         if cur_bid < statements.len() {
             self.max_depth = max(self.max_depth, self.cur_state.get_depth());
             match &statements[cur_bid] {
-                ExtendedStatement::DebugStatement(stmt) => {
-                    match stmt {
-                        Statement::InitializationBlock {
-                            initializations,
-                            xtype,
-                            ..
-                        } => {
-                            let mut is_input = false;
-                            if let VariableType::Signal(SignalType::Input, _taglist) = xtype.clone()
-                            {
-                                is_input = true;
-                            }
+                DebugStatement::InitializationBlock {
+                    initializations,
+                    xtype,
+                    ..
+                } => {
+                    let mut is_input = false;
+                    if let VariableType::Signal(SignalType::Input, _taglist) = xtype.clone() {
+                        is_input = true;
+                    }
 
-                            if !(self.skip_initialization_blocks && is_input) {
-                                for init in initializations {
-                                    self.execute(
-                                        &vec![ExtendedStatement::DebugStatement(init.clone())],
-                                        0,
-                                    );
-                                }
-                            }
-                            self.block_end_states = vec![Box::new(self.cur_state.clone())];
-                            self.expand_all_stack_states(
-                                statements,
-                                cur_bid + 1,
-                                self.cur_state.get_depth(),
-                            );
-                        }
-                        Statement::Block { meta, stmts, .. } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-                            self.execute(
-                                &stmts
-                                    .iter()
-                                    .map(|arg0: &Statement| {
-                                        ExtendedStatement::DebugStatement(arg0.clone())
-                                    })
-                                    .collect::<Vec<_>>(),
-                                0,
-                            );
-                            self.expand_all_stack_states(
-                                statements,
-                                cur_bid + 1,
-                                self.cur_state.get_depth(),
-                            );
-                        }
-                        Statement::IfThenElse {
-                            meta,
-                            cond,
-                            if_case,
-                            else_case,
-                            ..
-                        } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-                            let tmp_cond = self.evaluate_expression(&DebugExpression(cond.clone()));
-                            let original_evaled_condition = self.fold_variables(&tmp_cond, true);
-                            let evaled_condition =
-                                self.fold_variables(&tmp_cond, !self.propagate_substitution);
-
-                            // Save the current state
-                            let cur_depth = self.cur_state.get_depth();
-                            let stack_states = self.block_end_states.clone();
-
-                            // Create a branch in the symbolic state
-                            let mut if_state = self.cur_state.clone();
-                            let mut else_state = self.cur_state.clone();
-
-                            if let SymbolicValue::ConstantBool(false) = evaled_condition {
-                                if !self.off_trace {
-                                    trace!(
-                                        "{}",
-                                        format!(
-                                            "(elem_id={}) 🚧 Unreachable `Then` Branch",
-                                            meta.elem_id
-                                        )
-                                        .yellow()
-                                    );
-                                }
-                            } else {
-                                if_state.push_trace_constraint(&evaled_condition);
-                                if_state.push_side_constraint(&original_evaled_condition);
-                                if_state.set_depth(cur_depth + 1);
-                                self.cur_state = if_state.clone();
-                                self.execute(
-                                    &vec![ExtendedStatement::DebugStatement(*if_case.clone())],
-                                    0,
-                                );
-                                self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
-                            }
-
-                            let mut stack_states_if_true = self.block_end_states.clone();
-                            self.block_end_states = stack_states;
-                            let neg_evaled_condition = if let SymbolicValue::ConstantBool(v) =
-                                evaled_condition
-                            {
-                                SymbolicValue::ConstantBool(!v)
-                            } else {
-                                SymbolicValue::UnaryOp(
-                                    DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
-                                    Box::new(evaled_condition),
-                                )
-                            };
-                            let original_neg_evaled_condition =
-                                if let SymbolicValue::ConstantBool(v) = original_evaled_condition {
-                                    SymbolicValue::ConstantBool(!v)
-                                } else {
-                                    SymbolicValue::UnaryOp(
-                                        DebugExpressionPrefixOpcode(
-                                            ExpressionPrefixOpcode::BoolNot,
-                                        ),
-                                        Box::new(original_evaled_condition),
-                                    )
-                                };
-                            if let SymbolicValue::ConstantBool(false) = neg_evaled_condition {
-                                if !self.off_trace {
-                                    trace!(
-                                        "{}",
-                                        format!(
-                                            "(elem_id={}) 🚧 Unreachable `Else` Branch",
-                                            meta.elem_id
-                                        )
-                                        .yellow()
-                                    );
-                                }
-                            } else {
-                                else_state.push_trace_constraint(&neg_evaled_condition);
-                                else_state.push_side_constraint(&original_neg_evaled_condition);
-                                else_state.set_depth(cur_depth + 1);
-                                self.cur_state = else_state;
-                                if let Some(else_stmt) = else_case {
-                                    self.execute(
-                                        &vec![ExtendedStatement::DebugStatement(
-                                            *else_stmt.clone(),
-                                        )],
-                                        0,
-                                    );
-                                } else {
-                                    self.block_end_states = vec![Box::new(self.cur_state.clone())];
-                                }
-                                self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
-                            }
-                            self.block_end_states.append(&mut stack_states_if_true);
-                        }
-                        Statement::While {
-                            meta, cond, stmt, ..
-                        } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-                            // Symbolic execution of loops is complex. This is a simplified approach.
-                            let tmp_cond = self.evaluate_expression(&DebugExpression(cond.clone()));
-                            let evaled_condition =
-                                self.fold_variables(&tmp_cond, !self.propagate_substitution);
-
-                            if let SymbolicValue::ConstantBool(flag) = evaled_condition {
-                                if flag {
-                                    self.execute(
-                                        &vec![ExtendedStatement::DebugStatement(*stmt.clone())],
-                                        0,
-                                    );
-                                    self.block_end_states.pop();
-                                    self.execute(statements, cur_bid);
-                                } else {
-                                    self.block_end_states.push(Box::new(self.cur_state.clone()));
-                                }
-                            } else {
-                                panic!("This tool currently cannot handle the symbolic condition of While Loop: {:?}", evaled_condition);
-                            }
-
-                            self.expand_all_stack_states(
-                                statements,
-                                cur_bid + 1,
-                                self.cur_state.get_depth(),
-                            );
-                            // Note: This doesn't handle loop invariants or fixed-point computation
-                        }
-                        Statement::Return { meta, value, .. } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-                            let tmp_val = self.evaluate_expression(&DebugExpression(value.clone()));
-                            let return_value =
-                                self.fold_variables(&tmp_val, !self.propagate_substitution);
-                            // Handle return value (e.g., store in a special "return" variable)
-                            self.cur_state.set_symval(
-                                format!("{}.__return__", self.cur_state.get_owner()).to_string(),
-                                return_value,
-                            );
-                            self.execute(statements, cur_bid + 1);
-                        }
-                        Statement::Declaration {
-                            name,
-                            dimensions,
-                            xtype,
-                            ..
-                        } => {
-                            let var_name = if dimensions.is_empty() {
-                                format!("{}.{}", self.cur_state.get_owner(), name.clone())
-                            } else {
-                                //"todo".to_string()
-                                format!(
-                                    "{}.{}<{:?}>",
-                                    self.cur_state.get_owner(),
-                                    name,
-                                    &dimensions
-                                        .iter()
-                                        .map(|arg0: &Expression| DebugExpression(arg0.clone()))
-                                        .collect::<Vec<_>>()
-                                )
-                            };
-                            self.variable_types
-                                .insert(name.to_string(), DebugVariableType(xtype.clone()));
-                            let value = SymbolicValue::Variable(var_name.clone());
-                            self.cur_state.set_symval(var_name, value);
-                            self.execute(statements, cur_bid + 1);
-                        }
-                        Statement::Substitution {
-                            meta,
-                            var,
-                            access,
-                            op,
-                            rhe,
-                        } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-                            let expr = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                            let original_value = self.fold_variables(&expr, true);
-                            let value = self.fold_variables(&expr, !self.propagate_substitution);
-
-                            let var_name = if access.is_empty() {
-                                format!("{}.{}", self.cur_state.get_owner(), var.clone())
-                            } else {
-                                //format!("{}", var)
-                                format!(
-                                    "{}.{}{}",
-                                    self.cur_state.get_owner(),
-                                    var,
-                                    &access
-                                        .iter()
-                                        .map(|arg0: &Access| self.evaluate_access(&arg0.clone(),))
-                                        .map(|debug_access| debug_access.to_string())
-                                        .collect::<Vec<_>>()
-                                        .join("")
-                                )
-                            };
-
-                            if self.keep_track_unrolled_offset {
-                                if self
-                                    .template_library
-                                    .contains_key(&self.cur_state.template_id)
-                                    && self.template_library[&self.cur_state.template_id]
-                                        .var2type
-                                        .contains_key(&var.clone())
-                                {
-                                    if let VariableType::Signal(SignalType::Output, _) = self
-                                        .template_library[&self.cur_state.template_id]
-                                        .var2type[&var.clone()]
-                                    {
-                                        self.template_library
-                                            .get_mut(&self.cur_state.template_id)
-                                            .unwrap()
-                                            .unrolled_outputs
-                                            .insert(var_name.clone());
-                                    }
-                                }
-                            }
-
-                            self.cur_state.set_symval(var_name.clone(), value.clone());
-
-                            if !access.is_empty() {
-                                for acc in access {
-                                    if let Access::ComponentAccess(tmp_name) = acc {
-                                        if let Some(component) =
-                                            self.components_store.get_mut(var.as_str())
-                                        {
-                                            component
-                                                .inputs
-                                                .insert(tmp_name.clone(), Some(value.clone()));
-                                        }
-                                    }
-                                }
-
-                                if self.is_ready(var.to_string()) {
-                                    if !self.components_store[var].is_done {
-                                        let mut subse = SymbolicExecutor::new(
-                                            self.propagate_substitution,
-                                            self.prime.clone(),
-                                        );
-
-                                        subse.template_library = self.template_library.clone();
-                                        subse.function_library = self.function_library.clone();
-                                        subse.function_counter = self.function_counter.clone();
-                                        subse.cur_state.set_owner(format!(
-                                            "{}.{}",
-                                            self.cur_state.get_owner(),
-                                            var.clone()
-                                        ));
-
-                                        let templ = &self.template_library
-                                            [&self.components_store[var].template_name];
-                                        subse.cur_state.set_template_id(
-                                            self.components_store[var].template_name.clone(),
-                                        );
-
-                                        for i in 0..(templ.template_parameter_names.len()) {
-                                            subse.cur_state.set_symval(
-                                                format!(
-                                                    "{}.{}",
-                                                    subse.cur_state.get_owner(),
-                                                    templ.template_parameter_names[i]
-                                                ),
-                                                self.components_store[var].args[i].clone(),
-                                            );
-                                        }
-
-                                        for (k, v) in
-                                            self.components_store[var].inputs.clone().into_iter()
-                                        {
-                                            subse.cur_state.set_symval(
-                                                format!("{}.{}", subse.cur_state.get_owner(), k),
-                                                v.unwrap(),
-                                            );
-                                        }
-
-                                        if !self.off_trace {
-                                            trace!(
-                                                "{}",
-                                                format!("{}", "===========================").cyan()
-                                            );
-                                            trace!(
-                                                "📞 Call {}",
-                                                self.components_store[var].template_name
-                                            );
-                                        }
-
-                                        subse.execute(&templ.body, 0);
-
-                                        if subse.final_states.len() > 1 {
-                                            warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
-                                        }
-                                        let mut sub_trace_constraints =
-                                            subse.final_states[0].trace_constraints.clone();
-                                        let mut sub_side_constraints =
-                                            subse.final_states[0].side_constraints.clone();
-                                        self.cur_state
-                                            .trace_constraints
-                                            .append(&mut sub_trace_constraints);
-                                        self.cur_state
-                                            .side_constraints
-                                            .append(&mut sub_side_constraints);
-                                        if !self.off_trace {
-                                            trace!(
-                                                "{}",
-                                                format!("{}", "===========================").cyan()
-                                            );
-                                        }
-                                    }
-                                }
-                            }
-
-                            match value {
-                                SymbolicValue::Call(callee_name, args) => {
-                                    // Initializing the Template Component
-                                    if self.template_library.contains_key(&callee_name) {
-                                        let mut comp_inputs: HashMap<
-                                            String,
-                                            Option<SymbolicValue>,
-                                        > = HashMap::new();
-                                        for inp_name in
-                                            &self.template_library[&callee_name].inputs.clone()
-                                        {
-                                            comp_inputs.insert(inp_name.clone(), None);
-                                        }
-                                        let c = SymbolicComponent {
-                                            template_name: callee_name.clone(),
-                                            args: args.clone(),
-                                            inputs: comp_inputs,
-                                            is_done: false,
-                                        };
-                                        self.components_store.insert(var.to_string(), c);
-                                    }
-                                }
-                                _ => {
-                                    if self.variable_types[var].0 != VariableType::Var {
-                                        let cont = SymbolicValue::BinaryOp(
-                                            Box::new(SymbolicValue::Variable(var_name.clone())),
-                                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                            Box::new(value),
-                                        );
-                                        self.cur_state.push_trace_constraint(&cont);
-
-                                        if let AssignOp::AssignConstraintSignal = op {
-                                            let original_cont = SymbolicValue::BinaryOp(
-                                                Box::new(SymbolicValue::Variable(var_name.clone())),
-                                                DebugExpressionInfixOpcode(
-                                                    ExpressionInfixOpcode::Eq,
-                                                ),
-                                                Box::new(original_value),
-                                            );
-                                            self.cur_state.push_side_constraint(&original_cont);
-                                        }
-                                    }
-                                }
-                            }
-
-                            self.execute(statements, cur_bid + 1);
-                        }
-                        Statement::MultSubstitution {
-                            meta, lhe, op, rhe, ..
-                        } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-
-                            let lhe_val = self.evaluate_expression(&DebugExpression(lhe.clone()));
-                            let rhe_val = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                            let simple_lhs = self.fold_variables(&lhe_val, true);
-                            let lhs = self.fold_variables(&lhe_val, !self.propagate_substitution);
-                            let simple_rhs = self.fold_variables(&rhe_val, true);
-                            let rhs = self.fold_variables(&rhe_val, !self.propagate_substitution);
-
-                            // Handle multiple substitution (simplified)
-                            let cont = SymbolicValue::BinaryOp(
-                                Box::new(lhs),
-                                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                Box::new(rhs),
-                            );
-                            self.cur_state.push_trace_constraint(&cont);
-                            if let AssignOp::AssignConstraintSignal = op {
-                                // Handle multiple substitution (simplified)
-                                let simple_cont = SymbolicValue::BinaryOp(
-                                    Box::new(simple_lhs),
-                                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                    Box::new(simple_rhs),
-                                );
-                                self.cur_state.push_side_constraint(&simple_cont);
-                            }
-                            self.execute(statements, cur_bid + 1);
-                        }
-                        Statement::ConstraintEquality { meta, lhe, rhe } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-
-                            let lhe_val = self.evaluate_expression(&DebugExpression(lhe.clone()));
-                            let rhe_val = self.evaluate_expression(&DebugExpression(rhe.clone()));
-                            let original_lhs = self.fold_variables(&lhe_val, true);
-                            let lhs = self.fold_variables(&lhe_val, !self.propagate_substitution);
-                            let original_rhs = self.fold_variables(&rhe_val, true);
-                            let rhs = self.fold_variables(&rhe_val, !self.propagate_substitution);
-
-                            let original_cond = SymbolicValue::BinaryOp(
-                                Box::new(original_lhs),
-                                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                Box::new(original_rhs),
-                            );
-                            let cond = SymbolicValue::BinaryOp(
-                                Box::new(lhs),
-                                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                Box::new(rhs),
-                            );
-
-                            self.cur_state.push_trace_constraint(&cond);
-                            self.cur_state.push_side_constraint(&original_cond);
-
-                            self.execute(statements, cur_bid + 1);
-                        }
-                        Statement::Assert { meta, arg, .. } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-                            let expr = self.evaluate_expression(&DebugExpression(arg.clone()));
-                            let condition =
-                                self.fold_variables(&expr, !self.propagate_substitution);
-                            self.cur_state.push_trace_constraint(&condition);
-                            self.execute(statements, cur_bid + 1);
-                        }
-                        Statement::UnderscoreSubstitution {
-                            meta,
-                            op: _,
-                            rhe: _,
-                            ..
-                        } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-                            // Underscore substitution doesn't affect the symbolic state
-                        }
-                        Statement::LogCall { meta, args: _, .. } => {
-                            if !self.off_trace {
-                                trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
-                            }
-                            // Logging doesn't affect the symbolic state
+                    if !(self.skip_initialization_blocks && is_input) {
+                        for init in initializations {
+                            self.execute(&vec![init.clone()], 0);
                         }
                     }
+                    self.block_end_states = vec![Box::new(self.cur_state.clone())];
+                    self.expand_all_stack_states(
+                        statements,
+                        cur_bid + 1,
+                        self.cur_state.get_depth(),
+                    );
                 }
-                ExtendedStatement::Ret => {
+                DebugStatement::Block { meta, stmts, .. } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+                    self.execute(&stmts, 0);
+                    self.expand_all_stack_states(
+                        statements,
+                        cur_bid + 1,
+                        self.cur_state.get_depth(),
+                    );
+                }
+                DebugStatement::IfThenElse {
+                    meta,
+                    cond,
+                    if_case,
+                    else_case,
+                    ..
+                } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+                    let tmp_cond = self.evaluate_expression(cond);
+                    let original_evaled_condition = self.fold_variables(&tmp_cond, true);
+                    let evaled_condition =
+                        self.fold_variables(&tmp_cond, !self.propagate_substitution);
+
+                    // Save the current state
+                    let cur_depth = self.cur_state.get_depth();
+                    let stack_states = self.block_end_states.clone();
+
+                    // Create a branch in the symbolic state
+                    let mut if_state = self.cur_state.clone();
+                    let mut else_state = self.cur_state.clone();
+
+                    if let SymbolicValue::ConstantBool(false) = evaled_condition {
+                        if !self.off_trace {
+                            trace!(
+                                "{}",
+                                format!("(elem_id={}) 🚧 Unreachable `Then` Branch", meta.elem_id)
+                                    .yellow()
+                            );
+                        }
+                    } else {
+                        if_state.push_trace_constraint(&evaled_condition);
+                        if_state.push_side_constraint(&original_evaled_condition);
+                        if_state.set_depth(cur_depth + 1);
+                        self.cur_state = if_state.clone();
+                        self.execute(&vec![*if_case.clone()], 0);
+                        self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
+                    }
+
+                    let mut stack_states_if_true = self.block_end_states.clone();
+                    self.block_end_states = stack_states;
+                    let neg_evaled_condition =
+                        if let SymbolicValue::ConstantBool(v) = evaled_condition {
+                            SymbolicValue::ConstantBool(!v)
+                        } else {
+                            SymbolicValue::UnaryOp(
+                                DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
+                                Box::new(evaled_condition),
+                            )
+                        };
+                    let original_neg_evaled_condition =
+                        if let SymbolicValue::ConstantBool(v) = original_evaled_condition {
+                            SymbolicValue::ConstantBool(!v)
+                        } else {
+                            SymbolicValue::UnaryOp(
+                                DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
+                                Box::new(original_evaled_condition),
+                            )
+                        };
+                    if let SymbolicValue::ConstantBool(false) = neg_evaled_condition {
+                        if !self.off_trace {
+                            trace!(
+                                "{}",
+                                format!("(elem_id={}) 🚧 Unreachable `Else` Branch", meta.elem_id)
+                                    .yellow()
+                            );
+                        }
+                    } else {
+                        else_state.push_trace_constraint(&neg_evaled_condition);
+                        else_state.push_side_constraint(&original_neg_evaled_condition);
+                        else_state.set_depth(cur_depth + 1);
+                        self.cur_state = else_state;
+                        if let Some(else_stmt) = else_case {
+                            self.execute(&vec![*else_stmt.clone()], 0);
+                        } else {
+                            self.block_end_states = vec![Box::new(self.cur_state.clone())];
+                        }
+                        self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
+                    }
+                    self.block_end_states.append(&mut stack_states_if_true);
+                }
+                DebugStatement::While {
+                    meta, cond, stmt, ..
+                } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+                    // Symbolic execution of loops is complex. This is a simplified approach.
+                    let tmp_cond = self.evaluate_expression(cond);
+                    let evaled_condition =
+                        self.fold_variables(&tmp_cond, !self.propagate_substitution);
+
+                    if let SymbolicValue::ConstantBool(flag) = evaled_condition {
+                        if flag {
+                            self.execute(&vec![*stmt.clone()], 0);
+                            self.block_end_states.pop();
+                            self.execute(statements, cur_bid);
+                        } else {
+                            self.block_end_states.push(Box::new(self.cur_state.clone()));
+                        }
+                    } else {
+                        panic!("This tool currently cannot handle the symbolic condition of While Loop: {:?}", evaled_condition);
+                    }
+
+                    self.expand_all_stack_states(
+                        statements,
+                        cur_bid + 1,
+                        self.cur_state.get_depth(),
+                    );
+                    // Note: This doesn't handle loop invariants or fixed-point computation
+                }
+                DebugStatement::Return { meta, value, .. } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+                    let tmp_val = self.evaluate_expression(value);
+                    let return_value = self.fold_variables(&tmp_val, !self.propagate_substitution);
+                    // Handle return value (e.g., store in a special "return" variable)
+                    self.cur_state.set_symval(
+                        format!("{}.__return__", self.cur_state.get_owner()).to_string(),
+                        return_value,
+                    );
+                    self.execute(statements, cur_bid + 1);
+                }
+                DebugStatement::Declaration {
+                    name,
+                    dimensions,
+                    xtype,
+                    ..
+                } => {
+                    let var_name = if dimensions.is_empty() {
+                        format!("{}.{}", self.cur_state.get_owner(), name.clone())
+                    } else {
+                        //"todo".to_string()
+                        format!("{}.{}<{:?}>", self.cur_state.get_owner(), name, &dimensions)
+                    };
+                    self.variable_types
+                        .insert(name.to_string(), DebugVariableType(xtype.clone()));
+                    let value = SymbolicValue::Variable(var_name.clone());
+                    self.cur_state.set_symval(var_name, value);
+                    self.execute(statements, cur_bid + 1);
+                }
+                DebugStatement::Substitution {
+                    meta,
+                    var,
+                    access,
+                    op,
+                    rhe,
+                } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+                    let expr = self.evaluate_expression(rhe);
+                    let original_value = self.fold_variables(&expr, true);
+                    let value = self.fold_variables(&expr, !self.propagate_substitution);
+
+                    let var_name = if access.is_empty() {
+                        format!("{}.{}", self.cur_state.get_owner(), var.clone())
+                    } else {
+                        //format!("{}", var)
+                        format!(
+                            "{}.{}{}",
+                            self.cur_state.get_owner(),
+                            var,
+                            &access
+                                .iter()
+                                .map(|arg0: &Access| self.evaluate_access(&arg0.clone(),))
+                                .map(|debug_access| debug_access.to_string())
+                                .collect::<Vec<_>>()
+                                .join("")
+                        )
+                    };
+
+                    if self.keep_track_unrolled_offset {
+                        if self
+                            .template_library
+                            .contains_key(&self.cur_state.template_id)
+                            && self.template_library[&self.cur_state.template_id]
+                                .var2type
+                                .contains_key(&var.clone())
+                        {
+                            if let VariableType::Signal(SignalType::Output, _) = self
+                                .template_library[&self.cur_state.template_id]
+                                .var2type[&var.clone()]
+                            {
+                                self.template_library
+                                    .get_mut(&self.cur_state.template_id)
+                                    .unwrap()
+                                    .unrolled_outputs
+                                    .insert(var_name.clone());
+                            }
+                        }
+                    }
+
+                    self.cur_state.set_symval(var_name.clone(), value.clone());
+
+                    if !access.is_empty() {
+                        for acc in access {
+                            if let Access::ComponentAccess(tmp_name) = acc {
+                                if let Some(component) = self.components_store.get_mut(var.as_str())
+                                {
+                                    component
+                                        .inputs
+                                        .insert(tmp_name.clone(), Some(value.clone()));
+                                }
+                            }
+                        }
+
+                        if self.is_ready(var.to_string()) {
+                            if !self.components_store[var].is_done {
+                                let mut subse = SymbolicExecutor::new(
+                                    self.propagate_substitution,
+                                    self.prime.clone(),
+                                );
+
+                                subse.template_library = self.template_library.clone();
+                                subse.function_library = self.function_library.clone();
+                                subse.function_counter = self.function_counter.clone();
+                                subse.cur_state.set_owner(format!(
+                                    "{}.{}",
+                                    self.cur_state.get_owner(),
+                                    var.clone()
+                                ));
+
+                                let templ = &self.template_library
+                                    [&self.components_store[var].template_name];
+                                subse.cur_state.set_template_id(
+                                    self.components_store[var].template_name.clone(),
+                                );
+
+                                for i in 0..(templ.template_parameter_names.len()) {
+                                    subse.cur_state.set_symval(
+                                        format!(
+                                            "{}.{}",
+                                            subse.cur_state.get_owner(),
+                                            templ.template_parameter_names[i]
+                                        ),
+                                        self.components_store[var].args[i].clone(),
+                                    );
+                                }
+
+                                for (k, v) in self.components_store[var].inputs.clone().into_iter()
+                                {
+                                    subse.cur_state.set_symval(
+                                        format!("{}.{}", subse.cur_state.get_owner(), k),
+                                        v.unwrap(),
+                                    );
+                                }
+
+                                if !self.off_trace {
+                                    trace!(
+                                        "{}",
+                                        format!("{}", "===========================").cyan()
+                                    );
+                                    trace!("📞 Call {}", self.components_store[var].template_name);
+                                }
+
+                                subse.execute(&templ.body, 0);
+
+                                if subse.final_states.len() > 1 {
+                                    warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
+                                }
+                                let mut sub_trace_constraints =
+                                    subse.final_states[0].trace_constraints.clone();
+                                let mut sub_side_constraints =
+                                    subse.final_states[0].side_constraints.clone();
+                                self.cur_state
+                                    .trace_constraints
+                                    .append(&mut sub_trace_constraints);
+                                self.cur_state
+                                    .side_constraints
+                                    .append(&mut sub_side_constraints);
+                                if !self.off_trace {
+                                    trace!(
+                                        "{}",
+                                        format!("{}", "===========================").cyan()
+                                    );
+                                }
+                            }
+                        }
+                    }
+
+                    match value {
+                        SymbolicValue::Call(callee_name, args) => {
+                            // Initializing the Template Component
+                            if self.template_library.contains_key(&callee_name) {
+                                let mut comp_inputs: HashMap<String, Option<SymbolicValue>> =
+                                    HashMap::new();
+                                for inp_name in &self.template_library[&callee_name].inputs.clone()
+                                {
+                                    comp_inputs.insert(inp_name.clone(), None);
+                                }
+                                let c = SymbolicComponent {
+                                    template_name: callee_name.clone(),
+                                    args: args.clone(),
+                                    inputs: comp_inputs,
+                                    is_done: false,
+                                };
+                                self.components_store.insert(var.to_string(), c);
+                            }
+                        }
+                        _ => {
+                            if self.variable_types[var].0 != VariableType::Var {
+                                let cont = SymbolicValue::BinaryOp(
+                                    Box::new(SymbolicValue::Variable(var_name.clone())),
+                                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                    Box::new(value),
+                                );
+                                self.cur_state.push_trace_constraint(&cont);
+
+                                if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
+                                    let original_cont = SymbolicValue::BinaryOp(
+                                        Box::new(SymbolicValue::Variable(var_name.clone())),
+                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                        Box::new(original_value),
+                                    );
+                                    self.cur_state.push_side_constraint(&original_cont);
+                                }
+                            }
+                        }
+                    }
+
+                    self.execute(statements, cur_bid + 1);
+                }
+                DebugStatement::MultSubstitution {
+                    meta, lhe, op, rhe, ..
+                } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+
+                    let lhe_val = self.evaluate_expression(lhe);
+                    let rhe_val = self.evaluate_expression(rhe);
+                    let simple_lhs = self.fold_variables(&lhe_val, true);
+                    let lhs = self.fold_variables(&lhe_val, !self.propagate_substitution);
+                    let simple_rhs = self.fold_variables(&rhe_val, true);
+                    let rhs = self.fold_variables(&rhe_val, !self.propagate_substitution);
+
+                    // Handle multiple substitution (simplified)
+                    let cont = SymbolicValue::BinaryOp(
+                        Box::new(lhs),
+                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                        Box::new(rhs),
+                    );
+                    self.cur_state.push_trace_constraint(&cont);
+                    if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
+                        // Handle multiple substitution (simplified)
+                        let simple_cont = SymbolicValue::BinaryOp(
+                            Box::new(simple_lhs),
+                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                            Box::new(simple_rhs),
+                        );
+                        self.cur_state.push_side_constraint(&simple_cont);
+                    }
+                    self.execute(statements, cur_bid + 1);
+                }
+                DebugStatement::ConstraintEquality { meta, lhe, rhe } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+
+                    let lhe_val = self.evaluate_expression(lhe);
+                    let rhe_val = self.evaluate_expression(rhe);
+                    let original_lhs = self.fold_variables(&lhe_val, true);
+                    let lhs = self.fold_variables(&lhe_val, !self.propagate_substitution);
+                    let original_rhs = self.fold_variables(&rhe_val, true);
+                    let rhs = self.fold_variables(&rhe_val, !self.propagate_substitution);
+
+                    let original_cond = SymbolicValue::BinaryOp(
+                        Box::new(original_lhs),
+                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                        Box::new(original_rhs),
+                    );
+                    let cond = SymbolicValue::BinaryOp(
+                        Box::new(lhs),
+                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                        Box::new(rhs),
+                    );
+
+                    self.cur_state.push_trace_constraint(&cond);
+                    self.cur_state.push_side_constraint(&original_cond);
+
+                    self.execute(statements, cur_bid + 1);
+                }
+                DebugStatement::Assert { meta, arg, .. } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+                    let expr = self.evaluate_expression(&arg);
+                    let condition = self.fold_variables(&expr, !self.propagate_substitution);
+                    self.cur_state.push_trace_constraint(&condition);
+                    self.execute(statements, cur_bid + 1);
+                }
+                DebugStatement::UnderscoreSubstitution {
+                    meta,
+                    op: _,
+                    rhe: _,
+                    ..
+                } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+                    // Underscore substitution doesn't affect the symbolic state
+                }
+                DebugStatement::LogCall { meta, args: _, .. } => {
+                    if !self.off_trace {
+                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                    }
+                    // Logging doesn't affect the symbolic state
+                }
+                DebugStatement::Ret => {
                     if !self.off_trace {
                         trace!("{} {:?}", format!("{}", "🔙 Ret:").red(), self.cur_state);
                     }
@@ -1153,7 +1091,7 @@ impl SymbolicExecutor {
         match &access {
             Access::ComponentAccess(name) => SymbolicAccess::ComponentAccess(name.clone()),
             Access::ArrayAccess(expr) => {
-                let tmp_e = self.evaluate_expression(&DebugExpression(expr.clone()));
+                let tmp_e = self.evaluate_expression(&DebugExpression::from(expr.clone()));
                 SymbolicAccess::ArrayAccess(self.fold_variables(&tmp_e, false))
             }
         }
@@ -1354,11 +1292,11 @@ impl SymbolicExecutor {
     ///
     /// A `SymbolicValue` representing the evaluated expression.
     fn evaluate_expression(&mut self, expr: &DebugExpression) -> SymbolicValue {
-        match &expr.0 {
-            Expression::Number(_meta, value) => {
+        match &expr {
+            DebugExpression::Number(_meta, value) => {
                 SymbolicValue::ConstantInt(value.clone() % self.prime.clone())
             }
-            Expression::Variable {
+            DebugExpression::Variable {
                 name,
                 access,
                 meta: _,
@@ -1392,7 +1330,7 @@ impl SymbolicExecutor {
                         name,
                         &access
                             .iter()
-                            .map(|arg0: &Access| self.evaluate_access(&arg0.clone(),))
+                            .map(|arg0: &Access| self.evaluate_access(&arg0.clone()))
                             .map(|debug_access| debug_access.to_string())
                             .collect::<Vec<_>>()
                             .join("")
@@ -1400,78 +1338,62 @@ impl SymbolicExecutor {
                 };
                 SymbolicValue::Variable(resolved_name)
             }
-            Expression::InfixOp {
+            DebugExpression::InfixOp {
                 meta: _,
                 lhe,
                 infix_op,
                 rhe,
             } => {
-                let lhs = self.evaluate_expression(&DebugExpression(*lhe.clone()));
-                let rhs = self.evaluate_expression(&DebugExpression(*rhe.clone()));
-                SymbolicValue::BinaryOp(
-                    Box::new(lhs),
-                    DebugExpressionInfixOpcode(infix_op.clone()),
-                    Box::new(rhs),
-                )
+                let lhs = self.evaluate_expression(lhe);
+                let rhs = self.evaluate_expression(rhe);
+                SymbolicValue::BinaryOp(Box::new(lhs), infix_op.clone(), Box::new(rhs))
             }
-            Expression::PrefixOp {
+            DebugExpression::PrefixOp {
                 meta: _,
                 prefix_op,
                 rhe,
             } => {
-                let expr = self.evaluate_expression(&DebugExpression(*rhe.clone()));
-                SymbolicValue::UnaryOp(
-                    DebugExpressionPrefixOpcode(prefix_op.clone()),
-                    Box::new(expr),
-                )
+                let expr = self.evaluate_expression(rhe);
+                SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(expr))
             }
-            Expression::InlineSwitchOp {
+            DebugExpression::InlineSwitchOp {
                 meta: _,
                 cond,
                 if_true,
                 if_false,
             } => {
-                let condition = self.evaluate_expression(&DebugExpression(*cond.clone()));
-                let true_branch = self.evaluate_expression(&DebugExpression(*if_true.clone()));
-                let false_branch = self.evaluate_expression(&DebugExpression(*if_false.clone()));
+                let condition = self.evaluate_expression(cond);
+                let true_branch = self.evaluate_expression(if_true);
+                let false_branch = self.evaluate_expression(if_false);
                 SymbolicValue::Conditional(
                     Box::new(condition),
                     Box::new(true_branch),
                     Box::new(false_branch),
                 )
             }
-            Expression::ParallelOp { rhe, .. } => {
-                self.evaluate_expression(&DebugExpression(*rhe.clone()))
-            }
-            Expression::ArrayInLine { meta: _, values } => {
-                let elements = values
-                    .iter()
-                    .map(|v| self.evaluate_expression(&DebugExpression(v.clone())))
-                    .collect();
+            DebugExpression::ParallelOp { rhe, .. } => self.evaluate_expression(rhe),
+            DebugExpression::ArrayInLine { meta: _, values } => {
+                let elements = values.iter().map(|v| self.evaluate_expression(v)).collect();
                 SymbolicValue::Array(elements)
             }
-            Expression::Tuple { meta: _, values } => {
-                let elements = values
-                    .iter()
-                    .map(|v| self.evaluate_expression(&DebugExpression(v.clone())))
-                    .collect();
+            DebugExpression::Tuple { meta: _, values } => {
+                let elements = values.iter().map(|v| self.evaluate_expression(v)).collect();
                 SymbolicValue::Array(elements)
             }
-            Expression::UniformArray {
+            DebugExpression::UniformArray {
                 value, dimension, ..
             } => {
-                let evaluated_value = self.evaluate_expression(&DebugExpression(*value.clone()));
-                let evaluated_dimension =
-                    self.evaluate_expression(&DebugExpression(*dimension.clone()));
+                let evaluated_value = self.evaluate_expression(value);
+                let evaluated_dimension = self.evaluate_expression(dimension);
                 SymbolicValue::UniformArray(
                     Box::new(evaluated_value),
                     Box::new(evaluated_dimension),
                 )
             }
-            Expression::Call { id, args, .. } => {
+            DebugExpression::Call { id, args, .. } => {
                 let tmp_args: Vec<_> = args
                     .iter()
-                    .map(|arg| self.evaluate_expression(&DebugExpression(arg.clone())))
+                    .map(|arg| self.evaluate_expression(arg))
                     .collect();
                 let evaluated_args = tmp_args
                     .iter()

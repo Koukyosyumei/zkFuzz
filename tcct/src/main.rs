@@ -17,7 +17,7 @@ use std::env;
 use std::str::FromStr;
 use std::time;
 
-use parser_user::ExtendedStatement;
+use parser_user::DebugStatement;
 use program_structure::ast::Expression;
 use solver::{adaptive_search, brute_force_search};
 use symbolic_execution::{simplify_statement, SymbolicExecutor};
@@ -61,7 +61,7 @@ fn start() -> Result<(), ()> {
                 "{}{} {}{}",
                 BACK_GRAY_SCRIPT_BLACK, "🌳 AST Tree for", k, RESET
             );
-            println!("{:?}", ExtendedStatement::DebugStatement(body.clone()));
+            println!("{:?}", DebugStatement::from(body.clone()));
         }
     }
 
@@ -75,7 +75,7 @@ fn start() -> Result<(), ()> {
                 "{}{} {}{}",
                 BACK_GRAY_SCRIPT_BLACK, "🌴 AST Tree for", k, RESET
             );
-            println!("{:?}", ExtendedStatement::DebugStatement(body.clone()));
+            println!("{:?}", DebugStatement::from(body.clone()));
         }
     }
 
@@ -94,13 +94,7 @@ fn start() -> Result<(), ()> {
             if !user_input.flag_symbolic_template_params {
                 sexe.feed_arguments(template.get_name_of_params(), args);
             }
-            sexe.execute(
-                &vec![
-                    ExtendedStatement::DebugStatement(body),
-                    ExtendedStatement::Ret,
-                ],
-                0,
-            );
+            sexe.execute(&vec![DebugStatement::from(body), DebugStatement::Ret], 0);
 
             println!("===========================================================");
             let mut ts = ConstraintStatistics::new();

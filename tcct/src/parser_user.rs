@@ -1,3 +1,4 @@
+use num_bigint_dig::BigInt;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::mem;
@@ -6,6 +7,8 @@ use program_structure::abstract_syntax_tree::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
     Statement, VariableType,
 };
+use program_structure::ast::LogArgument;
+use program_structure::ast::Meta;
 use program_structure::constants::UsefulConstants;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
@@ -25,12 +28,318 @@ pub struct DebugAssignOp(pub AssignOp);
 pub struct DebugExpressionInfixOpcode(pub ExpressionInfixOpcode);
 #[derive(Clone, PartialEq)]
 pub struct DebugExpressionPrefixOpcode(pub ExpressionPrefixOpcode);
+
 #[derive(Clone)]
-pub struct DebugExpression(pub Expression);
+pub enum DebugExpression {
+    InfixOp {
+        meta: Meta,
+        lhe: Box<DebugExpression>,
+        infix_op: DebugExpressionInfixOpcode,
+        rhe: Box<DebugExpression>,
+    },
+    PrefixOp {
+        meta: Meta,
+        prefix_op: DebugExpressionPrefixOpcode,
+        rhe: Box<DebugExpression>,
+    },
+    InlineSwitchOp {
+        meta: Meta,
+        cond: Box<DebugExpression>,
+        if_true: Box<DebugExpression>,
+        if_false: Box<DebugExpression>,
+    },
+    ParallelOp {
+        meta: Meta,
+        rhe: Box<DebugExpression>,
+    },
+    Variable {
+        meta: Meta,
+        name: String,
+        access: Vec<Access>,
+    },
+    Number(Meta, BigInt),
+    Call {
+        meta: Meta,
+        id: String,
+        args: Vec<DebugExpression>,
+    },
+    BusCall {
+        meta: Meta,
+        id: String,
+        args: Vec<DebugExpression>,
+    },
+    AnonymousComp {
+        meta: Meta,
+        id: String,
+        is_parallel: bool,
+        params: Vec<DebugExpression>,
+        signals: Vec<DebugExpression>,
+        names: Option<Vec<(AssignOp, String)>>,
+    },
+    ArrayInLine {
+        meta: Meta,
+        values: Vec<DebugExpression>,
+    },
+    Tuple {
+        meta: Meta,
+        values: Vec<DebugExpression>,
+    },
+    UniformArray {
+        meta: Meta,
+        value: Box<DebugExpression>,
+        dimension: Box<DebugExpression>,
+    },
+}
+
 #[derive(Clone)]
-pub enum ExtendedStatement {
-    DebugStatement(Statement),
+pub enum DebugStatement {
+    IfThenElse {
+        meta: Meta,
+        cond: DebugExpression,
+        if_case: Box<DebugStatement>,
+        else_case: Option<Box<DebugStatement>>,
+    },
+    While {
+        meta: Meta,
+        cond: DebugExpression,
+        stmt: Box<DebugStatement>,
+    },
+    Return {
+        meta: Meta,
+        value: DebugExpression,
+    },
+    InitializationBlock {
+        meta: Meta,
+        xtype: VariableType,
+        initializations: Vec<DebugStatement>,
+    },
+    Declaration {
+        meta: Meta,
+        xtype: VariableType,
+        name: String,
+        dimensions: Vec<DebugExpression>,
+        is_constant: bool,
+    },
+    Substitution {
+        meta: Meta,
+        var: String,
+        access: Vec<Access>,
+        op: DebugAssignOp,
+        rhe: DebugExpression,
+    },
+    MultSubstitution {
+        meta: Meta,
+        lhe: DebugExpression,
+        op: DebugAssignOp,
+        rhe: DebugExpression,
+    },
+    UnderscoreSubstitution {
+        meta: Meta,
+        op: DebugAssignOp,
+        rhe: DebugExpression,
+    },
+    ConstraintEquality {
+        meta: Meta,
+        lhe: DebugExpression,
+        rhe: DebugExpression,
+    },
+    LogCall {
+        meta: Meta,
+        args: Vec<LogArgument>,
+    },
+    Block {
+        meta: Meta,
+        stmts: Vec<DebugStatement>,
+    },
+    Assert {
+        meta: Meta,
+        arg: DebugExpression,
+    },
     Ret,
+}
+
+impl From<Expression> for DebugExpression {
+    fn from(expr: Expression) -> Self {
+        match expr {
+            Expression::InfixOp {
+                meta,
+                lhe,
+                infix_op,
+                rhe,
+            } => DebugExpression::InfixOp {
+                meta,
+                lhe: Box::new((*lhe).into()),
+                infix_op: DebugExpressionInfixOpcode(infix_op),
+                rhe: Box::new((*rhe).into()),
+            },
+            Expression::PrefixOp {
+                meta,
+                prefix_op,
+                rhe,
+            } => DebugExpression::PrefixOp {
+                meta,
+                prefix_op: DebugExpressionPrefixOpcode(prefix_op),
+                rhe: Box::new((*rhe).into()),
+            },
+            Expression::InlineSwitchOp {
+                meta,
+                cond,
+                if_true,
+                if_false,
+            } => DebugExpression::InlineSwitchOp {
+                meta,
+                cond: Box::new((*cond).into()),
+                if_true: Box::new((*if_true).into()),
+                if_false: Box::new((*if_false).into()),
+            },
+            Expression::ParallelOp { meta, rhe } => DebugExpression::ParallelOp {
+                meta,
+                rhe: Box::new((*rhe).into()),
+            },
+            Expression::Variable { meta, name, access } => {
+                DebugExpression::Variable { meta, name, access }
+            }
+            Expression::Number(meta, value) => DebugExpression::Number(meta, value),
+            Expression::Call { meta, id, args } => DebugExpression::Call {
+                meta,
+                id,
+                args: args.into_iter().map(|arg| arg.into()).collect(),
+            },
+            Expression::BusCall { meta, id, args } => DebugExpression::BusCall {
+                meta,
+                id,
+                args: args.into_iter().map(|arg| arg.into()).collect(),
+            },
+            Expression::AnonymousComp {
+                meta,
+                id,
+                is_parallel,
+                params,
+                signals,
+                names,
+            } => DebugExpression::AnonymousComp {
+                meta,
+                id,
+                is_parallel,
+                params: params.into_iter().map(|p| p.into()).collect(),
+                signals: signals.into_iter().map(|s| s.into()).collect(),
+                names,
+            },
+            Expression::ArrayInLine { meta, values } => DebugExpression::ArrayInLine {
+                meta,
+                values: values.into_iter().map(|v| v.into()).collect(),
+            },
+            Expression::Tuple { meta, values } => DebugExpression::Tuple {
+                meta,
+                values: values.into_iter().map(|v| v.into()).collect(),
+            },
+            Expression::UniformArray {
+                meta,
+                value,
+                dimension,
+            } => DebugExpression::UniformArray {
+                meta,
+                value: Box::new((*value).into()),
+                dimension: Box::new((*dimension).into()),
+            },
+        }
+    }
+}
+
+impl From<Statement> for DebugStatement {
+    fn from(stmt: Statement) -> Self {
+        match stmt {
+            Statement::IfThenElse {
+                meta,
+                cond,
+                if_case,
+                else_case,
+            } => DebugStatement::IfThenElse {
+                meta,
+                cond: cond.into(),
+                if_case: Box::new((*if_case).into()),
+                else_case: else_case.map(|else_case| Box::new((*else_case).into())),
+            },
+            Statement::While { meta, cond, stmt } => DebugStatement::While {
+                meta,
+                cond: cond.into(),
+                stmt: Box::new((*stmt).into()),
+            },
+            Statement::Return { meta, value } => DebugStatement::Return {
+                meta,
+                value: value.into(),
+            },
+            Statement::InitializationBlock {
+                meta,
+                xtype,
+                initializations,
+            } => DebugStatement::InitializationBlock {
+                meta,
+                xtype,
+                initializations: initializations
+                    .into_iter()
+                    .map(|stmt| stmt.into())
+                    .collect(),
+            },
+            Statement::Declaration {
+                meta,
+                xtype,
+                name,
+                dimensions,
+                is_constant,
+            } => DebugStatement::Declaration {
+                meta,
+                xtype,
+                name,
+                dimensions: dimensions.into_iter().map(|dim| dim.into()).collect(),
+                is_constant,
+            },
+            Statement::Substitution {
+                meta,
+                var,
+                access,
+                op,
+                rhe,
+            } => DebugStatement::Substitution {
+                meta,
+                var,
+                access,
+                op: DebugAssignOp(op),
+                rhe: rhe.into(),
+            },
+            Statement::MultSubstitution { meta, lhe, op, rhe } => {
+                DebugStatement::MultSubstitution {
+                    meta,
+                    lhe: lhe.into(),
+                    op: DebugAssignOp(op),
+                    rhe: rhe.into(),
+                }
+            }
+            Statement::UnderscoreSubstitution { meta, op, rhe } => {
+                DebugStatement::UnderscoreSubstitution {
+                    meta,
+                    op: DebugAssignOp(op),
+                    rhe: rhe.into(),
+                }
+            }
+            Statement::ConstraintEquality { meta, lhe, rhe } => {
+                DebugStatement::ConstraintEquality {
+                    meta,
+                    lhe: lhe.into(),
+                    rhe: rhe.into(),
+                }
+            }
+            Statement::LogCall { meta, args } => DebugStatement::LogCall { meta, args },
+            Statement::Block { meta, stmts } => DebugStatement::Block {
+                meta,
+                stmts: stmts.into_iter().map(|stmt| stmt.into()).collect(),
+            },
+            Statement::Assert { meta, arg } => DebugStatement::Assert {
+                meta,
+                arg: arg.into(),
+            },
+        }
+    }
 }
 
 impl Hash for DebugExpressionInfixOpcode {
@@ -120,7 +429,7 @@ impl DebugAccess {
             }
             Access::ArrayAccess(expr) => {
                 writeln!(f, "{}ArrayAccess:", indentation)?;
-                DebugExpression(expr.clone()).pretty_fmt(f, indent + 2)
+                DebugExpression::from(expr.clone()).pretty_fmt(f, indent + 2)
             }
         }
     }
@@ -136,7 +445,7 @@ impl DebugAccess {
                 write!(
                     f,
                     "[{}]",
-                    format!("{:?}", DebugExpression(expr.clone()))
+                    format!("{:?}", DebugExpression::from(expr.clone()))
                         .replace("\n", "")
                         .replace("  ", " ")
                 )
@@ -198,7 +507,7 @@ impl fmt::Debug for DebugExpression {
     }
 }
 
-impl fmt::Debug for ExtendedStatement {
+impl fmt::Debug for DebugStatement {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.pretty_fmt(f, 0)
     }
@@ -215,62 +524,56 @@ const RED: &str = "\x1b[31m";
 impl DebugExpression {
     fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
         let indentation = "  ".repeat(indent);
-        match &self.0 {
-            Expression::Number(_, value) => {
+        match &self {
+            DebugExpression::Number(_, value) => {
                 writeln!(f, "{}{}Number:{} {}", indentation, BLUE, RESET, value)
             }
-            Expression::InfixOp {
+            DebugExpression::InfixOp {
                 lhe, infix_op, rhe, ..
             } => {
                 writeln!(f, "{}{}InfixOp:{}", indentation, GREEN, RESET)?;
                 writeln!(
                     f,
                     "{}  {}Operator:{} {:?}",
-                    indentation,
-                    CYAN,
-                    RESET,
-                    DebugExpressionInfixOpcode(*infix_op)
+                    indentation, CYAN, RESET, infix_op
                 )?;
                 writeln!(
                     f,
                     "{}  {}Left-Hand Expression:{}",
                     indentation, YELLOW, RESET
                 )?;
-                DebugExpression(*lhe.clone()).pretty_fmt(f, indent + 2)?;
+                (*lhe.clone()).pretty_fmt(f, indent + 2)?;
                 writeln!(
                     f,
                     "{}  {}Right-Hand Expression:{}",
                     indentation, YELLOW, RESET
                 )?;
-                DebugExpression(*rhe.clone()).pretty_fmt(f, indent + 2)
+                (*rhe.clone()).pretty_fmt(f, indent + 2)
             }
-            Expression::PrefixOp { prefix_op, rhe, .. } => {
+            DebugExpression::PrefixOp { prefix_op, rhe, .. } => {
                 writeln!(f, "{}{}PrefixOp:{}", indentation, GREEN, RESET)?;
                 writeln!(
                     f,
                     "{}  {}Operator:{} {:?}",
-                    indentation,
-                    CYAN,
-                    RESET,
-                    DebugExpressionPrefixOpcode(*prefix_op)
+                    indentation, CYAN, RESET, prefix_op
                 )?;
                 writeln!(
                     f,
                     "{}  {}Right-Hand Expression:{}",
                     indentation, YELLOW, RESET
                 )?;
-                DebugExpression(*rhe.clone()).pretty_fmt(f, indent + 2)
+                (*rhe.clone()).pretty_fmt(f, indent + 2)
             }
-            Expression::ParallelOp { rhe, .. } => {
+            DebugExpression::ParallelOp { rhe, .. } => {
                 writeln!(f, "{}ParallelOp", indentation)?;
                 writeln!(
                     f,
                     "{}  {}Right-Hand Expression:{}",
                     indentation, YELLOW, RESET
                 )?;
-                DebugExpression(*rhe.clone()).pretty_fmt(f, indent + 2)
+                (*rhe.clone()).pretty_fmt(f, indent + 2)
             }
-            Expression::Variable { name, access, .. } => {
+            DebugExpression::Variable { name, access, .. } => {
                 writeln!(f, "{}{}Variable:{}", indentation, BLUE, RESET)?;
                 writeln!(f, "{}  Name: {}", indentation, name)?;
                 writeln!(f, "{}  Access:", indentation)?;
@@ -279,7 +582,7 @@ impl DebugExpression {
                 }
                 Ok(())
             }
-            Expression::InlineSwitchOp {
+            DebugExpression::InlineSwitchOp {
                 cond: _,
                 if_true,
                 if_false,
@@ -287,54 +590,54 @@ impl DebugExpression {
             } => {
                 writeln!(f, "{}InlineSwitchOp:", indentation)?;
                 writeln!(f, "{}  if_true:", indentation)?;
-                DebugExpression(*if_true.clone()).pretty_fmt(f, indent + 2)?;
+                (*if_true.clone()).pretty_fmt(f, indent + 2)?;
                 writeln!(f, "{}  if_false:", indentation)?;
-                DebugExpression(*if_false.clone()).pretty_fmt(f, indent + 2)
+                (*if_false.clone()).pretty_fmt(f, indent + 2)
             }
-            Expression::Call { id, args, .. } => {
+            DebugExpression::Call { id, args, .. } => {
                 writeln!(f, "{}Call", indentation)?;
                 writeln!(f, "{}  id: {}", indentation, id)?;
                 writeln!(f, "{}  args:", indentation)?;
                 for arg0 in args {
-                    DebugExpression(arg0.clone()).pretty_fmt(f, indent + 2)?;
+                    (arg0.clone()).pretty_fmt(f, indent + 2)?;
                 }
                 Ok(())
             }
-            Expression::ArrayInLine { values, .. } => {
+            DebugExpression::ArrayInLine { values, .. } => {
                 writeln!(f, "{}ArrayInLine", indentation)?;
                 writeln!(f, "{}  values:", indentation)?;
                 for v in values {
-                    DebugExpression(v.clone()).pretty_fmt(f, indent + 2)?;
+                    (v.clone()).pretty_fmt(f, indent + 2)?;
                 }
                 Ok(())
             }
-            Expression::Tuple { values, .. } => {
+            DebugExpression::Tuple { values, .. } => {
                 writeln!(f, "{}Tuple", indentation)?;
                 writeln!(f, "{}  values:", indentation)?;
                 for v in values {
-                    DebugExpression(v.clone()).pretty_fmt(f, indent + 2)?;
+                    (v.clone()).pretty_fmt(f, indent + 2)?;
                 }
                 Ok(())
             }
-            Expression::UniformArray {
+            DebugExpression::UniformArray {
                 value, dimension, ..
             } => {
                 writeln!(f, "{}UniformArray", indentation)?;
                 writeln!(f, "{}  value:", indentation)?;
-                DebugExpression(*value.clone()).pretty_fmt(f, indent + 2)?;
+                (*value.clone()).pretty_fmt(f, indent + 2)?;
                 writeln!(f, "{}  dimension:", indentation)?;
-                DebugExpression(*dimension.clone()).pretty_fmt(f, indent + 2)
+                (*dimension.clone()).pretty_fmt(f, indent + 2)
             }
-            Expression::BusCall { id, args, .. } => {
+            DebugExpression::BusCall { id, args, .. } => {
                 writeln!(f, "{}BusCall", indentation)?;
                 writeln!(f, "{}  id:", id)?;
                 writeln!(f, "{}  args:", indentation)?;
                 for a in args {
-                    DebugExpression(a.clone()).pretty_fmt(f, indent + 2)?;
+                    (a.clone()).pretty_fmt(f, indent + 2)?;
                 }
                 Ok(())
             }
-            Expression::AnonymousComp {
+            DebugExpression::AnonymousComp {
                 id,
                 is_parallel,
                 params,
@@ -348,11 +651,11 @@ impl DebugExpression {
                 writeln!(f, "{}  is_parallel: {}", indentation, is_parallel)?;
                 writeln!(f, "{}  params:", indentation)?;
                 for p in params {
-                    DebugExpression(p.clone()).pretty_fmt(f, indent + 2)?;
+                    (p.clone()).pretty_fmt(f, indent + 2)?;
                 }
                 writeln!(f, "{}  signals:", indentation)?;
                 for s in signals {
-                    DebugExpression(s.clone()).pretty_fmt(f, indent + 2)?;
+                    (s.clone()).pretty_fmt(f, indent + 2)?;
                 }
                 Ok(())
             }
@@ -360,248 +663,222 @@ impl DebugExpression {
     }
 }
 
-impl ExtendedStatement {
+impl DebugStatement {
     fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
         let indentation = "  ".repeat(indent);
         match &self {
-            ExtendedStatement::DebugStatement(stmt) => match &stmt {
-                Statement::IfThenElse {
-                    cond,
-                    if_case,
-                    else_case,
-                    meta,
-                    ..
-                } => {
-                    writeln!(
-                        f,
-                        "{}{}IfThenElse{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(f, "{}  {}Condition:{}:", indentation, CYAN, RESET)?;
-                    DebugExpression(cond.clone()).pretty_fmt(f, indent + 2)?;
-                    writeln!(f, "{}  {}If Case:{}:", indentation, CYAN, RESET)?;
-                    ExtendedStatement::DebugStatement(*if_case.clone())
-                        .pretty_fmt(f, indent + 2)?;
-                    if let Some(else_case) = else_case {
-                        writeln!(f, "{}  {}Else Case:{}:", indentation, CYAN, RESET)?;
-                        ExtendedStatement::DebugStatement(*else_case.clone())
-                            .pretty_fmt(f, indent + 2)?;
-                    }
-                    Ok(())
+            DebugStatement::IfThenElse {
+                cond,
+                if_case,
+                else_case,
+                meta,
+                ..
+            } => {
+                writeln!(
+                    f,
+                    "{}{}IfThenElse{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(f, "{}  {}Condition:{}:", indentation, CYAN, RESET)?;
+                (cond.clone()).pretty_fmt(f, indent + 2)?;
+                writeln!(f, "{}  {}If Case:{}:", indentation, CYAN, RESET)?;
+                (*if_case.clone()).pretty_fmt(f, indent + 2)?;
+                if let Some(else_case) = else_case {
+                    writeln!(f, "{}  {}Else Case:{}:", indentation, CYAN, RESET)?;
+                    (*else_case.clone()).pretty_fmt(f, indent + 2)?;
                 }
-                Statement::While { cond, stmt, meta } => {
-                    writeln!(
-                        f,
-                        "{}{}While{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(f, "{}  {}Condition:{}:", indentation, CYAN, RESET)?;
-                    DebugExpression(cond.clone()).pretty_fmt(f, indent + 2)?;
-                    writeln!(f, "{}  {}Statement:{}:", indentation, CYAN, RESET)?;
-                    ExtendedStatement::DebugStatement(*stmt.clone()).pretty_fmt(f, indent + 2)
+                Ok(())
+            }
+            DebugStatement::While { cond, stmt, meta } => {
+                writeln!(
+                    f,
+                    "{}{}While{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(f, "{}  {}Condition:{}:", indentation, CYAN, RESET)?;
+                (cond.clone()).pretty_fmt(f, indent + 2)?;
+                writeln!(f, "{}  {}Statement:{}:", indentation, CYAN, RESET)?;
+                (*stmt.clone()).pretty_fmt(f, indent + 2)
+            }
+            DebugStatement::Return { value, meta, .. } => {
+                writeln!(
+                    f,
+                    "{}{}Return{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(f, "{}  {}Value:{}:", indentation, MAGENTA, RESET)?;
+                (value.clone()).pretty_fmt(f, indent + 2)
+            }
+            DebugStatement::Substitution {
+                var,
+                access,
+                op,
+                rhe,
+                meta,
+                ..
+            } => {
+                writeln!(
+                    f,
+                    "{}{}Substitution{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(f, "{}  {}Variable:{} {}", indentation, BLUE, RESET, var)?;
+                writeln!(f, "{}  {}Access:{}", indentation, MAGENTA, RESET)?;
+                for arg0 in access {
+                    DebugAccess(arg0.clone()).pretty_fmt(f, indent + 2)?;
                 }
-                Statement::Return { value, meta, .. } => {
-                    writeln!(
-                        f,
-                        "{}{}Return{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(f, "{}  {}Value:{}:", indentation, MAGENTA, RESET)?;
-                    DebugExpression(value.clone()).pretty_fmt(f, indent + 2)
-                }
-                Statement::Substitution {
-                    var,
-                    access,
-                    op,
-                    rhe,
-                    meta,
-                    ..
-                } => {
-                    writeln!(
-                        f,
-                        "{}{}Substitution{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(f, "{}  {}Variable:{} {}", indentation, BLUE, RESET, var)?;
-                    writeln!(f, "{}  {}Access:{}", indentation, MAGENTA, RESET)?;
-                    for arg0 in access {
-                        DebugAccess(arg0.clone()).pretty_fmt(f, indent + 2)?;
-                    }
-                    writeln!(
-                        f,
-                        "{}  {}Operation:{} {:?}",
-                        indentation,
-                        CYAN,
-                        RESET,
-                        DebugAssignOp(op.clone())
-                    )?;
-                    writeln!(
-                        f,
-                        "{}  {}Right-Hand Expression:{}:",
-                        indentation, YELLOW, RESET
-                    )?;
-                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                }
-                Statement::Block { stmts, meta, .. } => {
-                    writeln!(
-                        f,
-                        "{}{}Block{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
+                writeln!(f, "{}  {}Operation:{} {:?}", indentation, CYAN, RESET, op)?;
+                writeln!(
+                    f,
+                    "{}  {}Right-Hand Expression:{}:",
+                    indentation, YELLOW, RESET
+                )?;
+                (rhe.clone()).pretty_fmt(f, indent + 2)
+            }
+            DebugStatement::Block { stmts, meta, .. } => {
+                writeln!(
+                    f,
+                    "{}{}Block{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(
+                    f,
+                    "{}    {}-------------------------------{}",
+                    indentation, RED, RESET
+                )?;
+                for stmt in stmts {
+                    (stmt.clone()).pretty_fmt(f, indent + 2)?;
                     writeln!(
                         f,
                         "{}    {}-------------------------------{}",
                         indentation, RED, RESET
                     )?;
-                    for stmt in stmts {
-                        ExtendedStatement::DebugStatement(stmt.clone())
-                            .pretty_fmt(f, indent + 2)?;
-                        writeln!(
-                            f,
-                            "{}    {}-------------------------------{}",
-                            indentation, RED, RESET
-                        )?;
-                    }
-                    Ok(())
                 }
-                Statement::Assert { arg, meta, .. } => {
-                    writeln!(
-                        f,
-                        "{}{}Assert{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(f, "{}  {}Argument:{}:", indentation, YELLOW, RESET)?;
-                    DebugExpression(arg.clone()).pretty_fmt(f, indent + 2)
+                Ok(())
+            }
+            DebugStatement::Assert { arg, meta, .. } => {
+                writeln!(
+                    f,
+                    "{}{}Assert{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(f, "{}  {}Argument:{}:", indentation, YELLOW, RESET)?;
+                (arg.clone()).pretty_fmt(f, indent + 2)
+            }
+            DebugStatement::InitializationBlock {
+                meta,
+                xtype,
+                initializations,
+            } => {
+                writeln!(
+                    f,
+                    "{}{}InitializationBlock{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(
+                    f,
+                    "{}  {}Type:{} {:?}",
+                    indentation,
+                    CYAN,
+                    RESET,
+                    &DebugVariableType(xtype.clone())
+                )?;
+                writeln!(f, "{}  {}Initializations:{}", indentation, YELLOW, RESET)?;
+                for i in initializations {
+                    (i.clone()).pretty_fmt(f, indent + 2)?;
                 }
-                Statement::InitializationBlock {
-                    meta,
-                    xtype,
-                    initializations,
-                } => {
-                    writeln!(
-                        f,
-                        "{}{}InitializationBlock{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(
-                        f,
-                        "{}  {}Type:{} {:?}",
-                        indentation,
-                        CYAN,
-                        RESET,
-                        &DebugVariableType(xtype.clone())
-                    )?;
-                    writeln!(f, "{}  {}Initializations:{}", indentation, YELLOW, RESET)?;
-                    for i in initializations {
-                        ExtendedStatement::DebugStatement(i.clone()).pretty_fmt(f, indent + 2)?;
-                    }
-                    Ok(())
+                Ok(())
+            }
+            DebugStatement::Declaration {
+                meta,
+                xtype,
+                name,
+                dimensions,
+                is_constant,
+            } => {
+                writeln!(
+                    f,
+                    "{}{}Declaration{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(
+                    f,
+                    "{}  {}Type:{} {:?}",
+                    indentation,
+                    CYAN,
+                    RESET,
+                    &DebugVariableType(xtype.clone())
+                )?;
+                writeln!(f, "{}  {}Name:{} {}", indentation, MAGENTA, RESET, name)?;
+                writeln!(f, "{}  {}Dimensions:{}:", indentation, YELLOW, RESET)?;
+                for dim in dimensions {
+                    (dim.clone()).pretty_fmt(f, indent + 2)?;
                 }
-                Statement::Declaration {
-                    meta,
-                    xtype,
-                    name,
-                    dimensions,
-                    is_constant,
-                } => {
-                    writeln!(
-                        f,
-                        "{}{}Declaration{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(
-                        f,
-                        "{}  {}Type:{} {:?}",
-                        indentation,
-                        CYAN,
-                        RESET,
-                        &DebugVariableType(xtype.clone())
-                    )?;
-                    writeln!(f, "{}  {}Name:{} {}", indentation, MAGENTA, RESET, name)?;
-                    writeln!(f, "{}  {}Dimensions:{}:", indentation, YELLOW, RESET)?;
-                    for dim in dimensions {
-                        DebugExpression(dim.clone()).pretty_fmt(f, indent + 2)?;
-                    }
-                    writeln!(
-                        f,
-                        "{}  {}Is Constant:{} {}",
-                        indentation, CYAN, RESET, is_constant
-                    )
-                }
-                Statement::MultSubstitution {
-                    lhe, op, rhe, meta, ..
-                } => {
-                    writeln!(
-                        f,
-                        "{}{}MultSubstitution{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(
-                        f,
-                        "{}  {}Op:{} {:?}",
-                        indentation,
-                        CYAN,
-                        RESET,
-                        DebugAssignOp(op.clone())
-                    )?;
-                    writeln!(
-                        f,
-                        "{}  {}Left-Hand Expression:{}:",
-                        indentation, YELLOW, RESET
-                    )?;
-                    DebugExpression(lhe.clone()).pretty_fmt(f, indent + 2)?;
-                    writeln!(
-                        f,
-                        "{}  {}Right-Hand Expression:{}:",
-                        indentation, YELLOW, RESET
-                    )?;
-                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                }
-                Statement::UnderscoreSubstitution { op, rhe, meta, .. } => {
-                    writeln!(
-                        f,
-                        "{}{}UnderscoreSubstitution{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(
-                        f,
-                        "{}  {}Op:{} {:?}",
-                        indentation,
-                        CYAN,
-                        RESET,
-                        DebugAssignOp(op.clone())
-                    )?;
-                    writeln!(
-                        f,
-                        "{}  {}Right-Hand Expression:{}:",
-                        indentation, YELLOW, RESET
-                    )?;
-                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                }
-                Statement::ConstraintEquality { lhe, rhe, meta, .. } => {
-                    writeln!(
-                        f,
-                        "{}{}ConstraintEquality{} (elem_id={}):",
-                        indentation, GREEN, RESET, meta.elem_id
-                    )?;
-                    writeln!(
-                        f,
-                        "{}  {}Left-Hand Expression:{}:",
-                        indentation, YELLOW, RESET
-                    )?;
-                    DebugExpression(lhe.clone()).pretty_fmt(f, indent + 2)?;
-                    writeln!(
-                        f,
-                        "{}  {}Right-Hand Expression:{}:",
-                        indentation, YELLOW, RESET
-                    )?;
-                    DebugExpression(rhe.clone()).pretty_fmt(f, indent + 2)
-                }
-                Statement::LogCall { args: _, .. } => {
-                    writeln!(f, "{}{}LogCall{}", indentation, GREEN, RESET)
-                }
-            },
-            ExtendedStatement::Ret => writeln!(f, "{}{}Ret{}", indentation, BLUE, RESET),
+                writeln!(
+                    f,
+                    "{}  {}Is Constant:{} {}",
+                    indentation, CYAN, RESET, is_constant
+                )
+            }
+            DebugStatement::MultSubstitution {
+                lhe, op, rhe, meta, ..
+            } => {
+                writeln!(
+                    f,
+                    "{}{}MultSubstitution{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(f, "{}  {}Op:{} {:?}", indentation, CYAN, RESET, op)?;
+                writeln!(
+                    f,
+                    "{}  {}Left-Hand Expression:{}:",
+                    indentation, YELLOW, RESET
+                )?;
+                (lhe.clone()).pretty_fmt(f, indent + 2)?;
+                writeln!(
+                    f,
+                    "{}  {}Right-Hand Expression:{}:",
+                    indentation, YELLOW, RESET
+                )?;
+                (rhe.clone()).pretty_fmt(f, indent + 2)
+            }
+            DebugStatement::UnderscoreSubstitution { op, rhe, meta, .. } => {
+                writeln!(
+                    f,
+                    "{}{}UnderscoreSubstitution{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(f, "{}  {}Op:{} {:?}", indentation, CYAN, RESET, op)?;
+                writeln!(
+                    f,
+                    "{}  {}Right-Hand Expression:{}:",
+                    indentation, YELLOW, RESET
+                )?;
+                (rhe.clone()).pretty_fmt(f, indent + 2)
+            }
+            DebugStatement::ConstraintEquality { lhe, rhe, meta, .. } => {
+                writeln!(
+                    f,
+                    "{}{}ConstraintEquality{} (elem_id={}):",
+                    indentation, GREEN, RESET, meta.elem_id
+                )?;
+                writeln!(
+                    f,
+                    "{}  {}Left-Hand Expression:{}:",
+                    indentation, YELLOW, RESET
+                )?;
+                (lhe.clone()).pretty_fmt(f, indent + 2)?;
+                writeln!(
+                    f,
+                    "{}  {}Right-Hand Expression:{}:",
+                    indentation, YELLOW, RESET
+                )?;
+                (rhe.clone()).pretty_fmt(f, indent + 2)
+            }
+            DebugStatement::LogCall { args: _, .. } => {
+                writeln!(f, "{}{}LogCall{}", indentation, GREEN, RESET)
+            }
+            DebugStatement::Ret => writeln!(f, "{}{}Ret{}", indentation, BLUE, RESET),
         }
     }
 }
