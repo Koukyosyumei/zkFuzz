@@ -20,7 +20,7 @@ use std::time;
 
 use parser_user::DebugStatement;
 use program_structure::ast::Expression;
-use solver::{adaptive_search, brute_force_search};
+use solver::brute_force_search;
 use symbolic_execution::{register_library, simplify_statement, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -141,13 +141,12 @@ fn start() -> Result<(), ()> {
                     _ => unimplemented!(),
                 }
                 for s in &sexe.final_states {
-                    let counterexample = adaptive_search(
+                    let counterexample = brute_force_search(
                         BigInt::from_str(&user_input.debug_prime()).unwrap(),
                         main_template_id.to_string(),
                         &mut sub_sexe,
                         &s.trace_constraints.clone(),
                         &s.side_constraints.clone(),
-                        BigInt::from_str("2").unwrap(),
                     );
                     if counterexample.is_some() {
                         is_safe = false;

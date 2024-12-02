@@ -510,12 +510,15 @@ impl SymbolicExecutor {
     }
 
     pub fn clear(&mut self) {
-        self.function_counter.clear();
         self.components_store.clear();
         self.cur_state = SymbolicState::new();
         self.block_end_states.clear();
         self.final_states.clear();
         self.max_depth = 0;
+
+        for (k, _) in self.function_library.clone().into_iter() {
+            self.function_counter.insert(k, 0_usize);
+        }
     }
 
     // Checks if a component is ready based on its inputs being fully specified.
