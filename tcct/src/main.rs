@@ -13,6 +13,7 @@ use input_user::Input;
 use log::{error, info, warn};
 use num_bigint_dig::BigInt;
 use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
+use std::collections::HashMap;
 use std::env;
 use std::str::FromStr;
 use std::time;
@@ -20,7 +21,7 @@ use std::time;
 use parser_user::DebugStatement;
 use program_structure::ast::Expression;
 use solver::{adaptive_search, brute_force_search};
-use symbolic_execution::{simplify_statement, SymbolicExecutor};
+use symbolic_execution::{register_library, simplify_statement, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";
@@ -46,15 +47,17 @@ fn start() -> Result<(), ()> {
 
     env_logger::init();
 
-    let mut sexe = SymbolicExecutor::new(
-        user_input.flag_propagate_substitution,
-        BigInt::from_str(&user_input.debug_prime()).unwrap(),
-    );
+    let mut template_library = HashMap::new();
 
     println!("{}", Colour::Green.paint("🧩 Parsing Templates..."));
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
-        sexe.register_library(k.clone(), body.clone(), v.get_name_of_params());
+        register_library(
+            &mut template_library,
+            k.clone(),
+            &body.clone(),
+            v.get_name_of_params(),
+        );
 
         if user_input.flag_printout_ast {
             println!(
@@ -64,6 +67,12 @@ fn start() -> Result<(), ()> {
             println!("{:?}", DebugStatement::from(body.clone()));
         }
     }
+
+    let mut sexe = SymbolicExecutor::new(
+        Box::new(template_library.clone()),
+        user_input.flag_propagate_substitution,
+        BigInt::from_str(&user_input.debug_prime()).unwrap(),
+    );
 
     println!("{}", Colour::Green.paint("⚙️ Parsing Function..."));
     for (k, v) in program_archive.functions.clone().into_iter() {

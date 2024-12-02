@@ -393,6 +393,64 @@ pub struct SymbolicComponent {
     pub is_done: bool,
 }
 
+// Registers library template by extracting input signals from block statement body provided along with template parameter names list.
+//
+// # Arguments
+//
+// * 'name' : Name under which template will be registered within library .
+// * 'body' : Block statement serving as main logic body defining behavior captured by template .
+// * 'template_parameter_names': List containing names identifying parameters used within template logic .
+pub fn register_library(
+    template_library: &mut HashMap<String, Box<SymbolicTemplate>>,
+    name: String,
+    body: &Statement,
+    template_parameter_names: &Vec<String>,
+) {
+    let mut inputs: Vec<String> = vec![];
+    let mut outputs: Vec<String> = vec![];
+    let mut var2type: HashMap<String, VariableType> = HashMap::new();
+    match body {
+        Statement::Block { stmts, .. } => {
+            for s in stmts {
+                if let Statement::InitializationBlock {
+                    initializations, ..
+                } = s.clone()
+                {
+                    for init in initializations {
+                        if let Statement::Declaration { name, xtype, .. } = init.clone() {
+                            var2type.insert(name.clone(), xtype.clone());
+                            if let VariableType::Signal(typ, _taglist) = xtype.clone() {
+                                match typ {
+                                    SignalType::Input => {
+                                        inputs.push(name);
+                                    }
+                                    SignalType::Output => {
+                                        outputs.push(name);
+                                    }
+                                    SignalType::Intermediate => {}
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        _ => {
+            warn!("Cannot Find Block Statement");
+        }
+    }
+
+    let template = SymbolicTemplate {
+        template_parameter_names: template_parameter_names.clone(),
+        inputs: inputs,
+        outputs: outputs,
+        unrolled_outputs: HashSet::new(),
+        var2type: var2type,
+        body: vec![DebugStatement::from(body.clone()), DebugStatement::Ret],
+    };
+    template_library.insert(name, Box::new(template));
+}
+
 /// Executes symbolic execution on a series of statements while maintaining multiple states.
 /// It handles branching logic and updates constraints accordingly during execution flow.
 ///
@@ -408,7 +466,7 @@ pub struct SymbolicComponent {
 /// * `max_depth` - Tracks maximum depth reached during execution.
 #[derive(Clone)]
 pub struct SymbolicExecutor {
-    pub template_library: HashMap<String, Box<SymbolicTemplate>>,
+    pub template_library: Box<HashMap<String, Box<SymbolicTemplate>>>,
     pub function_library: HashMap<String, Box<SymbolicFunction>>,
     pub function_counter: HashMap<String, usize>,
     pub components_store: HashMap<String, SymbolicComponent>,
@@ -428,9 +486,13 @@ pub struct SymbolicExecutor {
 
 impl SymbolicExecutor {
     /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
-    pub fn new(propagate_substitution: bool, prime: BigInt) -> Self {
+    pub fn new(
+        template_library: Box<HashMap<String, Box<SymbolicTemplate>>>,
+        propagate_substitution: bool,
+        prime: BigInt,
+    ) -> Self {
         SymbolicExecutor {
-            template_library: HashMap::new(),
+            template_library: template_library,
             function_library: HashMap::new(),
             function_counter: HashMap::new(),
             components_store: HashMap::new(),
@@ -487,64 +549,6 @@ impl SymbolicExecutor {
                 evaled_a,
             );
         }
-    }
-
-    // Registers library template by extracting input signals from block statement body provided along with template parameter names list.
-    //
-    // # Arguments
-    //
-    // * 'name' : Name under which template will be registered within library .
-    // * 'body' : Block statement serving as main logic body defining behavior captured by template .
-    // * 'template_parameter_names': List containing names identifying parameters used within template logic .
-    pub fn register_library(
-        &mut self,
-        name: String,
-        body: Statement,
-        template_parameter_names: &Vec<String>,
-    ) {
-        let mut inputs: Vec<String> = vec![];
-        let mut outputs: Vec<String> = vec![];
-        let mut var2type: HashMap<String, VariableType> = HashMap::new();
-        match &body {
-            Statement::Block { stmts, .. } => {
-                for s in stmts {
-                    if let Statement::InitializationBlock {
-                        initializations, ..
-                    } = s.clone()
-                    {
-                        for init in initializations {
-                            if let Statement::Declaration { name, xtype, .. } = init.clone() {
-                                var2type.insert(name.clone(), xtype.clone());
-                                if let VariableType::Signal(typ, _taglist) = xtype.clone() {
-                                    match typ {
-                                        SignalType::Input => {
-                                            inputs.push(name);
-                                        }
-                                        SignalType::Output => {
-                                            outputs.push(name);
-                                        }
-                                        SignalType::Intermediate => {}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            _ => {
-                warn!("Cannot Find Block Statement");
-            }
-        }
-
-        let template = SymbolicTemplate {
-            template_parameter_names: template_parameter_names.clone(),
-            inputs: inputs,
-            outputs: outputs,
-            unrolled_outputs: HashSet::new(),
-            var2type: var2type,
-            body: vec![DebugStatement::from(body), DebugStatement::Ret],
-        };
-        self.template_library.insert(name, Box::new(template));
     }
 
     pub fn register_function(
@@ -842,6 +846,7 @@ impl SymbolicExecutor {
                         if self.is_ready(var.to_string()) {
                             if !self.components_store[var].is_done {
                                 let mut subse = SymbolicExecutor::new(
+                                    self.template_library.clone(),
                                     self.propagate_substitution,
                                     self.prime.clone(),
                                 );
@@ -1400,16 +1405,21 @@ impl SymbolicExecutor {
                 if self.template_library.contains_key(id) {
                     SymbolicValue::Call(id.clone(), evaluated_args)
                 } else if self.function_library.contains_key(id) {
-                    let mut subse =
-                        SymbolicExecutor::new(self.propagate_substitution, self.prime.clone());
+                    let mut subse = SymbolicExecutor::new(
+                        self.template_library.clone(),
+                        self.propagate_substitution,
+                        self.prime.clone(),
+                    );
                     subse.cur_state.set_owner(format!(
                         "{}.{}.{}",
                         self.cur_state.get_owner(),
                         id.clone(),
                         self.function_counter[id]
                     ));
-                    subse.template_library = self.template_library.clone();
+                    //subse.template_library = self.template_library.clone();
                     subse.function_library = self.function_library.clone();
+                    self.function_counter
+                        .insert(id.to_string(), self.function_counter[id] + 1);
                     subse.function_counter = self.function_counter.clone();
 
                     let func = &self.function_library[id];
@@ -1446,8 +1456,7 @@ impl SymbolicExecutor {
                         trace!("{}", format!("{}", "===========================").cyan());
                     }
 
-                    self.function_counter
-                        .insert(id.to_string(), self.function_counter[id] + 1);
+                    self.function_counter = subse.function_counter.clone();
 
                     *subse.final_states[0].values
                         [&format!("{}.__return__", subse.final_states[0].get_owner()).to_string()]
