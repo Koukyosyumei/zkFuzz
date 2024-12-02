@@ -794,13 +794,11 @@ impl SymbolicExecutor {
                     let original_value = self.fold_variables(&expr, true);
                     let value = self.fold_variables(&expr, !self.propagate_substitution);
 
-                    let var_name = if access.is_empty() {
-                        format!("{}.{}", self.cur_state.get_owner(), var.clone())
+                    let accessed_name = if access.is_empty() {
+                        var.clone()
                     } else {
-                        //format!("{}", var)
                         format!(
-                            "{}.{}{}",
-                            self.cur_state.get_owner(),
+                            "{}{}",
                             var,
                             &access
                                 .iter()
@@ -810,6 +808,8 @@ impl SymbolicExecutor {
                                 .join("")
                         )
                     };
+                    let var_name =
+                        format!("{}.{}", self.cur_state.get_owner(), accessed_name.clone());
 
                     if self.keep_track_unrolled_offset {
                         if self
@@ -937,7 +937,7 @@ impl SymbolicExecutor {
                                     inputs: comp_inputs,
                                     is_done: false,
                                 };
-                                self.components_store.insert(var.to_string(), c);
+                                self.components_store.insert(accessed_name.to_string(), c);
                             }
                         }
                         _ => {
