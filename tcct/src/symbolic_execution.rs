@@ -1451,14 +1451,14 @@ impl SymbolicExecutor {
                     if subse.final_states.len() > 1 {
                         warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
                     }
-                    let mut sub_trace_constraints = subse.final_states[0].trace_constraints.clone();
-                    let mut sub_side_constraints = subse.final_states[0].side_constraints.clone();
+                    //let mut sub_trace_constraints = subse.final_states[0].trace_constraints.clone();
+                    //let mut sub_side_constraints = subse.final_states[0].side_constraints.clone();
                     self.cur_state
                         .trace_constraints
-                        .append(&mut sub_trace_constraints);
+                        .append(&mut subse.final_states[0].trace_constraints);
                     self.cur_state
                         .side_constraints
-                        .append(&mut sub_side_constraints);
+                        .append(&mut subse.final_states[0].side_constraints);
                     if !self.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
                     }
