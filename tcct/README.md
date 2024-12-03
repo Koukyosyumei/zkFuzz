@@ -17,10 +17,10 @@ USAGE:
     tcct [FLAGS] [OPTIONS] [--] [input]
 
 FLAGS:
-        --print_ast                            (TCCT) Prints AST
-        --print_stats                          (TCCT) Prints the stats of constraints
-        --symbolic_template_params             (TCCT) Treats the template parameters of the main template as symbolic values
-        --propagate_substitution               (TCCT) Propagate variable substitution as much as possible
+        --print_ast                          (TCCT) Prints AST
+        --print_stats                        (TCCT) Prints the stats of constraints
+        --symbolic_template_params           (TCCT) Treats the template parameters of the main template as symbolic values
+        --propagate_substitution             (TCCT) Propagate variable substitution as much as possible
 OPTIONS:
         --search_mode <search_mode>          (TCCT) Search mode to find the counter example that shows the given circuit
                                                     is not well-constrained [default: none]
