@@ -414,18 +414,18 @@ pub fn register_library(
             for s in stmts {
                 if let Statement::InitializationBlock {
                     initializations, ..
-                } = s.clone()
+                } = &s
                 {
                     for init in initializations {
-                        if let Statement::Declaration { name, xtype, .. } = init.clone() {
+                        if let Statement::Declaration { name, xtype, .. } = &init {
                             var2type.insert(name.clone(), xtype.clone());
-                            if let VariableType::Signal(typ, _taglist) = xtype.clone() {
+                            if let VariableType::Signal(typ, _taglist) = &xtype {
                                 match typ {
                                     SignalType::Input => {
-                                        inputs.push(name);
+                                        inputs.push(name.to_string());
                                     }
                                     SignalType::Output => {
-                                        outputs.push(name);
+                                        outputs.push(name.to_string());
                                     }
                                     SignalType::Intermediate => {}
                                 }
