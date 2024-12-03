@@ -38,9 +38,9 @@ pub struct Input {
     pub flag_printout_stats: bool,
     pub flag_symbolic_template_params: bool,
     pub flag_propagate_substitution: bool,
-    pub flag_search_counter_example: bool,
     pub prime: String,
     pub debug_prime: String,
+    pub search_mode: String,
     pub link_libraries : Vec<PathBuf>
 }
 
@@ -120,9 +120,9 @@ impl Input {
             flag_printout_stats: input_processing::get_stats(&matches),
             flag_symbolic_template_params: input_processing::get_symbolic_template_params(&matches),
             flag_propagate_substitution: input_processing::get_propagate_substitution(&matches),
-            flag_search_counter_example: input_processing::get_search_counter_example(&matches),
             prime: input_processing::get_prime(&matches)?,
             debug_prime: input_processing::get_debug_prime(&matches)?,
+            search_mode: input_processing::get_search_mode(&matches)?,
             link_libraries
         })
     }
@@ -244,6 +244,9 @@ impl Input {
     pub fn debug_prime(&self) -> String{
         self.debug_prime.clone()
     }
+    pub fn search_mode(&self) -> String{
+        self.search_mode.clone()
+    }
 }
 mod input_processing {
     use ansi_term::Colour;
@@ -341,10 +344,6 @@ mod input_processing {
         matches.is_present("propagate_substitution")
     }
 
-    pub fn get_search_counter_example(matches: &ArgMatches) -> bool {
-        matches.is_present("search_counter_example")
-    }
-
     /* 
     pub fn get_main_inputs_log(matches: &ArgMatches) -> bool {
         matches.is_present("main_inputs_log")
@@ -401,6 +400,13 @@ mod input_processing {
         match matches.is_present("debug_prime") {
             true => Ok(String::from(matches.value_of("debug_prime").unwrap())),
             false => Ok(String::from("21888242871839275222246405745257275088548364400416034343698204186575808495617"))
+        }
+    }
+
+    pub fn get_search_mode(matches: &ArgMatches) -> Result<String, ()> {
+        match matches.is_present("search_mode") {
+            true => Ok(String::from(matches.value_of("search_mode").unwrap())),
+            false => Ok(String::from("none"))
         }
     }
 
@@ -605,12 +611,13 @@ mod input_processing {
                 .display_order(1030)
                 .help("(TCCT) Propagate variable substitution as much as possible"),
             )
-            .arg(
-                Arg::with_name("search_counter_example")
-                .long("search_counter_example")
-                .takes_value(false)
-                .display_order(1040)
-                .help("(TCCT) Search counter examples to check whether the given circuit is well-constrained or not"),
+            .arg (
+                Arg::with_name("search_mode")
+                    .long("search_mode")
+                    .takes_value(true)
+                    .default_value("none")
+                    .display_order(1040)
+                    .help("(TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained"),
             )
             .arg (
                 Arg::with_name("debug_prime")

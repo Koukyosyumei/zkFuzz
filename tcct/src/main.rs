@@ -120,7 +120,7 @@ fn start() -> Result<(), ()> {
             println!("===========================================================");
 
             let mut is_safe = true;
-            if user_input.flag_search_counter_example {
+            if user_input.search_mode != "none" {
                 println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
                 let mut sub_sexe = sexe.clone();
                 sub_sexe.clear();
@@ -145,16 +145,32 @@ fn start() -> Result<(), ()> {
                     _ => unimplemented!(),
                 }
                 for s in &sexe.final_states {
-                    let counterexample = brute_force_search(
-                        BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                        main_template_id.to_string(),
-                        &mut sub_sexe,
-                        &s.trace_constraints.clone(),
-                        &s.side_constraints.clone(),
-                        true,
-                        &template_param_names,
-                        &template_param_values,
-                    );
+                    let counterexample = match &*user_input.search_mode {
+                        "quick" => brute_force_search(
+                            BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                            main_template_id.to_string(),
+                            &mut sub_sexe,
+                            &s.trace_constraints.clone(),
+                            &s.side_constraints.clone(),
+                            true,
+                            &template_param_names,
+                            &template_param_values,
+                        ),
+                        "full" => brute_force_search(
+                            BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                            main_template_id.to_string(),
+                            &mut sub_sexe,
+                            &s.trace_constraints.clone(),
+                            &s.side_constraints.clone(),
+                            false,
+                            &template_param_names,
+                            &template_param_values,
+                        ),
+                        _ => panic!(
+                            "search_mode={} is not supported",
+                            user_input.search_mode.to_string()
+                        ),
+                    };
                     if counterexample.is_some() {
                         is_safe = false;
                         println!("{:?}", counterexample.unwrap());
