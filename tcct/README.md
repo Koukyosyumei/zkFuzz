@@ -22,7 +22,8 @@ FLAGS:
         --symbolic_template_params             (TCCT) Treats the template parameters of the main template as symbolic values
         --propagate_substitution               (TCCT) Propagate variable substitution as much as possible
 OPTIONS:
-        --search_mode <search_mode>          (TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained [default: none]
+        --search_mode <search_mode>          (TCCT) Search mode to find the counter example that shows the given circuit
+                                             is not well-constrained [default: none]
         --debug_prime <debug_prime>          (TCCT) Prime number for TCCT debugging [default:
                                      21888242871839275222246405745257275088548364400416034343698204186575808495617]
 ARGS:
