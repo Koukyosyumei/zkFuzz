@@ -33,7 +33,7 @@ ARGS:
 **Example command:**
 
 ```bash
-./target/debug/tcct ../sample/iszero_vuln.circom --debug_prime 3 --search_counter_example
+./target/debug/tcct ../sample/iszero_vuln.circom --debug_prime 3 --search_mode="quick"
 ```
 
 **Example output:**
