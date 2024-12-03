@@ -586,8 +586,8 @@ impl SymbolicExecutor {
     ) {
         let stack_states = self.block_end_states.clone();
         self.block_end_states.clear();
-        for state in &stack_states {
-            self.cur_state = *state.clone();
+        for state in stack_states {
+            self.cur_state = *state;
             self.cur_state.set_depth(depth);
             self.execute(statements, cur_bid);
         }
@@ -610,7 +610,7 @@ impl SymbolicExecutor {
                     ..
                 } => {
                     let mut is_input = false;
-                    if let VariableType::Signal(SignalType::Input, _taglist) = xtype.clone() {
+                    if let VariableType::Signal(SignalType::Input, _taglist) = &xtype {
                         is_input = true;
                     }
 
@@ -854,7 +854,7 @@ impl SymbolicExecutor {
                                     self.prime.clone(),
                                 );
 
-                                subse.template_library = self.template_library.clone();
+                                //subse.template_library = self.template_library.clone();
                                 subse.function_library = self.function_library.clone();
                                 subse.function_counter = self.function_counter.clone();
                                 subse.cur_state.set_owner(format!(
