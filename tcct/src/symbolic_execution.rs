@@ -1119,17 +1119,8 @@ impl SymbolicExecutor {
         match &symval {
             SymbolicValue::Variable(name, original_var_name) => {
                 if only_constatant_folding {
-                    if self
-                        .template_library
-                        .contains_key(&self.cur_state.template_id)
-                    {
-                        if self.template_library[&self.cur_state.template_id]
-                            .var2type
-                            .contains_key(&original_var_name.to_string())
-                        {
-                            let typ = self.template_library[&self.cur_state.template_id].var2type
-                                [&original_var_name.to_string()]
-                                .clone();
+                    if let Some(template) = self.template_library.get(&self.cur_state.template_id) {
+                        if let Some(typ) = template.var2type.get(original_var_name) {
                             if let VariableType::Signal(SignalType::Output, _) = typ {
                                 return symval.clone();
                             } else if let VariableType::Var = typ {
@@ -1327,7 +1318,7 @@ impl SymbolicExecutor {
                     let sv = self.cur_state.get_symval(&tmp_name).cloned();
                     let evaluated_access = access
                         .iter()
-                        .map(|arg0: &Access| self.evaluate_access(&arg0.clone()))
+                        .map(|arg0: &Access| self.evaluate_access(&arg0))
                         .collect::<Vec<_>>();
 
                     if evaluated_access.len() == 1 && sv.is_some() {
@@ -1349,7 +1340,7 @@ impl SymbolicExecutor {
                         name,
                         &access
                             .iter()
-                            .map(|arg0: &Access| self.evaluate_access(&arg0.clone()))
+                            .map(|arg0: &Access| self.evaluate_access(&arg0))
                             .map(|debug_access| debug_access.to_string())
                             .collect::<Vec<_>>()
                             .join("")
@@ -1429,7 +1420,7 @@ impl SymbolicExecutor {
                     subse.cur_state.set_owner(format!(
                         "{}.{}.{}",
                         self.cur_state.get_owner(),
-                        id.clone(),
+                        id,
                         self.function_counter[id]
                     ));
                     //subse.template_library = self.template_library.clone();
