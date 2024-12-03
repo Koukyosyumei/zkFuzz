@@ -121,7 +121,7 @@ pub fn simplify_statement(statement: &Statement) -> Statement {
 pub enum SymbolicValue {
     ConstantInt(BigInt),
     ConstantBool(bool),
-    Variable(String),
+    Variable(String, String),
     BinaryOp(
         Box<SymbolicValue>,
         DebugExpressionInfixOpcode,
@@ -143,7 +143,7 @@ impl fmt::Debug for SymbolicValue {
             SymbolicValue::ConstantBool(flag) => {
                 write!(f, "{} {}", if *flag { "✅" } else { "❌" }, flag)
             }
-            SymbolicValue::Variable(name) => write!(f, "{}", name),
+            SymbolicValue::Variable(name, _) => write!(f, "{}", name),
             SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
                 ExpressionInfixOpcode::Eq
                 | ExpressionInfixOpcode::NotEq
@@ -776,7 +776,7 @@ impl SymbolicExecutor {
                     };
                     self.variable_types
                         .insert(name.to_string(), DebugVariableType(xtype.clone()));
-                    let value = SymbolicValue::Variable(var_name.clone());
+                    let value = SymbolicValue::Variable(var_name.clone(), var_name.clone());
                     self.cur_state.set_symval(var_name, value);
                     self.execute(statements, cur_bid + 1);
                 }
@@ -943,7 +943,10 @@ impl SymbolicExecutor {
                         _ => {
                             if self.variable_types[var].0 != VariableType::Var {
                                 let cont = SymbolicValue::BinaryOp(
-                                    Box::new(SymbolicValue::Variable(var_name.clone())),
+                                    Box::new(SymbolicValue::Variable(
+                                        var_name.clone(),
+                                        var_name.clone(),
+                                    )),
                                     DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                     Box::new(value),
                                 );
@@ -951,7 +954,10 @@ impl SymbolicExecutor {
 
                                 if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
                                     let original_cont = SymbolicValue::BinaryOp(
-                                        Box::new(SymbolicValue::Variable(var_name.clone())),
+                                        Box::new(SymbolicValue::Variable(
+                                            var_name.clone(),
+                                            var_name.clone(),
+                                        )),
                                         DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                         Box::new(original_value),
                                     );
@@ -1111,18 +1117,8 @@ impl SymbolicExecutor {
         only_constatant_folding: bool,
     ) -> SymbolicValue {
         match &symval {
-            SymbolicValue::Variable(name) => {
-                let original_var_name = if let Some(last_part) = name.split('.').last() {
-                    last_part.clone()
-                } else {
-                    &name.clone()
-                };
+            SymbolicValue::Variable(name, original_var_name) => {
                 if only_constatant_folding {
-                    if let Some(boxed_value) = self.cur_state.get_symval(&name) {
-                        if let SymbolicValue::ConstantInt(v) = *boxed_value.clone() {
-                            return SymbolicValue::ConstantInt(v);
-                        }
-                    }
                     if self
                         .template_library
                         .contains_key(&self.cur_state.template_id)
@@ -1134,11 +1130,23 @@ impl SymbolicExecutor {
                             let typ = self.template_library[&self.cur_state.template_id].var2type
                                 [&original_var_name.to_string()]
                                 .clone();
-                            if let VariableType::Var = typ {
+                            if let VariableType::Signal(SignalType::Output, _) = typ {
+                                return symval.clone();
+                            } else if let VariableType::Var = typ {
                                 return *self.cur_state.get_symval(&name).cloned().unwrap_or_else(
-                                    || Box::new(SymbolicValue::Variable(name.to_string())),
+                                    || {
+                                        Box::new(SymbolicValue::Variable(
+                                            name.to_string(),
+                                            original_var_name.to_string(),
+                                        ))
+                                    },
                                 );
                             }
+                        }
+                    }
+                    if let Some(boxed_value) = self.cur_state.get_symval(&name) {
+                        if let SymbolicValue::ConstantInt(v) = *boxed_value.clone() {
+                            return SymbolicValue::ConstantInt(v);
                         }
                     }
                     symval.clone()
@@ -1147,7 +1155,12 @@ impl SymbolicExecutor {
                         .cur_state
                         .get_symval(&name)
                         .cloned()
-                        .unwrap_or_else(|| Box::new(SymbolicValue::Variable(name.to_string())))
+                        .unwrap_or_else(|| {
+                            Box::new(SymbolicValue::Variable(
+                                name.to_string(),
+                                original_var_name.to_string(),
+                            ))
+                        })
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
@@ -1342,7 +1355,7 @@ impl SymbolicExecutor {
                             .join("")
                     )
                 };
-                SymbolicValue::Variable(resolved_name)
+                SymbolicValue::Variable(resolved_name, name.to_string())
             }
             DebugExpression::InfixOp {
                 meta: _,
@@ -1489,7 +1502,7 @@ impl SymbolicExecutor {
             // Handle other expression types
             _ => {
                 error!("Unhandled expression type: {:?}", expr);
-                SymbolicValue::Variable(format!("Unhandled({:?})", expr))
+                SymbolicValue::Variable(format!("Unhandled({:?})", expr), "".to_string())
             }
         }
     }

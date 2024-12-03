@@ -296,7 +296,7 @@ fn extract_variables(constraints: &[Box<SymbolicValue>]) -> Vec<String> {
 /// - `variables`: A mutable reference to a vector where variable names will be stored.
 fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut Vec<String>) {
     match value {
-        SymbolicValue::Variable(name) => variables.push(name.clone()),
+        SymbolicValue::Variable(name, _) => variables.push(name.clone()),
         SymbolicValue::BinaryOp(lhs, _, rhs) => {
             extract_variables_from_symbolic_value(&lhs, variables);
             extract_variables_from_symbolic_value(&rhs, variables);
@@ -364,7 +364,7 @@ fn evaluate_symbolic_value(
     match value {
         SymbolicValue::ConstantBool(b) => value.clone(),
         SymbolicValue::ConstantInt(v) => value.clone(),
-        SymbolicValue::Variable(name) => {
+        SymbolicValue::Variable(name, _) => {
             SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
         }
         SymbolicValue::BinaryOp(lhs, op, rhs) => {

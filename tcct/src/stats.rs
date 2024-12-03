@@ -40,7 +40,7 @@ impl ConstraintStatistics {
             SymbolicValue::ConstantBool(_) => {
                 self.constant_counts += 1;
             }
-            SymbolicValue::Variable(name) => {
+            SymbolicValue::Variable(name, _) => {
                 *self.variable_counts.entry(name.clone()).or_insert(0) += 1;
             }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
