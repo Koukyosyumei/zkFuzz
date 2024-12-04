@@ -140,9 +140,15 @@ impl SymbolicAccess {
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
+pub struct OwnerName {
+    name: usize,
+    counter: usize,
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct SymbolicName {
     pub name: usize,
-    pub owner: Vec<usize>,
+    pub owner: Vec<OwnerName>,
     pub access: Vec<SymbolicAccess>,
 }
 
@@ -152,7 +158,7 @@ impl SymbolicName {
             "{}.{}{}",
             self.owner
                 .iter()
-                .map(|e: &usize| lookup[e].clone())
+                .map(|e: &OwnerName| lookup[&e.name].clone())
                 .collect::<Vec<_>>()
                 .join("."),
             lookup[&self.name].clone(),
@@ -280,7 +286,7 @@ impl SymbolicValue {
 /// trace constraints, side constraints, and depth information.
 #[derive(Clone)]
 pub struct SymbolicState {
-    owner_name: Vec<usize>,
+    owner_name: Vec<OwnerName>,
     pub template_id: usize,
     depth: usize,
     pub values: HashMap<SymbolicName, Box<SymbolicValue>>,
@@ -301,7 +307,7 @@ impl SymbolicState {
                 &self
                     .owner_name
                     .iter()
-                    .map(|c| lookup[c].clone())
+                    .map(|c: &OwnerName| lookup[&c.name].clone())
                     .collect::<Vec<_>>()
                     .join(", ")
             ))
@@ -373,14 +379,17 @@ impl SymbolicState {
     /// # Arguments
     ///
     /// * `name` - The name of the owner to set.
-    pub fn add_owner(&mut self, name: usize) {
-        self.owner_name.push(name);
+    pub fn add_owner(&mut self, name: usize, counter: usize) {
+        self.owner_name.push(OwnerName {
+            name: name,
+            counter: counter,
+        });
     }
 
     pub fn get_owner(&self, lookup: &HashMap<usize, String>) -> String {
         self.owner_name
             .iter()
-            .map(|e: &usize| lookup[e].clone())
+            .map(|e: &OwnerName| lookup[&e.name].clone())
             .collect::<Vec<_>>()
             .join(".")
     }
@@ -729,6 +738,21 @@ impl SymbolicExecutor {
     pub fn execute(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
         if cur_bid < statements.len() {
             self.max_depth = max(self.max_depth, self.cur_state.get_depth());
+            /*
+            let n = SymbolicName {
+                name: self.name2id["i"],
+                owner: vec![OwnerName {
+                    name: self.name2id["main"],
+                    counter: 0,
+                }],
+                access: Vec::new(),
+            };
+            if self.cur_state.values.contains_key(&n) {
+                println!(
+                    "main.i={}",
+                    self.cur_state.values[&n].lookup_fmt(&self.id2name)
+                );
+            }*/
             match &statements[cur_bid] {
                 DebugStatement::InitializationBlock {
                     initializations,
@@ -1032,7 +1056,7 @@ impl SymbolicExecutor {
                                 subse.function_library = self.function_library.clone();
                                 subse.function_counter = self.function_counter.clone();
                                 subse.cur_state.owner_name = self.cur_state.owner_name.clone();
-                                subse.cur_state.add_owner(*var);
+                                subse.cur_state.add_owner(*var, 0);
 
                                 let templ = &self.template_library
                                     [&self.components_store[&var_name].template_name];
@@ -1616,8 +1640,7 @@ impl SymbolicExecutor {
                         self.prime.clone(),
                     );
                     subse.cur_state.owner_name = self.cur_state.owner_name.clone();
-                    subse.cur_state.add_owner(*id);
-                    subse.cur_state.add_owner(self.function_counter[id]);
+                    subse.cur_state.add_owner(*id, self.function_counter[id]);
                     //subse.template_library = self.template_library.clone();
                     subse.function_library = self.function_library.clone();
                     self.function_counter
@@ -1662,11 +1685,6 @@ impl SymbolicExecutor {
                     }
 
                     self.function_counter = subse.function_counter.clone();
-                    let tmp_name = format!(
-                        "{}.__return__",
-                        subse.final_states[0].get_owner(&self.id2name)
-                    )
-                    .to_string();
 
                     let sname = SymbolicName {
                         name: usize::MAX,

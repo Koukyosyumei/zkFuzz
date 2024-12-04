@@ -107,7 +107,7 @@ fn start() -> Result<(), ()> {
             sexe.name2id.insert("main".to_string(), sexe.name2id.len());
             sexe.id2name
                 .insert(sexe.name2id["main"], "main".to_string());
-            sexe.cur_state.add_owner(sexe.name2id.len() - 1);
+            sexe.cur_state.add_owner(sexe.name2id.len() - 1, 0);
             sexe.cur_state.set_template_id(name2id[id]);
             if !user_input.flag_symbolic_template_params {
                 sexe.feed_arguments(template.get_name_of_params(), args);
