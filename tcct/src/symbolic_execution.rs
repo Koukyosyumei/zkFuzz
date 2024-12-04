@@ -315,7 +315,7 @@ impl SymbolicState {
         );
         s += &format!("  📏 {} {}\n", format!("{}", "depth:").cyan(), self.depth);
         s += &format!("  📋 {}\n", format!("{}", "values:").cyan());
-        for (k, v) in self.values.clone().into_iter() {
+        for (k, v) in self.values.iter() {
             s += &format!(
                 "      {}: {}\n",
                 k.lookup_fmt(lookup),
@@ -629,8 +629,8 @@ impl SymbolicExecutor {
         self.final_states.clear();
         self.max_depth = 0;
 
-        for (k, _) in self.function_library.clone().into_iter() {
-            self.function_counter.insert(k, 0_usize);
+        for (k, _) in self.function_library.iter() {
+            self.function_counter.insert(*k, 0_usize);
         }
     }
 
@@ -1076,15 +1076,13 @@ impl SymbolicExecutor {
                                     );
                                 }
 
-                                for (k, v) in
-                                    self.components_store[&var_name].inputs.clone().into_iter()
-                                {
+                                for (k, v) in self.components_store[&var_name].inputs.iter() {
                                     let n = SymbolicName {
-                                        name: k,
+                                        name: *k,
                                         owner: subse.cur_state.owner_name.clone(),
                                         access: Vec::new(),
                                     };
-                                    subse.cur_state.set_symval(n, v.unwrap());
+                                    subse.cur_state.set_symval(n, v.clone().unwrap());
                                 }
 
                                 if !self.off_trace {
