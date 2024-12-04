@@ -720,9 +720,8 @@ impl<'a> SymbolicExecutor<'a> {
         cur_bid: usize,
         depth: usize,
     ) {
-        let stack_states = self.block_end_states.clone();
-        self.block_end_states.clear();
-        for state in stack_states {
+        let drained_states: Vec<_> = self.block_end_states.drain(..).collect();
+        for state in drained_states {
             self.cur_state = *state;
             self.cur_state.set_depth(depth);
             self.execute(statements, cur_bid);
