@@ -15,8 +15,8 @@ use program_structure::ast::{
 };
 
 use crate::parser_user::{
-    DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode,
-    DebugStatement, DebugVariableType,
+    DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode,
+    DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
 use crate::utils::{extended_euclidean, italic};
 
@@ -115,13 +115,20 @@ pub fn simplify_statement(statement: &Statement) -> Statement {
     }
 }
 
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+pub struct SymbolicName {
+    pub name: usize,
+    pub owner: Vec<usize>,
+    pub access: Vec<SymbolicAccess>,
+}
+
 /// Represents a symbolic value used in symbolic execution, which can be a constant, variable, or an operation.
 /// It supports various operations like binary, unary, conditional, arrays, tuples, uniform arrays, and function calls.
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub enum SymbolicValue {
     ConstantInt(BigInt),
     ConstantBool(bool),
-    Variable(String, String),
+    Variable(SymbolicName),
     BinaryOp(
         Box<SymbolicValue>,
         DebugExpressionInfixOpcode,
@@ -132,7 +139,7 @@ pub enum SymbolicValue {
     Array(Vec<Box<SymbolicValue>>),
     Tuple(Vec<Box<SymbolicValue>>),
     UniformArray(Box<SymbolicValue>, Box<SymbolicValue>),
-    Call(String, Vec<Box<SymbolicValue>>),
+    Call(usize, Vec<Box<SymbolicValue>>),
 }
 
 /// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
@@ -143,7 +150,7 @@ impl fmt::Debug for SymbolicValue {
             SymbolicValue::ConstantBool(flag) => {
                 write!(f, "{} {}", if *flag { "✅" } else { "❌" }, flag)
             }
-            SymbolicValue::Variable(name, _) => write!(f, "{}", name),
+            SymbolicValue::Variable(_) => write!(f, "{}", "aaa"),
             SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
                 ExpressionInfixOpcode::Eq
                 | ExpressionInfixOpcode::NotEq
@@ -185,9 +192,9 @@ impl fmt::Debug for SymbolicValue {
 }
 
 /// Represents the access type within a symbolic expression, such as component or array access.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum SymbolicAccess {
-    ComponentAccess(String),
+    ComponentAccess(usize),
     ArrayAccess(SymbolicValue),
 }
 
@@ -219,10 +226,10 @@ impl SymbolicAccess {
 /// trace constraints, side constraints, and depth information.
 #[derive(Clone)]
 pub struct SymbolicState {
-    owner_name: String,
-    pub template_id: String,
+    owner_name: Vec<usize>,
+    pub template_id: usize,
     depth: usize,
-    pub values: HashMap<String, Box<SymbolicValue>>,
+    pub values: HashMap<SymbolicName, Box<SymbolicValue>>,
     pub trace_constraints: Vec<Box<SymbolicValue>>,
     pub side_constraints: Vec<Box<SymbolicValue>>,
 }
@@ -235,15 +242,15 @@ impl fmt::Debug for SymbolicState {
             f,
             "  {} {}",
             format!("👤 {}", "owner:").cyan(),
-            italic(&self.owner_name).magenta()
+            italic(&format!("{:?}", &self.owner_name)).magenta()
         )?;
         writeln!(f, "  📏 {} {}", format!("{}", "depth:").cyan(), self.depth)?;
         writeln!(f, "  📋 {}", format!("{}", "values:").cyan())?;
         for (k, v) in self.values.clone().into_iter() {
             writeln!(
                 f,
-                "      {}: {}",
-                k.replace("\n", "").replace("  ", " "),
+                "      {:?}: {}",
+                k,
                 format!("{:?}", v.clone())
                     .replace("\n", "")
                     .replace("  ", " ")
@@ -275,8 +282,8 @@ impl SymbolicState {
     /// Creates a new `SymbolicState` with default values.
     pub fn new() -> Self {
         SymbolicState {
-            owner_name: "".to_string(),
-            template_id: "".to_string(),
+            owner_name: Vec::new(),
+            template_id: usize::MAX,
             depth: 0_usize,
             values: HashMap::new(),
             trace_constraints: Vec::new(),
@@ -289,11 +296,11 @@ impl SymbolicState {
     /// # Arguments
     ///
     /// * `name` - The name of the owner to set.
-    pub fn set_owner(&mut self, name: String) {
-        self.owner_name = name;
+    pub fn add_owner(&mut self, name: usize) {
+        self.owner_name.push(name);
     }
 
-    pub fn set_template_id(&mut self, name: String) {
+    pub fn set_template_id(&mut self, name: usize) {
         self.template_id = name;
     }
 
@@ -303,7 +310,8 @@ impl SymbolicState {
     ///
     /// The owner name as a string.
     pub fn get_owner(&self) -> String {
-        self.owner_name.clone()
+        "dummy".to_string()
+        //self.owner_name.clone()
     }
 
     /// Sets the current depth of the symbolic state.
@@ -330,7 +338,7 @@ impl SymbolicState {
     ///
     /// * `name` - The name of the variable.
     /// * `value` - The symbolic value to associate with the variable.
-    pub fn set_symval(&mut self, name: String, value: SymbolicValue) {
+    pub fn set_symval(&mut self, name: SymbolicName, value: SymbolicValue) {
         self.values.insert(name, Box::new(value));
     }
 
@@ -343,7 +351,7 @@ impl SymbolicState {
     /// # Returns
     ///
     /// An optional reference to the symbolic value if it exists.
-    pub fn get_symval(&self, name: &str) -> Option<&Box<SymbolicValue>> {
+    pub fn get_symval(&self, name: &SymbolicName) -> Option<&Box<SymbolicValue>> {
         self.values.get(name)
     }
 
@@ -369,27 +377,27 @@ impl SymbolicState {
 /// Represents a symbolic template used in the symbolic execution process.
 #[derive(Default, Clone)]
 pub struct SymbolicTemplate {
-    pub template_parameter_names: Vec<String>,
-    pub inputs: Vec<String>,
-    pub outputs: Vec<String>,
-    pub unrolled_outputs: HashSet<String>,
-    pub var2type: HashMap<String, VariableType>,
+    pub template_parameter_names: Vec<usize>,
+    pub inputs: Vec<usize>,
+    pub outputs: Vec<usize>,
+    pub unrolled_outputs: HashSet<SymbolicName>,
+    pub var2type: HashMap<usize, VariableType>,
     pub body: Vec<DebugStatement>,
 }
 
 /// Represents a symbolic function used in the symbolic execution process.
 #[derive(Default, Clone, Debug)]
 pub struct SymbolicFunction {
-    pub function_argument_names: Vec<String>,
+    pub function_argument_names: Vec<usize>,
     pub body: Vec<DebugStatement>,
 }
 
 /// Represents a symbolic component used in the symbolic execution process.
 #[derive(Default, Clone, Debug)]
 pub struct SymbolicComponent {
-    pub template_name: String,
+    pub template_name: usize,
     pub args: Vec<Box<SymbolicValue>>,
-    pub inputs: HashMap<String, Option<SymbolicValue>>,
+    pub inputs: HashMap<usize, Option<SymbolicValue>>,
     pub is_done: bool,
 }
 
@@ -401,31 +409,41 @@ pub struct SymbolicComponent {
 // * 'body' : Block statement serving as main logic body defining behavior captured by template .
 // * 'template_parameter_names': List containing names identifying parameters used within template logic .
 pub fn register_library(
-    template_library: &mut HashMap<String, Box<SymbolicTemplate>>,
+    template_library: &mut HashMap<usize, Box<SymbolicTemplate>>,
+    name2id: &mut HashMap<String, usize>,
     name: String,
     body: &Statement,
     template_parameter_names: &Vec<String>,
 ) {
-    let mut inputs: Vec<String> = vec![];
-    let mut outputs: Vec<String> = vec![];
-    let mut var2type: HashMap<String, VariableType> = HashMap::new();
-    match body {
-        Statement::Block { stmts, .. } => {
+    let mut inputs: Vec<usize> = vec![];
+    let mut outputs: Vec<usize> = vec![];
+    let mut var2type: HashMap<usize, VariableType> = HashMap::new();
+
+    let i = if let Some(i) = name2id.get(&name) {
+        *i
+    } else {
+        name2id.insert(name, name2id.len());
+        name2id.len() - 1
+    };
+
+    let dbody = DebugStatement::from(body.clone(), name2id);
+    match dbody {
+        DebugStatement::Block { ref stmts, .. } => {
             for s in stmts {
-                if let Statement::InitializationBlock {
+                if let DebugStatement::InitializationBlock {
                     initializations, ..
                 } = &s
                 {
                     for init in initializations {
-                        if let Statement::Declaration { name, xtype, .. } = &init {
+                        if let DebugStatement::Declaration { name, xtype, .. } = &init {
                             var2type.insert(name.clone(), xtype.clone());
                             if let VariableType::Signal(typ, _taglist) = &xtype {
                                 match typ {
                                     SignalType::Input => {
-                                        inputs.push(name.to_string());
+                                        inputs.push(*name);
                                     }
                                     SignalType::Output => {
-                                        outputs.push(name.to_string());
+                                        outputs.push(*name);
                                     }
                                     SignalType::Intermediate => {}
                                 }
@@ -441,14 +459,17 @@ pub fn register_library(
     }
 
     let template = SymbolicTemplate {
-        template_parameter_names: template_parameter_names.clone(),
+        template_parameter_names: template_parameter_names
+            .iter()
+            .map(|p: &String| name2id[p])
+            .collect::<Vec<_>>(),
         inputs: inputs,
         outputs: outputs,
         unrolled_outputs: HashSet::new(),
         var2type: var2type,
-        body: vec![DebugStatement::from(body.clone()), DebugStatement::Ret],
+        body: vec![dbody.clone(), DebugStatement::Ret],
     };
-    template_library.insert(name, Box::new(template));
+    template_library.insert(i, Box::new(template));
 }
 
 /// Executes symbolic execution on a series of statements while maintaining multiple states.
@@ -466,11 +487,12 @@ pub fn register_library(
 /// * `max_depth` - Tracks maximum depth reached during execution.
 #[derive(Clone)]
 pub struct SymbolicExecutor {
-    pub template_library: Box<HashMap<String, Box<SymbolicTemplate>>>,
-    pub function_library: HashMap<String, Box<SymbolicFunction>>,
-    pub function_counter: HashMap<String, usize>,
-    pub components_store: HashMap<String, SymbolicComponent>,
-    pub variable_types: HashMap<String, DebugVariableType>,
+    pub template_library: Box<HashMap<usize, Box<SymbolicTemplate>>>,
+    pub name2id: Box<HashMap<String, usize>>,
+    pub function_library: HashMap<usize, Box<SymbolicFunction>>,
+    pub function_counter: HashMap<usize, usize>,
+    pub components_store: HashMap<SymbolicName, SymbolicComponent>,
+    pub variable_types: HashMap<usize, DebugVariableType>,
     pub prime: BigInt,
     pub propagate_substitution: bool,
     pub skip_initialization_blocks: bool,
@@ -487,12 +509,14 @@ pub struct SymbolicExecutor {
 impl SymbolicExecutor {
     /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
     pub fn new(
-        template_library: Box<HashMap<String, Box<SymbolicTemplate>>>,
+        template_library: Box<HashMap<usize, Box<SymbolicTemplate>>>,
+        name2id: Box<HashMap<String, usize>>,
         propagate_substitution: bool,
         prime: BigInt,
     ) -> Self {
         SymbolicExecutor {
             template_library: template_library,
+            name2id,
             function_library: HashMap::new(),
             function_counter: HashMap::new(),
             components_store: HashMap::new(),
@@ -530,7 +554,7 @@ impl SymbolicExecutor {
     // # Returns
     //
     // A boolean indicating readiness status.
-    fn is_ready(&self, name: String) -> bool {
+    fn is_ready(&self, name: SymbolicName) -> bool {
         self.components_store.contains_key(&name)
             && self.components_store[&name]
                 .inputs
@@ -545,10 +569,16 @@ impl SymbolicExecutor {
     // * 'names' : Vector containing names corresponding with expressions being fed as arguments.
     // * 'args' : Vector containing expressions whose evaluated results will be assigned as argument values.
     pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
+        let mut cloned_name2id = self.name2id.clone();
         for (n, a) in names.iter().zip(args.iter()) {
-            let evaled_a = self.evaluate_expression(&DebugExpression::from(a.clone()));
+            let evaled_a =
+                self.evaluate_expression(&DebugExpression::from(a.clone(), &mut cloned_name2id));
             self.cur_state.set_symval(
-                format!("{}.{}", self.cur_state.get_owner(), n.to_string()),
+                SymbolicName {
+                    name: self.name2id[n],
+                    owner: self.cur_state.owner_name.clone(),
+                    access: Vec::new(),
+                },
                 evaled_a,
             );
         }
@@ -560,14 +590,25 @@ impl SymbolicExecutor {
         body: Statement,
         function_argument_names: &Vec<String>,
     ) {
+        let i = if let Some(i) = self.name2id.get(&name) {
+            *i
+        } else {
+            self.name2id.insert(name, self.name2id.len());
+            self.name2id.len() - 1
+        };
+
+        let dbody = DebugStatement::from(body, &mut self.name2id);
         self.function_library.insert(
-            name.clone(),
+            i,
             Box::new(SymbolicFunction {
-                function_argument_names: function_argument_names.clone(),
-                body: vec![DebugStatement::from(body), DebugStatement::Ret],
+                function_argument_names: function_argument_names
+                    .iter()
+                    .map(|p: &String| self.name2id[p])
+                    .collect::<Vec<_>>(),
+                body: vec![dbody, DebugStatement::Ret],
             }),
         );
-        self.function_counter.insert(name.clone(), 0_usize);
+        self.function_counter.insert(i, 0_usize);
     }
 
     /// Expands all stack states by executing each statement block recursively,
@@ -757,7 +798,11 @@ impl SymbolicExecutor {
                     let return_value = self.fold_variables(&tmp_val, !self.propagate_substitution);
                     // Handle return value (e.g., store in a special "return" variable)
                     self.cur_state.set_symval(
-                        format!("{}.__return__", self.cur_state.get_owner()).to_string(),
+                        SymbolicName {
+                            name: usize::MAX,
+                            owner: self.cur_state.owner_name.clone(),
+                            access: Vec::new(),
+                        },
                         return_value,
                     );
                     self.execute(statements, cur_bid + 1);
@@ -768,15 +813,21 @@ impl SymbolicExecutor {
                     xtype,
                     ..
                 } => {
+                    /*
                     let var_name = if dimensions.is_empty() {
                         format!("{}.{}", self.cur_state.get_owner(), name.clone())
                     } else {
                         //"todo".to_string()
                         format!("{}.{}<{:?}>", self.cur_state.get_owner(), name, &dimensions)
+                    };*/
+                    let var_name = SymbolicName {
+                        name: *name,
+                        owner: self.cur_state.owner_name.clone(),
+                        access: Vec::new(),
                     };
                     self.variable_types
-                        .insert(name.to_string(), DebugVariableType(xtype.clone()));
-                    let value = SymbolicValue::Variable(var_name.clone(), var_name.clone());
+                        .insert(*name, DebugVariableType(xtype.clone()));
+                    let value = SymbolicValue::Variable(var_name.clone());
                     self.cur_state.set_symval(var_name, value);
                     self.execute(statements, cur_bid + 1);
                 }
@@ -794,6 +845,7 @@ impl SymbolicExecutor {
                     let original_value = self.fold_variables(&expr, true);
                     let value = self.fold_variables(&expr, !self.propagate_substitution);
 
+                    /*
                     let accessed_name = if access.is_empty() {
                         var.clone()
                     } else {
@@ -802,14 +854,24 @@ impl SymbolicExecutor {
                             var,
                             &access
                                 .iter()
-                                .map(|arg0: &Access| self.evaluate_access(&arg0.clone(),))
+                                .map(|arg0: &DebugAccess| self.evaluate_access(&arg0.clone(),))
                                 .map(|debug_access| debug_access.to_string())
                                 .collect::<Vec<_>>()
                                 .join("")
                         )
                     };
-                    let var_name =
-                        format!("{}.{}", self.cur_state.get_owner(), accessed_name.clone());
+                    */
+                    //let var_name =
+                    //    format!("{}.{}", self.cur_state.get_owner(), accessed_name.clone());
+
+                    let var_name = SymbolicName {
+                        name: *var,
+                        owner: self.cur_state.owner_name.clone(),
+                        access: access
+                            .iter()
+                            .map(|arg0: &DebugAccess| self.evaluate_access(&arg0.clone()))
+                            .collect::<Vec<_>>(),
+                    };
 
                     if self.keep_track_unrolled_offset {
                         if self
@@ -836,9 +898,8 @@ impl SymbolicExecutor {
 
                     if !access.is_empty() {
                         for acc in access {
-                            if let Access::ComponentAccess(tmp_name) = acc {
-                                if let Some(component) = self.components_store.get_mut(var.as_str())
-                                {
+                            if let DebugAccess::ComponentAccess(tmp_name) = acc {
+                                if let Some(component) = self.components_store.get_mut(&var_name) {
                                     component
                                         .inputs
                                         .insert(tmp_name.clone(), Some(value.clone()));
@@ -846,10 +907,11 @@ impl SymbolicExecutor {
                             }
                         }
 
-                        if self.is_ready(var.to_string()) {
-                            if !self.components_store[var].is_done {
+                        if self.is_ready(var_name.clone()) {
+                            if !self.components_store[&var_name].is_done {
                                 let mut subse = SymbolicExecutor::new(
                                     self.template_library.clone(),
+                                    self.name2id.clone(),
                                     self.propagate_substitution,
                                     self.prime.clone(),
                                 );
@@ -857,35 +919,35 @@ impl SymbolicExecutor {
                                 //subse.template_library = self.template_library.clone();
                                 subse.function_library = self.function_library.clone();
                                 subse.function_counter = self.function_counter.clone();
-                                subse.cur_state.set_owner(format!(
-                                    "{}.{}",
-                                    self.cur_state.get_owner(),
-                                    var.clone()
-                                ));
+                                subse.cur_state.add_owner(*var);
 
                                 let templ = &self.template_library
-                                    [&self.components_store[var].template_name];
+                                    [&self.components_store[&var_name].template_name];
                                 subse.cur_state.set_template_id(
-                                    self.components_store[var].template_name.clone(),
+                                    self.components_store[&var_name].template_name.clone(),
                                 );
 
                                 for i in 0..(templ.template_parameter_names.len()) {
+                                    let n = SymbolicName {
+                                        name: templ.template_parameter_names[i],
+                                        owner: subse.cur_state.owner_name.clone(),
+                                        access: Vec::new(),
+                                    };
                                     subse.cur_state.set_symval(
-                                        format!(
-                                            "{}.{}",
-                                            subse.cur_state.get_owner(),
-                                            templ.template_parameter_names[i]
-                                        ),
-                                        *self.components_store[var].args[i].clone(),
+                                        n,
+                                        *self.components_store[&var_name].args[i].clone(),
                                     );
                                 }
 
-                                for (k, v) in self.components_store[var].inputs.clone().into_iter()
+                                for (k, v) in
+                                    self.components_store[&var_name].inputs.clone().into_iter()
                                 {
-                                    subse.cur_state.set_symval(
-                                        format!("{}.{}", subse.cur_state.get_owner(), k),
-                                        v.unwrap(),
-                                    );
+                                    let n = SymbolicName {
+                                        name: k,
+                                        owner: subse.cur_state.owner_name.clone(),
+                                        access: Vec::new(),
+                                    };
+                                    subse.cur_state.set_symval(n, v.unwrap());
                                 }
 
                                 if !self.off_trace {
@@ -893,7 +955,10 @@ impl SymbolicExecutor {
                                         "{}",
                                         format!("{}", "===========================").cyan()
                                     );
-                                    trace!("📞 Call {}", self.components_store[var].template_name);
+                                    trace!(
+                                        "📞 Call {}",
+                                        self.components_store[&var_name].template_name
+                                    );
                                 }
 
                                 subse.execute(&templ.body, 0);
@@ -921,7 +986,7 @@ impl SymbolicExecutor {
                         SymbolicValue::Call(callee_name, args) => {
                             // Initializing the Template Component
                             if self.template_library.contains_key(&callee_name) {
-                                let mut comp_inputs: HashMap<String, Option<SymbolicValue>> =
+                                let mut comp_inputs: HashMap<usize, Option<SymbolicValue>> =
                                     HashMap::new();
                                 for inp_name in &self.template_library[&callee_name].inputs.clone()
                                 {
@@ -933,16 +998,13 @@ impl SymbolicExecutor {
                                     inputs: comp_inputs,
                                     is_done: false,
                                 };
-                                self.components_store.insert(accessed_name.to_string(), c);
+                                self.components_store.insert(var_name.clone(), c);
                             }
                         }
                         _ => {
                             if self.variable_types[var].0 != VariableType::Var {
                                 let cont = SymbolicValue::BinaryOp(
-                                    Box::new(SymbolicValue::Variable(
-                                        var_name.clone(),
-                                        var_name.clone(),
-                                    )),
+                                    Box::new(SymbolicValue::Variable(var_name.clone())),
                                     DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                     Box::new(value),
                                 );
@@ -950,10 +1012,7 @@ impl SymbolicExecutor {
 
                                 if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
                                     let original_cont = SymbolicValue::BinaryOp(
-                                        Box::new(SymbolicValue::Variable(
-                                            var_name.clone(),
-                                            var_name.clone(),
-                                        )),
+                                        Box::new(SymbolicValue::Variable(var_name)),
                                         DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                         Box::new(original_value),
                                     );
@@ -1066,10 +1125,10 @@ impl SymbolicExecutor {
     pub fn concrete_execute(
         &mut self,
         id: &String,
-        assignment: &HashMap<String, BigInt>,
+        assignment: &HashMap<SymbolicName, BigInt>,
         off_trace: bool,
     ) {
-        self.cur_state.template_id = id.to_string();
+        self.cur_state.template_id = self.name2id[id];
         for (vname, value) in assignment.into_iter() {
             self.cur_state
                 .set_symval(vname.clone(), SymbolicValue::ConstantInt(value.clone()));
@@ -1085,7 +1144,12 @@ impl SymbolicExecutor {
 
         self.skip_initialization_blocks = true;
         self.off_trace = off_trace;
-        self.execute(&self.template_library[id].body.clone(), 0);
+        self.execute(
+            &self.template_library[&self.cur_state.template_id]
+                .body
+                .clone(),
+            0,
+        );
     }
 
     /// Evaluates a symbolic access expression, converting it into a `SymbolicAccess` value.
@@ -1097,11 +1161,11 @@ impl SymbolicExecutor {
     /// # Returns
     ///
     /// A `SymbolicAccess` representing the evaluated access.
-    fn evaluate_access(&mut self, access: &Access) -> SymbolicAccess {
+    fn evaluate_access(&mut self, access: &DebugAccess) -> SymbolicAccess {
         match &access {
-            Access::ComponentAccess(name) => SymbolicAccess::ComponentAccess(name.clone()),
-            Access::ArrayAccess(expr) => {
-                let tmp_e = self.evaluate_expression(&DebugExpression::from(expr.clone()));
+            DebugAccess::ComponentAccess(name) => SymbolicAccess::ComponentAccess(name.clone()),
+            DebugAccess::ArrayAccess(expr) => {
+                let tmp_e = self.evaluate_expression(&expr);
                 SymbolicAccess::ArrayAccess(self.fold_variables(&tmp_e, false))
             }
         }
@@ -1113,25 +1177,20 @@ impl SymbolicExecutor {
         only_constatant_folding: bool,
     ) -> SymbolicValue {
         match &symval {
-            SymbolicValue::Variable(name, original_var_name) => {
+            SymbolicValue::Variable(sname) => {
                 if only_constatant_folding {
                     if let Some(template) = self.template_library.get(&self.cur_state.template_id) {
-                        if let Some(typ) = template.var2type.get(original_var_name) {
+                        if let Some(typ) = template.var2type.get(&sname.name) {
                             if let VariableType::Signal(SignalType::Output, _) = typ {
                                 return symval.clone();
                             } else if let VariableType::Var = typ {
-                                return *self.cur_state.get_symval(&name).cloned().unwrap_or_else(
-                                    || {
-                                        Box::new(SymbolicValue::Variable(
-                                            name.to_string(),
-                                            original_var_name.to_string(),
-                                        ))
-                                    },
+                                return *self.cur_state.get_symval(&sname).cloned().unwrap_or_else(
+                                    || Box::new(SymbolicValue::Variable(sname.clone())),
                                 );
                             }
                         }
                     }
-                    if let Some(boxed_value) = self.cur_state.get_symval(&name) {
+                    if let Some(boxed_value) = self.cur_state.get_symval(&sname) {
                         if let SymbolicValue::ConstantInt(v) = *boxed_value.clone() {
                             return SymbolicValue::ConstantInt(v);
                         }
@@ -1140,14 +1199,9 @@ impl SymbolicExecutor {
                 } else {
                     *self
                         .cur_state
-                        .get_symval(&name)
+                        .get_symval(&sname)
                         .cloned()
-                        .unwrap_or_else(|| {
-                            Box::new(SymbolicValue::Variable(
-                                name.to_string(),
-                                original_var_name.to_string(),
-                            ))
-                        })
+                        .unwrap_or_else(|| Box::new(SymbolicValue::Variable(sname.clone())))
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
@@ -1308,13 +1362,21 @@ impl SymbolicExecutor {
                 meta: _,
             } => {
                 let resolved_name = if access.is_empty() {
-                    format!("{}.{}", self.cur_state.get_owner(), name.clone())
+                    SymbolicName {
+                        name: *name,
+                        owner: self.cur_state.owner_name.clone(),
+                        access: Vec::new(),
+                    }
                 } else {
-                    let tmp_name = format!("{}.{}", self.cur_state.get_owner(), name);
+                    let tmp_name = SymbolicName {
+                        name: *name,
+                        owner: self.cur_state.owner_name.clone(),
+                        access: Vec::new(),
+                    };
                     let sv = self.cur_state.get_symval(&tmp_name).cloned();
                     let evaluated_access = access
                         .iter()
-                        .map(|arg0: &Access| self.evaluate_access(&arg0))
+                        .map(|arg0: &DebugAccess| self.evaluate_access(&arg0))
                         .collect::<Vec<_>>();
 
                     if evaluated_access.len() == 1 && sv.is_some() {
@@ -1330,19 +1392,13 @@ impl SymbolicExecutor {
                         }
                     }
 
-                    format!(
-                        "{}.{}{}",
-                        self.cur_state.get_owner(),
-                        name,
-                        &access
-                            .iter()
-                            .map(|arg0: &Access| self.evaluate_access(&arg0))
-                            .map(|debug_access| debug_access.to_string())
-                            .collect::<Vec<_>>()
-                            .join("")
-                    )
+                    SymbolicName {
+                        name: *name,
+                        owner: self.cur_state.owner_name.clone(),
+                        access: evaluated_access,
+                    }
                 };
-                SymbolicValue::Variable(resolved_name, name.to_string())
+                SymbolicValue::Variable(resolved_name)
             }
             DebugExpression::InfixOp {
                 meta: _,
@@ -1416,31 +1472,28 @@ impl SymbolicExecutor {
                 } else if self.function_library.contains_key(id) {
                     let mut subse = SymbolicExecutor::new(
                         self.template_library.clone(),
+                        self.name2id.clone(),
                         self.propagate_substitution,
                         self.prime.clone(),
                     );
-                    subse.cur_state.set_owner(format!(
-                        "{}.{}.{}",
-                        self.cur_state.get_owner(),
-                        id,
-                        self.function_counter[id]
-                    ));
+                    subse.cur_state.add_owner(*id);
+                    subse.cur_state.add_owner(self.function_counter[id]);
                     //subse.template_library = self.template_library.clone();
                     subse.function_library = self.function_library.clone();
                     self.function_counter
-                        .insert(id.to_string(), self.function_counter[id] + 1);
+                        .insert(*id, self.function_counter[id] + 1);
                     subse.function_counter = self.function_counter.clone();
 
                     let func = &self.function_library[id];
                     for i in 0..(func.function_argument_names.len()) {
-                        subse.cur_state.set_symval(
-                            format!(
-                                "{}.{}",
-                                subse.cur_state.get_owner(),
-                                func.function_argument_names[i]
-                            ),
-                            *evaluated_args[i].clone(),
-                        );
+                        let sname = SymbolicName {
+                            name: func.function_argument_names[i],
+                            owner: subse.cur_state.owner_name.clone(),
+                            access: Vec::new(),
+                        };
+                        subse
+                            .cur_state
+                            .set_symval(sname, *evaluated_args[i].clone());
                     }
 
                     if !self.off_trace {
@@ -1467,9 +1520,13 @@ impl SymbolicExecutor {
 
                     self.function_counter = subse.function_counter.clone();
 
-                    *subse.final_states[0].values
-                        [&format!("{}.__return__", subse.final_states[0].get_owner()).to_string()]
-                        .clone()
+                    let sname = SymbolicName {
+                        name: usize::MAX,
+                        owner: subse.final_states[0].owner_name.clone(),
+                        access: Vec::new(),
+                    };
+
+                    *subse.final_states[0].values[&sname].clone()
                 } else {
                     error!("Unknown Callee: {}", id);
                     SymbolicValue::Call(id.clone(), evaluated_args)
@@ -1494,8 +1551,8 @@ impl SymbolicExecutor {
             }*/
             // Handle other expression types
             _ => {
-                error!("Unhandled expression type: {:?}", expr);
-                SymbolicValue::Variable(format!("Unhandled({:?})", expr), "".to_string())
+                panic!("Unhandled expression type: {:?}", expr);
+                //SymbolicValue::Variable(format!("Unhandled({:?})", expr), "".to_string())
             }
         }
     }

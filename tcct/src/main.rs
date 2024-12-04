@@ -1,8 +1,8 @@
 //mod execution_user;
 mod input_user;
 mod parser_user;
-mod solver;
-mod stats;
+//mod solver;
+//mod stats;
 mod symbolic_execution;
 mod type_analysis_user;
 mod utils;
@@ -12,7 +12,6 @@ use env_logger;
 use input_user::Input;
 use log::{error, info, warn};
 use num_bigint_dig::BigInt;
-use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use std::collections::HashMap;
 use std::env;
 use std::str::FromStr;
@@ -20,7 +19,8 @@ use std::time;
 
 use parser_user::DebugStatement;
 use program_structure::ast::Expression;
-use solver::brute_force_search;
+//use solver::brute_force_search;
+//use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use symbolic_execution::{register_library, simplify_statement, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -48,12 +48,14 @@ fn start() -> Result<(), ()> {
     env_logger::init();
 
     let mut template_library = HashMap::new();
+    let mut name2id = HashMap::new();
 
     println!("{}", Colour::Green.paint("🧩 Parsing Templates..."));
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
         register_library(
             &mut template_library,
+            &mut name2id,
             k.clone(),
             &body.clone(),
             v.get_name_of_params(),
@@ -64,12 +66,13 @@ fn start() -> Result<(), ()> {
                 "{}{} {}{}",
                 BACK_GRAY_SCRIPT_BLACK, "🌳 AST Tree for", k, RESET
             );
-            println!("{:?}", DebugStatement::from(body.clone()));
+            println!("{:?}", template_library[&name2id[&k]].body);
         }
     }
 
     let mut sexe = SymbolicExecutor::new(
         Box::new(template_library.clone()),
+        Box::new(name2id.clone()),
         user_input.flag_propagate_substitution,
         BigInt::from_str(&user_input.debug_prime()).unwrap(),
     );
@@ -84,7 +87,7 @@ fn start() -> Result<(), ()> {
                 "{}{} {}{}",
                 BACK_GRAY_SCRIPT_BLACK, "🌴 AST Tree for", k, RESET
             );
-            println!("{:?}", DebugStatement::from(body.clone()));
+            println!("{:?}", sexe.function_library[&name2id[&k]].body);
         }
     }
 
@@ -98,27 +101,31 @@ fn start() -> Result<(), ()> {
                 "{}",
                 Colour::Green.paint("🛒 Gathering Trace/Side Constraints...")
             );
-            sexe.cur_state.set_owner("main".to_string());
-            sexe.cur_state.set_template_id(id.to_string());
+            sexe.name2id.insert("main".to_string(), sexe.name2id.len());
+            sexe.cur_state.add_owner(sexe.name2id.len() - 1);
+            sexe.cur_state.set_template_id(name2id[id]);
             if !user_input.flag_symbolic_template_params {
                 sexe.feed_arguments(template.get_name_of_params(), args);
             }
-            sexe.execute(&vec![DebugStatement::from(body), DebugStatement::Ret], 0);
+            let body = sexe.template_library[&sexe.name2id[id]].body.clone();
+            sexe.execute(&body, 0);
 
             println!("===========================================================");
-            let mut ts = ConstraintStatistics::new();
-            let mut ss = ConstraintStatistics::new();
+            //let mut ts = ConstraintStatistics::new();
+            //let mut ss = ConstraintStatistics::new();
             for s in &sexe.final_states {
+                /*
                 for c in &s.trace_constraints {
                     ts.update(c);
                 }
                 for c in &s.side_constraints {
                     ss.update(c);
-                }
+                }*/
                 info!("Final State: {:?}", s);
             }
             println!("===========================================================");
 
+            /*
             let mut is_safe = true;
             if user_input.search_mode != "none" {
                 println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
@@ -212,6 +219,7 @@ fn start() -> Result<(), ()> {
                 print_constraint_summary_statistics_pretty(&ss);
             }
             println!("===========================================================");
+            */
         }
         _ => {
             warn!("Cannot Find Main Call");
