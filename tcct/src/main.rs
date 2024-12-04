@@ -74,8 +74,8 @@ fn start() -> Result<(), ()> {
 
     let mut sexe = SymbolicExecutor::new(
         Box::new(template_library.clone()),
-        Box::new(name2id.clone()),
-        Box::new(id2name.clone()),
+        &mut name2id,
+        &mut id2name,
         user_input.flag_propagate_substitution,
         BigInt::from_str(&user_input.debug_prime()).unwrap(),
     );
@@ -90,7 +90,7 @@ fn start() -> Result<(), ()> {
                 "{}{} {}{}",
                 BACK_GRAY_SCRIPT_BLACK, "🌴 AST Tree for", k, RESET
             );
-            println!("{:?}", sexe.function_library[&name2id[&k]].body);
+            println!("{:?}", sexe.function_library[&sexe.name2id[&k]].body);
         }
     }
 
@@ -108,7 +108,7 @@ fn start() -> Result<(), ()> {
             sexe.id2name
                 .insert(sexe.name2id["main"], "main".to_string());
             sexe.cur_state.add_owner(sexe.name2id.len() - 1, 0);
-            sexe.cur_state.set_template_id(name2id[id]);
+            sexe.cur_state.set_template_id(sexe.name2id[id]);
             if !user_input.flag_symbolic_template_params {
                 sexe.feed_arguments(template.get_name_of_params(), args);
             }

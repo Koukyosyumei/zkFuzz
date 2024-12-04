@@ -571,11 +571,10 @@ pub fn register_library(
 /// * `prime` - A prime number used in computations.
 /// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
 /// * `max_depth` - Tracks maximum depth reached during execution.
-#[derive(Clone)]
-pub struct SymbolicExecutor {
+pub struct SymbolicExecutor<'a> {
     pub template_library: Box<HashMap<usize, Box<SymbolicTemplate>>>,
-    pub name2id: Box<HashMap<String, usize>>,
-    pub id2name: Box<HashMap<usize, String>>,
+    pub name2id: &'a mut HashMap<String, usize>,
+    pub id2name: &'a mut HashMap<usize, String>,
     pub function_library: HashMap<usize, Box<SymbolicFunction>>,
     pub function_counter: HashMap<usize, usize>,
     pub components_store: HashMap<SymbolicName, SymbolicComponent>,
@@ -593,12 +592,12 @@ pub struct SymbolicExecutor {
     pub max_depth: usize,
 }
 
-impl SymbolicExecutor {
+impl<'a> SymbolicExecutor<'a> {
     /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
     pub fn new(
         template_library: Box<HashMap<usize, Box<SymbolicTemplate>>>,
-        name2id: Box<HashMap<String, usize>>,
-        id2name: Box<HashMap<usize, String>>,
+        name2id: &'a mut HashMap<String, usize>,
+        id2name: &'a mut HashMap<usize, String>,
         propagate_substitution: bool,
         prime: BigInt,
     ) -> Self {
@@ -658,25 +657,25 @@ impl SymbolicExecutor {
     // * 'names' : Vector containing names corresponding with expressions being fed as arguments.
     // * 'args' : Vector containing expressions whose evaluated results will be assigned as argument values.
     pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
-        let mut cloned_name2id = self.name2id.clone();
-        let mut cloned_id2name = self.id2name.clone();
+        let mut name2id = self.name2id.clone();
+        let mut id2name = self.id2name.clone();
         for (n, a) in names.iter().zip(args.iter()) {
             let evaled_a = self.evaluate_expression(&DebugExpression::from(
                 a.clone(),
-                &mut cloned_name2id,
-                &mut cloned_id2name,
+                &mut name2id,
+                &mut id2name,
             ));
             self.cur_state.set_symval(
                 SymbolicName {
-                    name: self.name2id[n],
+                    name: name2id[n],
                     owner: self.cur_state.owner_name.clone(),
                     access: Vec::new(),
                 },
                 evaled_a,
             );
         }
-        self.name2id = cloned_name2id;
-        self.id2name = cloned_id2name;
+        //self.name2id = cloned_name2id;
+        //self.id2name = cloned_id2name;
     }
 
     pub fn register_function(
@@ -1046,10 +1045,13 @@ impl SymbolicExecutor {
 
                         if self.is_ready(var_name.clone()) {
                             if !self.components_store[&var_name].is_done {
+                                let name2id = &mut self.name2id;
+                                let id2name = &mut self.id2name;
+
                                 let mut subse = SymbolicExecutor::new(
                                     self.template_library.clone(),
-                                    self.name2id.clone(),
-                                    self.id2name.clone(),
+                                    name2id,
+                                    id2name,
                                     self.propagate_substitution,
                                     self.prime.clone(),
                                 );
@@ -1094,7 +1096,7 @@ impl SymbolicExecutor {
                                     );
                                     trace!(
                                         "📞 Call {}",
-                                        self.id2name
+                                        subse.id2name
                                             [&self.components_store[&var_name].template_name]
                                     );
                                 }
@@ -1632,10 +1634,12 @@ impl SymbolicExecutor {
                 if self.template_library.contains_key(id) {
                     SymbolicValue::Call(id.clone(), evaluated_args)
                 } else if self.function_library.contains_key(id) {
+                    let name2id = &mut self.name2id;
+                    let id2name = &mut self.id2name;
                     let mut subse = SymbolicExecutor::new(
                         self.template_library.clone(),
-                        self.name2id.clone(),
-                        self.id2name.clone(),
+                        name2id,
+                        id2name,
                         self.propagate_substitution,
                         self.prime.clone(),
                     );
@@ -1661,7 +1665,7 @@ impl SymbolicExecutor {
 
                     if !self.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
-                        trace!("📞 Call {}", self.id2name[id]);
+                        trace!("📞 Call {}", subse.id2name[id]);
                     }
 
                     subse.execute(&func.body, 0);
@@ -1677,8 +1681,8 @@ impl SymbolicExecutor {
                     self.cur_state
                         .side_constraints
                         .append(&mut subse.final_states[0].side_constraints);
-                    self.name2id = subse.name2id;
-                    self.id2name = subse.id2name;
+                    //self.name2id = subse.name2id;
+                    //self.id2name = subse.id2name;
 
                     if !self.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
