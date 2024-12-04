@@ -643,9 +643,9 @@ impl<'a> SymbolicExecutor<'a> {
     // # Returns
     //
     // A boolean indicating readiness status.
-    fn is_ready(&self, name: SymbolicName) -> bool {
-        self.components_store.contains_key(&name)
-            && self.components_store[&name]
+    fn is_ready(&self, name: &SymbolicName) -> bool {
+        self.components_store.contains_key(name)
+            && self.components_store[name]
                 .inputs
                 .iter()
                 .all(|(_, v)| v.is_some())
@@ -1019,9 +1019,10 @@ impl<'a> SymbolicExecutor<'a> {
                                 .var2type
                                 .contains_key(&var.clone())
                         {
-                            if let VariableType::Signal(SignalType::Output, _) = self
+                            if let Some(&VariableType::Signal(SignalType::Output, _)) = self
                                 .template_library[&self.cur_state.template_id]
-                                .var2type[&var.clone()]
+                                .var2type
+                                .get(&var)
                             {
                                 self.template_library
                                     .get_mut(&self.cur_state.template_id)
@@ -1045,7 +1046,7 @@ impl<'a> SymbolicExecutor<'a> {
                             }
                         }
 
-                        if self.is_ready(var_name.clone()) {
+                        if self.is_ready(&var_name) {
                             if !self.components_store[&var_name].is_done {
                                 let name2id = &mut self.name2id;
                                 let id2name = &mut self.id2name;
