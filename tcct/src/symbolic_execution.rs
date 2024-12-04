@@ -8,6 +8,7 @@ use rustc_hash::FxHashMap;
 use std::cmp::max;
 use std::collections::HashSet;
 use std::fmt;
+use std::rc::Rc;
 
 use program_structure::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
@@ -179,16 +180,16 @@ pub enum SymbolicValue {
     ConstantBool(bool),
     Variable(SymbolicName),
     BinaryOp(
-        Box<SymbolicValue>,
+        Rc<SymbolicValue>,
         DebugExpressionInfixOpcode,
-        Box<SymbolicValue>,
+        Rc<SymbolicValue>,
     ),
-    Conditional(Box<SymbolicValue>, Box<SymbolicValue>, Box<SymbolicValue>),
-    UnaryOp(DebugExpressionPrefixOpcode, Box<SymbolicValue>),
-    Array(Vec<Box<SymbolicValue>>),
-    Tuple(Vec<Box<SymbolicValue>>),
-    UniformArray(Box<SymbolicValue>, Box<SymbolicValue>),
-    Call(usize, Vec<Box<SymbolicValue>>),
+    Conditional(Rc<SymbolicValue>, Rc<SymbolicValue>, Rc<SymbolicValue>),
+    UnaryOp(DebugExpressionPrefixOpcode, Rc<SymbolicValue>),
+    Array(Vec<Rc<SymbolicValue>>),
+    Tuple(Vec<Rc<SymbolicValue>>),
+    UniformArray(Rc<SymbolicValue>, Rc<SymbolicValue>),
+    Call(usize, Vec<Rc<SymbolicValue>>),
 }
 
 /// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
@@ -289,9 +290,9 @@ pub struct SymbolicState {
     owner_name: Vec<OwnerName>,
     pub template_id: usize,
     depth: usize,
-    pub values: FxHashMap<SymbolicName, Box<SymbolicValue>>,
-    pub trace_constraints: Vec<Box<SymbolicValue>>,
-    pub side_constraints: Vec<Box<SymbolicValue>>,
+    pub values: FxHashMap<SymbolicName, Rc<SymbolicValue>>,
+    pub trace_constraints: Vec<Rc<SymbolicValue>>,
+    pub side_constraints: Vec<Rc<SymbolicValue>>,
 }
 
 /// Implements the `Debug` trait for `SymbolicState` to provide detailed state information during debugging.
@@ -423,7 +424,7 @@ impl SymbolicState {
     /// * `name` - The name of the variable.
     /// * `value` - The symbolic value to associate with the variable.
     pub fn set_symval(&mut self, name: SymbolicName, value: SymbolicValue) {
-        self.values.insert(name, Box::new(value));
+        self.values.insert(name, Rc::new(value));
     }
 
     /// Retrieves a symbolic value associated with a given variable name.
@@ -435,7 +436,7 @@ impl SymbolicState {
     /// # Returns
     ///
     /// An optional reference to the symbolic value if it exists.
-    pub fn get_symval(&self, name: &SymbolicName) -> Option<&Box<SymbolicValue>> {
+    pub fn get_symval(&self, name: &SymbolicName) -> Option<&Rc<SymbolicValue>> {
         self.values.get(name)
     }
 
@@ -445,7 +446,7 @@ impl SymbolicState {
     ///
     /// * `constraint` - The symbolic value representing the constraint.
     pub fn push_trace_constraint(&mut self, constraint: &SymbolicValue) {
-        self.trace_constraints.push(Box::new(constraint.clone()));
+        self.trace_constraints.push(Rc::new(constraint.clone()));
     }
 
     /// Adds a side constraint to the current state.
@@ -454,7 +455,7 @@ impl SymbolicState {
     ///
     /// * `constraint` - The symbolic value representing the constraint.
     pub fn push_side_constraint(&mut self, constraint: &SymbolicValue) {
-        self.side_constraints.push(Box::new(constraint.clone()));
+        self.side_constraints.push(Rc::new(constraint.clone()));
     }
 }
 
@@ -480,7 +481,7 @@ pub struct SymbolicFunction {
 #[derive(Default, Clone)]
 pub struct SymbolicComponent {
     pub template_name: usize,
-    pub args: Vec<Box<SymbolicValue>>,
+    pub args: Vec<Rc<SymbolicValue>>,
     pub inputs: FxHashMap<usize, Option<SymbolicValue>>,
     pub is_done: bool,
 }
@@ -845,7 +846,7 @@ impl<'a> SymbolicExecutor<'a> {
                         } else {
                             SymbolicValue::UnaryOp(
                                 DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
-                                Box::new(evaled_condition),
+                                Rc::new(evaled_condition),
                             )
                         };
                     let original_neg_evaled_condition =
@@ -854,7 +855,7 @@ impl<'a> SymbolicExecutor<'a> {
                         } else {
                             SymbolicValue::UnaryOp(
                                 DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
-                                Box::new(original_evaled_condition),
+                                Rc::new(original_evaled_condition),
                             )
                         };
                     if let SymbolicValue::ConstantBool(false) = neg_evaled_condition {
@@ -1077,7 +1078,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     };
                                     subse.cur_state.set_symval(
                                         n,
-                                        *self.components_store[&var_name].args[i].clone(),
+                                        (*self.components_store[&var_name].args[i].clone()).clone(),
                                     );
                                 }
 
@@ -1145,17 +1146,17 @@ impl<'a> SymbolicExecutor<'a> {
                         _ => {
                             if self.variable_types[var].0 != VariableType::Var {
                                 let cont = SymbolicValue::BinaryOp(
-                                    Box::new(SymbolicValue::Variable(var_name.clone())),
+                                    Rc::new(SymbolicValue::Variable(var_name.clone())),
                                     DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                    Box::new(value),
+                                    Rc::new(value),
                                 );
                                 self.cur_state.push_trace_constraint(&cont);
 
                                 if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
                                     let original_cont = SymbolicValue::BinaryOp(
-                                        Box::new(SymbolicValue::Variable(var_name)),
+                                        Rc::new(SymbolicValue::Variable(var_name)),
                                         DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                        Box::new(original_value),
+                                        Rc::new(original_value),
                                     );
                                     self.cur_state.push_side_constraint(&original_cont);
                                 }
@@ -1185,17 +1186,17 @@ impl<'a> SymbolicExecutor<'a> {
 
                     // Handle multiple substitution (simplified)
                     let cont = SymbolicValue::BinaryOp(
-                        Box::new(lhs),
+                        Rc::new(lhs),
                         DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                        Box::new(rhs),
+                        Rc::new(rhs),
                     );
                     self.cur_state.push_trace_constraint(&cont);
                     if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
                         // Handle multiple substitution (simplified)
                         let simple_cont = SymbolicValue::BinaryOp(
-                            Box::new(simple_lhs),
+                            Rc::new(simple_lhs),
                             DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                            Box::new(simple_rhs),
+                            Rc::new(simple_rhs),
                         );
                         self.cur_state.push_side_constraint(&simple_cont);
                     }
@@ -1218,14 +1219,14 @@ impl<'a> SymbolicExecutor<'a> {
                     let rhs = self.fold_variables(&rhe_val, !self.propagate_substitution);
 
                     let original_cond = SymbolicValue::BinaryOp(
-                        Box::new(original_lhs),
+                        Rc::new(original_lhs),
                         DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                        Box::new(original_rhs),
+                        Rc::new(original_rhs),
                     );
                     let cond = SymbolicValue::BinaryOp(
-                        Box::new(lhs),
+                        Rc::new(lhs),
                         DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                        Box::new(rhs),
+                        Rc::new(rhs),
                     );
 
                     self.cur_state.push_trace_constraint(&cond);
@@ -1349,24 +1350,32 @@ impl<'a> SymbolicExecutor<'a> {
                             if let VariableType::Signal(SignalType::Output, _) = typ {
                                 return symval.clone();
                             } else if let VariableType::Var = typ {
-                                return *self.cur_state.get_symval(&sname).cloned().unwrap_or_else(
-                                    || Box::new(SymbolicValue::Variable(sname.clone())),
-                                );
+                                return (*self
+                                    .cur_state
+                                    .get_symval(&sname)
+                                    .cloned()
+                                    .unwrap_or_else(|| {
+                                        Rc::new(SymbolicValue::Variable(sname.clone()))
+                                    })
+                                    .clone())
+                                .clone();
                             }
                         }
                     }
                     if let Some(boxed_value) = self.cur_state.get_symval(&sname) {
-                        if let SymbolicValue::ConstantInt(v) = *boxed_value.clone() {
+                        if let SymbolicValue::ConstantInt(v) = (*boxed_value.clone()).clone() {
                             return SymbolicValue::ConstantInt(v);
                         }
                     }
                     symval.clone()
                 } else {
-                    *self
+                    (*self
                         .cur_state
                         .get_symval(&sname)
                         .cloned()
-                        .unwrap_or_else(|| Box::new(SymbolicValue::Variable(sname.clone())))
+                        .unwrap_or_else(|| Rc::new(SymbolicValue::Variable(sname.clone())))
+                        .clone())
+                    .clone()
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
@@ -1436,9 +1445,9 @@ impl<'a> SymbolicExecutor<'a> {
                                 SymbolicValue::ConstantBool(lv % &self.prime != rv % &self.prime)
                             }
                             _ => SymbolicValue::BinaryOp(
-                                Box::new(lhs),
+                                Rc::new(lhs),
                                 infix_op.clone(),
-                                Box::new(rhs),
+                                Rc::new(rhs),
                             ),
                         }
                     }
@@ -1451,54 +1460,54 @@ impl<'a> SymbolicExecutor<'a> {
                                 SymbolicValue::ConstantBool(*lv || *rv)
                             }
                             _ => SymbolicValue::BinaryOp(
-                                Box::new(lhs),
+                                Rc::new(lhs),
                                 infix_op.clone(),
-                                Box::new(rhs),
+                                Rc::new(rhs),
                             ),
                         }
                     }
-                    _ => SymbolicValue::BinaryOp(Box::new(lhs), infix_op.clone(), Box::new(rhs)),
+                    _ => SymbolicValue::BinaryOp(Rc::new(lhs), infix_op.clone(), Rc::new(rhs)),
                 }
             }
             SymbolicValue::Conditional(cond, then_val, else_val) => SymbolicValue::Conditional(
-                Box::new(self.fold_variables(cond, only_constatant_folding)),
-                Box::new(self.fold_variables(then_val, only_constatant_folding)),
-                Box::new(self.fold_variables(else_val, only_constatant_folding)),
+                Rc::new(self.fold_variables(cond, only_constatant_folding)),
+                Rc::new(self.fold_variables(then_val, only_constatant_folding)),
+                Rc::new(self.fold_variables(else_val, only_constatant_folding)),
             ),
             SymbolicValue::UnaryOp(prefix_op, value) => {
                 let folded_symval = self.fold_variables(value, only_constatant_folding);
                 match &folded_symval {
                     SymbolicValue::ConstantInt(rv) => match prefix_op.0 {
                         ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
-                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(folded_symval)),
+                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(folded_symval)),
                     },
                     SymbolicValue::ConstantBool(rv) => match prefix_op.0 {
                         ExpressionPrefixOpcode::BoolNot => SymbolicValue::ConstantBool(!rv),
-                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(folded_symval)),
+                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(folded_symval)),
                     },
-                    _ => SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(folded_symval)),
+                    _ => SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(folded_symval)),
                 }
             }
             SymbolicValue::Array(elements) => SymbolicValue::Array(
                 elements
                     .iter()
-                    .map(|e| Box::new(self.fold_variables(e, only_constatant_folding)))
+                    .map(|e| Rc::new(self.fold_variables(e, only_constatant_folding)))
                     .collect(),
             ),
             SymbolicValue::Tuple(elements) => SymbolicValue::Tuple(
                 elements
                     .iter()
-                    .map(|e| Box::new(self.fold_variables(e, only_constatant_folding)))
+                    .map(|e| Rc::new(self.fold_variables(e, only_constatant_folding)))
                     .collect(),
             ),
             SymbolicValue::UniformArray(element, count) => SymbolicValue::UniformArray(
-                Box::new(self.fold_variables(element, only_constatant_folding)),
-                Box::new(self.fold_variables(count, only_constatant_folding)),
+                Rc::new(self.fold_variables(element, only_constatant_folding)),
+                Rc::new(self.fold_variables(count, only_constatant_folding)),
             ),
             SymbolicValue::Call(func_name, args) => SymbolicValue::Call(
                 func_name.clone(),
                 args.iter()
-                    .map(|arg| Box::new(self.fold_variables(arg, only_constatant_folding)))
+                    .map(|arg| Rc::new(self.fold_variables(arg, only_constatant_folding)))
                     .collect(),
             ),
             _ => symval.clone(),
@@ -1548,9 +1557,9 @@ impl<'a> SymbolicExecutor<'a> {
                         if let SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(a)) =
                             &evaluated_access[0]
                         {
-                            match *sv.unwrap().clone() {
+                            match (*sv.unwrap().clone()).clone() {
                                 SymbolicValue::Array(values) => {
-                                    return *values[a.to_usize().unwrap()].clone();
+                                    return (*values[a.to_usize().unwrap()].clone()).clone();
                                 }
                                 _ => {}
                             }
@@ -1573,7 +1582,7 @@ impl<'a> SymbolicExecutor<'a> {
             } => {
                 let lhs = self.evaluate_expression(lhe);
                 let rhs = self.evaluate_expression(rhe);
-                SymbolicValue::BinaryOp(Box::new(lhs), infix_op.clone(), Box::new(rhs))
+                SymbolicValue::BinaryOp(Rc::new(lhs), infix_op.clone(), Rc::new(rhs))
             }
             DebugExpression::PrefixOp {
                 meta: _,
@@ -1581,7 +1590,7 @@ impl<'a> SymbolicExecutor<'a> {
                 rhe,
             } => {
                 let expr = self.evaluate_expression(rhe);
-                SymbolicValue::UnaryOp(prefix_op.clone(), Box::new(expr))
+                SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(expr))
             }
             DebugExpression::InlineSwitchOp {
                 meta: _,
@@ -1593,23 +1602,23 @@ impl<'a> SymbolicExecutor<'a> {
                 let true_branch = self.evaluate_expression(if_true);
                 let false_branch = self.evaluate_expression(if_false);
                 SymbolicValue::Conditional(
-                    Box::new(condition),
-                    Box::new(true_branch),
-                    Box::new(false_branch),
+                    Rc::new(condition),
+                    Rc::new(true_branch),
+                    Rc::new(false_branch),
                 )
             }
             DebugExpression::ParallelOp { rhe, .. } => self.evaluate_expression(rhe),
             DebugExpression::ArrayInLine { meta: _, values } => {
                 let elements = values
                     .iter()
-                    .map(|v| Box::new(self.evaluate_expression(v)))
+                    .map(|v| Rc::new(self.evaluate_expression(v)))
                     .collect();
                 SymbolicValue::Array(elements)
             }
             DebugExpression::Tuple { meta: _, values } => {
                 let elements = values
                     .iter()
-                    .map(|v| Box::new(self.evaluate_expression(v)))
+                    .map(|v| Rc::new(self.evaluate_expression(v)))
                     .collect();
                 SymbolicValue::Array(elements)
             }
@@ -1618,10 +1627,7 @@ impl<'a> SymbolicExecutor<'a> {
             } => {
                 let evaluated_value = self.evaluate_expression(value);
                 let evaluated_dimension = self.evaluate_expression(dimension);
-                SymbolicValue::UniformArray(
-                    Box::new(evaluated_value),
-                    Box::new(evaluated_dimension),
-                )
+                SymbolicValue::UniformArray(Rc::new(evaluated_value), Rc::new(evaluated_dimension))
             }
             DebugExpression::Call { id, args, .. } => {
                 let tmp_args: Vec<_> = args
@@ -1630,7 +1636,7 @@ impl<'a> SymbolicExecutor<'a> {
                     .collect();
                 let evaluated_args = tmp_args
                     .iter()
-                    .map(|arg| Box::new(self.fold_variables(&arg, false)))
+                    .map(|arg| Rc::new(self.fold_variables(&arg, false)))
                     .collect();
                 if self.template_library.contains_key(id) {
                     SymbolicValue::Call(id.clone(), evaluated_args)
@@ -1661,7 +1667,7 @@ impl<'a> SymbolicExecutor<'a> {
                         };
                         subse
                             .cur_state
-                            .set_symval(sname, *evaluated_args[i].clone());
+                            .set_symval(sname, (*evaluated_args[i].clone()).clone());
                     }
 
                     if !self.off_trace {
@@ -1697,7 +1703,7 @@ impl<'a> SymbolicExecutor<'a> {
                         access: Vec::new(),
                     };
 
-                    *subse.final_states[0].values[&sname].clone()
+                    (*subse.final_states[0].values[&sname].clone()).clone()
                 } else {
                     error!("Unknown Callee: {}", id);
                     SymbolicValue::Call(id.clone(), evaluated_args)
