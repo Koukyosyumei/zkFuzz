@@ -1,5 +1,5 @@
 use num_bigint_dig::BigInt;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::mem;
@@ -166,8 +166,8 @@ pub enum DebugStatement {
 impl DebugAccess {
     pub fn from(
         access: Access,
-        name2id: &mut HashMap<String, usize>,
-        id2name: &mut HashMap<usize, String>,
+        name2id: &mut FxHashMap<String, usize>,
+        id2name: &mut FxHashMap<usize, String>,
     ) -> Self {
         match access {
             Access::ComponentAccess(name) => {
@@ -190,8 +190,8 @@ impl DebugAccess {
 impl DebugExpression {
     pub fn from(
         expr: Expression,
-        name2id: &mut HashMap<String, usize>,
-        id2name: &mut HashMap<usize, String>,
+        name2id: &mut FxHashMap<String, usize>,
+        id2name: &mut FxHashMap<usize, String>,
     ) -> Self {
         match expr {
             Expression::InfixOp {
@@ -341,8 +341,8 @@ impl DebugExpression {
 impl DebugStatement {
     pub fn from(
         stmt: Statement,
-        name2id: &mut HashMap<String, usize>,
-        id2name: &mut HashMap<usize, String>,
+        name2id: &mut FxHashMap<String, usize>,
+        id2name: &mut FxHashMap<usize, String>,
     ) -> Self {
         match stmt {
             Statement::IfThenElse {

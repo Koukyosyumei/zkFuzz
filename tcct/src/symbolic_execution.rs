@@ -4,8 +4,8 @@ use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::Signed;
 use num_traits::{One, Zero};
+use rustc_hash::FxHashMap;
 use std::cmp::max;
-use std::collections::HashMap;
 use std::collections::HashSet;
 use std::fmt;
 
@@ -124,7 +124,7 @@ pub enum SymbolicAccess {
 
 impl SymbolicAccess {
     /// Provides a compact format for displaying symbolic access in expressions.
-    fn lookup_fmt(&self, lookup: &HashMap<usize, String>) -> String {
+    fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         match &self {
             SymbolicAccess::ComponentAccess(name) => {
                 format!(".{}", lookup[name])
@@ -153,7 +153,7 @@ pub struct SymbolicName {
 }
 
 impl SymbolicName {
-    fn lookup_fmt(&self, lookup: &HashMap<usize, String>) -> String {
+    fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         format!(
             "{}.{}{}",
             self.owner
@@ -193,7 +193,7 @@ pub enum SymbolicValue {
 
 /// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
 impl SymbolicValue {
-    fn lookup_fmt(&self, lookup: &HashMap<usize, String>) -> String {
+    fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         match self {
             SymbolicValue::ConstantInt(value) => format!("{}", value),
             SymbolicValue::ConstantBool(flag) => {
@@ -289,14 +289,14 @@ pub struct SymbolicState {
     owner_name: Vec<OwnerName>,
     pub template_id: usize,
     depth: usize,
-    pub values: HashMap<SymbolicName, Box<SymbolicValue>>,
+    pub values: FxHashMap<SymbolicName, Box<SymbolicValue>>,
     pub trace_constraints: Vec<Box<SymbolicValue>>,
     pub side_constraints: Vec<Box<SymbolicValue>>,
 }
 
 /// Implements the `Debug` trait for `SymbolicState` to provide detailed state information during debugging.
 impl SymbolicState {
-    pub fn lookup_fmt(&self, lookup: &HashMap<usize, String>) -> String {
+    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         let mut s = "".to_string();
         s += &format!("🛠️ {}", format!("{}", "SymbolicState [\n").cyan());
         s += &format!(
@@ -368,7 +368,7 @@ impl SymbolicState {
             owner_name: Vec::new(),
             template_id: usize::MAX,
             depth: 0_usize,
-            values: HashMap::new(),
+            values: FxHashMap::default(),
             trace_constraints: Vec::new(),
             side_constraints: Vec::new(),
         }
@@ -386,7 +386,7 @@ impl SymbolicState {
         });
     }
 
-    pub fn get_owner(&self, lookup: &HashMap<usize, String>) -> String {
+    pub fn get_owner(&self, lookup: &FxHashMap<usize, String>) -> String {
         self.owner_name
             .iter()
             .map(|e: &OwnerName| lookup[&e.name].clone())
@@ -465,7 +465,7 @@ pub struct SymbolicTemplate {
     pub inputs: Vec<usize>,
     pub outputs: Vec<usize>,
     pub unrolled_outputs: HashSet<SymbolicName>,
-    pub var2type: HashMap<usize, VariableType>,
+    pub var2type: FxHashMap<usize, VariableType>,
     pub body: Vec<DebugStatement>,
 }
 
@@ -481,7 +481,7 @@ pub struct SymbolicFunction {
 pub struct SymbolicComponent {
     pub template_name: usize,
     pub args: Vec<Box<SymbolicValue>>,
-    pub inputs: HashMap<usize, Option<SymbolicValue>>,
+    pub inputs: FxHashMap<usize, Option<SymbolicValue>>,
     pub is_done: bool,
 }
 
@@ -493,16 +493,16 @@ pub struct SymbolicComponent {
 // * 'body' : Block statement serving as main logic body defining behavior captured by template .
 // * 'template_parameter_names': List containing names identifying parameters used within template logic .
 pub fn register_library(
-    template_library: &mut HashMap<usize, Box<SymbolicTemplate>>,
-    name2id: &mut HashMap<String, usize>,
-    id2name: &mut HashMap<usize, String>,
+    template_library: &mut FxHashMap<usize, Box<SymbolicTemplate>>,
+    name2id: &mut FxHashMap<String, usize>,
+    id2name: &mut FxHashMap<usize, String>,
     name: String,
     body: &Statement,
     template_parameter_names: &Vec<String>,
 ) {
     let mut inputs: Vec<usize> = vec![];
     let mut outputs: Vec<usize> = vec![];
-    let mut var2type: HashMap<usize, VariableType> = HashMap::new();
+    let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
 
     let i = if let Some(i) = name2id.get(&name) {
         *i
@@ -572,13 +572,13 @@ pub fn register_library(
 /// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
 /// * `max_depth` - Tracks maximum depth reached during execution.
 pub struct SymbolicExecutor<'a> {
-    pub template_library: Box<HashMap<usize, Box<SymbolicTemplate>>>,
-    pub name2id: &'a mut HashMap<String, usize>,
-    pub id2name: &'a mut HashMap<usize, String>,
-    pub function_library: HashMap<usize, Box<SymbolicFunction>>,
-    pub function_counter: HashMap<usize, usize>,
-    pub components_store: HashMap<SymbolicName, SymbolicComponent>,
-    pub variable_types: HashMap<usize, DebugVariableType>,
+    pub template_library: Box<FxHashMap<usize, Box<SymbolicTemplate>>>,
+    pub name2id: &'a mut FxHashMap<String, usize>,
+    pub id2name: &'a mut FxHashMap<usize, String>,
+    pub function_library: FxHashMap<usize, Box<SymbolicFunction>>,
+    pub function_counter: FxHashMap<usize, usize>,
+    pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,
+    pub variable_types: FxHashMap<usize, DebugVariableType>,
     pub prime: BigInt,
     pub propagate_substitution: bool,
     pub skip_initialization_blocks: bool,
@@ -595,9 +595,9 @@ pub struct SymbolicExecutor<'a> {
 impl<'a> SymbolicExecutor<'a> {
     /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
     pub fn new(
-        template_library: Box<HashMap<usize, Box<SymbolicTemplate>>>,
-        name2id: &'a mut HashMap<String, usize>,
-        id2name: &'a mut HashMap<usize, String>,
+        template_library: Box<FxHashMap<usize, Box<SymbolicTemplate>>>,
+        name2id: &'a mut FxHashMap<String, usize>,
+        id2name: &'a mut FxHashMap<usize, String>,
         propagate_substitution: bool,
         prime: BigInt,
     ) -> Self {
@@ -605,10 +605,10 @@ impl<'a> SymbolicExecutor<'a> {
             template_library: template_library,
             name2id,
             id2name,
-            function_library: HashMap::new(),
-            function_counter: HashMap::new(),
-            components_store: HashMap::new(),
-            variable_types: HashMap::new(),
+            function_library: FxHashMap::default(),
+            function_counter: FxHashMap::default(),
+            components_store: FxHashMap::default(),
+            variable_types: FxHashMap::default(),
             prime: prime,
             propagate_substitution: propagate_substitution,
             skip_initialization_blocks: false,
@@ -738,6 +738,7 @@ impl<'a> SymbolicExecutor<'a> {
     pub fn execute(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
         if cur_bid < statements.len() {
             self.max_depth = max(self.max_depth, self.cur_state.get_depth());
+
             /*
             let n = SymbolicName {
                 name: self.name2id["i"],
@@ -753,6 +754,7 @@ impl<'a> SymbolicExecutor<'a> {
                     self.cur_state.values[&n].lookup_fmt(&self.id2name)
                 );
             }*/
+
             match &statements[cur_bid] {
                 DebugStatement::InitializationBlock {
                     initializations,
@@ -1125,8 +1127,8 @@ impl<'a> SymbolicExecutor<'a> {
                         SymbolicValue::Call(callee_name, args) => {
                             // Initializing the Template Component
                             if self.template_library.contains_key(&callee_name) {
-                                let mut comp_inputs: HashMap<usize, Option<SymbolicValue>> =
-                                    HashMap::new();
+                                let mut comp_inputs: FxHashMap<usize, Option<SymbolicValue>> =
+                                    FxHashMap::default();
                                 for inp_name in &self.template_library[&callee_name].inputs.clone()
                                 {
                                     comp_inputs.insert(inp_name.clone(), None);
@@ -1288,7 +1290,7 @@ impl<'a> SymbolicExecutor<'a> {
     pub fn concrete_execute(
         &mut self,
         id: &String,
-        assignment: &HashMap<SymbolicName, BigInt>,
+        assignment: &FxHashMap<SymbolicName, BigInt>,
         off_trace: bool,
     ) {
         self.cur_state.template_id = self.name2id[id];

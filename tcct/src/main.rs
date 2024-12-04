@@ -12,7 +12,7 @@ use env_logger;
 use input_user::Input;
 use log::{error, info, warn};
 use num_bigint_dig::BigInt;
-use std::collections::HashMap;
+use rustc_hash::FxHashMap;
 use std::env;
 use std::str::FromStr;
 use std::time;
@@ -47,9 +47,9 @@ fn start() -> Result<(), ()> {
 
     env_logger::init();
 
-    let mut template_library = HashMap::new();
-    let mut name2id = HashMap::new();
-    let mut id2name = HashMap::new();
+    let mut template_library = FxHashMap::default();
+    let mut name2id = FxHashMap::default();
+    let mut id2name = FxHashMap::default();
 
     println!("{}", Colour::Green.paint("🧩 Parsing Templates..."));
     for (k, v) in program_archive.templates.clone().into_iter() {
