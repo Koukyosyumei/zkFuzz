@@ -586,8 +586,8 @@ pub struct SymbolicExecutor<'a> {
     pub keep_track_unrolled_offset: bool,
     // states
     pub cur_state: SymbolicState,
-    pub block_end_states: Vec<Box<SymbolicState>>,
-    pub final_states: Vec<Box<SymbolicState>>,
+    pub block_end_states: Vec<SymbolicState>,
+    pub final_states: Vec<SymbolicState>,
     // stats
     pub max_depth: usize,
 }
@@ -722,7 +722,7 @@ impl<'a> SymbolicExecutor<'a> {
     ) {
         let drained_states: Vec<_> = self.block_end_states.drain(..).collect();
         for state in drained_states {
-            self.cur_state = *state;
+            self.cur_state = state;
             self.cur_state.set_depth(depth);
             self.execute(statements, cur_bid);
         }
@@ -771,7 +771,7 @@ impl<'a> SymbolicExecutor<'a> {
                             self.execute(&vec![init.clone()], 0);
                         }
                     }
-                    self.block_end_states = vec![Box::new(self.cur_state.clone())];
+                    self.block_end_states = vec![self.cur_state.clone()];
                     self.expand_all_stack_states(
                         statements,
                         cur_bid + 1,
@@ -873,7 +873,7 @@ impl<'a> SymbolicExecutor<'a> {
                         if let Some(else_stmt) = else_case {
                             self.execute(&vec![*else_stmt.clone()], 0);
                         } else {
-                            self.block_end_states = vec![Box::new(self.cur_state.clone())];
+                            self.block_end_states = vec![self.cur_state.clone()];
                         }
                         self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
                     }
@@ -900,7 +900,7 @@ impl<'a> SymbolicExecutor<'a> {
                             self.block_end_states.pop();
                             self.execute(statements, cur_bid);
                         } else {
-                            self.block_end_states.push(Box::new(self.cur_state.clone()));
+                            self.block_end_states.push(self.cur_state.clone());
                         }
                     } else {
                         panic!("This tool currently cannot handle the symbolic condition of While Loop: {}", evaled_condition.lookup_fmt(&self.id2name));
@@ -1279,11 +1279,11 @@ impl<'a> SymbolicExecutor<'a> {
                             self.cur_state.lookup_fmt(&self.id2name)
                         );
                     }
-                    self.final_states.push(Box::new(self.cur_state.clone()));
+                    self.final_states.push(self.cur_state.clone());
                 }
             }
         } else {
-            self.block_end_states.push(Box::new(self.cur_state.clone()));
+            self.block_end_states.push(self.cur_state.clone());
         }
     }
 
