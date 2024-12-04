@@ -164,26 +164,35 @@ pub enum DebugStatement {
 }
 
 impl DebugAccess {
-    pub fn from(access: Access, name2id: &mut HashMap<String, usize>) -> Self {
+    pub fn from(
+        access: Access,
+        name2id: &mut HashMap<String, usize>,
+        id2name: &mut HashMap<usize, String>,
+    ) -> Self {
         match access {
             Access::ComponentAccess(name) => {
                 let i = if let Some(i) = name2id.get(&name) {
                     *i
                 } else {
-                    name2id.insert(name, name2id.len());
+                    name2id.insert(name.clone(), name2id.len());
+                    id2name.insert(name2id[&name], name);
                     name2id.len() - 1
                 };
                 DebugAccess::ComponentAccess(i)
             }
             Access::ArrayAccess(expr) => {
-                DebugAccess::ArrayAccess(DebugExpression::from(expr, name2id))
+                DebugAccess::ArrayAccess(DebugExpression::from(expr, name2id, id2name))
             }
         }
     }
 }
 
 impl DebugExpression {
-    pub fn from(expr: Expression, name2id: &mut HashMap<String, usize>) -> Self {
+    pub fn from(
+        expr: Expression,
+        name2id: &mut HashMap<String, usize>,
+        id2name: &mut HashMap<usize, String>,
+    ) -> Self {
         match expr {
             Expression::InfixOp {
                 meta,
@@ -192,9 +201,9 @@ impl DebugExpression {
                 rhe,
             } => DebugExpression::InfixOp {
                 meta,
-                lhe: Box::new(DebugExpression::from(*lhe, name2id)),
+                lhe: Box::new(DebugExpression::from(*lhe, name2id, id2name)),
                 infix_op: DebugExpressionInfixOpcode(infix_op),
-                rhe: Box::new(DebugExpression::from(*rhe, name2id)),
+                rhe: Box::new(DebugExpression::from(*rhe, name2id, id2name)),
             },
             Expression::PrefixOp {
                 meta,
@@ -203,7 +212,7 @@ impl DebugExpression {
             } => DebugExpression::PrefixOp {
                 meta,
                 prefix_op: DebugExpressionPrefixOpcode(prefix_op),
-                rhe: Box::new(DebugExpression::from(*rhe, name2id)),
+                rhe: Box::new(DebugExpression::from(*rhe, name2id, id2name)),
             },
             Expression::InlineSwitchOp {
                 meta,
@@ -212,19 +221,20 @@ impl DebugExpression {
                 if_false,
             } => DebugExpression::InlineSwitchOp {
                 meta,
-                cond: Box::new(DebugExpression::from(*cond, name2id)),
-                if_true: Box::new(DebugExpression::from(*if_true, name2id)),
-                if_false: Box::new(DebugExpression::from(*if_false, name2id)),
+                cond: Box::new(DebugExpression::from(*cond, name2id, id2name)),
+                if_true: Box::new(DebugExpression::from(*if_true, name2id, id2name)),
+                if_false: Box::new(DebugExpression::from(*if_false, name2id, id2name)),
             },
             Expression::ParallelOp { meta, rhe } => DebugExpression::ParallelOp {
                 meta,
-                rhe: Box::new(DebugExpression::from(*rhe, name2id)),
+                rhe: Box::new(DebugExpression::from(*rhe, name2id, id2name)),
             },
             Expression::Variable { meta, name, access } => {
                 let i = if let Some(i) = name2id.get(&name) {
                     *i
                 } else {
-                    name2id.insert(name, name2id.len());
+                    name2id.insert(name.clone(), name2id.len());
+                    id2name.insert(name2id[&name], name);
                     name2id.len() - 1
                 };
                 DebugExpression::Variable {
@@ -232,7 +242,7 @@ impl DebugExpression {
                     name: i,
                     access: access
                         .into_iter()
-                        .map(|a| DebugAccess::from(a, name2id))
+                        .map(|a| DebugAccess::from(a, name2id, id2name))
                         .collect(),
                 }
             }
@@ -241,7 +251,8 @@ impl DebugExpression {
                 let i = if let Some(i) = name2id.get(&id) {
                     *i
                 } else {
-                    name2id.insert(id, name2id.len());
+                    name2id.insert(id.clone(), name2id.len());
+                    id2name.insert(name2id[&id], id);
                     name2id.len() - 1
                 };
                 DebugExpression::Call {
@@ -249,7 +260,7 @@ impl DebugExpression {
                     id: i,
                     args: args
                         .into_iter()
-                        .map(|arg| DebugExpression::from(arg, name2id))
+                        .map(|arg| DebugExpression::from(arg, name2id, id2name))
                         .collect(),
                 }
             }
@@ -257,7 +268,8 @@ impl DebugExpression {
                 let i = if let Some(i) = name2id.get(&id) {
                     *i
                 } else {
-                    name2id.insert(id, name2id.len());
+                    name2id.insert(id.clone(), name2id.len());
+                    id2name.insert(name2id[&id], id);
                     name2id.len() - 1
                 };
                 DebugExpression::BusCall {
@@ -265,7 +277,7 @@ impl DebugExpression {
                     id: i,
                     args: args
                         .into_iter()
-                        .map(|arg| DebugExpression::from(arg, name2id))
+                        .map(|arg| DebugExpression::from(arg, name2id, id2name))
                         .collect(),
                 }
             }
@@ -280,7 +292,8 @@ impl DebugExpression {
                 let i = if let Some(i) = name2id.get(&id) {
                     *i
                 } else {
-                    name2id.insert(id, name2id.len());
+                    name2id.insert(id.clone(), name2id.len());
+                    id2name.insert(name2id[&id], id);
                     name2id.len() - 1
                 };
                 DebugExpression::AnonymousComp {
@@ -289,11 +302,11 @@ impl DebugExpression {
                     is_parallel,
                     params: params
                         .into_iter()
-                        .map(|p| DebugExpression::from(p, name2id))
+                        .map(|p| DebugExpression::from(p, name2id, id2name))
                         .collect(),
                     signals: signals
                         .into_iter()
-                        .map(|s| DebugExpression::from(s, name2id))
+                        .map(|s| DebugExpression::from(s, name2id, id2name))
                         .collect(),
                     names,
                 }
@@ -302,14 +315,14 @@ impl DebugExpression {
                 meta,
                 values: values
                     .into_iter()
-                    .map(|v| DebugExpression::from(v, name2id))
+                    .map(|v| DebugExpression::from(v, name2id, id2name))
                     .collect(),
             },
             Expression::Tuple { meta, values } => DebugExpression::Tuple {
                 meta,
                 values: values
                     .into_iter()
-                    .map(|v| DebugExpression::from(v, name2id))
+                    .map(|v| DebugExpression::from(v, name2id, id2name))
                     .collect(),
             },
             Expression::UniformArray {
@@ -318,15 +331,19 @@ impl DebugExpression {
                 dimension,
             } => DebugExpression::UniformArray {
                 meta,
-                value: Box::new(DebugExpression::from(*value, name2id)),
-                dimension: Box::new(DebugExpression::from(*dimension, name2id)),
+                value: Box::new(DebugExpression::from(*value, name2id, id2name)),
+                dimension: Box::new(DebugExpression::from(*dimension, name2id, id2name)),
             },
         }
     }
 }
 
 impl DebugStatement {
-    pub fn from(stmt: Statement, name2id: &mut HashMap<String, usize>) -> Self {
+    pub fn from(
+        stmt: Statement,
+        name2id: &mut HashMap<String, usize>,
+        id2name: &mut HashMap<usize, String>,
+    ) -> Self {
         match stmt {
             Statement::IfThenElse {
                 meta,
@@ -335,19 +352,19 @@ impl DebugStatement {
                 else_case,
             } => DebugStatement::IfThenElse {
                 meta,
-                cond: DebugExpression::from(cond, name2id),
-                if_case: Box::new(DebugStatement::from(*if_case, name2id)),
+                cond: DebugExpression::from(cond, name2id, id2name),
+                if_case: Box::new(DebugStatement::from(*if_case, name2id, id2name)),
                 else_case: else_case
-                    .map(|else_case| Box::new(DebugStatement::from(*else_case, name2id))),
+                    .map(|else_case| Box::new(DebugStatement::from(*else_case, name2id, id2name))),
             },
             Statement::While { meta, cond, stmt } => DebugStatement::While {
                 meta,
-                cond: DebugExpression::from(cond, name2id),
-                stmt: Box::new(DebugStatement::from(*stmt, name2id)),
+                cond: DebugExpression::from(cond, name2id, id2name),
+                stmt: Box::new(DebugStatement::from(*stmt, name2id, id2name)),
             },
             Statement::Return { meta, value } => DebugStatement::Return {
                 meta,
-                value: DebugExpression::from(value, name2id),
+                value: DebugExpression::from(value, name2id, id2name),
             },
             Statement::InitializationBlock {
                 meta,
@@ -358,7 +375,7 @@ impl DebugStatement {
                 xtype,
                 initializations: initializations
                     .into_iter()
-                    .map(|stmt| DebugStatement::from(stmt, name2id))
+                    .map(|stmt| DebugStatement::from(stmt, name2id, id2name))
                     .collect(),
             },
             Statement::Declaration {
@@ -371,7 +388,8 @@ impl DebugStatement {
                 let i = if let Some(i) = name2id.get(&name) {
                     *i
                 } else {
-                    name2id.insert(name, name2id.len());
+                    name2id.insert(name.clone(), name2id.len());
+                    id2name.insert(name2id[&name], name);
                     name2id.len() - 1
                 };
                 DebugStatement::Declaration {
@@ -380,7 +398,7 @@ impl DebugStatement {
                     name: i,
                     dimensions: dimensions
                         .into_iter()
-                        .map(|dim| DebugExpression::from(dim, name2id))
+                        .map(|dim| DebugExpression::from(dim, name2id, id2name))
                         .collect(),
                     is_constant: is_constant,
                 }
@@ -395,7 +413,8 @@ impl DebugStatement {
                 let i = if let Some(i) = name2id.get(&var) {
                     *i
                 } else {
-                    name2id.insert(var, name2id.len());
+                    name2id.insert(var.clone(), name2id.len());
+                    id2name.insert(name2id[&var], var);
                     name2id.len() - 1
                 };
                 DebugStatement::Substitution {
@@ -403,32 +422,32 @@ impl DebugStatement {
                     var: i,
                     access: access
                         .into_iter()
-                        .map(|a| DebugAccess::from(a, name2id))
+                        .map(|a| DebugAccess::from(a, name2id, id2name))
                         .collect(),
                     op: DebugAssignOp(op),
-                    rhe: DebugExpression::from(rhe, name2id),
+                    rhe: DebugExpression::from(rhe, name2id, id2name),
                 }
             }
             Statement::MultSubstitution { meta, lhe, op, rhe } => {
                 DebugStatement::MultSubstitution {
                     meta,
-                    lhe: DebugExpression::from(lhe, name2id),
+                    lhe: DebugExpression::from(lhe, name2id, id2name),
                     op: DebugAssignOp(op),
-                    rhe: DebugExpression::from(rhe, name2id),
+                    rhe: DebugExpression::from(rhe, name2id, id2name),
                 }
             }
             Statement::UnderscoreSubstitution { meta, op, rhe } => {
                 DebugStatement::UnderscoreSubstitution {
                     meta,
                     op: DebugAssignOp(op),
-                    rhe: DebugExpression::from(rhe, name2id),
+                    rhe: DebugExpression::from(rhe, name2id, id2name),
                 }
             }
             Statement::ConstraintEquality { meta, lhe, rhe } => {
                 DebugStatement::ConstraintEquality {
                     meta,
-                    lhe: DebugExpression::from(lhe, name2id),
-                    rhe: DebugExpression::from(rhe, name2id),
+                    lhe: DebugExpression::from(lhe, name2id, id2name),
+                    rhe: DebugExpression::from(rhe, name2id, id2name),
                 }
             }
             Statement::LogCall { meta, args } => DebugStatement::LogCall { meta, args },
@@ -436,12 +455,12 @@ impl DebugStatement {
                 meta,
                 stmts: stmts
                     .into_iter()
-                    .map(|stmt| DebugStatement::from(stmt, name2id))
+                    .map(|stmt| DebugStatement::from(stmt, name2id, id2name))
                     .collect(),
             },
             Statement::Assert { meta, arg } => DebugStatement::Assert {
                 meta,
-                arg: DebugExpression::from(arg, name2id),
+                arg: DebugExpression::from(arg, name2id, id2name),
             },
         }
     }

@@ -49,6 +49,7 @@ fn start() -> Result<(), ()> {
 
     let mut template_library = HashMap::new();
     let mut name2id = HashMap::new();
+    let mut id2name = HashMap::new();
 
     println!("{}", Colour::Green.paint("🧩 Parsing Templates..."));
     for (k, v) in program_archive.templates.clone().into_iter() {
@@ -56,6 +57,7 @@ fn start() -> Result<(), ()> {
         register_library(
             &mut template_library,
             &mut name2id,
+            &mut id2name,
             k.clone(),
             &body.clone(),
             v.get_name_of_params(),
@@ -73,6 +75,7 @@ fn start() -> Result<(), ()> {
     let mut sexe = SymbolicExecutor::new(
         Box::new(template_library.clone()),
         Box::new(name2id.clone()),
+        Box::new(id2name.clone()),
         user_input.flag_propagate_substitution,
         BigInt::from_str(&user_input.debug_prime()).unwrap(),
     );
@@ -102,6 +105,8 @@ fn start() -> Result<(), ()> {
                 Colour::Green.paint("🛒 Gathering Trace/Side Constraints...")
             );
             sexe.name2id.insert("main".to_string(), sexe.name2id.len());
+            sexe.id2name
+                .insert(sexe.name2id["main"], "main".to_string());
             sexe.cur_state.add_owner(sexe.name2id.len() - 1);
             sexe.cur_state.set_template_id(name2id[id]);
             if !user_input.flag_symbolic_template_params {
@@ -121,7 +126,7 @@ fn start() -> Result<(), ()> {
                 for c in &s.side_constraints {
                     ss.update(c);
                 }*/
-                info!("Final State: {:?}", s);
+                info!("Final State: {}", s.lookup_fmt(&sexe.id2name));
             }
             println!("===========================================================");
 

@@ -115,11 +115,54 @@ pub fn simplify_statement(statement: &Statement) -> Statement {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+/// Represents the access type within a symbolic expression, such as component or array access.
+#[derive(Clone, PartialEq, Eq, Hash)]
+pub enum SymbolicAccess {
+    ComponentAccess(usize),
+    ArrayAccess(SymbolicValue),
+}
+
+impl SymbolicAccess {
+    /// Provides a compact format for displaying symbolic access in expressions.
+    fn lookup_fmt(&self, lookup: &HashMap<usize, String>) -> String {
+        match &self {
+            SymbolicAccess::ComponentAccess(name) => {
+                format!(".{}", lookup[name])
+            }
+            SymbolicAccess::ArrayAccess(val) => {
+                format!(
+                    "[{}]",
+                    val.lookup_fmt(lookup).replace("\n", "").replace("  ", " ")
+                )
+            }
+        }
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct SymbolicName {
     pub name: usize,
     pub owner: Vec<usize>,
     pub access: Vec<SymbolicAccess>,
+}
+
+impl SymbolicName {
+    fn lookup_fmt(&self, lookup: &HashMap<usize, String>) -> String {
+        format!(
+            "{}.{}{}",
+            self.owner
+                .iter()
+                .map(|e: &usize| lookup[e].clone())
+                .collect::<Vec<_>>()
+                .join("."),
+            lookup[&self.name].clone(),
+            self.access
+                .iter()
+                .map(|s: &SymbolicAccess| s.lookup_fmt(lookup))
+                .collect::<Vec<_>>()
+                .join("")
+        )
+    }
 }
 
 /// Represents a symbolic value used in symbolic execution, which can be a constant, variable, or an operation.
@@ -143,14 +186,14 @@ pub enum SymbolicValue {
 }
 
 /// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
-impl fmt::Debug for SymbolicValue {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl SymbolicValue {
+    fn lookup_fmt(&self, lookup: &HashMap<usize, String>) -> String {
         match self {
-            SymbolicValue::ConstantInt(value) => write!(f, "{}", value),
+            SymbolicValue::ConstantInt(value) => format!("{}", value),
             SymbolicValue::ConstantBool(flag) => {
-                write!(f, "{} {}", if *flag { "✅" } else { "❌" }, flag)
+                format!("{} {}", if *flag { "✅" } else { "❌" }, flag)
             }
-            SymbolicValue::Variable(_) => write!(f, "{}", "aaa"),
+            SymbolicValue::Variable(sname) => sname.lookup_fmt(lookup),
             SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
                 ExpressionInfixOpcode::Eq
                 | ExpressionInfixOpcode::NotEq
@@ -158,7 +201,12 @@ impl fmt::Debug for SymbolicValue {
                 | ExpressionInfixOpcode::GreaterEq
                 | ExpressionInfixOpcode::Lesser
                 | ExpressionInfixOpcode::Greater => {
-                    write!(f, "({} {:?} {:?})", format!("{:?}", op).green(), lhs, rhs)
+                    format!(
+                        "({} {} {})",
+                        format!("{:?}", op).green(),
+                        lhs.lookup_fmt(lookup),
+                        rhs.lookup_fmt(lookup)
+                    )
                 }
                 ExpressionInfixOpcode::ShiftL
                 | ExpressionInfixOpcode::ShiftR
@@ -167,57 +215,63 @@ impl fmt::Debug for SymbolicValue {
                 | ExpressionInfixOpcode::BitXor
                 | ExpressionInfixOpcode::Div
                 | ExpressionInfixOpcode::IntDiv => {
-                    write!(f, "({} {:?} {:?})", format!("{:?}", op).red(), lhs, rhs)
+                    format!(
+                        "({} {} {})",
+                        format!("{:?}", op).red(),
+                        lhs.lookup_fmt(lookup),
+                        rhs.lookup_fmt(lookup)
+                    )
                 }
-                _ => write!(f, "({} {:?} {:?})", format!("{:?}", op).yellow(), lhs, rhs),
+                _ => format!(
+                    "({} {} {})",
+                    format!("{:?}", op).yellow(),
+                    lhs.lookup_fmt(lookup),
+                    rhs.lookup_fmt(lookup)
+                ),
             },
             SymbolicValue::Conditional(cond, if_branch, else_branch) => {
-                write!(f, "({:?} {:?} {:?})", cond, if_branch, else_branch)
-            }
-            SymbolicValue::UnaryOp(op, expr) => match &op.0 {
-                _ => write!(f, "({} {:?})", format!("{:?}", op).magenta(), expr),
-            },
-            SymbolicValue::Call(name, args) => {
-                write!(f, "📞{}({:?})", name, args)
-            }
-            SymbolicValue::Array(elems) => {
-                write!(f, "🧬 {:?}", elems)
-            }
-            SymbolicValue::UniformArray(elem, counts) => {
-                write!(f, "🧬 ({:?}, {:?})", elem, counts)
-            }
-            _ => write!(f, "❓Unknown symbolic value"),
-        }
-    }
-}
-
-/// Represents the access type within a symbolic expression, such as component or array access.
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum SymbolicAccess {
-    ComponentAccess(usize),
-    ArrayAccess(SymbolicValue),
-}
-
-impl fmt::Display for SymbolicAccess {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.compact_fmt(f)
-    }
-}
-
-impl SymbolicAccess {
-    /// Provides a compact format for displaying symbolic access in expressions.
-    fn compact_fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self {
-            SymbolicAccess::ComponentAccess(name) => {
-                write!(f, ".{}", name)
-            }
-            SymbolicAccess::ArrayAccess(val) => {
-                write!(
-                    f,
-                    "[{}]",
-                    format!("{:?}", val).replace("\n", "").replace("  ", " ")
+                format!(
+                    "({} {} {})",
+                    cond.lookup_fmt(lookup),
+                    if_branch.lookup_fmt(lookup),
+                    else_branch.lookup_fmt(lookup)
                 )
             }
+            SymbolicValue::UnaryOp(op, expr) => match &op.0 {
+                _ => format!(
+                    "({} {})",
+                    format!("{:?}", op).magenta(),
+                    expr.lookup_fmt(lookup)
+                ),
+            },
+            SymbolicValue::Call(name, args) => {
+                format!(
+                    "📞{}({})",
+                    name,
+                    args.into_iter()
+                        .map(|a| a.lookup_fmt(lookup))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            SymbolicValue::Array(elems) => {
+                format!(
+                    "🧬 {}",
+                    elems
+                        .into_iter()
+                        .map(|a| a.lookup_fmt(lookup))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            SymbolicValue::UniformArray(elem, counts) => {
+                format!(
+                    "🧬 ({}, {})",
+                    elem.lookup_fmt(lookup),
+                    counts.lookup_fmt(lookup)
+                )
+            }
+            _ => format!("❓Unknown symbolic value"),
         }
     }
 }
@@ -235,46 +289,69 @@ pub struct SymbolicState {
 }
 
 /// Implements the `Debug` trait for `SymbolicState` to provide detailed state information during debugging.
-impl fmt::Debug for SymbolicState {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "🛠️ {}", format!("{}", "SymbolicState [").cyan())?;
-        writeln!(
-            f,
-            "  {} {}",
+impl SymbolicState {
+    pub fn lookup_fmt(&self, lookup: &HashMap<usize, String>) -> String {
+        let mut s = "".to_string();
+        s += &format!("🛠️ {}", format!("{}", "SymbolicState [\n").cyan());
+        s += &format!(
+            "  {} {}\n",
             format!("👤 {}", "owner:").cyan(),
-            italic(&format!("{:?}", &self.owner_name)).magenta()
-        )?;
-        writeln!(f, "  📏 {} {}", format!("{}", "depth:").cyan(), self.depth)?;
-        writeln!(f, "  📋 {}", format!("{}", "values:").cyan())?;
+            italic(&format!(
+                "{:?}",
+                &self
+                    .owner_name
+                    .iter()
+                    .map(|c| lookup[c].clone())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))
+            .magenta()
+        );
+        s += &format!("  📏 {} {}\n", format!("{}", "depth:").cyan(), self.depth);
+        s += &format!("  📋 {}\n", format!("{}", "values:").cyan());
         for (k, v) in self.values.clone().into_iter() {
-            writeln!(
-                f,
-                "      {:?}: {}",
-                k,
-                format!("{:?}", v.clone())
+            s += &format!(
+                "      {}: {}\n",
+                k.lookup_fmt(lookup),
+                format!("{}", v.lookup_fmt(lookup))
                     .replace("\n", "")
                     .replace("  ", " ")
-            )?;
+            );
         }
-        writeln!(
-            f,
-            "  {} {}",
+        s += &format!(
+            "  {} {}\n",
             format!("{}", "🪶 trace_constraints:").cyan(),
-            format!("{:?}", self.trace_constraints)
-                .replace("\n", "")
-                .replace("  ", " ")
-                .replace("  ", " ")
-        )?;
-        writeln!(
-            f,
-            "  {} {}",
+            format!(
+                "{}",
+                &self
+                    .trace_constraints
+                    .iter()
+                    .map(|c| c.lookup_fmt(lookup))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+            .replace("\n", "")
+            .replace("  ", " ")
+            .replace("  ", " ")
+        );
+        s += &format!(
+            "  {} {}\n",
             format!("{}", "⛓️ side_constraints:").cyan(),
-            format!("{:?}", self.side_constraints)
-                .replace("\n", "")
-                .replace("  ", " ")
-                .replace("  ", " ")
-        )?;
-        write!(f, "{}", format!("{}", "]").cyan())
+            format!(
+                "{}",
+                &self
+                    .side_constraints
+                    .iter()
+                    .map(|c| c.lookup_fmt(lookup))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+            .replace("\n", "")
+            .replace("  ", " ")
+            .replace("  ", " ")
+        );
+        s += &format!("{}\n", format!("{}", "]").cyan());
+        s
     }
 }
 
@@ -302,16 +379,6 @@ impl SymbolicState {
 
     pub fn set_template_id(&mut self, name: usize) {
         self.template_id = name;
-    }
-
-    /// Retrieves the owner name of the current symbolic state.
-    ///
-    /// # Returns
-    ///
-    /// The owner name as a string.
-    pub fn get_owner(&self) -> String {
-        "dummy".to_string()
-        //self.owner_name.clone()
     }
 
     /// Sets the current depth of the symbolic state.
@@ -393,7 +460,7 @@ pub struct SymbolicFunction {
 }
 
 /// Represents a symbolic component used in the symbolic execution process.
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone)]
 pub struct SymbolicComponent {
     pub template_name: usize,
     pub args: Vec<Box<SymbolicValue>>,
@@ -411,6 +478,7 @@ pub struct SymbolicComponent {
 pub fn register_library(
     template_library: &mut HashMap<usize, Box<SymbolicTemplate>>,
     name2id: &mut HashMap<String, usize>,
+    id2name: &mut HashMap<usize, String>,
     name: String,
     body: &Statement,
     template_parameter_names: &Vec<String>,
@@ -422,11 +490,12 @@ pub fn register_library(
     let i = if let Some(i) = name2id.get(&name) {
         *i
     } else {
-        name2id.insert(name, name2id.len());
+        name2id.insert(name.clone(), name2id.len());
+        id2name.insert(name2id[&name], name);
         name2id.len() - 1
     };
 
-    let dbody = DebugStatement::from(body.clone(), name2id);
+    let dbody = DebugStatement::from(body.clone(), name2id, id2name);
     match dbody {
         DebugStatement::Block { ref stmts, .. } => {
             for s in stmts {
@@ -489,6 +558,7 @@ pub fn register_library(
 pub struct SymbolicExecutor {
     pub template_library: Box<HashMap<usize, Box<SymbolicTemplate>>>,
     pub name2id: Box<HashMap<String, usize>>,
+    pub id2name: Box<HashMap<usize, String>>,
     pub function_library: HashMap<usize, Box<SymbolicFunction>>,
     pub function_counter: HashMap<usize, usize>,
     pub components_store: HashMap<SymbolicName, SymbolicComponent>,
@@ -511,12 +581,14 @@ impl SymbolicExecutor {
     pub fn new(
         template_library: Box<HashMap<usize, Box<SymbolicTemplate>>>,
         name2id: Box<HashMap<String, usize>>,
+        id2name: Box<HashMap<usize, String>>,
         propagate_substitution: bool,
         prime: BigInt,
     ) -> Self {
         SymbolicExecutor {
             template_library: template_library,
             name2id,
+            id2name,
             function_library: HashMap::new(),
             function_counter: HashMap::new(),
             components_store: HashMap::new(),
@@ -570,9 +642,13 @@ impl SymbolicExecutor {
     // * 'args' : Vector containing expressions whose evaluated results will be assigned as argument values.
     pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
         let mut cloned_name2id = self.name2id.clone();
+        let mut cloned_id2name = self.id2name.clone();
         for (n, a) in names.iter().zip(args.iter()) {
-            let evaled_a =
-                self.evaluate_expression(&DebugExpression::from(a.clone(), &mut cloned_name2id));
+            let evaled_a = self.evaluate_expression(&DebugExpression::from(
+                a.clone(),
+                &mut cloned_name2id,
+                &mut cloned_id2name,
+            ));
             self.cur_state.set_symval(
                 SymbolicName {
                     name: self.name2id[n],
@@ -593,11 +669,12 @@ impl SymbolicExecutor {
         let i = if let Some(i) = self.name2id.get(&name) {
             *i
         } else {
-            self.name2id.insert(name, self.name2id.len());
+            self.name2id.insert(name.clone(), self.name2id.len());
+            self.id2name.insert(self.name2id[&name], name);
             self.name2id.len() - 1
         };
 
-        let dbody = DebugStatement::from(body, &mut self.name2id);
+        let dbody = DebugStatement::from(body, &mut self.name2id, &mut self.id2name);
         self.function_library.insert(
             i,
             Box::new(SymbolicFunction {
@@ -669,7 +746,11 @@ impl SymbolicExecutor {
                 }
                 DebugStatement::Block { meta, stmts, .. } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
                     self.execute(&stmts, 0);
                     self.expand_all_stack_states(
@@ -686,7 +767,11 @@ impl SymbolicExecutor {
                     ..
                 } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
                     let tmp_cond = self.evaluate_expression(cond);
                     let original_evaled_condition = self.fold_variables(&tmp_cond, true);
@@ -764,7 +849,11 @@ impl SymbolicExecutor {
                     meta, cond, stmt, ..
                 } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
                     // Symbolic execution of loops is complex. This is a simplified approach.
                     let tmp_cond = self.evaluate_expression(cond);
@@ -780,7 +869,7 @@ impl SymbolicExecutor {
                             self.block_end_states.push(Box::new(self.cur_state.clone()));
                         }
                     } else {
-                        panic!("This tool currently cannot handle the symbolic condition of While Loop: {:?}", evaled_condition);
+                        panic!("This tool currently cannot handle the symbolic condition of While Loop: {}", evaled_condition.lookup_fmt(&self.id2name));
                     }
 
                     self.expand_all_stack_states(
@@ -792,7 +881,11 @@ impl SymbolicExecutor {
                 }
                 DebugStatement::Return { meta, value, .. } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
                     let tmp_val = self.evaluate_expression(value);
                     let return_value = self.fold_variables(&tmp_val, !self.propagate_substitution);
@@ -818,7 +911,7 @@ impl SymbolicExecutor {
                         format!("{}.{}", self.cur_state.get_owner(), name.clone())
                     } else {
                         //"todo".to_string()
-                        format!("{}.{}<{:?}>", self.cur_state.get_owner(), name, &dimensions)
+                        format!("{}.{}<{}>", self.cur_state.get_owner(), name, &dimensions)
                     };*/
                     let var_name = SymbolicName {
                         name: *name,
@@ -839,7 +932,11 @@ impl SymbolicExecutor {
                     rhe,
                 } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
                     let expr = self.evaluate_expression(rhe);
                     let original_value = self.fold_variables(&expr, true);
@@ -912,6 +1009,7 @@ impl SymbolicExecutor {
                                 let mut subse = SymbolicExecutor::new(
                                     self.template_library.clone(),
                                     self.name2id.clone(),
+                                    self.id2name.clone(),
                                     self.propagate_substitution,
                                     self.prime.clone(),
                                 );
@@ -957,7 +1055,8 @@ impl SymbolicExecutor {
                                     );
                                     trace!(
                                         "📞 Call {}",
-                                        self.components_store[&var_name].template_name
+                                        self.id2name
+                                            [&self.components_store[&var_name].template_name]
                                     );
                                 }
 
@@ -1028,7 +1127,11 @@ impl SymbolicExecutor {
                     meta, lhe, op, rhe, ..
                 } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
 
                     let lhe_val = self.evaluate_expression(lhe);
@@ -1058,7 +1161,11 @@ impl SymbolicExecutor {
                 }
                 DebugStatement::ConstraintEquality { meta, lhe, rhe } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
 
                     let lhe_val = self.evaluate_expression(lhe);
@@ -1086,7 +1193,11 @@ impl SymbolicExecutor {
                 }
                 DebugStatement::Assert { meta, arg, .. } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
                     let expr = self.evaluate_expression(&arg);
                     let condition = self.fold_variables(&expr, !self.propagate_substitution);
@@ -1100,19 +1211,31 @@ impl SymbolicExecutor {
                     ..
                 } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
                     // Underscore substitution doesn't affect the symbolic state
                 }
                 DebugStatement::LogCall { meta, args: _, .. } => {
                     if !self.off_trace {
-                        trace!("(elem_id={}) {:?}", meta.elem_id, self.cur_state);
+                        trace!(
+                            "(elem_id={}) {}",
+                            meta.elem_id,
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
                     // Logging doesn't affect the symbolic state
                 }
                 DebugStatement::Ret => {
                     if !self.off_trace {
-                        trace!("{} {:?}", format!("{}", "🔙 Ret:").red(), self.cur_state);
+                        trace!(
+                            "{} {}",
+                            format!("{}", "🔙 Ret:").red(),
+                            self.cur_state.lookup_fmt(&self.id2name)
+                        );
                     }
                     self.final_states.push(Box::new(self.cur_state.clone()));
                 }
@@ -1473,6 +1596,7 @@ impl SymbolicExecutor {
                     let mut subse = SymbolicExecutor::new(
                         self.template_library.clone(),
                         self.name2id.clone(),
+                        self.id2name.clone(),
                         self.propagate_substitution,
                         self.prime.clone(),
                     );
@@ -1498,7 +1622,7 @@ impl SymbolicExecutor {
 
                     if !self.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
-                        trace!("📞 Call {}", id);
+                        trace!("📞 Call {}", self.id2name[id]);
                     }
 
                     subse.execute(&func.body, 0);
