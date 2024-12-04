@@ -675,6 +675,8 @@ impl SymbolicExecutor {
                 evaled_a,
             );
         }
+        self.name2id = cloned_name2id;
+        self.id2name = cloned_id2name;
     }
 
     pub fn register_function(
