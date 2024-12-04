@@ -129,10 +129,10 @@ pub enum SymbolicValue {
     ),
     Conditional(Box<SymbolicValue>, Box<SymbolicValue>, Box<SymbolicValue>),
     UnaryOp(DebugExpressionPrefixOpcode, Box<SymbolicValue>),
-    Array(Vec<SymbolicValue>),
-    Tuple(Vec<SymbolicValue>),
+    Array(Vec<Box<SymbolicValue>>),
+    Tuple(Vec<Box<SymbolicValue>>),
     UniformArray(Box<SymbolicValue>, Box<SymbolicValue>),
-    Call(String, Vec<SymbolicValue>),
+    Call(String, Vec<Box<SymbolicValue>>),
 }
 
 /// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
@@ -388,7 +388,7 @@ pub struct SymbolicFunction {
 #[derive(Default, Clone, Debug)]
 pub struct SymbolicComponent {
     pub template_name: String,
-    pub args: Vec<SymbolicValue>,
+    pub args: Vec<Box<SymbolicValue>>,
     pub inputs: HashMap<String, Option<SymbolicValue>>,
     pub is_done: bool,
 }
@@ -876,7 +876,7 @@ impl SymbolicExecutor {
                                             subse.cur_state.get_owner(),
                                             templ.template_parameter_names[i]
                                         ),
-                                        self.components_store[var].args[i].clone(),
+                                        *self.components_store[var].args[i].clone(),
                                     );
                                 }
 
@@ -901,16 +901,12 @@ impl SymbolicExecutor {
                                 if subse.final_states.len() > 1 {
                                     warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
                                 }
-                                let mut sub_trace_constraints =
-                                    subse.final_states[0].trace_constraints.clone();
-                                let mut sub_side_constraints =
-                                    subse.final_states[0].side_constraints.clone();
                                 self.cur_state
                                     .trace_constraints
-                                    .append(&mut sub_trace_constraints);
+                                    .append(&mut subse.final_states[0].trace_constraints);
                                 self.cur_state
                                     .side_constraints
-                                    .append(&mut sub_side_constraints);
+                                    .append(&mut subse.final_states[0].side_constraints);
                                 if !self.off_trace {
                                     trace!(
                                         "{}",
@@ -1267,13 +1263,13 @@ impl SymbolicExecutor {
             SymbolicValue::Array(elements) => SymbolicValue::Array(
                 elements
                     .iter()
-                    .map(|e| self.fold_variables(e, only_constatant_folding))
+                    .map(|e| Box::new(self.fold_variables(e, only_constatant_folding)))
                     .collect(),
             ),
             SymbolicValue::Tuple(elements) => SymbolicValue::Tuple(
                 elements
                     .iter()
-                    .map(|e| self.fold_variables(e, only_constatant_folding))
+                    .map(|e| Box::new(self.fold_variables(e, only_constatant_folding)))
                     .collect(),
             ),
             SymbolicValue::UniformArray(element, count) => SymbolicValue::UniformArray(
@@ -1283,7 +1279,7 @@ impl SymbolicExecutor {
             SymbolicValue::Call(func_name, args) => SymbolicValue::Call(
                 func_name.clone(),
                 args.iter()
-                    .map(|arg| self.fold_variables(arg, only_constatant_folding))
+                    .map(|arg| Box::new(self.fold_variables(arg, only_constatant_folding)))
                     .collect(),
             ),
             _ => symval.clone(),
@@ -1327,7 +1323,7 @@ impl SymbolicExecutor {
                         {
                             match *sv.unwrap().clone() {
                                 SymbolicValue::Array(values) => {
-                                    return values[a.to_usize().unwrap()].clone();
+                                    return *values[a.to_usize().unwrap()].clone();
                                 }
                                 _ => {}
                             }
@@ -1383,11 +1379,17 @@ impl SymbolicExecutor {
             }
             DebugExpression::ParallelOp { rhe, .. } => self.evaluate_expression(rhe),
             DebugExpression::ArrayInLine { meta: _, values } => {
-                let elements = values.iter().map(|v| self.evaluate_expression(v)).collect();
+                let elements = values
+                    .iter()
+                    .map(|v| Box::new(self.evaluate_expression(v)))
+                    .collect();
                 SymbolicValue::Array(elements)
             }
             DebugExpression::Tuple { meta: _, values } => {
-                let elements = values.iter().map(|v| self.evaluate_expression(v)).collect();
+                let elements = values
+                    .iter()
+                    .map(|v| Box::new(self.evaluate_expression(v)))
+                    .collect();
                 SymbolicValue::Array(elements)
             }
             DebugExpression::UniformArray {
@@ -1407,7 +1409,7 @@ impl SymbolicExecutor {
                     .collect();
                 let evaluated_args = tmp_args
                     .iter()
-                    .map(|arg| self.fold_variables(&arg, false))
+                    .map(|arg| Box::new(self.fold_variables(&arg, false)))
                     .collect();
                 if self.template_library.contains_key(id) {
                     SymbolicValue::Call(id.clone(), evaluated_args)
@@ -1437,7 +1439,7 @@ impl SymbolicExecutor {
                                 subse.cur_state.get_owner(),
                                 func.function_argument_names[i]
                             ),
-                            evaluated_args[i].clone(),
+                            *evaluated_args[i].clone(),
                         );
                     }
 
