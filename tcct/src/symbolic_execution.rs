@@ -377,6 +377,14 @@ impl SymbolicState {
         self.owner_name.push(name);
     }
 
+    pub fn get_owner(&self, lookup: &HashMap<usize, String>) -> String {
+        self.owner_name
+            .iter()
+            .map(|e: &usize| lookup[e].clone())
+            .collect::<Vec<_>>()
+            .join(".")
+    }
+
     pub fn set_template_id(&mut self, name: usize) {
         self.template_id = name;
     }
@@ -890,6 +898,12 @@ impl SymbolicExecutor {
                     let tmp_val = self.evaluate_expression(value);
                     let return_value = self.fold_variables(&tmp_val, !self.propagate_substitution);
                     // Handle return value (e.g., store in a special "return" variable)
+
+                    if !self.id2name.contains_key(&usize::MAX) {
+                        self.name2id.insert("__return__".to_string(), usize::MAX);
+                        self.id2name.insert(usize::MAX, "__return__".to_string());
+                    }
+
                     self.cur_state.set_symval(
                         SymbolicName {
                             name: usize::MAX,
@@ -1017,6 +1031,7 @@ impl SymbolicExecutor {
                                 //subse.template_library = self.template_library.clone();
                                 subse.function_library = self.function_library.clone();
                                 subse.function_counter = self.function_counter.clone();
+                                subse.cur_state.owner_name = self.cur_state.owner_name.clone();
                                 subse.cur_state.add_owner(*var);
 
                                 let templ = &self.template_library
@@ -1600,6 +1615,7 @@ impl SymbolicExecutor {
                         self.propagate_substitution,
                         self.prime.clone(),
                     );
+                    subse.cur_state.owner_name = self.cur_state.owner_name.clone();
                     subse.cur_state.add_owner(*id);
                     subse.cur_state.add_owner(self.function_counter[id]);
                     //subse.template_library = self.template_library.clone();
@@ -1638,11 +1654,19 @@ impl SymbolicExecutor {
                     self.cur_state
                         .side_constraints
                         .append(&mut subse.final_states[0].side_constraints);
+                    self.name2id = subse.name2id;
+                    self.id2name = subse.id2name;
+
                     if !self.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
                     }
 
                     self.function_counter = subse.function_counter.clone();
+                    let tmp_name = format!(
+                        "{}.__return__",
+                        subse.final_states[0].get_owner(&self.id2name)
+                    )
+                    .to_string();
 
                     let sname = SymbolicName {
                         name: usize::MAX,
