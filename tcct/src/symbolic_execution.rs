@@ -576,8 +576,8 @@ pub struct SymbolicExecutor<'a> {
     pub template_library: Box<FxHashMap<usize, Box<SymbolicTemplate>>>,
     pub name2id: &'a mut FxHashMap<String, usize>,
     pub id2name: &'a mut FxHashMap<usize, String>,
-    pub function_library: FxHashMap<usize, Box<SymbolicFunction>>,
-    pub function_counter: FxHashMap<usize, usize>,
+    pub function_library: &'a mut FxHashMap<usize, Box<SymbolicFunction>>,
+    pub function_counter: &'a mut FxHashMap<usize, usize>,
     pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,
     pub variable_types: FxHashMap<usize, DebugVariableType>,
     pub prime: BigInt,
@@ -599,15 +599,17 @@ impl<'a> SymbolicExecutor<'a> {
         template_library: Box<FxHashMap<usize, Box<SymbolicTemplate>>>,
         name2id: &'a mut FxHashMap<String, usize>,
         id2name: &'a mut FxHashMap<usize, String>,
+        function_library: &'a mut FxHashMap<usize, Box<SymbolicFunction>>,
+        function_counter: &'a mut FxHashMap<usize, usize>,
         propagate_substitution: bool,
         prime: BigInt,
     ) -> Self {
         SymbolicExecutor {
-            template_library: template_library,
+            template_library,
             name2id,
             id2name,
-            function_library: FxHashMap::default(),
-            function_counter: FxHashMap::default(),
+            function_library,
+            function_counter,
             components_store: FxHashMap::default(),
             variable_types: FxHashMap::default(),
             prime: prime,
@@ -1050,18 +1052,22 @@ impl<'a> SymbolicExecutor<'a> {
                             if !self.components_store[&var_name].is_done {
                                 let name2id = &mut self.name2id;
                                 let id2name = &mut self.id2name;
+                                let function_library = &mut self.function_library;
+                                let function_counter = &mut self.function_counter;
 
                                 let mut subse = SymbolicExecutor::new(
                                     self.template_library.clone(),
                                     name2id,
                                     id2name,
+                                    function_library,
+                                    function_counter,
                                     self.propagate_substitution,
                                     self.prime.clone(),
                                 );
 
-                                //subse.template_library = self.template_library.clone();
-                                subse.function_library = self.function_library.clone();
-                                subse.function_counter = self.function_counter.clone();
+                                // subse.template_library = self.template_library.clone();
+                                // subse.function_library = self.function_library.clone();
+                                // subse.function_counter = self.function_counter.clone();
                                 subse.cur_state.owner_name = self.cur_state.owner_name.clone();
                                 subse.cur_state.add_owner(*var, 0);
 
@@ -1644,22 +1650,27 @@ impl<'a> SymbolicExecutor<'a> {
                 } else if self.function_library.contains_key(id) {
                     let name2id = &mut self.name2id;
                     let id2name = &mut self.id2name;
+                    let function_library = &mut self.function_library;
+                    let function_counter = &mut self.function_counter;
                     let mut subse = SymbolicExecutor::new(
                         self.template_library.clone(),
                         name2id,
                         id2name,
+                        function_library,
+                        function_counter,
                         self.propagate_substitution,
                         self.prime.clone(),
                     );
                     subse.cur_state.owner_name = self.cur_state.owner_name.clone();
-                    subse.cur_state.add_owner(*id, self.function_counter[id]);
+                    subse.cur_state.add_owner(*id, subse.function_counter[id]);
                     //subse.template_library = self.template_library.clone();
-                    subse.function_library = self.function_library.clone();
-                    self.function_counter
-                        .insert(*id, self.function_counter[id] + 1);
-                    subse.function_counter = self.function_counter.clone();
+                    //subse.function_library = self.function_library.clone();
+                    subse
+                        .function_counter
+                        .insert(*id, subse.function_counter[id] + 1);
+                    //subse.function_counter = self.function_counter.clone();
 
-                    let func = &self.function_library[id];
+                    let func = &subse.function_library[id];
                     for i in 0..(func.function_argument_names.len()) {
                         let sname = SymbolicName {
                             name: func.function_argument_names[i],
@@ -1676,7 +1687,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!("📞 Call {}", subse.id2name[id]);
                     }
 
-                    subse.execute(&func.body, 0);
+                    subse.execute(&func.body.clone(), 0);
 
                     if subse.final_states.len() > 1 {
                         warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
@@ -1696,7 +1707,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!("{}", format!("{}", "===========================").cyan());
                     }
 
-                    self.function_counter = subse.function_counter.clone();
+                    //self.function_counter = subse.function_counter.clone();
 
                     let sname = SymbolicName {
                         name: usize::MAX,

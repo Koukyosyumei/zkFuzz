@@ -50,6 +50,8 @@ fn start() -> Result<(), ()> {
     let mut template_library = FxHashMap::default();
     let mut name2id = FxHashMap::default();
     let mut id2name = FxHashMap::default();
+    let mut function_library = FxHashMap::default();
+    let mut function_counter = FxHashMap::default();
 
     println!("{}", Colour::Green.paint("🧩 Parsing Templates..."));
     for (k, v) in program_archive.templates.clone().into_iter() {
@@ -76,6 +78,8 @@ fn start() -> Result<(), ()> {
         Box::new(template_library.clone()),
         &mut name2id,
         &mut id2name,
+        &mut function_library,
+        &mut function_counter,
         user_input.flag_propagate_substitution,
         BigInt::from_str(&user_input.debug_prime()).unwrap(),
     );
