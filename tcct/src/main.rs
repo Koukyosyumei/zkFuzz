@@ -75,7 +75,7 @@ fn start() -> Result<(), ()> {
     }
 
     let mut sexe = SymbolicExecutor::new(
-        Box::new(template_library.clone()),
+        &mut template_library,
         &mut name2id,
         &mut id2name,
         &mut function_library,

@@ -573,7 +573,7 @@ pub fn register_library(
 /// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
 /// * `max_depth` - Tracks maximum depth reached during execution.
 pub struct SymbolicExecutor<'a> {
-    pub template_library: Box<FxHashMap<usize, Box<SymbolicTemplate>>>,
+    pub template_library: &'a mut FxHashMap<usize, Box<SymbolicTemplate>>,
     pub name2id: &'a mut FxHashMap<String, usize>,
     pub id2name: &'a mut FxHashMap<usize, String>,
     pub function_library: &'a mut FxHashMap<usize, Box<SymbolicFunction>>,
@@ -596,7 +596,7 @@ pub struct SymbolicExecutor<'a> {
 impl<'a> SymbolicExecutor<'a> {
     /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
     pub fn new(
-        template_library: Box<FxHashMap<usize, Box<SymbolicTemplate>>>,
+        template_library: &'a mut FxHashMap<usize, Box<SymbolicTemplate>>,
         name2id: &'a mut FxHashMap<String, usize>,
         id2name: &'a mut FxHashMap<usize, String>,
         function_library: &'a mut FxHashMap<usize, Box<SymbolicFunction>>,
@@ -1050,13 +1050,14 @@ impl<'a> SymbolicExecutor<'a> {
 
                         if self.is_ready(&var_name) {
                             if !self.components_store[&var_name].is_done {
+                                let template_library = &mut self.template_library;
                                 let name2id = &mut self.name2id;
                                 let id2name = &mut self.id2name;
                                 let function_library = &mut self.function_library;
                                 let function_counter = &mut self.function_counter;
 
                                 let mut subse = SymbolicExecutor::new(
-                                    self.template_library.clone(),
+                                    template_library,
                                     name2id,
                                     id2name,
                                     function_library,
@@ -1071,7 +1072,7 @@ impl<'a> SymbolicExecutor<'a> {
                                 subse.cur_state.owner_name = self.cur_state.owner_name.clone();
                                 subse.cur_state.add_owner(*var, 0);
 
-                                let templ = &self.template_library
+                                let templ = &subse.template_library
                                     [&self.components_store[&var_name].template_name];
                                 subse.cur_state.set_template_id(
                                     self.components_store[&var_name].template_name.clone(),
@@ -1110,7 +1111,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     );
                                 }
 
-                                subse.execute(&templ.body, 0);
+                                subse.execute(&templ.body.clone(), 0);
 
                                 if subse.final_states.len() > 1 {
                                     warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
@@ -1653,7 +1654,7 @@ impl<'a> SymbolicExecutor<'a> {
                     let function_library = &mut self.function_library;
                     let function_counter = &mut self.function_counter;
                     let mut subse = SymbolicExecutor::new(
-                        self.template_library.clone(),
+                        self.template_library,
                         name2id,
                         id2name,
                         function_library,
