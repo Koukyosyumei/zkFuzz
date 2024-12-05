@@ -14,6 +14,7 @@ use log::{error, info, warn};
 use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
 use std::env;
+use std::rc::Rc;
 use std::str::FromStr;
 use std::time;
 
@@ -21,7 +22,7 @@ use parser_user::DebugStatement;
 use program_structure::ast::Expression;
 //use solver::brute_force_search;
 //use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
-use symbolic_execution::{register_library, simplify_statement, SymbolicExecutor};
+use symbolic_execution::{register_library, simplify_statement, OwnerName, SymbolicExecutor};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";
@@ -111,7 +112,16 @@ fn start() -> Result<(), ()> {
             sexe.name2id.insert("main".to_string(), sexe.name2id.len());
             sexe.id2name
                 .insert(sexe.name2id["main"], "main".to_string());
-            sexe.cur_state.add_owner(sexe.name2id.len() - 1, 0);
+
+            let mut on = (*sexe.cur_state.owner_name.clone()).clone();
+            on.push(OwnerName {
+                name: sexe.name2id.len() - 1,
+                counter: 0,
+            });
+            sexe.cur_state.owner_name = Rc::new(on);
+
+            //sexe.cur_state.add_owner(sexe.name2id.len() - 1, 0);
+
             sexe.cur_state.set_template_id(sexe.name2id[id]);
             if !user_input.flag_symbolic_template_params {
                 sexe.feed_arguments(template.get_name_of_params(), args);

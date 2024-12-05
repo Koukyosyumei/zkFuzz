@@ -142,14 +142,14 @@ impl SymbolicAccess {
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct OwnerName {
-    name: usize,
-    counter: usize,
+    pub name: usize,
+    pub counter: usize,
 }
 
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct SymbolicName {
     pub name: usize,
-    pub owner: Vec<OwnerName>,
+    pub owner: Rc<Vec<OwnerName>>,
     pub access: Vec<SymbolicAccess>,
 }
 
@@ -287,7 +287,7 @@ impl SymbolicValue {
 /// trace constraints, side constraints, and depth information.
 #[derive(Clone)]
 pub struct SymbolicState {
-    owner_name: Vec<OwnerName>,
+    pub owner_name: Rc<Vec<OwnerName>>,
     pub template_id: usize,
     depth: usize,
     pub values: FxHashMap<SymbolicName, Rc<SymbolicValue>>,
@@ -366,7 +366,7 @@ impl SymbolicState {
     /// Creates a new `SymbolicState` with default values.
     pub fn new() -> Self {
         SymbolicState {
-            owner_name: Vec::new(),
+            owner_name: Rc::new(Vec::new()),
             template_id: usize::MAX,
             depth: 0_usize,
             values: FxHashMap::default(),
@@ -380,12 +380,14 @@ impl SymbolicState {
     /// # Arguments
     ///
     /// * `name` - The name of the owner to set.
+    ///
+    /*
     pub fn add_owner(&mut self, name: usize, counter: usize) {
         self.owner_name.push(OwnerName {
             name: name,
             counter: counter,
         });
-    }
+    }*/
 
     pub fn get_owner(&self, lookup: &FxHashMap<usize, String>) -> String {
         self.owner_name
@@ -1069,8 +1071,13 @@ impl<'a> SymbolicExecutor<'a> {
                                 // subse.template_library = self.template_library.clone();
                                 // subse.function_library = self.function_library.clone();
                                 // subse.function_counter = self.function_counter.clone();
-                                subse.cur_state.owner_name = self.cur_state.owner_name.clone();
-                                subse.cur_state.add_owner(*var, 0);
+                                let mut on = (*self.cur_state.owner_name.clone()).clone();
+                                on.push(OwnerName {
+                                    name: *var,
+                                    counter: 0,
+                                });
+                                subse.cur_state.owner_name = Rc::new(on);
+                                //subse.cur_state.add_owner(*var, 0);
 
                                 let templ = &subse.template_library
                                     [&self.components_store[&var_name].template_name];
@@ -1662,8 +1669,15 @@ impl<'a> SymbolicExecutor<'a> {
                         self.propagate_substitution,
                         self.prime.clone(),
                     );
-                    subse.cur_state.owner_name = self.cur_state.owner_name.clone();
-                    subse.cur_state.add_owner(*id, subse.function_counter[id]);
+
+                    let mut on = (*self.cur_state.owner_name.clone()).clone();
+                    on.push(OwnerName {
+                        name: *id,
+                        counter: subse.function_counter[id],
+                    });
+                    subse.cur_state.owner_name = Rc::new(on);
+                    //subse.cur_state.owner_name = self.cur_state.owner_name.clone();
+                    //subse.cur_state.add_owner(*id, subse.function_counter[id]);
                     //subse.template_library = self.template_library.clone();
                     //subse.function_library = self.function_library.clone();
                     subse
