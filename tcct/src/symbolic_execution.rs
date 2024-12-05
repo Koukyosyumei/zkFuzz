@@ -9,7 +9,8 @@ use std::cmp::max;
 use std::rc::Rc;
 
 use program_structure::ast::{
-    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType, VariableType,
+    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType,
+    VariableType,
 };
 
 use crate::debug_ast::{
@@ -905,14 +906,6 @@ impl<'a> SymbolicExecutor<'a> {
             self.cur_state
                 .set_symval(vname.clone(), SymbolicValue::ConstantInt(value.clone()));
         }
-        /*
-        for arg in &self.template_library[id].inputs {
-            let vname = format!("{}.{}", self.cur_state.get_owner(), arg.to_string());
-            self.cur_state.set_symval(
-                vname.clone(),
-                SymbolicValue::ConstantInt(assignment[&vname].clone()),
-            );
-        }*/
 
         self.setting.skip_initialization_blocks = true;
         self.setting.off_trace = off_trace;
@@ -1268,15 +1261,10 @@ impl<'a> SymbolicExecutor<'a> {
                         counter: subse.symbolic_library.function_counter[id],
                     });
                     subse.cur_state.owner_name = Rc::new(on);
-                    //subse.cur_state.owner_name = self.cur_state.owner_name.clone();
-                    //subse.cur_state.add_owner(*id, subse.function_counter[id]);
-                    //subse.template_library = self.template_library.clone();
-                    //subse.function_library = self.function_library.clone();
                     subse
                         .symbolic_library
                         .function_counter
                         .insert(*id, subse.symbolic_library.function_counter[id] + 1);
-                    //subse.function_counter = self.function_counter.clone();
 
                     let func = &subse.symbolic_library.function_library[id];
                     for i in 0..(func.function_argument_names.len()) {
@@ -1300,22 +1288,17 @@ impl<'a> SymbolicExecutor<'a> {
                     if subse.symbolic_store.final_states.len() > 1 {
                         warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
                     }
-                    //let mut sub_trace_constraints = subse.final_states[0].trace_constraints.clone();
-                    //let mut sub_side_constraints = subse.final_states[0].side_constraints.clone();
+
                     self.cur_state
                         .trace_constraints
                         .append(&mut subse.symbolic_store.final_states[0].trace_constraints);
                     self.cur_state
                         .side_constraints
                         .append(&mut subse.symbolic_store.final_states[0].side_constraints);
-                    //self.name2id = subse.name2id;
-                    //self.id2name = subse.id2name;
 
                     if !self.setting.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
                     }
-
-                    //self.function_counter = subse.function_counter.clone();
 
                     let sname = SymbolicName {
                         name: usize::MAX,
