@@ -427,7 +427,7 @@ impl<'a> SymbolicExecutor<'a> {
                 SymbolicName {
                     name: name2id[n],
                     owner: self.cur_state.owner_name.clone(),
-                    access: Vec::new(),
+                    access: None,
                 },
                 evaled_a,
             );
@@ -674,7 +674,7 @@ impl<'a> SymbolicExecutor<'a> {
                         SymbolicName {
                             name: usize::MAX,
                             owner: self.cur_state.owner_name.clone(),
-                            access: Vec::new(),
+                            access: None,
                         },
                         return_value,
                     );
@@ -691,7 +691,7 @@ impl<'a> SymbolicExecutor<'a> {
                     let var_name = SymbolicName {
                         name: *name,
                         owner: self.cur_state.owner_name.clone(),
-                        access: Vec::new(),
+                        access: None,
                     };
                     self.symbolic_store
                         .variable_types
@@ -740,10 +740,16 @@ impl<'a> SymbolicExecutor<'a> {
                     let var_name = SymbolicName {
                         name: *var,
                         owner: self.cur_state.owner_name.clone(),
-                        access: access
-                            .iter()
-                            .map(|arg0: &DebugAccess| self.evaluate_access(&arg0.clone()))
-                            .collect::<Vec<_>>(),
+                        access: if access.is_empty() {
+                            None
+                        } else {
+                            Some(
+                                access
+                                    .iter()
+                                    .map(|arg0: &DebugAccess| self.evaluate_access(&arg0.clone()))
+                                    .collect::<Vec<_>>(),
+                            )
+                        },
                     };
 
                     if self.setting.keep_track_unrolled_offset {
@@ -817,7 +823,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     let n = SymbolicName {
                                         name: templ.template_parameter_names[i],
                                         owner: subse.cur_state.owner_name.clone(),
-                                        access: Vec::new(),
+                                        access: None,
                                     };
                                     subse.cur_state.set_symval(
                                         n,
@@ -834,7 +840,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     let n = SymbolicName {
                                         name: *k,
                                         owner: subse.cur_state.owner_name.clone(),
-                                        access: Vec::new(),
+                                        access: None,
                                     };
                                     subse.cur_state.set_symval(n, v.clone().unwrap());
                                 }
@@ -1307,13 +1313,13 @@ impl<'a> SymbolicExecutor<'a> {
                     SymbolicName {
                         name: *name,
                         owner: self.cur_state.owner_name.clone(),
-                        access: Vec::new(),
+                        access: None,
                     }
                 } else {
                     let tmp_name = SymbolicName {
                         name: *name,
                         owner: self.cur_state.owner_name.clone(),
-                        access: Vec::new(),
+                        access: None,
                     };
                     let sv = self.cur_state.get_symval(&tmp_name).cloned();
                     let evaluated_access = access
@@ -1337,7 +1343,11 @@ impl<'a> SymbolicExecutor<'a> {
                     SymbolicName {
                         name: *name,
                         owner: self.cur_state.owner_name.clone(),
-                        access: evaluated_access,
+                        access: if evaluated_access.is_empty() {
+                            None
+                        } else {
+                            Some(evaluated_access)
+                        },
                     }
                 };
                 SymbolicValue::Variable(resolved_name)
@@ -1437,7 +1447,7 @@ impl<'a> SymbolicExecutor<'a> {
                         let sname = SymbolicName {
                             name: func.function_argument_names[i],
                             owner: subse.cur_state.owner_name.clone(),
-                            access: Vec::new(),
+                            access: None,
                         };
                         subse
                             .cur_state
@@ -1474,7 +1484,7 @@ impl<'a> SymbolicExecutor<'a> {
                     let sname = SymbolicName {
                         name: usize::MAX,
                         owner: subse.symbolic_store.final_states[0].owner_name.clone(),
-                        access: Vec::new(),
+                        access: None,
                     };
 
                     (*subse.symbolic_store.final_states[0].values[&sname].clone()).clone()

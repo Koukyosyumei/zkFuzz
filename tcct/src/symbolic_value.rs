@@ -2,17 +2,12 @@ use colored::Colorize;
 use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
-use program_structure::ast::{
-    ExpressionInfixOpcode,
-    VariableType,
-};
+use program_structure::ast::{ExpressionInfixOpcode, VariableType};
 
-use crate::debug_ast::{
-    DebugExpressionInfixOpcode,
-    DebugExpressionPrefixOpcode, DebugStatement,
-};
+use crate::debug_ast::{DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement};
 
 /// Represents the access type within a symbolic expression, such as component or array access.
 #[derive(Clone, PartialEq, Eq, Hash)]
@@ -31,7 +26,7 @@ pub struct OwnerName {
 pub struct SymbolicName {
     pub name: usize,
     pub owner: Rc<Vec<OwnerName>>,
-    pub access: Vec<SymbolicAccess>,
+    pub access: Option<Vec<SymbolicAccess>>,
 }
 
 /// Represents a symbolic value used in symbolic execution, which can be a constant, variable, or an operation.
@@ -108,11 +103,15 @@ impl SymbolicName {
                 .collect::<Vec<_>>()
                 .join("."),
             lookup[&self.name].clone(),
-            self.access
-                .iter()
-                .map(|s: &SymbolicAccess| s.lookup_fmt(lookup))
-                .collect::<Vec<_>>()
-                .join("")
+            if let Some(access) = &self.access {
+                access
+                    .iter()
+                    .map(|s: &SymbolicAccess| s.lookup_fmt(lookup))
+                    .collect::<Vec<_>>()
+                    .join("")
+            } else {
+                "*".to_string()
+            }
         )
     }
 }
