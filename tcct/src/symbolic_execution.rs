@@ -36,73 +36,6 @@ pub struct SymbolicState {
     pub side_constraints: Vec<Rc<SymbolicValue>>,
 }
 
-/// Implements the `Debug` trait for `SymbolicState` to provide detailed state information during debugging.
-impl SymbolicState {
-    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
-        let mut s = "".to_string();
-        s += &format!("🛠️ {}", format!("{}", "SymbolicState [\n").cyan());
-        s += &format!(
-            "  {} {}\n",
-            format!("👤 {}", "owner:").cyan(),
-            italic(&format!(
-                "{:?}",
-                &self
-                    .owner_name
-                    .iter()
-                    .map(|c: &OwnerName| lookup[&c.name].clone())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ))
-            .magenta()
-        );
-        s += &format!("  📏 {} {}\n", format!("{}", "depth:").cyan(), self.depth);
-        s += &format!("  📋 {}\n", format!("{}", "values:").cyan());
-        for (k, v) in self.values.iter() {
-            s += &format!(
-                "      {}: {}\n",
-                k.lookup_fmt(lookup),
-                format!("{}", v.lookup_fmt(lookup))
-                    .replace("\n", "")
-                    .replace("  ", " ")
-            );
-        }
-        s += &format!(
-            "  {} {}\n",
-            format!("{}", "🪶 trace_constraints:").cyan(),
-            format!(
-                "{}",
-                &self
-                    .trace_constraints
-                    .iter()
-                    .map(|c| c.lookup_fmt(lookup))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-            .replace("\n", "")
-            .replace("  ", " ")
-            .replace("  ", " ")
-        );
-        s += &format!(
-            "  {} {}\n",
-            format!("{}", "⛓️ side_constraints:").cyan(),
-            format!(
-                "{}",
-                &self
-                    .side_constraints
-                    .iter()
-                    .map(|c| c.lookup_fmt(lookup))
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            )
-            .replace("\n", "")
-            .replace("  ", " ")
-            .replace("  ", " ")
-        );
-        s += &format!("{}\n", format!("{}", "]").cyan());
-        s
-    }
-}
-
 impl SymbolicState {
     /// Creates a new `SymbolicState` with default values.
     pub fn new() -> Self {
@@ -200,201 +133,152 @@ impl SymbolicState {
     pub fn push_side_constraint(&mut self, constraint: &SymbolicValue) {
         self.side_constraints.push(Rc::new(constraint.clone()));
     }
+
+    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
+        let mut s = "".to_string();
+        s += &format!("🛠️ {}", format!("{}", "SymbolicState [\n").cyan());
+        s += &format!(
+            "  {} {}\n",
+            format!("👤 {}", "owner:").cyan(),
+            italic(&format!(
+                "{:?}",
+                &self
+                    .owner_name
+                    .iter()
+                    .map(|c: &OwnerName| lookup[&c.name].clone())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))
+            .magenta()
+        );
+        s += &format!("  📏 {} {}\n", format!("{}", "depth:").cyan(), self.depth);
+        s += &format!("  📋 {}\n", format!("{}", "values:").cyan());
+        for (k, v) in self.values.iter() {
+            s += &format!(
+                "      {}: {}\n",
+                k.lookup_fmt(lookup),
+                format!("{}", v.lookup_fmt(lookup))
+                    .replace("\n", "")
+                    .replace("  ", " ")
+            );
+        }
+        s += &format!(
+            "  {} {}\n",
+            format!("{}", "🪶 trace_constraints:").cyan(),
+            format!(
+                "{}",
+                &self
+                    .trace_constraints
+                    .iter()
+                    .map(|c| c.lookup_fmt(lookup))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+            .replace("\n", "")
+            .replace("  ", " ")
+            .replace("  ", " ")
+        );
+        s += &format!(
+            "  {} {}\n",
+            format!("{}", "⛓️ side_constraints:").cyan(),
+            format!(
+                "{}",
+                &self
+                    .side_constraints
+                    .iter()
+                    .map(|c| c.lookup_fmt(lookup))
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            )
+            .replace("\n", "")
+            .replace("  ", " ")
+            .replace("  ", " ")
+        );
+        s += &format!("{}\n", format!("{}", "]").cyan());
+        s
+    }
 }
 
-// Registers library template by extracting input signals from block statement body provided along with template parameter names list.
-//
-// # Arguments
-//
-// * 'name' : Name under which template will be registered within library .
-// * 'body' : Block statement serving as main logic body defining behavior captured by template .
-// * 'template_parameter_names': List containing names identifying parameters used within template logic .
-pub fn register_library(
-    template_library: &mut FxHashMap<usize, Box<SymbolicTemplate>>,
-    name2id: &mut FxHashMap<String, usize>,
-    id2name: &mut FxHashMap<usize, String>,
-    name: String,
-    body: &Statement,
-    template_parameter_names: &Vec<String>,
-) {
-    let mut inputs: Vec<usize> = vec![];
-    let mut outputs: Vec<usize> = vec![];
-    let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
+pub struct SymbolicLibrary {
+    pub template_library: FxHashMap<usize, Box<SymbolicTemplate>>,
+    pub name2id: FxHashMap<String, usize>,
+    pub id2name: FxHashMap<usize, String>,
+    pub function_library: FxHashMap<usize, Box<SymbolicFunction>>,
+    pub function_counter: FxHashMap<usize, usize>,
+}
 
-    let i = if let Some(i) = name2id.get(&name) {
-        *i
-    } else {
-        name2id.insert(name.clone(), name2id.len());
-        id2name.insert(name2id[&name], name);
-        name2id.len() - 1
-    };
+impl SymbolicLibrary {
+    // Registers library template by extracting input signals from block statement body provided along with template parameter names list.
+    //
+    // # Arguments
+    //
+    // * 'name' : Name under which template will be registered within library .
+    // * 'body' : Block statement serving as main logic body defining behavior captured by template .
+    // * 'template_parameter_names': List containing names identifying parameters used within template logic .
+    pub fn register_library(
+        &mut self,
+        name: String,
+        body: &Statement,
+        template_parameter_names: &Vec<String>,
+    ) {
+        let mut inputs: Vec<usize> = vec![];
+        let mut outputs: Vec<usize> = vec![];
+        let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
 
-    let dbody = DebugStatement::from(body.clone(), name2id, id2name);
-    match dbody {
-        DebugStatement::Block { ref stmts, .. } => {
-            for s in stmts {
-                if let DebugStatement::InitializationBlock {
-                    initializations, ..
-                } = &s
-                {
-                    for init in initializations {
-                        if let DebugStatement::Declaration { name, xtype, .. } = &init {
-                            var2type.insert(name.clone(), xtype.clone());
-                            if let VariableType::Signal(typ, _taglist) = &xtype {
-                                match typ {
-                                    SignalType::Input => {
-                                        inputs.push(*name);
+        let i = if let Some(i) = self.name2id.get(&name) {
+            *i
+        } else {
+            self.name2id.insert(name.clone(), self.name2id.len());
+            self.id2name.insert(self.name2id[&name], name);
+            self.name2id.len() - 1
+        };
+
+        let dbody = DebugStatement::from(body.clone(), &mut self.name2id, &mut self.id2name);
+        match dbody {
+            DebugStatement::Block { ref stmts, .. } => {
+                for s in stmts {
+                    if let DebugStatement::InitializationBlock {
+                        initializations, ..
+                    } = &s
+                    {
+                        for init in initializations {
+                            if let DebugStatement::Declaration { name, xtype, .. } = &init {
+                                var2type.insert(name.clone(), xtype.clone());
+                                if let VariableType::Signal(typ, _taglist) = &xtype {
+                                    match typ {
+                                        SignalType::Input => {
+                                            inputs.push(*name);
+                                        }
+                                        SignalType::Output => {
+                                            outputs.push(*name);
+                                        }
+                                        SignalType::Intermediate => {}
                                     }
-                                    SignalType::Output => {
-                                        outputs.push(*name);
-                                    }
-                                    SignalType::Intermediate => {}
                                 }
                             }
                         }
                     }
                 }
             }
+            _ => {
+                warn!("Cannot Find Block Statement");
+            }
         }
-        _ => {
-            warn!("Cannot Find Block Statement");
-        }
-    }
 
-    let template = SymbolicTemplate {
-        template_parameter_names: template_parameter_names
-            .iter()
-            .map(|p: &String| name2id[p])
-            .collect::<Vec<_>>(),
-        inputs: inputs,
-        outputs: outputs,
-        unrolled_outputs: HashSet::new(),
-        var2type: var2type,
-        body: vec![dbody.clone(), DebugStatement::Ret],
-    };
-    template_library.insert(i, Box::new(template));
-}
-
-/// Executes symbolic execution on a series of statements while maintaining multiple states.
-/// It handles branching logic and updates constraints accordingly during execution flow.
-///
-/// This struct is parameterized over a lifetime `'a`, which is used for borrowing constraint statistics references.
-///
-/// # Fields
-///
-/// * `template_library` - A library storing templates for execution.
-/// * `components_store` - A store for components used in execution.
-/// * `variable_types` - A map storing types of variables.
-/// * `prime` - A prime number used in computations.
-/// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
-/// * `max_depth` - Tracks maximum depth reached during execution.
-pub struct SymbolicExecutor<'a> {
-    pub template_library: &'a mut FxHashMap<usize, Box<SymbolicTemplate>>,
-    pub name2id: &'a mut FxHashMap<String, usize>,
-    pub id2name: &'a mut FxHashMap<usize, String>,
-    pub function_library: &'a mut FxHashMap<usize, Box<SymbolicFunction>>,
-    pub function_counter: &'a mut FxHashMap<usize, usize>,
-    pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,
-    pub variable_types: FxHashMap<usize, DebugVariableType>,
-    pub prime: BigInt,
-    pub propagate_substitution: bool,
-    pub skip_initialization_blocks: bool,
-    pub off_trace: bool,
-    pub keep_track_unrolled_offset: bool,
-    // states
-    pub cur_state: SymbolicState,
-    pub block_end_states: Vec<SymbolicState>,
-    pub final_states: Vec<SymbolicState>,
-    // stats
-    pub max_depth: usize,
-}
-
-impl<'a> SymbolicExecutor<'a> {
-    /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
-    pub fn new(
-        template_library: &'a mut FxHashMap<usize, Box<SymbolicTemplate>>,
-        name2id: &'a mut FxHashMap<String, usize>,
-        id2name: &'a mut FxHashMap<usize, String>,
-        function_library: &'a mut FxHashMap<usize, Box<SymbolicFunction>>,
-        function_counter: &'a mut FxHashMap<usize, usize>,
-        propagate_substitution: bool,
-        prime: BigInt,
-    ) -> Self {
-        SymbolicExecutor {
-            template_library,
-            name2id,
-            id2name,
-            function_library,
-            function_counter,
-            components_store: FxHashMap::default(),
-            variable_types: FxHashMap::default(),
-            prime: prime,
-            propagate_substitution: propagate_substitution,
-            skip_initialization_blocks: false,
-            off_trace: false,
-            cur_state: SymbolicState::new(),
-            block_end_states: Vec::new(),
-            final_states: Vec::new(),
-            max_depth: 0,
-            keep_track_unrolled_offset: true,
-        }
-    }
-
-    pub fn clear(&mut self) {
-        self.components_store.clear();
-        self.cur_state = SymbolicState::new();
-        self.block_end_states.clear();
-        self.final_states.clear();
-        self.max_depth = 0;
-
-        for (k, _) in self.function_library.iter() {
-            self.function_counter.insert(*k, 0_usize);
-        }
-    }
-
-    // Checks if a component is ready based on its inputs being fully specified.
-    //
-    // # Arguments
-    //
-    // * 'name' - Name of the component to check readiness for.
-    //
-    // # Returns
-    //
-    // A boolean indicating readiness status.
-    fn is_ready(&self, name: &SymbolicName) -> bool {
-        self.components_store.contains_key(name)
-            && self.components_store[name]
-                .inputs
-                .iter()
-                .all(|(_, v)| v.is_some())
-    }
-
-    // Feeds arguments into current state variables based on provided names and expressions.
-    //
-    // # Arguments
-    //
-    // * 'names' : Vector containing names corresponding with expressions being fed as arguments.
-    // * 'args' : Vector containing expressions whose evaluated results will be assigned as argument values.
-    pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
-        let mut name2id = self.name2id.clone();
-        let mut id2name = self.id2name.clone();
-        for (n, a) in names.iter().zip(args.iter()) {
-            let evaled_a = self.evaluate_expression(&DebugExpression::from(
-                a.clone(),
-                &mut name2id,
-                &mut id2name,
-            ));
-            self.cur_state.set_symval(
-                SymbolicName {
-                    name: name2id[n],
-                    owner: self.cur_state.owner_name.clone(),
-                    access: Vec::new(),
-                },
-                evaled_a,
-            );
-        }
-        //self.name2id = cloned_name2id;
-        //self.id2name = cloned_id2name;
+        self.template_library.insert(
+            i,
+            Box::new(SymbolicTemplate {
+                template_parameter_names: template_parameter_names
+                    .iter()
+                    .map(|p: &String| self.name2id[p])
+                    .collect::<Vec<_>>(),
+                inputs: inputs,
+                outputs: outputs,
+                unrolled_outputs: HashSet::new(),
+                var2type: var2type,
+                body: vec![dbody.clone(), DebugStatement::Ret],
+            }),
+        );
     }
 
     pub fn register_function(
@@ -423,6 +307,117 @@ impl<'a> SymbolicExecutor<'a> {
             }),
         );
         self.function_counter.insert(i, 0_usize);
+    }
+}
+
+/// Executes symbolic execution on a series of statements while maintaining multiple states.
+/// It handles branching logic and updates constraints accordingly during execution flow.
+///
+/// This struct is parameterized over a lifetime `'a`, which is used for borrowing constraint statistics references.
+///
+/// # Fields
+///
+/// * `template_library` - A library storing templates for execution.
+/// * `components_store` - A store for components used in execution.
+/// * `variable_types` - A map storing types of variables.
+/// * `prime` - A prime number used in computations.
+/// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
+/// * `max_depth` - Tracks maximum depth reached during execution.
+pub struct SymbolicExecutor<'a> {
+    pub symbolic_library: &'a mut SymbolicLibrary,
+    pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,
+    pub variable_types: FxHashMap<usize, DebugVariableType>,
+    pub prime: BigInt,
+    pub propagate_substitution: bool,
+    pub skip_initialization_blocks: bool,
+    pub off_trace: bool,
+    pub keep_track_unrolled_offset: bool,
+    // states
+    pub cur_state: SymbolicState,
+    pub block_end_states: Vec<SymbolicState>,
+    pub final_states: Vec<SymbolicState>,
+    // stats
+    pub max_depth: usize,
+}
+
+impl<'a> SymbolicExecutor<'a> {
+    /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
+    pub fn new(
+        symbolic_library: &'a mut SymbolicLibrary,
+        propagate_substitution: bool,
+        prime: BigInt,
+    ) -> Self {
+        SymbolicExecutor {
+            symbolic_library,
+            components_store: FxHashMap::default(),
+            variable_types: FxHashMap::default(),
+            prime: prime,
+            propagate_substitution: propagate_substitution,
+            skip_initialization_blocks: false,
+            off_trace: false,
+            cur_state: SymbolicState::new(),
+            block_end_states: Vec::new(),
+            final_states: Vec::new(),
+            max_depth: 0,
+            keep_track_unrolled_offset: true,
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.components_store.clear();
+        self.cur_state = SymbolicState::new();
+        self.block_end_states.clear();
+        self.final_states.clear();
+        self.max_depth = 0;
+
+        for (k, _) in self.symbolic_library.function_library.iter() {
+            self.symbolic_library.function_counter.insert(*k, 0_usize);
+        }
+    }
+
+    // Checks if a component is ready based on its inputs being fully specified.
+    //
+    // # Arguments
+    //
+    // * 'name' - Name of the component to check readiness for.
+    //
+    // # Returns
+    //
+    // A boolean indicating readiness status.
+    fn is_ready(&self, name: &SymbolicName) -> bool {
+        self.components_store.contains_key(name)
+            && self.components_store[name]
+                .inputs
+                .iter()
+                .all(|(_, v)| v.is_some())
+    }
+
+    // Feeds arguments into current state variables based on provided names and expressions.
+    //
+    // # Arguments
+    //
+    // * 'names' : Vector containing names corresponding with expressions being fed as arguments.
+    // * 'args' : Vector containing expressions whose evaluated results will be assigned as argument values.
+    pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
+        let mut name2id = self.symbolic_library.name2id.clone();
+        let mut id2name = self.symbolic_library.id2name.clone();
+        for (n, a) in names.iter().zip(args.iter()) {
+            let evaled_a = self.evaluate_expression(&DebugExpression::from(
+                a.clone(),
+                &mut name2id,
+                &mut id2name,
+            ));
+            self.cur_state.set_symval(
+                SymbolicName {
+                    name: name2id[n],
+                    owner: self.cur_state.owner_name.clone(),
+                    access: Vec::new(),
+                },
+                evaled_a,
+            );
+        }
+        //self.name2id = cloned_name2id;
+        //self.id2name = cloned_id2name;
     }
 
     /// Expands all stack states by executing each statement block recursively,
@@ -502,7 +497,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
                     self.execute(&stmts, 0);
@@ -523,7 +518,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
                     let tmp_cond = self.evaluate_expression(cond);
@@ -605,7 +600,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
                     // Symbolic execution of loops is complex. This is a simplified approach.
@@ -622,7 +617,7 @@ impl<'a> SymbolicExecutor<'a> {
                             self.block_end_states.push(self.cur_state.clone());
                         }
                     } else {
-                        panic!("This tool currently cannot handle the symbolic condition of While Loop: {}", evaled_condition.lookup_fmt(&self.id2name));
+                        panic!("This tool currently cannot handle the symbolic condition of While Loop: {}", evaled_condition.lookup_fmt(&self.symbolic_library.id2name));
                     }
 
                     self.expand_all_stack_states(
@@ -637,16 +632,20 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
                     let tmp_val = self.evaluate_expression(value);
                     let return_value = self.fold_variables(&tmp_val, !self.propagate_substitution);
                     // Handle return value (e.g., store in a special "return" variable)
 
-                    if !self.id2name.contains_key(&usize::MAX) {
-                        self.name2id.insert("__return__".to_string(), usize::MAX);
-                        self.id2name.insert(usize::MAX, "__return__".to_string());
+                    if !self.symbolic_library.id2name.contains_key(&usize::MAX) {
+                        self.symbolic_library
+                            .name2id
+                            .insert("__return__".to_string(), usize::MAX);
+                        self.symbolic_library
+                            .id2name
+                            .insert(usize::MAX, "__return__".to_string());
                     }
 
                     self.cur_state.set_symval(
@@ -689,7 +688,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
                     let expr = self.evaluate_expression(rhe);
@@ -726,18 +725,20 @@ impl<'a> SymbolicExecutor<'a> {
 
                     if self.keep_track_unrolled_offset {
                         if self
+                            .symbolic_library
                             .template_library
                             .contains_key(&self.cur_state.template_id)
-                            && self.template_library[&self.cur_state.template_id]
+                            && self.symbolic_library.template_library[&self.cur_state.template_id]
                                 .var2type
                                 .contains_key(&var.clone())
                         {
-                            if let Some(&VariableType::Signal(SignalType::Output, _)) = self
-                                .template_library[&self.cur_state.template_id]
-                                .var2type
-                                .get(&var)
+                            if let Some(&VariableType::Signal(SignalType::Output, _)) =
+                                self.symbolic_library.template_library[&self.cur_state.template_id]
+                                    .var2type
+                                    .get(&var)
                             {
-                                self.template_library
+                                self.symbolic_library
+                                    .template_library
                                     .get_mut(&self.cur_state.template_id)
                                     .unwrap()
                                     .unrolled_outputs
@@ -761,18 +762,10 @@ impl<'a> SymbolicExecutor<'a> {
 
                         if self.is_ready(&var_name) {
                             if !self.components_store[&var_name].is_done {
-                                let template_library = &mut self.template_library;
-                                let name2id = &mut self.name2id;
-                                let id2name = &mut self.id2name;
-                                let function_library = &mut self.function_library;
-                                let function_counter = &mut self.function_counter;
+                                let symbolic_library = &mut self.symbolic_library;
 
                                 let mut subse = SymbolicExecutor::new(
-                                    template_library,
-                                    name2id,
-                                    id2name,
-                                    function_library,
-                                    function_counter,
+                                    symbolic_library,
                                     self.propagate_substitution,
                                     self.prime.clone(),
                                 );
@@ -788,7 +781,7 @@ impl<'a> SymbolicExecutor<'a> {
                                 subse.cur_state.owner_name = Rc::new(on);
                                 //subse.cur_state.add_owner(*var, 0);
 
-                                let templ = &subse.template_library
+                                let templ = &subse.symbolic_library.template_library
                                     [&self.components_store[&var_name].template_name];
                                 subse.cur_state.set_template_id(
                                     self.components_store[&var_name].template_name.clone(),
@@ -822,7 +815,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     );
                                     trace!(
                                         "📞 Call {}",
-                                        subse.id2name
+                                        subse.symbolic_library.id2name
                                             [&self.components_store[&var_name].template_name]
                                     );
                                 }
@@ -851,10 +844,17 @@ impl<'a> SymbolicExecutor<'a> {
                     match value {
                         SymbolicValue::Call(callee_name, args) => {
                             // Initializing the Template Component
-                            if self.template_library.contains_key(&callee_name) {
+                            if self
+                                .symbolic_library
+                                .template_library
+                                .contains_key(&callee_name)
+                            {
                                 let mut comp_inputs: FxHashMap<usize, Option<SymbolicValue>> =
                                     FxHashMap::default();
-                                for inp_name in &self.template_library[&callee_name].inputs.clone()
+                                for inp_name in &self.symbolic_library.template_library
+                                    [&callee_name]
+                                    .inputs
+                                    .clone()
                                 {
                                     comp_inputs.insert(inp_name.clone(), None);
                                 }
@@ -897,7 +897,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
 
@@ -931,7 +931,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
 
@@ -963,7 +963,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
                     let expr = self.evaluate_expression(&arg);
@@ -981,7 +981,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
                     // Underscore substitution doesn't affect the symbolic state
@@ -991,7 +991,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
                     // Logging doesn't affect the symbolic state
@@ -1001,7 +1001,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!(
                             "{} {}",
                             format!("{}", "🔙 Ret:").red(),
-                            self.cur_state.lookup_fmt(&self.id2name)
+                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
                     self.final_states.push(self.cur_state.clone());
@@ -1018,7 +1018,7 @@ impl<'a> SymbolicExecutor<'a> {
         assignment: &FxHashMap<SymbolicName, BigInt>,
         off_trace: bool,
     ) {
-        self.cur_state.template_id = self.name2id[id];
+        self.cur_state.template_id = self.symbolic_library.name2id[id];
         for (vname, value) in assignment.into_iter() {
             self.cur_state
                 .set_symval(vname.clone(), SymbolicValue::ConstantInt(value.clone()));
@@ -1035,7 +1035,7 @@ impl<'a> SymbolicExecutor<'a> {
         self.skip_initialization_blocks = true;
         self.off_trace = off_trace;
         self.execute(
-            &self.template_library[&self.cur_state.template_id]
+            &self.symbolic_library.template_library[&self.cur_state.template_id]
                 .body
                 .clone(),
             0,
@@ -1069,7 +1069,11 @@ impl<'a> SymbolicExecutor<'a> {
         match &symval {
             SymbolicValue::Variable(sname) => {
                 if only_constatant_folding {
-                    if let Some(template) = self.template_library.get(&self.cur_state.template_id) {
+                    if let Some(template) = self
+                        .symbolic_library
+                        .template_library
+                        .get(&self.cur_state.template_id)
+                    {
                         if let Some(typ) = template.var2type.get(&sname.name) {
                             if let VariableType::Signal(SignalType::Output, _) = typ {
                                 return symval.clone();
@@ -1362,19 +1366,12 @@ impl<'a> SymbolicExecutor<'a> {
                     .iter()
                     .map(|arg| Rc::new(self.fold_variables(&arg, false)))
                     .collect();
-                if self.template_library.contains_key(id) {
+                if self.symbolic_library.template_library.contains_key(id) {
                     SymbolicValue::Call(id.clone(), evaluated_args)
-                } else if self.function_library.contains_key(id) {
-                    let name2id = &mut self.name2id;
-                    let id2name = &mut self.id2name;
-                    let function_library = &mut self.function_library;
-                    let function_counter = &mut self.function_counter;
+                } else if self.symbolic_library.function_library.contains_key(id) {
+                    let symbolic_library = &mut self.symbolic_library;
                     let mut subse = SymbolicExecutor::new(
-                        self.template_library,
-                        name2id,
-                        id2name,
-                        function_library,
-                        function_counter,
+                        symbolic_library,
                         self.propagate_substitution,
                         self.prime.clone(),
                     );
@@ -1382,7 +1379,7 @@ impl<'a> SymbolicExecutor<'a> {
                     let mut on = (*self.cur_state.owner_name.clone()).clone();
                     on.push(OwnerName {
                         name: *id,
-                        counter: subse.function_counter[id],
+                        counter: subse.symbolic_library.function_counter[id],
                     });
                     subse.cur_state.owner_name = Rc::new(on);
                     //subse.cur_state.owner_name = self.cur_state.owner_name.clone();
@@ -1390,11 +1387,12 @@ impl<'a> SymbolicExecutor<'a> {
                     //subse.template_library = self.template_library.clone();
                     //subse.function_library = self.function_library.clone();
                     subse
+                        .symbolic_library
                         .function_counter
-                        .insert(*id, subse.function_counter[id] + 1);
+                        .insert(*id, subse.symbolic_library.function_counter[id] + 1);
                     //subse.function_counter = self.function_counter.clone();
 
-                    let func = &subse.function_library[id];
+                    let func = &subse.symbolic_library.function_library[id];
                     for i in 0..(func.function_argument_names.len()) {
                         let sname = SymbolicName {
                             name: func.function_argument_names[i],
@@ -1408,7 +1406,7 @@ impl<'a> SymbolicExecutor<'a> {
 
                     if !self.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
-                        trace!("📞 Call {}", subse.id2name[id]);
+                        trace!("📞 Call {}", subse.symbolic_library.id2name[id]);
                     }
 
                     subse.execute(&func.body.clone(), 0);

@@ -24,7 +24,7 @@ use program_structure::ast::Expression;
 //use solver::brute_force_search;
 //use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use debug_ast::simplify_statement;
-use symbolic_execution::{register_library, SymbolicExecutor};
+use symbolic_execution::{SymbolicExecutor, SymbolicLibrary};
 use symbolic_value::OwnerName;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -51,56 +51,53 @@ fn start() -> Result<(), ()> {
 
     env_logger::init();
 
-    let mut template_library = FxHashMap::default();
-    let mut name2id = FxHashMap::default();
-    let mut id2name = FxHashMap::default();
-    let mut function_library = FxHashMap::default();
-    let mut function_counter = FxHashMap::default();
+    let mut symbolic_library = SymbolicLibrary {
+        template_library: FxHashMap::default(),
+        name2id: FxHashMap::default(),
+        id2name: FxHashMap::default(),
+        function_library: FxHashMap::default(),
+        function_counter: FxHashMap::default(),
+    };
 
     println!("{}", Colour::Green.paint("🧩 Parsing Templates..."));
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
-        register_library(
-            &mut template_library,
-            &mut name2id,
-            &mut id2name,
-            k.clone(),
-            &body.clone(),
-            v.get_name_of_params(),
-        );
+        symbolic_library.register_library(k.clone(), &body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
             println!(
                 "{}{} {}{}",
                 BACK_GRAY_SCRIPT_BLACK, "🌳 AST Tree for", k, RESET
             );
-            println!("{:?}", template_library[&name2id[&k]].body);
+            println!(
+                "{:?}",
+                symbolic_library.template_library[&symbolic_library.name2id[&k]].body
+            );
         }
     }
-
-    let mut sexe = SymbolicExecutor::new(
-        &mut template_library,
-        &mut name2id,
-        &mut id2name,
-        &mut function_library,
-        &mut function_counter,
-        user_input.flag_propagate_substitution,
-        BigInt::from_str(&user_input.debug_prime()).unwrap(),
-    );
 
     println!("{}", Colour::Green.paint("⚙️ Parsing Function..."));
     for (k, v) in program_archive.functions.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
-        sexe.register_function(k.clone(), body.clone(), v.get_name_of_params());
+        symbolic_library.register_function(k.clone(), body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
             println!(
                 "{}{} {}{}",
                 BACK_GRAY_SCRIPT_BLACK, "🌴 AST Tree for", k, RESET
             );
-            println!("{:?}", sexe.function_library[&sexe.name2id[&k]].body);
+            println!(
+                "{:?}",
+                symbolic_library.function_library[&symbolic_library.name2id[&k]].body
+            );
         }
     }
+
+    let mut sexe = SymbolicExecutor::new(
+        &mut symbolic_library,
+        user_input.flag_propagate_substitution,
+        BigInt::from_str(&user_input.debug_prime()).unwrap(),
+    );
 
     match &program_archive.initial_template_call {
         Expression::Call { id, args, .. } => {
@@ -112,24 +109,30 @@ fn start() -> Result<(), ()> {
                 "{}",
                 Colour::Green.paint("🛒 Gathering Trace/Side Constraints...")
             );
-            sexe.name2id.insert("main".to_string(), sexe.name2id.len());
-            sexe.id2name
-                .insert(sexe.name2id["main"], "main".to_string());
+            sexe.symbolic_library
+                .name2id
+                .insert("main".to_string(), sexe.symbolic_library.name2id.len());
+            sexe.symbolic_library
+                .id2name
+                .insert(sexe.symbolic_library.name2id["main"], "main".to_string());
 
             let mut on = (*sexe.cur_state.owner_name.clone()).clone();
             on.push(OwnerName {
-                name: sexe.name2id.len() - 1,
+                name: sexe.symbolic_library.name2id.len() - 1,
                 counter: 0,
             });
             sexe.cur_state.owner_name = Rc::new(on);
 
             //sexe.cur_state.add_owner(sexe.name2id.len() - 1, 0);
 
-            sexe.cur_state.set_template_id(sexe.name2id[id]);
+            sexe.cur_state
+                .set_template_id(sexe.symbolic_library.name2id[id]);
             if !user_input.flag_symbolic_template_params {
                 sexe.feed_arguments(template.get_name_of_params(), args);
             }
-            let body = sexe.template_library[&sexe.name2id[id]].body.clone();
+            let body = sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[id]]
+                .body
+                .clone();
             sexe.execute(&body, 0);
 
             println!("===========================================================");
@@ -143,7 +146,10 @@ fn start() -> Result<(), ()> {
                 for c in &s.side_constraints {
                     ss.update(c);
                 }*/
-                info!("Final State: {}", s.lookup_fmt(&sexe.id2name));
+                info!(
+                    "Final State: {}",
+                    s.lookup_fmt(&sexe.symbolic_library.id2name)
+                );
             }
             println!("===========================================================");
 
