@@ -3,7 +3,7 @@ use log::warn;
 use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
 use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 use std::rc::Rc;
 
 use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, VariableType};

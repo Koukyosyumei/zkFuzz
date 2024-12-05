@@ -6,12 +6,10 @@ use num_traits::Signed;
 use num_traits::Zero;
 use rustc_hash::FxHashMap;
 use std::cmp::max;
-use std::collections::HashSet;
 use std::rc::Rc;
 
 use program_structure::ast::{
-    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType,
-    Statement, VariableType,
+    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType, VariableType,
 };
 
 use crate::debug_ast::{
@@ -19,8 +17,7 @@ use crate::debug_ast::{
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
 use crate::symbolic_value::{
-    OwnerName, SymbolicAccess, SymbolicComponent, SymbolicFunction, SymbolicLibrary, SymbolicName,
-    SymbolicTemplate, SymbolicValue,
+    OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue,
 };
 use crate::utils::{extended_euclidean, italic};
 
