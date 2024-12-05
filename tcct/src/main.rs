@@ -11,7 +11,7 @@ mod utils;
 use ansi_term::Colour;
 use env_logger;
 use input_user::Input;
-use log::{error, info, warn};
+use log::{info, warn};
 use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
 use std::env;
@@ -19,7 +19,6 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::time;
 
-use debug_ast::DebugStatement;
 use program_structure::ast::Expression;
 //use solver::brute_force_search;
 //use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};

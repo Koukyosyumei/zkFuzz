@@ -2,7 +2,6 @@ use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
 use std::fmt;
 use std::hash::{Hash, Hasher};
-use std::mem;
 
 use program_structure::abstract_syntax_tree::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
@@ -10,12 +9,7 @@ use program_structure::abstract_syntax_tree::ast::{
 };
 use program_structure::ast::LogArgument;
 use program_structure::ast::Meta;
-use program_structure::constants::UsefulConstants;
-use program_structure::error_definition::Report;
-use program_structure::program_archive::ProgramArchive;
 
-use super::input_user::Input;
-use crate::VERSION;
 
 const RESET: &str = "\x1b[0m";
 const BLUE: &str = "\x1b[34m"; //94

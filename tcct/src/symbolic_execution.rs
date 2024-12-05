@@ -3,15 +3,14 @@ use log::{error, trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::Signed;
-use num_traits::{One, Zero};
+use num_traits::Zero;
 use rustc_hash::FxHashMap;
 use std::cmp::max;
 use std::collections::HashSet;
-use std::fmt;
 use std::rc::Rc;
 
 use program_structure::ast::{
-    Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
+    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
     Statement, VariableType,
 };
 
@@ -947,7 +946,7 @@ impl<'a> SymbolicExecutor<'a> {
                 }
                 DebugStatement::Declaration {
                     name,
-                    dimensions,
+                    
                     xtype,
                     ..
                 } => {
