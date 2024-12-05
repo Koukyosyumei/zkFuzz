@@ -254,7 +254,7 @@ impl SymbolicValue {
             SymbolicValue::Call(name, args) => {
                 format!(
                     "📞{}({})",
-                    name,
+                    lookup[&name],
                     args.into_iter()
                         .map(|a| a.lookup_fmt(lookup))
                         .collect::<Vec<_>>()
