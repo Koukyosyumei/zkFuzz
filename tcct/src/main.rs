@@ -24,8 +24,8 @@ use program_structure::ast::Expression;
 //use solver::brute_force_search;
 //use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use debug_ast::simplify_statement;
-use symbolic_execution::{SymbolicExecutor, SymbolicLibrary};
-use symbolic_value::OwnerName;
+use symbolic_execution::SymbolicExecutor;
+use symbolic_value::{OwnerName, SymbolicLibrary};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";

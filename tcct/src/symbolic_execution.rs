@@ -19,8 +19,8 @@ use crate::debug_ast::{
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
 use crate::symbolic_value::{
-    OwnerName, SymbolicAccess, SymbolicComponent, SymbolicFunction, SymbolicName, SymbolicTemplate,
-    SymbolicValue,
+    OwnerName, SymbolicAccess, SymbolicComponent, SymbolicFunction, SymbolicLibrary, SymbolicName,
+    SymbolicTemplate, SymbolicValue,
 };
 use crate::utils::{extended_euclidean, italic};
 
@@ -196,117 +196,6 @@ impl SymbolicState {
         );
         s += &format!("{}\n", format!("{}", "]").cyan());
         s
-    }
-}
-
-pub struct SymbolicLibrary {
-    pub template_library: FxHashMap<usize, Box<SymbolicTemplate>>,
-    pub name2id: FxHashMap<String, usize>,
-    pub id2name: FxHashMap<usize, String>,
-    pub function_library: FxHashMap<usize, Box<SymbolicFunction>>,
-    pub function_counter: FxHashMap<usize, usize>,
-}
-
-impl SymbolicLibrary {
-    // Registers library template by extracting input signals from block statement body provided along with template parameter names list.
-    //
-    // # Arguments
-    //
-    // * 'name' : Name under which template will be registered within library .
-    // * 'body' : Block statement serving as main logic body defining behavior captured by template .
-    // * 'template_parameter_names': List containing names identifying parameters used within template logic .
-    pub fn register_library(
-        &mut self,
-        name: String,
-        body: &Statement,
-        template_parameter_names: &Vec<String>,
-    ) {
-        let mut inputs: Vec<usize> = vec![];
-        let mut outputs: Vec<usize> = vec![];
-        let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
-
-        let i = if let Some(i) = self.name2id.get(&name) {
-            *i
-        } else {
-            self.name2id.insert(name.clone(), self.name2id.len());
-            self.id2name.insert(self.name2id[&name], name);
-            self.name2id.len() - 1
-        };
-
-        let dbody = DebugStatement::from(body.clone(), &mut self.name2id, &mut self.id2name);
-        match dbody {
-            DebugStatement::Block { ref stmts, .. } => {
-                for s in stmts {
-                    if let DebugStatement::InitializationBlock {
-                        initializations, ..
-                    } = &s
-                    {
-                        for init in initializations {
-                            if let DebugStatement::Declaration { name, xtype, .. } = &init {
-                                var2type.insert(name.clone(), xtype.clone());
-                                if let VariableType::Signal(typ, _taglist) = &xtype {
-                                    match typ {
-                                        SignalType::Input => {
-                                            inputs.push(*name);
-                                        }
-                                        SignalType::Output => {
-                                            outputs.push(*name);
-                                        }
-                                        SignalType::Intermediate => {}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            _ => {
-                warn!("Cannot Find Block Statement");
-            }
-        }
-
-        self.template_library.insert(
-            i,
-            Box::new(SymbolicTemplate {
-                template_parameter_names: template_parameter_names
-                    .iter()
-                    .map(|p: &String| self.name2id[p])
-                    .collect::<Vec<_>>(),
-                inputs: inputs,
-                outputs: outputs,
-                unrolled_outputs: HashSet::new(),
-                var2type: var2type,
-                body: vec![dbody.clone(), DebugStatement::Ret],
-            }),
-        );
-    }
-
-    pub fn register_function(
-        &mut self,
-        name: String,
-        body: Statement,
-        function_argument_names: &Vec<String>,
-    ) {
-        let i = if let Some(i) = self.name2id.get(&name) {
-            *i
-        } else {
-            self.name2id.insert(name.clone(), self.name2id.len());
-            self.id2name.insert(self.name2id[&name], name);
-            self.name2id.len() - 1
-        };
-
-        let dbody = DebugStatement::from(body, &mut self.name2id, &mut self.id2name);
-        self.function_library.insert(
-            i,
-            Box::new(SymbolicFunction {
-                function_argument_names: function_argument_names
-                    .iter()
-                    .map(|p: &String| self.name2id[p])
-                    .collect::<Vec<_>>(),
-                body: vec![dbody, DebugStatement::Ret],
-            }),
-        );
-        self.function_counter.insert(i, 0_usize);
     }
 }
 
