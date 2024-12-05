@@ -138,7 +138,7 @@ fn start() -> Result<(), ()> {
             println!("===========================================================");
             //let mut ts = ConstraintStatistics::new();
             //let mut ss = ConstraintStatistics::new();
-            for s in &sexe.final_states {
+            for s in &sexe.symbolic_store.final_states {
                 /*
                 for c in &s.trace_constraints {
                     ts.update(c);

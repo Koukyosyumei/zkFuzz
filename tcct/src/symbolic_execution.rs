@@ -310,6 +310,31 @@ impl SymbolicLibrary {
     }
 }
 
+pub struct SymbolicStore {
+    pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,
+    pub variable_types: FxHashMap<usize, DebugVariableType>,
+    pub block_end_states: Vec<SymbolicState>,
+    pub final_states: Vec<SymbolicState>,
+    pub max_depth: usize,
+}
+
+impl SymbolicStore {
+    pub fn clear(&mut self) {
+        self.components_store.clear();
+        self.block_end_states.clear();
+        self.final_states.clear();
+        self.max_depth = 0;
+    }
+}
+
+pub struct SymbolicExecutorSetting {
+    pub prime: BigInt,
+    pub propagate_substitution: bool,
+    pub skip_initialization_blocks: bool,
+    pub off_trace: bool,
+    pub keep_track_unrolled_offset: bool,
+}
+
 /// Executes symbolic execution on a series of statements while maintaining multiple states.
 /// It handles branching logic and updates constraints accordingly during execution flow.
 ///
@@ -325,19 +350,9 @@ impl SymbolicLibrary {
 /// * `max_depth` - Tracks maximum depth reached during execution.
 pub struct SymbolicExecutor<'a> {
     pub symbolic_library: &'a mut SymbolicLibrary,
-    pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,
-    pub variable_types: FxHashMap<usize, DebugVariableType>,
-    pub prime: BigInt,
-    pub propagate_substitution: bool,
-    pub skip_initialization_blocks: bool,
-    pub off_trace: bool,
-    pub keep_track_unrolled_offset: bool,
-    // states
+    pub symbolic_store: SymbolicStore,
     pub cur_state: SymbolicState,
-    pub block_end_states: Vec<SymbolicState>,
-    pub final_states: Vec<SymbolicState>,
-    // stats
-    pub max_depth: usize,
+    pub setting: SymbolicExecutorSetting,
 }
 
 impl<'a> SymbolicExecutor<'a> {
@@ -348,27 +363,28 @@ impl<'a> SymbolicExecutor<'a> {
         prime: BigInt,
     ) -> Self {
         SymbolicExecutor {
-            symbolic_library,
-            components_store: FxHashMap::default(),
-            variable_types: FxHashMap::default(),
-            prime: prime,
-            propagate_substitution: propagate_substitution,
-            skip_initialization_blocks: false,
-            off_trace: false,
+            symbolic_library: symbolic_library,
+            symbolic_store: SymbolicStore {
+                components_store: FxHashMap::default(),
+                variable_types: FxHashMap::default(),
+                block_end_states: Vec::new(),
+                final_states: Vec::new(),
+                max_depth: 0,
+            },
             cur_state: SymbolicState::new(),
-            block_end_states: Vec::new(),
-            final_states: Vec::new(),
-            max_depth: 0,
-            keep_track_unrolled_offset: true,
+            setting: SymbolicExecutorSetting {
+                prime: prime,
+                propagate_substitution: propagate_substitution,
+                skip_initialization_blocks: false,
+                off_trace: false,
+                keep_track_unrolled_offset: true,
+            },
         }
     }
 
     pub fn clear(&mut self) {
-        self.components_store.clear();
         self.cur_state = SymbolicState::new();
-        self.block_end_states.clear();
-        self.final_states.clear();
-        self.max_depth = 0;
+        self.symbolic_store.clear();
 
         for (k, _) in self.symbolic_library.function_library.iter() {
             self.symbolic_library.function_counter.insert(*k, 0_usize);
@@ -385,8 +401,8 @@ impl<'a> SymbolicExecutor<'a> {
     //
     // A boolean indicating readiness status.
     fn is_ready(&self, name: &SymbolicName) -> bool {
-        self.components_store.contains_key(name)
-            && self.components_store[name]
+        self.symbolic_store.components_store.contains_key(name)
+            && self.symbolic_store.components_store[name]
                 .inputs
                 .iter()
                 .all(|(_, v)| v.is_some())
@@ -434,7 +450,7 @@ impl<'a> SymbolicExecutor<'a> {
         cur_bid: usize,
         depth: usize,
     ) {
-        let drained_states: Vec<_> = self.block_end_states.drain(..).collect();
+        let drained_states: Vec<_> = self.symbolic_store.block_end_states.drain(..).collect();
         for state in drained_states {
             self.cur_state = state;
             self.cur_state.set_depth(depth);
@@ -451,7 +467,8 @@ impl<'a> SymbolicExecutor<'a> {
     /// * `cur_bid` - Current block index to start execution from.
     pub fn execute(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
         if cur_bid < statements.len() {
-            self.max_depth = max(self.max_depth, self.cur_state.get_depth());
+            self.symbolic_store.max_depth =
+                max(self.symbolic_store.max_depth, self.cur_state.get_depth());
 
             /*
             let n = SymbolicName {
@@ -480,12 +497,12 @@ impl<'a> SymbolicExecutor<'a> {
                         is_input = true;
                     }
 
-                    if !(self.skip_initialization_blocks && is_input) {
+                    if !(self.setting.skip_initialization_blocks && is_input) {
                         for init in initializations {
                             self.execute(&vec![init.clone()], 0);
                         }
                     }
-                    self.block_end_states = vec![self.cur_state.clone()];
+                    self.symbolic_store.block_end_states = vec![self.cur_state.clone()];
                     self.expand_all_stack_states(
                         statements,
                         cur_bid + 1,
@@ -493,7 +510,7 @@ impl<'a> SymbolicExecutor<'a> {
                     );
                 }
                 DebugStatement::Block { meta, stmts, .. } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -514,7 +531,7 @@ impl<'a> SymbolicExecutor<'a> {
                     else_case,
                     ..
                 } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -524,17 +541,17 @@ impl<'a> SymbolicExecutor<'a> {
                     let tmp_cond = self.evaluate_expression(cond);
                     let original_evaled_condition = self.fold_variables(&tmp_cond, true);
                     let evaled_condition =
-                        self.fold_variables(&tmp_cond, !self.propagate_substitution);
+                        self.fold_variables(&tmp_cond, !self.setting.propagate_substitution);
 
                     // Save the current state
                     let cur_depth = self.cur_state.get_depth();
-                    let stack_states = self.block_end_states.clone();
+                    let stack_states = self.symbolic_store.block_end_states.clone();
 
                     // Create a branch in the symbolic state
                     let mut if_state = self.cur_state.clone();
 
                     if let SymbolicValue::ConstantBool(false) = evaled_condition {
-                        if !self.off_trace {
+                        if !self.setting.off_trace {
                             trace!(
                                 "{}",
                                 format!("(elem_id={}) 🚧 Unreachable `Then` Branch", meta.elem_id)
@@ -550,8 +567,8 @@ impl<'a> SymbolicExecutor<'a> {
                         self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
                     }
 
-                    let mut stack_states_if_true = self.block_end_states.clone();
-                    self.block_end_states = stack_states;
+                    let mut stack_states_if_true = self.symbolic_store.block_end_states.clone();
+                    self.symbolic_store.block_end_states = stack_states;
                     let neg_evaled_condition =
                         if let SymbolicValue::ConstantBool(v) = evaled_condition {
                             SymbolicValue::ConstantBool(!v)
@@ -571,7 +588,7 @@ impl<'a> SymbolicExecutor<'a> {
                             )
                         };
                     if let SymbolicValue::ConstantBool(false) = neg_evaled_condition {
-                        if !self.off_trace {
+                        if !self.setting.off_trace {
                             trace!(
                                 "{}",
                                 format!("(elem_id={}) 🚧 Unreachable `Else` Branch", meta.elem_id)
@@ -587,16 +604,18 @@ impl<'a> SymbolicExecutor<'a> {
                         if let Some(else_stmt) = else_case {
                             self.execute(&vec![*else_stmt.clone()], 0);
                         } else {
-                            self.block_end_states = vec![self.cur_state.clone()];
+                            self.symbolic_store.block_end_states = vec![self.cur_state.clone()];
                         }
                         self.expand_all_stack_states(statements, cur_bid + 1, cur_depth);
                     }
-                    self.block_end_states.append(&mut stack_states_if_true);
+                    self.symbolic_store
+                        .block_end_states
+                        .append(&mut stack_states_if_true);
                 }
                 DebugStatement::While {
                     meta, cond, stmt, ..
                 } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -606,15 +625,17 @@ impl<'a> SymbolicExecutor<'a> {
                     // Symbolic execution of loops is complex. This is a simplified approach.
                     let tmp_cond = self.evaluate_expression(cond);
                     let evaled_condition =
-                        self.fold_variables(&tmp_cond, !self.propagate_substitution);
+                        self.fold_variables(&tmp_cond, !self.setting.propagate_substitution);
 
                     if let SymbolicValue::ConstantBool(flag) = evaled_condition {
                         if flag {
                             self.execute(&vec![*stmt.clone()], 0);
-                            self.block_end_states.pop();
+                            self.symbolic_store.block_end_states.pop();
                             self.execute(statements, cur_bid);
                         } else {
-                            self.block_end_states.push(self.cur_state.clone());
+                            self.symbolic_store
+                                .block_end_states
+                                .push(self.cur_state.clone());
                         }
                     } else {
                         panic!("This tool currently cannot handle the symbolic condition of While Loop: {}", evaled_condition.lookup_fmt(&self.symbolic_library.id2name));
@@ -628,7 +649,7 @@ impl<'a> SymbolicExecutor<'a> {
                     // Note: This doesn't handle loop invariants or fixed-point computation
                 }
                 DebugStatement::Return { meta, value, .. } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -636,7 +657,8 @@ impl<'a> SymbolicExecutor<'a> {
                         );
                     }
                     let tmp_val = self.evaluate_expression(value);
-                    let return_value = self.fold_variables(&tmp_val, !self.propagate_substitution);
+                    let return_value =
+                        self.fold_variables(&tmp_val, !self.setting.propagate_substitution);
                     // Handle return value (e.g., store in a special "return" variable)
 
                     if !self.symbolic_library.id2name.contains_key(&usize::MAX) {
@@ -671,7 +693,8 @@ impl<'a> SymbolicExecutor<'a> {
                         owner: self.cur_state.owner_name.clone(),
                         access: Vec::new(),
                     };
-                    self.variable_types
+                    self.symbolic_store
+                        .variable_types
                         .insert(*name, DebugVariableType(xtype.clone()));
                     let value = SymbolicValue::Variable(var_name.clone());
                     self.cur_state.set_symval(var_name, value);
@@ -684,7 +707,7 @@ impl<'a> SymbolicExecutor<'a> {
                     op,
                     rhe,
                 } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -693,7 +716,7 @@ impl<'a> SymbolicExecutor<'a> {
                     }
                     let expr = self.evaluate_expression(rhe);
                     let original_value = self.fold_variables(&expr, true);
-                    let value = self.fold_variables(&expr, !self.propagate_substitution);
+                    let value = self.fold_variables(&expr, !self.setting.propagate_substitution);
 
                     /*
                     let accessed_name = if access.is_empty() {
@@ -723,7 +746,7 @@ impl<'a> SymbolicExecutor<'a> {
                             .collect::<Vec<_>>(),
                     };
 
-                    if self.keep_track_unrolled_offset {
+                    if self.setting.keep_track_unrolled_offset {
                         if self
                             .symbolic_library
                             .template_library
@@ -752,7 +775,9 @@ impl<'a> SymbolicExecutor<'a> {
                     if !access.is_empty() {
                         for acc in access {
                             if let DebugAccess::ComponentAccess(tmp_name) = acc {
-                                if let Some(component) = self.components_store.get_mut(&var_name) {
+                                if let Some(component) =
+                                    self.symbolic_store.components_store.get_mut(&var_name)
+                                {
                                     component
                                         .inputs
                                         .insert(tmp_name.clone(), Some(value.clone()));
@@ -761,13 +786,13 @@ impl<'a> SymbolicExecutor<'a> {
                         }
 
                         if self.is_ready(&var_name) {
-                            if !self.components_store[&var_name].is_done {
+                            if !self.symbolic_store.components_store[&var_name].is_done {
                                 let symbolic_library = &mut self.symbolic_library;
 
                                 let mut subse = SymbolicExecutor::new(
                                     symbolic_library,
-                                    self.propagate_substitution,
-                                    self.prime.clone(),
+                                    self.setting.propagate_substitution,
+                                    self.setting.prime.clone(),
                                 );
 
                                 // subse.template_library = self.template_library.clone();
@@ -781,10 +806,14 @@ impl<'a> SymbolicExecutor<'a> {
                                 subse.cur_state.owner_name = Rc::new(on);
                                 //subse.cur_state.add_owner(*var, 0);
 
-                                let templ = &subse.symbolic_library.template_library
-                                    [&self.components_store[&var_name].template_name];
+                                let templ = &subse.symbolic_library.template_library[&self
+                                    .symbolic_store
+                                    .components_store[&var_name]
+                                    .template_name];
                                 subse.cur_state.set_template_id(
-                                    self.components_store[&var_name].template_name.clone(),
+                                    self.symbolic_store.components_store[&var_name]
+                                        .template_name
+                                        .clone(),
                                 );
 
                                 for i in 0..(templ.template_parameter_names.len()) {
@@ -795,11 +824,16 @@ impl<'a> SymbolicExecutor<'a> {
                                     };
                                     subse.cur_state.set_symval(
                                         n,
-                                        (*self.components_store[&var_name].args[i].clone()).clone(),
+                                        (*self.symbolic_store.components_store[&var_name].args[i]
+                                            .clone())
+                                        .clone(),
                                     );
                                 }
 
-                                for (k, v) in self.components_store[&var_name].inputs.iter() {
+                                for (k, v) in self.symbolic_store.components_store[&var_name]
+                                    .inputs
+                                    .iter()
+                                {
                                     let n = SymbolicName {
                                         name: *k,
                                         owner: subse.cur_state.owner_name.clone(),
@@ -808,30 +842,32 @@ impl<'a> SymbolicExecutor<'a> {
                                     subse.cur_state.set_symval(n, v.clone().unwrap());
                                 }
 
-                                if !self.off_trace {
+                                if !self.setting.off_trace {
                                     trace!(
                                         "{}",
                                         format!("{}", "===========================").cyan()
                                     );
                                     trace!(
                                         "📞 Call {}",
-                                        subse.symbolic_library.id2name
-                                            [&self.components_store[&var_name].template_name]
+                                        subse.symbolic_library.id2name[&self
+                                            .symbolic_store
+                                            .components_store[&var_name]
+                                            .template_name]
                                     );
                                 }
 
                                 subse.execute(&templ.body.clone(), 0);
 
-                                if subse.final_states.len() > 1 {
+                                if subse.symbolic_store.final_states.len() > 1 {
                                     warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
                                 }
-                                self.cur_state
-                                    .trace_constraints
-                                    .append(&mut subse.final_states[0].trace_constraints);
-                                self.cur_state
-                                    .side_constraints
-                                    .append(&mut subse.final_states[0].side_constraints);
-                                if !self.off_trace {
+                                self.cur_state.trace_constraints.append(
+                                    &mut subse.symbolic_store.final_states[0].trace_constraints,
+                                );
+                                self.cur_state.side_constraints.append(
+                                    &mut subse.symbolic_store.final_states[0].side_constraints,
+                                );
+                                if !self.setting.off_trace {
                                     trace!(
                                         "{}",
                                         format!("{}", "===========================").cyan()
@@ -864,11 +900,13 @@ impl<'a> SymbolicExecutor<'a> {
                                     inputs: comp_inputs,
                                     is_done: false,
                                 };
-                                self.components_store.insert(var_name.clone(), c);
+                                self.symbolic_store
+                                    .components_store
+                                    .insert(var_name.clone(), c);
                             }
                         }
                         _ => {
-                            if self.variable_types[var].0 != VariableType::Var {
+                            if self.symbolic_store.variable_types[var].0 != VariableType::Var {
                                 let cont = SymbolicValue::BinaryOp(
                                     Rc::new(SymbolicValue::Variable(var_name.clone())),
                                     DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
@@ -893,7 +931,7 @@ impl<'a> SymbolicExecutor<'a> {
                 DebugStatement::MultSubstitution {
                     meta, lhe, op, rhe, ..
                 } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -904,9 +942,9 @@ impl<'a> SymbolicExecutor<'a> {
                     let lhe_val = self.evaluate_expression(lhe);
                     let rhe_val = self.evaluate_expression(rhe);
                     let simple_lhs = self.fold_variables(&lhe_val, true);
-                    let lhs = self.fold_variables(&lhe_val, !self.propagate_substitution);
+                    let lhs = self.fold_variables(&lhe_val, !self.setting.propagate_substitution);
                     let simple_rhs = self.fold_variables(&rhe_val, true);
-                    let rhs = self.fold_variables(&rhe_val, !self.propagate_substitution);
+                    let rhs = self.fold_variables(&rhe_val, !self.setting.propagate_substitution);
 
                     // Handle multiple substitution (simplified)
                     let cont = SymbolicValue::BinaryOp(
@@ -927,7 +965,7 @@ impl<'a> SymbolicExecutor<'a> {
                     self.execute(statements, cur_bid + 1);
                 }
                 DebugStatement::ConstraintEquality { meta, lhe, rhe } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -938,9 +976,9 @@ impl<'a> SymbolicExecutor<'a> {
                     let lhe_val = self.evaluate_expression(lhe);
                     let rhe_val = self.evaluate_expression(rhe);
                     let original_lhs = self.fold_variables(&lhe_val, true);
-                    let lhs = self.fold_variables(&lhe_val, !self.propagate_substitution);
+                    let lhs = self.fold_variables(&lhe_val, !self.setting.propagate_substitution);
                     let original_rhs = self.fold_variables(&rhe_val, true);
-                    let rhs = self.fold_variables(&rhe_val, !self.propagate_substitution);
+                    let rhs = self.fold_variables(&rhe_val, !self.setting.propagate_substitution);
 
                     let original_cond = SymbolicValue::BinaryOp(
                         Rc::new(original_lhs),
@@ -959,7 +997,7 @@ impl<'a> SymbolicExecutor<'a> {
                     self.execute(statements, cur_bid + 1);
                 }
                 DebugStatement::Assert { meta, arg, .. } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -967,7 +1005,8 @@ impl<'a> SymbolicExecutor<'a> {
                         );
                     }
                     let expr = self.evaluate_expression(&arg);
-                    let condition = self.fold_variables(&expr, !self.propagate_substitution);
+                    let condition =
+                        self.fold_variables(&expr, !self.setting.propagate_substitution);
                     self.cur_state.push_trace_constraint(&condition);
                     self.execute(statements, cur_bid + 1);
                 }
@@ -977,7 +1016,7 @@ impl<'a> SymbolicExecutor<'a> {
                     rhe: _,
                     ..
                 } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -987,7 +1026,7 @@ impl<'a> SymbolicExecutor<'a> {
                     // Underscore substitution doesn't affect the symbolic state
                 }
                 DebugStatement::LogCall { meta, args: _, .. } => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "(elem_id={}) {}",
                             meta.elem_id,
@@ -997,18 +1036,22 @@ impl<'a> SymbolicExecutor<'a> {
                     // Logging doesn't affect the symbolic state
                 }
                 DebugStatement::Ret => {
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!(
                             "{} {}",
                             format!("{}", "🔙 Ret:").red(),
                             self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
                         );
                     }
-                    self.final_states.push(self.cur_state.clone());
+                    self.symbolic_store
+                        .final_states
+                        .push(self.cur_state.clone());
                 }
             }
         } else {
-            self.block_end_states.push(self.cur_state.clone());
+            self.symbolic_store
+                .block_end_states
+                .push(self.cur_state.clone());
         }
     }
 
@@ -1032,8 +1075,8 @@ impl<'a> SymbolicExecutor<'a> {
             );
         }*/
 
-        self.skip_initialization_blocks = true;
-        self.off_trace = off_trace;
+        self.setting.skip_initialization_blocks = true;
+        self.setting.off_trace = off_trace;
         self.execute(
             &self.symbolic_library.template_library[&self.cur_state.template_id]
                 .body
@@ -1113,34 +1156,34 @@ impl<'a> SymbolicExecutor<'a> {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                         match &infix_op.0 {
                             ExpressionInfixOpcode::Add => {
-                                SymbolicValue::ConstantInt((lv + rv) % &self.prime)
+                                SymbolicValue::ConstantInt((lv + rv) % &self.setting.prime)
                             }
                             ExpressionInfixOpcode::Sub => {
-                                SymbolicValue::ConstantInt((lv - rv) % &self.prime)
+                                SymbolicValue::ConstantInt((lv - rv) % &self.setting.prime)
                             }
                             ExpressionInfixOpcode::Mul => {
-                                SymbolicValue::ConstantInt((lv * rv) % &self.prime)
+                                SymbolicValue::ConstantInt((lv * rv) % &self.setting.prime)
                             }
                             ExpressionInfixOpcode::Div => {
                                 if rv.is_zero() {
                                     SymbolicValue::ConstantInt(BigInt::zero())
                                 } else {
-                                    let mut r = self.prime.clone();
+                                    let mut r = self.setting.prime.clone();
                                     let mut new_r = rv.clone();
                                     if r.is_negative() {
-                                        r += &self.prime;
+                                        r += &self.setting.prime;
                                     }
                                     if new_r.is_negative() {
-                                        new_r += &self.prime;
+                                        new_r += &self.setting.prime;
                                     }
 
                                     let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
-                                    rv_inv %= self.prime.clone();
+                                    rv_inv %= self.setting.prime.clone();
                                     if rv_inv.is_negative() {
-                                        rv_inv += &self.prime;
+                                        rv_inv += &self.setting.prime;
                                     }
 
-                                    SymbolicValue::ConstantInt((lv * rv_inv) % &self.prime)
+                                    SymbolicValue::ConstantInt((lv * rv_inv) % &self.setting.prime)
                                 }
                             }
                             ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
@@ -1154,24 +1197,24 @@ impl<'a> SymbolicExecutor<'a> {
                             ExpressionInfixOpcode::ShiftR => {
                                 SymbolicValue::ConstantInt(lv >> rv.to_usize().unwrap())
                             }
-                            ExpressionInfixOpcode::Lesser => {
-                                SymbolicValue::ConstantBool(lv % &self.prime < rv % &self.prime)
-                            }
-                            ExpressionInfixOpcode::Greater => {
-                                SymbolicValue::ConstantBool(lv % &self.prime > rv % &self.prime)
-                            }
-                            ExpressionInfixOpcode::LesserEq => {
-                                SymbolicValue::ConstantBool(lv % &self.prime <= rv % &self.prime)
-                            }
-                            ExpressionInfixOpcode::GreaterEq => {
-                                SymbolicValue::ConstantBool(lv % &self.prime >= rv % &self.prime)
-                            }
-                            ExpressionInfixOpcode::Eq => {
-                                SymbolicValue::ConstantBool(lv % &self.prime == rv % &self.prime)
-                            }
-                            ExpressionInfixOpcode::NotEq => {
-                                SymbolicValue::ConstantBool(lv % &self.prime != rv % &self.prime)
-                            }
+                            ExpressionInfixOpcode::Lesser => SymbolicValue::ConstantBool(
+                                lv % &self.setting.prime < rv % &self.setting.prime,
+                            ),
+                            ExpressionInfixOpcode::Greater => SymbolicValue::ConstantBool(
+                                lv % &self.setting.prime > rv % &self.setting.prime,
+                            ),
+                            ExpressionInfixOpcode::LesserEq => SymbolicValue::ConstantBool(
+                                lv % &self.setting.prime <= rv % &self.setting.prime,
+                            ),
+                            ExpressionInfixOpcode::GreaterEq => SymbolicValue::ConstantBool(
+                                lv % &self.setting.prime >= rv % &self.setting.prime,
+                            ),
+                            ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(
+                                lv % &self.setting.prime == rv % &self.setting.prime,
+                            ),
+                            ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(
+                                lv % &self.setting.prime != rv % &self.setting.prime,
+                            ),
                             _ => SymbolicValue::BinaryOp(
                                 Rc::new(lhs),
                                 infix_op.clone(),
@@ -1372,8 +1415,8 @@ impl<'a> SymbolicExecutor<'a> {
                     let symbolic_library = &mut self.symbolic_library;
                     let mut subse = SymbolicExecutor::new(
                         symbolic_library,
-                        self.propagate_substitution,
-                        self.prime.clone(),
+                        self.setting.propagate_substitution,
+                        self.setting.prime.clone(),
                     );
 
                     let mut on = (*self.cur_state.owner_name.clone()).clone();
@@ -1404,28 +1447,28 @@ impl<'a> SymbolicExecutor<'a> {
                             .set_symval(sname, (*evaluated_args[i].clone()).clone());
                     }
 
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
                         trace!("📞 Call {}", subse.symbolic_library.id2name[id]);
                     }
 
                     subse.execute(&func.body.clone(), 0);
 
-                    if subse.final_states.len() > 1 {
+                    if subse.symbolic_store.final_states.len() > 1 {
                         warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
                     }
                     //let mut sub_trace_constraints = subse.final_states[0].trace_constraints.clone();
                     //let mut sub_side_constraints = subse.final_states[0].side_constraints.clone();
                     self.cur_state
                         .trace_constraints
-                        .append(&mut subse.final_states[0].trace_constraints);
+                        .append(&mut subse.symbolic_store.final_states[0].trace_constraints);
                     self.cur_state
                         .side_constraints
-                        .append(&mut subse.final_states[0].side_constraints);
+                        .append(&mut subse.symbolic_store.final_states[0].side_constraints);
                     //self.name2id = subse.name2id;
                     //self.id2name = subse.id2name;
 
-                    if !self.off_trace {
+                    if !self.setting.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
                     }
 
@@ -1433,11 +1476,11 @@ impl<'a> SymbolicExecutor<'a> {
 
                     let sname = SymbolicName {
                         name: usize::MAX,
-                        owner: subse.final_states[0].owner_name.clone(),
+                        owner: subse.symbolic_store.final_states[0].owner_name.clone(),
                         access: Vec::new(),
                     };
 
-                    (*subse.final_states[0].values[&sname].clone()).clone()
+                    (*subse.symbolic_store.final_states[0].values[&sname].clone()).clone()
                 } else {
                     error!("Unknown Callee: {}", id);
                     SymbolicValue::Call(id.clone(), evaluated_args)
