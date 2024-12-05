@@ -10,8 +10,8 @@ use std::collections::HashSet;
 use std::rc::Rc;
 
 use program_structure::ast::{
-    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType, Statement,
-    VariableType,
+    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType,
+    Statement, VariableType,
 };
 
 use crate::debug_ast::{
@@ -458,6 +458,16 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    fn trace_if_enabled(&self, meta: &Meta) {
+        if !self.setting.off_trace {
+            trace!(
+                "(elem_id={}) {}",
+                meta.elem_id,
+                self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
+            );
+        }
+    }
+
     /// Executes a sequence of statements symbolically from a specified starting block index,
     /// updating internal states and handling control structures like if-else and loops appropriately.
     ///
@@ -510,13 +520,7 @@ impl<'a> SymbolicExecutor<'a> {
                     );
                 }
                 DebugStatement::Block { meta, stmts, .. } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
                     self.execute(&stmts, 0);
                     self.expand_all_stack_states(
                         statements,
@@ -531,13 +535,7 @@ impl<'a> SymbolicExecutor<'a> {
                     else_case,
                     ..
                 } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
                     let tmp_cond = self.evaluate_expression(cond);
                     let original_evaled_condition = self.fold_variables(&tmp_cond, true);
                     let evaled_condition =
@@ -615,13 +613,7 @@ impl<'a> SymbolicExecutor<'a> {
                 DebugStatement::While {
                     meta, cond, stmt, ..
                 } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
                     // Symbolic execution of loops is complex. This is a simplified approach.
                     let tmp_cond = self.evaluate_expression(cond);
                     let evaled_condition =
@@ -649,13 +641,7 @@ impl<'a> SymbolicExecutor<'a> {
                     // Note: This doesn't handle loop invariants or fixed-point computation
                 }
                 DebugStatement::Return { meta, value, .. } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
                     let tmp_val = self.evaluate_expression(value);
                     let return_value =
                         self.fold_variables(&tmp_val, !self.setting.propagate_substitution);
@@ -707,13 +693,7 @@ impl<'a> SymbolicExecutor<'a> {
                     op,
                     rhe,
                 } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
                     let expr = self.evaluate_expression(rhe);
                     let original_value = self.fold_variables(&expr, true);
                     let value = self.fold_variables(&expr, !self.setting.propagate_substitution);
@@ -934,13 +914,7 @@ impl<'a> SymbolicExecutor<'a> {
                 DebugStatement::MultSubstitution {
                     meta, lhe, op, rhe, ..
                 } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
 
                     let lhe_val = self.evaluate_expression(lhe);
                     let rhe_val = self.evaluate_expression(rhe);
@@ -968,13 +942,7 @@ impl<'a> SymbolicExecutor<'a> {
                     self.execute(statements, cur_bid + 1);
                 }
                 DebugStatement::ConstraintEquality { meta, lhe, rhe } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
 
                     let lhe_val = self.evaluate_expression(lhe);
                     let rhe_val = self.evaluate_expression(rhe);
@@ -1000,13 +968,7 @@ impl<'a> SymbolicExecutor<'a> {
                     self.execute(statements, cur_bid + 1);
                 }
                 DebugStatement::Assert { meta, arg, .. } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
                     let expr = self.evaluate_expression(&arg);
                     let condition =
                         self.fold_variables(&expr, !self.setting.propagate_substitution);
@@ -1019,23 +981,11 @@ impl<'a> SymbolicExecutor<'a> {
                     rhe: _,
                     ..
                 } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
                     // Underscore substitution doesn't affect the symbolic state
                 }
                 DebugStatement::LogCall { meta, args: _, .. } => {
-                    if !self.setting.off_trace {
-                        trace!(
-                            "(elem_id={}) {}",
-                            meta.elem_id,
-                            self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-                        );
-                    }
+                    self.trace_if_enabled(&meta);
                     // Logging doesn't affect the symbolic state
                 }
                 DebugStatement::Ret => {
