@@ -3,6 +3,7 @@ mod input_user;
 mod parser_user;
 //mod solver;
 //mod stats;
+mod debug_ast;
 mod symbolic_execution;
 mod type_analysis_user;
 mod utils;
@@ -18,7 +19,7 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::time;
 
-use parser_user::DebugStatement;
+use debug_ast::DebugStatement;
 use program_structure::ast::Expression;
 //use solver::brute_force_search;
 //use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};

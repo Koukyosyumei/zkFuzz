@@ -15,7 +15,7 @@ use program_structure::ast::{
     Statement, VariableType,
 };
 
-use crate::parser_user::{
+use crate::debug_ast::{
     DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode,
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
