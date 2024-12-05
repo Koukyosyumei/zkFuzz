@@ -10,7 +10,6 @@ use program_structure::abstract_syntax_tree::ast::{
 use program_structure::ast::LogArgument;
 use program_structure::ast::Meta;
 
-
 const RESET: &str = "\x1b[0m";
 const BLUE: &str = "\x1b[34m"; //94
 const GREEN: &str = "\x1b[32m";
@@ -465,6 +464,101 @@ impl DebugStatement {
                 arg: DebugExpression::from(arg, name2id, id2name),
             },
         }
+    }
+}
+
+/// Simplifies a given statement by transforming certain structures into more straightforward forms.
+/// Specifically, it handles inline switch operations within substitution statements.
+///
+/// # Arguments
+///
+/// * `statement` - A reference to the `Statement` to be simplified.
+///
+/// # Returns
+///
+/// A simplified `Statement`.
+pub fn simplify_statement(statement: &Statement) -> Statement {
+    match &statement {
+        Statement::Substitution {
+            meta: _,
+            var,
+            access,
+            op,
+            rhe,
+        } => {
+            // Check if the RHS contains an InlineSwitchOp
+            if let Expression::InlineSwitchOp {
+                meta,
+                cond,
+                if_true,
+                if_false,
+            } = rhe
+            {
+                let mut meta_if = meta.clone();
+                meta_if.elem_id = std::usize::MAX - meta.elem_id * 2;
+                let if_stmt = Statement::Substitution {
+                    meta: meta_if.clone(),
+                    var: var.clone(),
+                    access: access.clone(),
+                    op: *op, // Assuming simple assignment
+                    rhe: *if_true.clone(),
+                };
+
+                let mut meta_else = meta.clone();
+                meta_else.elem_id = std::usize::MAX - (meta.elem_id * 2 + 1);
+                let else_stmt = Statement::Substitution {
+                    meta: meta_else.clone(),
+                    var: var.clone(),
+                    access: access.clone(),
+                    op: *op, // Assuming simple assignment
+                    rhe: *if_false.clone(),
+                };
+
+                Statement::IfThenElse {
+                    meta: meta.clone(),
+                    cond: *cond.clone(),
+                    if_case: Box::new(if_stmt),
+                    else_case: Some(Box::new(else_stmt)),
+                }
+            } else {
+                statement.clone() // No InlineSwitchOp, return as-is
+            }
+        }
+        Statement::IfThenElse {
+            meta,
+            cond,
+            if_case,
+            else_case,
+        } => {
+            if else_case.is_none() {
+                Statement::IfThenElse {
+                    meta: meta.clone(),
+                    cond: cond.clone(),
+                    if_case: Box::new(simplify_statement(if_case)),
+                    else_case: None,
+                }
+            } else {
+                Statement::IfThenElse {
+                    meta: meta.clone(),
+                    cond: cond.clone(),
+                    if_case: Box::new(simplify_statement(if_case)),
+                    else_case: Some(Box::new(simplify_statement(&else_case.clone().unwrap()))),
+                }
+            }
+        }
+        Statement::While { meta, cond, stmt } => Statement::While {
+            meta: meta.clone(),
+            cond: cond.clone(),
+            stmt: Box::new(simplify_statement(stmt)),
+        },
+        Statement::Block { meta, stmts } => Statement::Block {
+            meta: meta.clone(),
+            stmts: stmts
+                .iter()
+                .map(|arg0: &Statement| simplify_statement(arg0))
+                .collect::<Vec<_>>(),
+        },
+        _ => statement.clone(),
     }
 }
 

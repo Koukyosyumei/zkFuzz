@@ -5,6 +5,7 @@ mod parser_user;
 //mod stats;
 mod debug_ast;
 mod symbolic_execution;
+mod symbolic_value;
 mod type_analysis_user;
 mod utils;
 
@@ -22,7 +23,9 @@ use std::time;
 use program_structure::ast::Expression;
 //use solver::brute_force_search;
 //use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
-use symbolic_execution::{register_library, simplify_statement, OwnerName, SymbolicExecutor};
+use debug_ast::simplify_statement;
+use symbolic_execution::{register_library, SymbolicExecutor};
+use symbolic_value::OwnerName;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";

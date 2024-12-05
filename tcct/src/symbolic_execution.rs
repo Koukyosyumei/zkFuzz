@@ -10,277 +10,19 @@ use std::collections::HashSet;
 use std::rc::Rc;
 
 use program_structure::ast::{
-    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
-    Statement, VariableType,
+    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType, Statement,
+    VariableType,
 };
 
 use crate::debug_ast::{
     DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode,
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
+use crate::symbolic_value::{
+    OwnerName, SymbolicAccess, SymbolicComponent, SymbolicFunction, SymbolicName, SymbolicTemplate,
+    SymbolicValue,
+};
 use crate::utils::{extended_euclidean, italic};
-
-/// Simplifies a given statement by transforming certain structures into more straightforward forms.
-/// Specifically, it handles inline switch operations within substitution statements.
-///
-/// # Arguments
-///
-/// * `statement` - A reference to the `Statement` to be simplified.
-///
-/// # Returns
-///
-/// A simplified `Statement`.
-pub fn simplify_statement(statement: &Statement) -> Statement {
-    match &statement {
-        Statement::Substitution {
-            meta: _,
-            var,
-            access,
-            op,
-            rhe,
-        } => {
-            // Check if the RHS contains an InlineSwitchOp
-            if let Expression::InlineSwitchOp {
-                meta,
-                cond,
-                if_true,
-                if_false,
-            } = rhe
-            {
-                let mut meta_if = meta.clone();
-                meta_if.elem_id = std::usize::MAX - meta.elem_id * 2;
-                let if_stmt = Statement::Substitution {
-                    meta: meta_if.clone(),
-                    var: var.clone(),
-                    access: access.clone(),
-                    op: *op, // Assuming simple assignment
-                    rhe: *if_true.clone(),
-                };
-
-                let mut meta_else = meta.clone();
-                meta_else.elem_id = std::usize::MAX - (meta.elem_id * 2 + 1);
-                let else_stmt = Statement::Substitution {
-                    meta: meta_else.clone(),
-                    var: var.clone(),
-                    access: access.clone(),
-                    op: *op, // Assuming simple assignment
-                    rhe: *if_false.clone(),
-                };
-
-                Statement::IfThenElse {
-                    meta: meta.clone(),
-                    cond: *cond.clone(),
-                    if_case: Box::new(if_stmt),
-                    else_case: Some(Box::new(else_stmt)),
-                }
-            } else {
-                statement.clone() // No InlineSwitchOp, return as-is
-            }
-        }
-        Statement::IfThenElse {
-            meta,
-            cond,
-            if_case,
-            else_case,
-        } => {
-            if else_case.is_none() {
-                Statement::IfThenElse {
-                    meta: meta.clone(),
-                    cond: cond.clone(),
-                    if_case: Box::new(simplify_statement(if_case)),
-                    else_case: None,
-                }
-            } else {
-                Statement::IfThenElse {
-                    meta: meta.clone(),
-                    cond: cond.clone(),
-                    if_case: Box::new(simplify_statement(if_case)),
-                    else_case: Some(Box::new(simplify_statement(&else_case.clone().unwrap()))),
-                }
-            }
-        }
-        Statement::While { meta, cond, stmt } => Statement::While {
-            meta: meta.clone(),
-            cond: cond.clone(),
-            stmt: Box::new(simplify_statement(stmt)),
-        },
-        Statement::Block { meta, stmts } => Statement::Block {
-            meta: meta.clone(),
-            stmts: stmts
-                .iter()
-                .map(|arg0: &Statement| simplify_statement(arg0))
-                .collect::<Vec<_>>(),
-        },
-        _ => statement.clone(),
-    }
-}
-
-/// Represents the access type within a symbolic expression, such as component or array access.
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub enum SymbolicAccess {
-    ComponentAccess(usize),
-    ArrayAccess(SymbolicValue),
-}
-
-impl SymbolicAccess {
-    /// Provides a compact format for displaying symbolic access in expressions.
-    fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
-        match &self {
-            SymbolicAccess::ComponentAccess(name) => {
-                format!(".{}", lookup[name])
-            }
-            SymbolicAccess::ArrayAccess(val) => {
-                format!(
-                    "[{}]",
-                    val.lookup_fmt(lookup).replace("\n", "").replace("  ", " ")
-                )
-            }
-        }
-    }
-}
-
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct OwnerName {
-    pub name: usize,
-    pub counter: usize,
-}
-
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct SymbolicName {
-    pub name: usize,
-    pub owner: Rc<Vec<OwnerName>>,
-    pub access: Vec<SymbolicAccess>,
-}
-
-impl SymbolicName {
-    fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
-        format!(
-            "{}.{}{}",
-            self.owner
-                .iter()
-                .map(|e: &OwnerName| lookup[&e.name].clone())
-                .collect::<Vec<_>>()
-                .join("."),
-            lookup[&self.name].clone(),
-            self.access
-                .iter()
-                .map(|s: &SymbolicAccess| s.lookup_fmt(lookup))
-                .collect::<Vec<_>>()
-                .join("")
-        )
-    }
-}
-
-/// Represents a symbolic value used in symbolic execution, which can be a constant, variable, or an operation.
-/// It supports various operations like binary, unary, conditional, arrays, tuples, uniform arrays, and function calls.
-#[derive(Clone, Hash, Eq, PartialEq)]
-pub enum SymbolicValue {
-    ConstantInt(BigInt),
-    ConstantBool(bool),
-    Variable(SymbolicName),
-    BinaryOp(
-        Rc<SymbolicValue>,
-        DebugExpressionInfixOpcode,
-        Rc<SymbolicValue>,
-    ),
-    Conditional(Rc<SymbolicValue>, Rc<SymbolicValue>, Rc<SymbolicValue>),
-    UnaryOp(DebugExpressionPrefixOpcode, Rc<SymbolicValue>),
-    Array(Vec<Rc<SymbolicValue>>),
-    Tuple(Vec<Rc<SymbolicValue>>),
-    UniformArray(Rc<SymbolicValue>, Rc<SymbolicValue>),
-    Call(usize, Vec<Rc<SymbolicValue>>),
-}
-
-/// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
-impl SymbolicValue {
-    fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
-        match self {
-            SymbolicValue::ConstantInt(value) => format!("{}", value),
-            SymbolicValue::ConstantBool(flag) => {
-                format!("{} {}", if *flag { "✅" } else { "❌" }, flag)
-            }
-            SymbolicValue::Variable(sname) => sname.lookup_fmt(lookup),
-            SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
-                ExpressionInfixOpcode::Eq
-                | ExpressionInfixOpcode::NotEq
-                | ExpressionInfixOpcode::LesserEq
-                | ExpressionInfixOpcode::GreaterEq
-                | ExpressionInfixOpcode::Lesser
-                | ExpressionInfixOpcode::Greater => {
-                    format!(
-                        "({} {} {})",
-                        format!("{:?}", op).green(),
-                        lhs.lookup_fmt(lookup),
-                        rhs.lookup_fmt(lookup)
-                    )
-                }
-                ExpressionInfixOpcode::ShiftL
-                | ExpressionInfixOpcode::ShiftR
-                | ExpressionInfixOpcode::BitAnd
-                | ExpressionInfixOpcode::BitOr
-                | ExpressionInfixOpcode::BitXor
-                | ExpressionInfixOpcode::Div
-                | ExpressionInfixOpcode::IntDiv => {
-                    format!(
-                        "({} {} {})",
-                        format!("{:?}", op).red(),
-                        lhs.lookup_fmt(lookup),
-                        rhs.lookup_fmt(lookup)
-                    )
-                }
-                _ => format!(
-                    "({} {} {})",
-                    format!("{:?}", op).yellow(),
-                    lhs.lookup_fmt(lookup),
-                    rhs.lookup_fmt(lookup)
-                ),
-            },
-            SymbolicValue::Conditional(cond, if_branch, else_branch) => {
-                format!(
-                    "({} {} {})",
-                    cond.lookup_fmt(lookup),
-                    if_branch.lookup_fmt(lookup),
-                    else_branch.lookup_fmt(lookup)
-                )
-            }
-            SymbolicValue::UnaryOp(op, expr) => match &op.0 {
-                _ => format!(
-                    "({} {})",
-                    format!("{:?}", op).magenta(),
-                    expr.lookup_fmt(lookup)
-                ),
-            },
-            SymbolicValue::Call(name, args) => {
-                format!(
-                    "📞{}({})",
-                    lookup[&name],
-                    args.into_iter()
-                        .map(|a| a.lookup_fmt(lookup))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            }
-            SymbolicValue::Array(elems) => {
-                format!(
-                    "🧬 {}",
-                    elems
-                        .into_iter()
-                        .map(|a| a.lookup_fmt(lookup))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            }
-            SymbolicValue::UniformArray(elem, counts) => {
-                format!(
-                    "🧬 ({}, {})",
-                    elem.lookup_fmt(lookup),
-                    counts.lookup_fmt(lookup)
-                )
-            }
-            _ => format!("❓Unknown symbolic value"),
-        }
-    }
-}
 
 /// Represents the state of symbolic execution, holding symbolic values,
 /// trace constraints, side constraints, and depth information.
@@ -458,33 +200,6 @@ impl SymbolicState {
     pub fn push_side_constraint(&mut self, constraint: &SymbolicValue) {
         self.side_constraints.push(Rc::new(constraint.clone()));
     }
-}
-
-/// Represents a symbolic template used in the symbolic execution process.
-#[derive(Default, Clone)]
-pub struct SymbolicTemplate {
-    pub template_parameter_names: Vec<usize>,
-    pub inputs: Vec<usize>,
-    pub outputs: Vec<usize>,
-    pub unrolled_outputs: HashSet<SymbolicName>,
-    pub var2type: FxHashMap<usize, VariableType>,
-    pub body: Vec<DebugStatement>,
-}
-
-/// Represents a symbolic function used in the symbolic execution process.
-#[derive(Default, Clone, Debug)]
-pub struct SymbolicFunction {
-    pub function_argument_names: Vec<usize>,
-    pub body: Vec<DebugStatement>,
-}
-
-/// Represents a symbolic component used in the symbolic execution process.
-#[derive(Default, Clone)]
-pub struct SymbolicComponent {
-    pub template_name: usize,
-    pub args: Vec<Rc<SymbolicValue>>,
-    pub inputs: FxHashMap<usize, Option<SymbolicValue>>,
-    pub is_done: bool,
 }
 
 // Registers library template by extracting input signals from block statement body provided along with template parameter names list.
@@ -944,12 +659,7 @@ impl<'a> SymbolicExecutor<'a> {
                     );
                     self.execute(statements, cur_bid + 1);
                 }
-                DebugStatement::Declaration {
-                    name,
-                    
-                    xtype,
-                    ..
-                } => {
+                DebugStatement::Declaration { name, xtype, .. } => {
                     /*
                     let var_name = if dimensions.is_empty() {
                         format!("{}.{}", self.cur_state.get_owner(), name.clone())
