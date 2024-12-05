@@ -795,9 +795,6 @@ impl<'a> SymbolicExecutor<'a> {
                                     self.setting.prime.clone(),
                                 );
 
-                                // subse.template_library = self.template_library.clone();
-                                // subse.function_library = self.function_library.clone();
-                                // subse.function_counter = self.function_counter.clone();
                                 let mut on = (*self.cur_state.owner_name.clone()).clone();
                                 on.push(OwnerName {
                                     name: *var,
