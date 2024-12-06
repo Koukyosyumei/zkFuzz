@@ -106,42 +106,37 @@ impl ConstraintStatistics {
     }
 }
 
-pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintStatistics) {
-    println!(
-        "  - Total_Constraints: {}",
-        constraint_stats.total_constraints
-    );
-    println!("  - Constant_Counts: {}", constraint_stats.constant_counts);
-    println!(
-        "  - Conditional_Counts: {}",
-        constraint_stats.conditional_counts
-    );
-    println!("  - Array_Counts: {}", constraint_stats.array_counts);
-    println!("  - Tuple_Counts: {}", constraint_stats.tuple_counts);
+pub fn print_constraint_summary_statistics_pretty(stats: &ConstraintStatistics) {
+    println!(" ┌─────────────────────┬─────────────┐");
+    println!(" │ Constraint Type     │     Count   │");
+    println!(" ├─────────────────────┼─────────────┤");
+    println!(" │ Total               │ {:11} │", stats.total_constraints);
+    println!(" │ Constant            │ {:11} │", stats.constant_counts);
+    println!(" │ Conditional         │ {:11} │", stats.conditional_counts);
+    println!(" │ Array               │ {:11} │", stats.array_counts);
+    println!(" │ Tuple               │ {:11} │", stats.tuple_counts);
+    println!(" └─────────────────────┴─────────────┘");
 
-    let avg_depth = if !constraint_stats.constraint_depths.is_empty() {
-        constraint_stats.constraint_depths.iter().sum::<usize>() as f64
-            / constraint_stats.constraint_depths.len() as f64
+    let avg_depth = if !stats.constraint_depths.is_empty() {
+        stats.constraint_depths.iter().sum::<usize>() as f64 / stats.constraint_depths.len() as f64
     } else {
         0.0
     };
-    println!("  - Avg_Depth: {}", avg_depth);
+    println!("\n📊 Constraint Depth Statistics:");
+    println!(" • Average Depth: {:.2}", avg_depth);
     println!(
-        "  - Max_Depth: {}",
-        constraint_stats
-            .constraint_depths
-            .iter()
-            .max()
-            .unwrap_or(&0)
+        " • Maximum Depth: {}",
+        stats.constraint_depths.iter().max().unwrap_or(&0)
     );
 
+    println!("\n🔢 Operator Counts:");
     for op in &[
         "Mul", "Div", "Add", "Sub", "Pow", "IntDiv", "Mod", "ShL", "ShR", "LEq", "GEq", "Lt", "Gt",
         "Eq", "NEq", "BoolOr", "BoolAnd", "BitOr", "BitAnd", "BitXor",
     ] {
-        let c = constraint_stats.operator_counts.get(*op).unwrap_or(&0);
+        let c = stats.operator_counts.get(*op).unwrap_or(&0);
         println!(
-            "  - Count_{}: {}{}{}",
+            " • {:<8}: {}{}{}",
             op,
             if *c != 0 { WHITE } else { BBLACK },
             c,
@@ -149,31 +144,29 @@ pub fn print_constraint_summary_statistics_pretty(constraint_stats: &ConstraintS
         );
     }
 
-    let var_counts: Vec<usize> = constraint_stats.variable_counts.values().cloned().collect();
+    println!("\n📈 Variable Statistics:");
+    let var_counts: Vec<usize> = stats.variable_counts.values().cloned().collect();
     let var_avg = if !var_counts.is_empty() {
         var_counts.iter().sum::<usize>() as f64 / var_counts.len() as f64
     } else {
         0.0
     };
-    println!("  - Variable_Avg_Count: {}", var_avg);
+    println!(" • Average Count: {:.2}", var_avg);
     println!(
-        "  - Variable_Max_Count: {}",
+        " • Maximum Count: {}",
         var_counts.iter().max().unwrap_or(&0)
     );
 
-    let func_counts: Vec<usize> = constraint_stats
-        .function_call_counts
-        .values()
-        .cloned()
-        .collect();
+    println!("\n📞 Function Call Statistics:");
+    let func_counts: Vec<usize> = stats.function_call_counts.values().cloned().collect();
     let func_avg = if !func_counts.is_empty() {
         func_counts.iter().sum::<usize>() as f64 / func_counts.len() as f64
     } else {
         0.0
     };
-    println!("  - Function_Avg_Count: {}", func_avg);
+    println!(" • Average Count: {:.2}", func_avg);
     println!(
-        "  - Function_Max_Count: {}",
+        " • Maximum Count: {}",
         func_counts.iter().max().unwrap_or(&0)
     );
 }

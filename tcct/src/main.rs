@@ -226,41 +226,66 @@ fn start() -> Result<(), ()> {
 
             println!(
                 "{}",
-                Colour::Green.paint("======================= TCCT Report =======================")
+                Colour::Green
+                    .bold()
+                    .paint("╔═══════════════════════════════════════════════════════════════╗")
             );
-            println!("📊 Execution Summary:");
-            println!("  - Prime Number        : {}", user_input.debug_prime());
             println!(
-                "  - Total Paths Explored: {}",
+                "{}",
+                Colour::Green
+                    .bold()
+                    .paint("║                        TCCT Report                            ║")
+            );
+            println!(
+                "{}",
+                Colour::Green
+                    .bold()
+                    .paint("╚═══════════════════════════════════════════════════════════════╝")
+            );
+            println!("{}", Colour::Cyan.bold().paint("📊 Execution Summary:"));
+            println!(" ├─ Prime Number      : {}", user_input.debug_prime());
+            println!(
+                " ├─ Total Paths       : {}",
                 sexe.symbolic_store.final_states.len()
             );
             println!(
-                "  - Compression Rate    : {:.2}% ({}/{})",
+                " ├─ Compression Rate  : {:.2}% ({}/{})",
                 (ss.total_constraints as f64 / ts.total_constraints as f64) * 100 as f64,
                 ss.total_constraints,
                 ts.total_constraints
             );
             println!(
-                "  - Verification        : {}",
+                " ├─ Verification      : {}",
                 if is_safe {
-                    Colour::Green.paint("🆗 No Counter Example Found")
+                    Colour::Green.bold().paint("🆗 No Counter Example Found")
                 } else {
-                    Colour::Red.paint("💥 NOT SAFE 💥")
+                    Colour::Red.bold().paint("💥 NOT SAFE 💥")
                 }
             );
-            println!("  - Execution Time      : {:?}", start_time.elapsed());
+            println!(" └─ Execution Time    : {:?}", start_time.elapsed());
 
             if user_input.flag_printout_stats {
                 println!(
-                    "--------------------------------------------\n🪶 Stats of Trace Constraint"
+                    "\n{}",
+                    Colour::Yellow
+                        .bold()
+                        .paint("🪶 Stats of Trace Constraint ══════════════════════")
                 );
                 print_constraint_summary_statistics_pretty(&ts);
                 println!(
-                    "--------------------------------------------\n⛓️ Stats of Side Constraint"
+                    "\n{}",
+                    Colour::Yellow
+                        .bold()
+                        .paint("⛓️ Stats of Side Constraint ══════════════════════")
                 );
                 print_constraint_summary_statistics_pretty(&ss);
             }
-            println!("===========================================================");
+            println!(
+                "{}",
+                Colour::Green
+                    .bold()
+                    .paint("═══════════════════════════════════════════════════════════════")
+            );
         }
         _ => {
             warn!("Cannot Find Main Call");
