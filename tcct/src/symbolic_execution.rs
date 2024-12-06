@@ -426,6 +426,7 @@ impl<'a> SymbolicExecutor<'a> {
 
                     // Create a branch in the symbolic state
                     let mut if_state = self.cur_state.clone();
+                    let mut else_state = self.cur_state.clone();
 
                     if let SymbolicValue::ConstantBool(false) = evaled_condition {
                         if !self.setting.off_trace {
@@ -473,7 +474,6 @@ impl<'a> SymbolicExecutor<'a> {
                             );
                         }
                     } else {
-                        let mut else_state = self.cur_state.clone();
                         else_state.push_trace_constraint(&neg_evaled_condition);
                         else_state.push_side_constraint(&original_neg_evaled_condition);
                         else_state.set_depth(cur_depth + 1);
