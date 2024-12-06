@@ -261,6 +261,7 @@ pub struct SymbolicExecutorSetting {
     pub skip_initialization_blocks: bool,
     pub off_trace: bool,
     pub keep_track_unrolled_offset: bool,
+    pub keep_track_constraints: bool,
 }
 
 /// A symbolic execution engine for analyzing and executing statements symbolically.
@@ -497,8 +498,10 @@ impl<'a> SymbolicExecutor<'a> {
                             );
                         }
                     } else {
-                        if_state.push_trace_constraint(&evaled_condition);
-                        if_state.push_side_constraint(&original_evaled_condition);
+                        if self.setting.keep_track_constraints {
+                            if_state.push_trace_constraint(&evaled_condition);
+                            if_state.push_side_constraint(&original_evaled_condition);
+                        }
                         if_state.set_depth(cur_depth + 1);
                         self.cur_state = if_state.clone();
                         self.execute(&vec![*if_case.clone()], 0);
@@ -534,8 +537,10 @@ impl<'a> SymbolicExecutor<'a> {
                             );
                         }
                     } else {
-                        else_state.push_trace_constraint(&neg_evaled_condition);
-                        else_state.push_side_constraint(&original_neg_evaled_condition);
+                        if self.setting.keep_track_constraints {
+                            else_state.push_trace_constraint(&neg_evaled_condition);
+                            else_state.push_side_constraint(&original_neg_evaled_condition);
+                        }
                         else_state.set_depth(cur_depth + 1);
                         self.cur_state = else_state;
                         if let Some(else_stmt) = else_case {
@@ -802,15 +807,17 @@ impl<'a> SymbolicExecutor<'a> {
                                     DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                     Rc::new(value),
                                 );
-                                self.cur_state.push_trace_constraint(&cont);
+                                if self.setting.keep_track_constraints {
+                                    self.cur_state.push_trace_constraint(&cont);
 
-                                if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
-                                    let original_cont = SymbolicValue::BinaryOp(
-                                        Rc::new(SymbolicValue::Variable(var_name)),
-                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                        Rc::new(original_value),
-                                    );
-                                    self.cur_state.push_side_constraint(&original_cont);
+                                    if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
+                                        let original_cont = SymbolicValue::BinaryOp(
+                                            Rc::new(SymbolicValue::Variable(var_name)),
+                                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                            Rc::new(original_value),
+                                        );
+                                        self.cur_state.push_side_constraint(&original_cont);
+                                    }
                                 }
                             }
                         }
@@ -836,15 +843,16 @@ impl<'a> SymbolicExecutor<'a> {
                         DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                         Rc::new(rhs),
                     );
-                    self.cur_state.push_trace_constraint(&cont);
-                    if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
-                        // Handle multiple substitution (simplified)
-                        let simple_cont = SymbolicValue::BinaryOp(
-                            Rc::new(simple_lhs),
-                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                            Rc::new(simple_rhs),
-                        );
-                        self.cur_state.push_side_constraint(&simple_cont);
+                    if self.setting.keep_track_constraints {
+                        self.cur_state.push_trace_constraint(&cont);
+                        if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
+                            let simple_cont = SymbolicValue::BinaryOp(
+                                Rc::new(simple_lhs),
+                                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                Rc::new(simple_rhs),
+                            );
+                            self.cur_state.push_side_constraint(&simple_cont);
+                        }
                     }
                     self.execute(statements, cur_bid + 1);
                 }
@@ -869,9 +877,10 @@ impl<'a> SymbolicExecutor<'a> {
                         Rc::new(rhs),
                     );
 
-                    self.cur_state.push_trace_constraint(&cond);
-                    self.cur_state.push_side_constraint(&original_cond);
-
+                    if self.setting.keep_track_constraints {
+                        self.cur_state.push_trace_constraint(&cond);
+                        self.cur_state.push_side_constraint(&original_cond);
+                    }
                     self.execute(statements, cur_bid + 1);
                 }
                 DebugStatement::Assert { meta, arg, .. } => {
@@ -879,7 +888,9 @@ impl<'a> SymbolicExecutor<'a> {
                     let expr = self.evaluate_expression(&arg);
                     let condition =
                         self.fold_variables(&expr, !self.setting.propagate_substitution);
-                    self.cur_state.push_trace_constraint(&condition);
+                    if self.setting.keep_track_constraints {
+                        self.cur_state.push_trace_constraint(&condition);
+                    }
                     self.execute(statements, cur_bid + 1);
                 }
                 DebugStatement::UnderscoreSubstitution {
