@@ -1,12 +1,12 @@
+use std::cmp::max;
+use std::rc::Rc;
+
 use colored::Colorize;
 use log::{error, trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
-use num_traits::Signed;
-use num_traits::Zero;
+use num_traits::{Signed, Zero};
 use rustc_hash::FxHashMap;
-use std::cmp::max;
-use std::rc::Rc;
 
 use program_structure::ast::{
     AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType,

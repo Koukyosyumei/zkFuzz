@@ -9,19 +9,20 @@ mod symbolic_value;
 mod type_analysis_user;
 mod utils;
 
+use std::env;
+use std::str::FromStr;
+use std::time;
+
 use ansi_term::Colour;
 use env_logger;
 use input_user::Input;
 use log::{info, warn};
 use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
-use std::env;
-use std::str::FromStr;
-use std::time;
 
 use debug_ast::simplify_statement;
 use program_structure::ast::Expression;
-use solver::brute_force_search;
+use solver::{brute_force_search, VerificationSetting};
 use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
 use symbolic_value::{OwnerName, SymbolicLibrary};
@@ -180,27 +181,28 @@ fn start() -> Result<(), ()> {
                     _ => unimplemented!(),
                 }
 
+                let verification_setting = VerificationSetting {
+                    id: main_template_id.to_string(),
+                    prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                    quick_mode: &*user_input.search_mode == "quick",
+                    progress_interval: 10000,
+                    template_param_names: template_param_names,
+                    template_param_values: template_param_values,
+                };
+
                 for s in &sexe.symbolic_store.final_states {
                     let counterexample = match &*user_input.search_mode {
                         "quick" => brute_force_search(
-                            BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                            main_template_id.to_string(),
                             &mut sub_sexe,
                             &s.trace_constraints.clone(),
                             &s.side_constraints.clone(),
-                            true,
-                            &template_param_names,
-                            &template_param_values,
+                            &verification_setting,
                         ),
                         "full" => brute_force_search(
-                            BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                            main_template_id.to_string(),
                             &mut sub_sexe,
                             &s.trace_constraints.clone(),
                             &s.side_constraints.clone(),
-                            false,
-                            &template_param_names,
-                            &template_param_values,
+                            &verification_setting,
                         ),
                         _ => panic!(
                             "search_mode={} is not supported",

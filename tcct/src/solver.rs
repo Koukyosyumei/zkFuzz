@@ -42,9 +42,7 @@ impl fmt::Display for VerificationResult {
 
 /// A structure representing a counterexample when constraints are invalid.
 pub struct CounterExample {
-    /// The verification result indicating the type of constraint violation.
     flag: VerificationResult,
-    /// A mapping of variable names to their assigned values that led to the violation.
     assignment: FxHashMap<SymbolicName, BigInt>,
 }
 
@@ -88,6 +86,15 @@ fn is_vulnerable(vr: &VerificationResult) -> bool {
     }
 }
 
+pub struct VerificationSetting {
+    pub id: String,
+    pub prime: BigInt,
+    pub quick_mode: bool,
+    pub progress_interval: usize,
+    pub template_param_names: Vec<String>,
+    pub template_param_values: Vec<Expression>,
+}
+
 /// Performs brute-force search over variable assignments to evaluate constraints.
 ///
 /// # Parameters
@@ -100,14 +107,10 @@ fn is_vulnerable(vr: &VerificationResult) -> bool {
 /// # Returns
 /// A `CounterExample` if constraints are invalid, otherwise `None`.
 pub fn brute_force_search(
-    prime: BigInt,
-    id: String,
     sexe: &mut SymbolicExecutor,
     trace_constraints: &Vec<Rc<SymbolicValue>>,
     side_constraints: &Vec<Rc<SymbolicValue>>,
-    quick_mode: bool,
-    template_param_names: &Vec<String>,
-    template_param_values: &Vec<Expression>,
+    setting: &VerificationSetting,
 ) -> Option<CounterExample> {
     let mut trace_variables = extract_variables(trace_constraints);
     let mut side_variables = extract_variables(side_constraints);
@@ -121,32 +124,32 @@ pub fn brute_force_search(
     let mut assignment = FxHashMap::default();
 
     let current_iteration = Arc::new(AtomicUsize::new(0));
-    let progress_interval = 10000; // Update progress every 1000 iterations
+    //let progress_interval = 10000; // Update progress every 1000 iterations
 
     fn search(
-        prime: &BigInt,
-        id: &String,
         sexe: &mut SymbolicExecutor,
+        trace_constraints: &[Rc<SymbolicValue>],
+        side_constraints: &[Rc<SymbolicValue>],
+        setting: &VerificationSetting,
         index: usize,
         variables: &[SymbolicName],
         assignment: &mut FxHashMap<SymbolicName, BigInt>,
-        trace_constraints: &[Rc<SymbolicValue>],
-        side_constraints: &[Rc<SymbolicValue>],
         current_iteration: &Arc<AtomicUsize>,
-        progress_interval: usize,
-        quick_mode: bool,
-        template_param_names: &Vec<String>,
-        template_param_values: &Vec<Expression>,
     ) -> VerificationResult {
         if index == variables.len() {
             let iter = current_iteration.fetch_add(1, Ordering::SeqCst);
-            if iter % progress_interval == 0 {
-                print!("\rProgress: {} / {}^{}", iter, prime, variables.len());
+            if iter % setting.progress_interval == 0 {
+                print!(
+                    "\rProgress: {} / {}^{}",
+                    iter,
+                    &setting.prime,
+                    variables.len()
+                );
                 io::stdout().flush().unwrap();
             }
 
-            let is_satisfy_tc = evaluate_constraints(prime, trace_constraints, assignment);
-            let is_satisfy_sc = evaluate_constraints(prime, side_constraints, assignment);
+            let is_satisfy_tc = evaluate_constraints(&setting.prime, trace_constraints, assignment);
+            let is_satisfy_sc = evaluate_constraints(&setting.prime, side_constraints, assignment);
 
             if is_satisfy_tc && !is_satisfy_sc {
                 return VerificationResult::OverConstrained;
@@ -156,13 +159,16 @@ pub fn brute_force_search(
                     name: sexe.symbolic_library.name2id["main"],
                     counter: 0,
                 });
-                sexe.feed_arguments(template_param_names, template_param_values);
-                sexe.concrete_execute(id, assignment);
+                sexe.feed_arguments(
+                    &setting.template_param_names,
+                    &setting.template_param_values,
+                );
+                sexe.concrete_execute(&setting.id, assignment);
 
                 let mut flag = false;
                 if sexe.symbolic_store.final_states.len() > 0 {
                     for vname in &sexe.symbolic_library.template_library
-                        [&sexe.symbolic_library.name2id[id]]
+                        [&sexe.symbolic_library.name2id[&setting.id]]
                         .unrolled_outputs
                     {
                         //let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
@@ -188,24 +194,19 @@ pub fn brute_force_search(
         }
 
         let var = &variables[index];
-        if quick_mode {
+        if setting.quick_mode {
             let candidates = vec![BigInt::zero(), BigInt::one(), -1 * BigInt::one()];
             for c in candidates.into_iter() {
                 assignment.insert(var.clone(), c.clone());
                 let result = search(
-                    prime,
-                    id,
                     sexe,
+                    trace_constraints,
+                    side_constraints,
+                    setting,
                     index + 1,
                     variables,
                     assignment,
-                    trace_constraints,
-                    side_constraints,
                     current_iteration,
-                    progress_interval,
-                    quick_mode,
-                    template_param_names,
-                    template_param_values,
                 );
                 if is_vulnerable(&result) {
                     return result;
@@ -214,22 +215,17 @@ pub fn brute_force_search(
             }
         } else {
             let mut value = BigInt::zero();
-            while value < *prime {
+            while value < setting.prime {
                 assignment.insert(var.clone(), value.clone());
                 let result = search(
-                    prime,
-                    id,
                     sexe,
+                    trace_constraints,
+                    side_constraints,
+                    setting,
                     index + 1,
                     variables,
                     assignment,
-                    trace_constraints,
-                    side_constraints,
                     current_iteration,
-                    progress_interval,
-                    quick_mode,
-                    template_param_names,
-                    template_param_values,
                 );
                 if is_vulnerable(&result) {
                     return result;
@@ -242,25 +238,20 @@ pub fn brute_force_search(
     }
 
     let flag = search(
-        &prime,
-        &id,
         sexe,
+        &trace_constraints,
+        &side_constraints,
+        setting,
         0,
         &variables,
         &mut assignment,
-        &trace_constraints,
-        &side_constraints,
         &current_iteration,
-        progress_interval,
-        quick_mode,
-        template_param_names,
-        template_param_values,
     );
 
     print!(
         "\rProgress: {} / {}^{}",
         current_iteration.load(Ordering::SeqCst),
-        prime,
+        setting.prime,
         variables.len()
     );
     io::stdout().flush().unwrap();
