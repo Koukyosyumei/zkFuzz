@@ -36,6 +36,10 @@ pub struct SymbolicState {
 
 impl SymbolicState {
     /// Creates a new `SymbolicState` with default values.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `SymbolicState` with empty fields.
     pub fn new() -> Self {
         SymbolicState {
             owner_name: Rc::new(Vec::new()),
@@ -47,18 +51,30 @@ impl SymbolicState {
         }
     }
 
-    /// Sets the owner name of the current symbolic state.
+    /// Adds an owner to the current symbolic state.
+    ///
+    /// This method appends a new owner name to the existing list of owners.
     ///
     /// # Arguments
     ///
-    /// * `name` - The name of the owner to set.
-    ///
+    /// * `oname` - The `OwnerName` to be added.
     pub fn add_owner(&mut self, oname: &OwnerName) {
         let mut on = (*self.owner_name.clone()).clone();
         on.push(oname.clone());
         self.owner_name = Rc::new(on);
     }
 
+    /// Retrieves the full owner name as a string.
+    ///
+    /// This method joins all owner names in the current state using a dot separator.
+    ///
+    /// # Arguments
+    ///
+    /// * `lookup` - A hash map containing mappings from usize to String for name lookups.
+    ///
+    /// # Returns
+    ///
+    /// A string representing the full owner name.
     pub fn get_owner(&self, lookup: &FxHashMap<usize, String>) -> String {
         self.owner_name
             .iter()
@@ -67,6 +83,11 @@ impl SymbolicState {
             .join(".")
     }
 
+    /// Sets the template ID for the current symbolic state.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The usize value representing the template ID.
     pub fn set_template_id(&mut self, name: usize) {
         self.template_id = name;
     }
@@ -99,6 +120,12 @@ impl SymbolicState {
         self.values.insert(name, Rc::new(value));
     }
 
+    /// Sets a reference-counted symbolic value for a given variable name in the state.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - The name of the variable.
+    /// * `value` - The reference-counted symbolic value to associate with the variable.
     pub fn set_rc_symval(&mut self, name: SymbolicName, value: Rc<SymbolicValue>) {
         self.values.insert(name, value);
     }
@@ -134,6 +161,18 @@ impl SymbolicState {
         self.side_constraints.push(Rc::new(constraint.clone()));
     }
 
+    /// Formats the symbolic state for lookup and display.
+    ///
+    /// This method creates a string representation of the symbolic state,
+    /// including owner, depth, values, trace constraints, and side constraints.
+    ///
+    /// # Arguments
+    ///
+    /// * `lookup` - A hash map containing mappings from usize to String for name lookups.
+    ///
+    /// # Returns
+    ///
+    /// A formatted string representation of the symbolic state.
     pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         let mut s = "".to_string();
         s += &format!("🛠️ {}", format!("{}", "SymbolicState [\n").cyan());
@@ -224,19 +263,30 @@ pub struct SymbolicExecutorSetting {
     pub keep_track_unrolled_offset: bool,
 }
 
-/// Executes symbolic execution on a series of statements while maintaining multiple states.
-/// It handles branching logic and updates constraints accordingly during execution flow.
+/// A symbolic execution engine for analyzing and executing statements symbolically.
 ///
-/// This struct is parameterized over a lifetime `'a`, which is used for borrowing constraint statistics references.
+/// The `SymbolicExecutor` maintains multiple execution states, handles branching logic,
+/// and updates constraints during execution flow. It is designed to work with a
+/// `SymbolicLibrary` and a `SymbolicExecutorSetting`.
+///
+/// # Type Parameters
+///
+/// * `'a`: Lifetime for borrowing constraint statistics references.
 ///
 /// # Fields
 ///
-/// * `template_library` - A library storing templates for execution.
-/// * `components_store` - A store for components used in execution.
-/// * `variable_types` - A map storing types of variables.
-/// * `prime` - A prime number used in computations.
-/// * `cur_state`, `block_end_states`, `final_states` - Various states managed during execution.
-/// * `max_depth` - Tracks maximum depth reached during execution.
+/// * `symbolic_library`: A mutable reference to the library storing templates for execution.
+/// * `setting`: A reference to the execution settings.
+/// * `symbolic_store`: A store for components, variable types, and execution states.
+/// * `cur_state`: The current symbolic execution state.
+///
+/// # Examples
+///
+/// ```
+/// # use your_crate::{SymbolicLibrary, SymbolicExecutorSetting, SymbolicExecutor};
+/// let mut executor = SymbolicExecutor::new(&mut library, &setting);
+/// // Use the executor to symbolically execute statements
+/// ```
 pub struct SymbolicExecutor<'a> {
     pub symbolic_library: &'a mut SymbolicLibrary,
     pub setting: &'a SymbolicExecutorSetting,
@@ -245,7 +295,18 @@ pub struct SymbolicExecutor<'a> {
 }
 
 impl<'a> SymbolicExecutor<'a> {
-    /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
+    /// Creates a new instance of `SymbolicExecutor`.
+    ///
+    /// This method initializes all necessary states and statistics trackers.
+    ///
+    /// # Arguments
+    ///
+    /// * `symbolic_library` - A mutable reference to the `SymbolicLibrary`.
+    /// * `setting` - A reference to the `SymbolicExecutorSetting`.
+    ///
+    /// # Returns
+    ///
+    /// A new instance of `SymbolicExecutor`.
     pub fn new(
         symbolic_library: &'a mut SymbolicLibrary,
         setting: &'a SymbolicExecutorSetting,
@@ -264,21 +325,25 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Clears the current state and resets the symbolic executor.
+    ///
+    /// This method resets the current state, clears the symbolic store,
+    /// and resets the function counter in the symbolic library.
     pub fn clear(&mut self) {
         self.cur_state = SymbolicState::new();
         self.symbolic_store.clear();
         self.symbolic_library.clear_function_counter();
     }
 
-    // Checks if a component is ready based on its inputs being fully specified.
-    //
-    // # Arguments
-    //
-    // * 'name' - Name of the component to check readiness for.
-    //
-    // # Returns
-    //
-    // A boolean indicating readiness status.
+    /// Checks if a component is ready based on its inputs being fully specified.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name of the component to check readiness for.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating readiness status.
     fn is_ready(&self, name: &SymbolicName) -> bool {
         self.symbolic_store.components_store.contains_key(name)
             && self.symbolic_store.components_store[name]
@@ -287,12 +352,15 @@ impl<'a> SymbolicExecutor<'a> {
                 .all(|(_, v)| v.is_some())
     }
 
-    // Feeds arguments into current state variables based on provided names and expressions.
-    //
-    // # Arguments
-    //
-    // * 'names' : Vector containing names corresponding with expressions being fed as arguments.
-    // * 'args' : Vector containing expressions whose evaluated results will be assigned as argument values.
+    /// Feeds arguments into current state variables.
+    ///
+    /// This method evaluates the provided expressions and assigns their results
+    /// to the corresponding variables in the current state.
+    ///
+    /// # Arguments
+    ///
+    /// * `names` - Vector containing names corresponding with expressions being fed as arguments.
+    /// * `args` - Vector containing expressions whose evaluated results will be assigned as argument values.
     pub fn feed_arguments(&mut self, names: &Vec<String>, args: &Vec<Expression>) {
         let mut name2id = self.symbolic_library.name2id.clone();
         let mut id2name = self.symbolic_library.id2name.clone();
@@ -311,12 +379,11 @@ impl<'a> SymbolicExecutor<'a> {
                 evaled_a,
             );
         }
-        //self.name2id = cloned_name2id;
-        //self.id2name = cloned_id2name;
     }
 
-    /// Expands all stack states by executing each statement block recursively,
-    /// updating depth and managing branching paths in execution flow.
+    /// Expands all stack states by executing each statement block recursively.
+    ///
+    /// This method updates depth and manages branching paths in execution flow.
     ///
     /// # Arguments
     ///
@@ -337,6 +404,13 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Traces the current state if tracing is enabled.
+    ///
+    /// This method logs the current state information if tracing is not disabled.
+    ///
+    /// # Arguments
+    ///
+    /// * `meta` - The metadata associated with the current execution point.
     fn trace_if_enabled(&self, meta: &Meta) {
         if !self.setting.off_trace {
             trace!(
@@ -347,8 +421,10 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    /// Executes a sequence of statements symbolically from a specified starting block index,
-    /// updating internal states and handling control structures like if-else and loops appropriately.
+    /// Executes a sequence of statements symbolically.
+    ///
+    /// This method starts execution from a specified block index, updating internal states
+    /// and handling control structures like if-else and loops appropriately.
     ///
     /// # Arguments
     ///
@@ -358,22 +434,6 @@ impl<'a> SymbolicExecutor<'a> {
         if cur_bid < statements.len() {
             self.symbolic_store.max_depth =
                 max(self.symbolic_store.max_depth, self.cur_state.get_depth());
-
-            /*
-            let n = SymbolicName {
-                name: self.name2id["i"],
-                owner: vec![OwnerName {
-                    name: self.name2id["main"],
-                    counter: 0,
-                }],
-                access: Vec::new(),
-            };
-            if self.cur_state.values.contains_key(&n) {
-                println!(
-                    "main.i={}",
-                    self.cur_state.values[&n].lookup_fmt(&self.id2name)
-                );
-            }*/
 
             match &statements[cur_bid] {
                 DebugStatement::InitializationBlock {
@@ -546,13 +606,6 @@ impl<'a> SymbolicExecutor<'a> {
                     self.execute(statements, cur_bid + 1);
                 }
                 DebugStatement::Declaration { name, xtype, .. } => {
-                    /*
-                    let var_name = if dimensions.is_empty() {
-                        format!("{}.{}", self.cur_state.get_owner(), name.clone())
-                    } else {
-                        //"todo".to_string()
-                        format!("{}.{}<{}>", self.cur_state.get_owner(), name, &dimensions)
-                    };*/
                     let var_name = SymbolicName {
                         name: *name,
                         owner: self.cur_state.owner_name.clone(),
@@ -576,25 +629,6 @@ impl<'a> SymbolicExecutor<'a> {
                     let expr = self.evaluate_expression(rhe);
                     let original_value = self.fold_variables(&expr, true);
                     let value = self.fold_variables(&expr, !self.setting.propagate_substitution);
-
-                    /*
-                    let accessed_name = if access.is_empty() {
-                        var.clone()
-                    } else {
-                        format!(
-                            "{}{}",
-                            var,
-                            &access
-                                .iter()
-                                .map(|arg0: &DebugAccess| self.evaluate_access(&arg0.clone(),))
-                                .map(|debug_access| debug_access.to_string())
-                                .collect::<Vec<_>>()
-                                .join("")
-                        )
-                    };
-                    */
-                    //let var_name =
-                    //    format!("{}.{}", self.cur_state.get_owner(), accessed_name.clone());
 
                     let var_name = SymbolicName {
                         name: *var,
@@ -662,7 +696,6 @@ impl<'a> SymbolicExecutor<'a> {
                                     counter: 0,
                                 });
                                 subse.cur_state.owner_name = Rc::new(on);
-                                //subse.cur_state.add_owner(*var, 0);
 
                                 let templ = &subse.symbolic_library.template_library[&self
                                     .symbolic_store
@@ -882,6 +915,16 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Executes a symbolic expression concretely with given variable assignments.
+    ///
+    /// # Arguments
+    ///
+    /// * `expression` - The symbolic expression to execute.
+    /// * `assignments` - A map of variable assignments for concrete execution.
+    ///
+    /// # Returns
+    ///
+    /// The result of the concrete execution as a `SymbolicValue`.
     pub fn concrete_execute(&mut self, id: &String, assignment: &FxHashMap<SymbolicName, BigInt>) {
         self.cur_state.template_id = self.symbolic_library.name2id[id];
         for (vname, value) in assignment.into_iter() {
@@ -889,8 +932,6 @@ impl<'a> SymbolicExecutor<'a> {
                 .set_symval(vname.clone(), SymbolicValue::ConstantInt(value.clone()));
         }
 
-        //self.setting.skip_initialization_blocks = true;
-        //self.setting.off_trace = off_trace;
         self.execute(
             &self.symbolic_library.template_library[&self.cur_state.template_id]
                 .body
@@ -918,6 +959,16 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Folds variables in a symbolic expression, potentially simplifying it.
+    ///
+    /// # Arguments
+    ///
+    /// * `expression` - The symbolic expression to fold.
+    /// * `propagate` - A boolean flag indicating whether to propagate substitutions.
+    ///
+    /// # Returns
+    ///
+    /// A new `SymbolicValue` representing the folded expression.
     fn fold_variables(
         &self,
         symval: &SymbolicValue,
@@ -1107,7 +1158,6 @@ impl<'a> SymbolicExecutor<'a> {
     /// # Arguments
     ///
     /// * `expr` - The `DebugExpression` to evaluate.
-
     ///
     /// # Returns
     ///
