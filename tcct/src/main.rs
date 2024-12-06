@@ -136,7 +136,11 @@ fn start() -> Result<(), ()> {
                 .clone();
             sexe.execute(&body, 0);
 
-            println!("===========================================================");
+            println!(
+                "{}",
+                Colour::Green
+                    .paint("════════════════════════════════════════════════════════════════")
+            );
             let mut ts = ConstraintStatistics::new();
             let mut ss = ConstraintStatistics::new();
             for s in &sexe.symbolic_store.final_states {
@@ -151,10 +155,14 @@ fn start() -> Result<(), ()> {
                     s.lookup_fmt(&sexe.symbolic_library.id2name)
                 );
             }
-            println!("===========================================================");
 
             let mut is_safe = true;
             if user_input.search_mode != "none" {
+                println!(
+                    "{}",
+                    Colour::Green
+                        .paint("════════════════════════════════════════════════════════════════")
+                );
                 println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
 
                 let sub_setting = SymbolicExecutorSetting {
@@ -227,19 +235,16 @@ fn start() -> Result<(), ()> {
             println!(
                 "{}",
                 Colour::Green
-                    .bold()
                     .paint("╔═══════════════════════════════════════════════════════════════╗")
             );
             println!(
                 "{}",
                 Colour::Green
-                    .bold()
                     .paint("║                        TCCT Report                            ║")
             );
             println!(
                 "{}",
                 Colour::Green
-                    .bold()
                     .paint("╚═══════════════════════════════════════════════════════════════╝")
             );
             println!("{}", Colour::Cyan.bold().paint("📊 Execution Summary:"));
@@ -283,8 +288,7 @@ fn start() -> Result<(), ()> {
             println!(
                 "{}",
                 Colour::Green
-                    .bold()
-                    .paint("═══════════════════════════════════════════════════════════════")
+                    .paint("════════════════════════════════════════════════════════════════")
             );
         }
         _ => {
