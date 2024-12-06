@@ -275,10 +275,12 @@ pub fn brute_force_search(
     );
     io::stdout().flush().unwrap();
 
+    println!("\nSearch completed");
     println!(
-        "\nSearch completed. Total iterations: {}",
+        "  ├─ Total iterations: {}",
         current_iteration.load(Ordering::SeqCst)
     );
+    println!("  └─ Verification result: {}", flag);
 
     if is_vulnerable(&flag) {
         Some(CounterExample {
