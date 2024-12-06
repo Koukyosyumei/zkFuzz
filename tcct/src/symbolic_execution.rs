@@ -53,13 +53,11 @@ impl SymbolicState {
     ///
     /// * `name` - The name of the owner to set.
     ///
-    /*
-    pub fn add_owner(&mut self, name: usize, counter: usize) {
-        self.owner_name.push(OwnerName {
-            name: name,
-            counter: counter,
-        });
-    }*/
+    pub fn add_owner(&mut self, oname: &OwnerName) {
+        let mut on = (*self.owner_name.clone()).clone();
+        on.push(oname.clone());
+        self.owner_name = Rc::new(on);
+    }
 
     pub fn get_owner(&self, lookup: &FxHashMap<usize, String>) -> String {
         self.owner_name
@@ -99,6 +97,10 @@ impl SymbolicState {
     /// * `value` - The symbolic value to associate with the variable.
     pub fn set_symval(&mut self, name: SymbolicName, value: SymbolicValue) {
         self.values.insert(name, Rc::new(value));
+    }
+
+    pub fn set_rc_symval(&mut self, name: SymbolicName, value: Rc<SymbolicValue>) {
+        self.values.insert(name, value);
     }
 
     /// Retrieves a symbolic value associated with a given variable name.
@@ -237,17 +239,16 @@ pub struct SymbolicExecutorSetting {
 /// * `max_depth` - Tracks maximum depth reached during execution.
 pub struct SymbolicExecutor<'a> {
     pub symbolic_library: &'a mut SymbolicLibrary,
+    pub setting: &'a SymbolicExecutorSetting,
     pub symbolic_store: SymbolicStore,
     pub cur_state: SymbolicState,
-    pub setting: SymbolicExecutorSetting,
 }
 
 impl<'a> SymbolicExecutor<'a> {
     /// Creates a new instance of `SymbolicExecutor`, initializing all necessary states and statistics trackers.
     pub fn new(
         symbolic_library: &'a mut SymbolicLibrary,
-        propagate_substitution: bool,
-        prime: BigInt,
+        setting: &'a SymbolicExecutorSetting,
     ) -> Self {
         SymbolicExecutor {
             symbolic_library: symbolic_library,
@@ -259,23 +260,14 @@ impl<'a> SymbolicExecutor<'a> {
                 max_depth: 0,
             },
             cur_state: SymbolicState::new(),
-            setting: SymbolicExecutorSetting {
-                prime: prime,
-                propagate_substitution: propagate_substitution,
-                skip_initialization_blocks: false,
-                off_trace: false,
-                keep_track_unrolled_offset: true,
-            },
+            setting: setting,
         }
     }
 
     pub fn clear(&mut self) {
         self.cur_state = SymbolicState::new();
         self.symbolic_store.clear();
-
-        for (k, _) in self.symbolic_library.function_library.iter() {
-            self.symbolic_library.function_counter.insert(*k, 0_usize);
-        }
+        self.symbolic_library.clear_function_counter();
     }
 
     // Checks if a component is ready based on its inputs being fully specified.
@@ -661,12 +653,8 @@ impl<'a> SymbolicExecutor<'a> {
                         if self.is_ready(&var_name) {
                             if !self.symbolic_store.components_store[&var_name].is_done {
                                 let symbolic_library = &mut self.symbolic_library;
-
-                                let mut subse = SymbolicExecutor::new(
-                                    symbolic_library,
-                                    self.setting.propagate_substitution,
-                                    self.setting.prime.clone(),
-                                );
+                                let mut subse =
+                                    SymbolicExecutor::new(symbolic_library, self.setting);
 
                                 let mut on = (*self.cur_state.owner_name.clone()).clone();
                                 on.push(OwnerName {
@@ -692,11 +680,10 @@ impl<'a> SymbolicExecutor<'a> {
                                         owner: subse.cur_state.owner_name.clone(),
                                         access: None,
                                     };
-                                    subse.cur_state.set_symval(
+                                    subse.cur_state.set_rc_symval(
                                         n,
-                                        (*self.symbolic_store.components_store[&var_name].args[i]
-                                            .clone())
-                                        .clone(),
+                                        self.symbolic_store.components_store[&var_name].args[i]
+                                            .clone(),
                                     );
                                 }
 
@@ -907,8 +894,8 @@ impl<'a> SymbolicExecutor<'a> {
                 .set_symval(vname.clone(), SymbolicValue::ConstantInt(value.clone()));
         }
 
-        self.setting.skip_initialization_blocks = true;
-        self.setting.off_trace = off_trace;
+        //self.setting.skip_initialization_blocks = true;
+        //self.setting.off_trace = off_trace;
         self.execute(
             &self.symbolic_library.template_library[&self.cur_state.template_id]
                 .body
@@ -1249,11 +1236,7 @@ impl<'a> SymbolicExecutor<'a> {
                     SymbolicValue::Call(id.clone(), evaluated_args)
                 } else if self.symbolic_library.function_library.contains_key(id) {
                     let symbolic_library = &mut self.symbolic_library;
-                    let mut subse = SymbolicExecutor::new(
-                        symbolic_library,
-                        self.setting.propagate_substitution,
-                        self.setting.prime.clone(),
-                    );
+                    let mut subse = SymbolicExecutor::new(symbolic_library, self.setting);
 
                     let mut on = (*self.cur_state.owner_name.clone()).clone();
                     on.push(OwnerName {
@@ -1275,10 +1258,10 @@ impl<'a> SymbolicExecutor<'a> {
                         };
                         subse
                             .cur_state
-                            .set_symval(sname, (*evaluated_args[i].clone()).clone());
+                            .set_rc_symval(sname, evaluated_args[i].clone());
                     }
 
-                    if !self.setting.off_trace {
+                    if !subse.setting.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
                         trace!("📞 Call {}", subse.symbolic_library.id2name[id]);
                     }
@@ -1296,7 +1279,7 @@ impl<'a> SymbolicExecutor<'a> {
                         .side_constraints
                         .append(&mut subse.symbolic_store.final_states[0].side_constraints);
 
-                    if !self.setting.off_trace {
+                    if !subse.setting.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
                     }
 

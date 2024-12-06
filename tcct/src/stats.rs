@@ -1,4 +1,4 @@
-use crate::symbolic_execution::SymbolicValue;
+use crate::symbolic_value::{SymbolicName, SymbolicValue};
 use std::collections::{HashMap, HashSet};
 
 const RESET: &str = "\x1b[0m";
@@ -6,17 +6,17 @@ const WHITE: &str = "\x1b[37m";
 const BBLACK: &str = "\x1b[90m";
 
 /// Collects statistics about constraints encountered during symbolic execution.
-#[derive(Default, Debug)]
+#[derive(Default)]
 pub struct ConstraintStatistics {
     pub total_constraints: usize,
     pub constraint_depths: Vec<usize>,
     pub operator_counts: HashMap<String, usize>,
-    pub variable_counts: HashMap<String, usize>,
+    pub variable_counts: HashMap<SymbolicName, usize>,
     pub constant_counts: usize,
     pub conditional_counts: usize,
     pub array_counts: usize,
     pub tuple_counts: usize,
-    pub function_call_counts: HashMap<String, usize>,
+    pub function_call_counts: HashMap<usize, usize>,
     pub cache: HashSet<SymbolicValue>,
 }
 
@@ -40,7 +40,7 @@ impl ConstraintStatistics {
             SymbolicValue::ConstantBool(_) => {
                 self.constant_counts += 1;
             }
-            SymbolicValue::Variable(name, _) => {
+            SymbolicValue::Variable(name) => {
                 *self.variable_counts.entry(name.clone()).or_insert(0) += 1;
             }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {

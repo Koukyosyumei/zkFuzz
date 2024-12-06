@@ -1,9 +1,9 @@
 //mod execution_user;
+mod debug_ast;
 mod input_user;
 mod parser_user;
-//mod solver;
-//mod stats;
-mod debug_ast;
+mod solver;
+mod stats;
 mod symbolic_execution;
 mod symbolic_value;
 mod type_analysis_user;
@@ -20,11 +20,11 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::time;
 
-use program_structure::ast::Expression;
-//use solver::brute_force_search;
-//use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use debug_ast::simplify_statement;
-use symbolic_execution::SymbolicExecutor;
+use program_structure::ast::Expression;
+use solver::brute_force_search;
+use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
+use symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
 use symbolic_value::{OwnerName, SymbolicLibrary};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -93,11 +93,14 @@ fn start() -> Result<(), ()> {
         }
     }
 
-    let mut sexe = SymbolicExecutor::new(
-        &mut symbolic_library,
-        user_input.flag_propagate_substitution,
-        BigInt::from_str(&user_input.debug_prime()).unwrap(),
-    );
+    let setting = SymbolicExecutorSetting {
+        prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
+        propagate_substitution: user_input.flag_propagate_substitution,
+        skip_initialization_blocks: false,
+        off_trace: false,
+        keep_track_unrolled_offset: true,
+    };
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
 
     match &program_archive.initial_template_call {
         Expression::Call { id, args, .. } => {
@@ -109,6 +112,7 @@ fn start() -> Result<(), ()> {
                 "{}",
                 Colour::Green.paint("🛒 Gathering Trace/Side Constraints...")
             );
+
             sexe.symbolic_library
                 .name2id
                 .insert("main".to_string(), sexe.symbolic_library.name2id.len());
@@ -116,36 +120,32 @@ fn start() -> Result<(), ()> {
                 .id2name
                 .insert(sexe.symbolic_library.name2id["main"], "main".to_string());
 
-            let mut on = (*sexe.cur_state.owner_name.clone()).clone();
-            on.push(OwnerName {
-                name: sexe.symbolic_library.name2id.len() - 1,
+            sexe.cur_state.add_owner(&OwnerName {
+                name: sexe.symbolic_library.name2id["main"],
                 counter: 0,
             });
-            sexe.cur_state.owner_name = Rc::new(on);
-
-            //sexe.cur_state.add_owner(sexe.name2id.len() - 1, 0);
-
             sexe.cur_state
                 .set_template_id(sexe.symbolic_library.name2id[id]);
+
             if !user_input.flag_symbolic_template_params {
                 sexe.feed_arguments(template.get_name_of_params(), args);
             }
+
             let body = sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[id]]
                 .body
                 .clone();
             sexe.execute(&body, 0);
 
             println!("===========================================================");
-            //let mut ts = ConstraintStatistics::new();
-            //let mut ss = ConstraintStatistics::new();
+            let mut ts = ConstraintStatistics::new();
+            let mut ss = ConstraintStatistics::new();
             for s in &sexe.symbolic_store.final_states {
-                /*
                 for c in &s.trace_constraints {
                     ts.update(c);
                 }
                 for c in &s.side_constraints {
                     ss.update(c);
-                }*/
+                }
                 info!(
                     "Final State: {}",
                     s.lookup_fmt(&sexe.symbolic_library.id2name)
@@ -153,12 +153,18 @@ fn start() -> Result<(), ()> {
             }
             println!("===========================================================");
 
-            /*
             let mut is_safe = true;
             if user_input.search_mode != "none" {
                 println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
-                let mut sub_sexe = sexe.clone();
-                sub_sexe.clear();
+
+                let sub_setting = SymbolicExecutorSetting {
+                    prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                    propagate_substitution: user_input.flag_propagate_substitution,
+                    skip_initialization_blocks: true,
+                    off_trace: true,
+                    keep_track_unrolled_offset: false,
+                };
+                let mut sub_sexe = SymbolicExecutor::new(&mut sexe.symbolic_library, &sub_setting);
 
                 let mut main_template_id = "";
                 let mut template_param_names = Vec::new();
@@ -167,10 +173,6 @@ fn start() -> Result<(), ()> {
                     Expression::Call { id, args, .. } => {
                         main_template_id = id;
                         let template = program_archive.templates[id].clone();
-                        sub_sexe.cur_state.set_owner("main".to_string());
-                        sub_sexe
-                            .cur_state
-                            .set_template_id(main_template_id.to_string());
                         if !user_input.flag_symbolic_template_params {
                             template_param_names = template.get_name_of_params().clone();
                             template_param_values = args.clone();
@@ -179,7 +181,8 @@ fn start() -> Result<(), ()> {
                     }
                     _ => unimplemented!(),
                 }
-                for s in &sexe.final_states {
+
+                for s in &sexe.symbolic_store.final_states {
                     let counterexample = match &*user_input.search_mode {
                         "quick" => brute_force_search(
                             BigInt::from_str(&user_input.debug_prime()).unwrap(),
@@ -208,7 +211,13 @@ fn start() -> Result<(), ()> {
                     };
                     if counterexample.is_some() {
                         is_safe = false;
-                        println!("{:?}", counterexample.unwrap());
+                        println!(
+                            "{}",
+                            counterexample
+                                .unwrap()
+                                .lookup_fmt(&sub_sexe.symbolic_library.id2name)
+                        );
+                        break;
                     }
                 }
             }
@@ -219,7 +228,10 @@ fn start() -> Result<(), ()> {
             );
             println!("📊 Execution Summary:");
             println!("  - Prime Number        : {}", user_input.debug_prime());
-            println!("  - Total Paths Explored: {}", sexe.final_states.len());
+            println!(
+                "  - Total Paths Explored: {}",
+                sexe.symbolic_store.final_states.len()
+            );
             println!(
                 "  - Compression Rate    : {:.2}% ({}/{})",
                 (ss.total_constraints as f64 / ts.total_constraints as f64) * 100 as f64,
@@ -247,7 +259,6 @@ fn start() -> Result<(), ()> {
                 print_constraint_summary_statistics_pretty(&ss);
             }
             println!("===========================================================");
-            */
         }
         _ => {
             warn!("Cannot Find Main Call");

@@ -4,10 +4,12 @@ use num_traits::cast::ToPrimitive;
 use num_traits::Pow;
 use num_traits::Signed;
 use num_traits::{One, Zero};
-use std::collections::{HashMap, HashSet};
+use rustc_hash::FxHashMap;
+use std::collections::HashSet;
 use std::fmt;
 use std::io;
 use std::io::Write;
+use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -15,7 +17,9 @@ use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
 
-use crate::symbolic_execution::{SymbolicExecutor, SymbolicValue};
+use crate::symbolic_execution::SymbolicExecutor;
+use crate::symbolic_value::SymbolicName;
+use crate::symbolic_value::{OwnerName, SymbolicValue};
 use crate::utils::extended_euclidean;
 
 pub enum VerificationResult {
@@ -42,32 +46,31 @@ pub struct CounterExample {
     /// The verification result indicating the type of constraint violation.
     flag: VerificationResult,
     /// A mapping of variable names to their assigned values that led to the violation.
-    assignment: HashMap<String, BigInt>,
+    assignment: FxHashMap<SymbolicName, BigInt>,
 }
 
-impl fmt::Debug for CounterExample {
+impl CounterExample {
     /// Provides a detailed, user-friendly debug output for a counterexample,
     /// including variable assignments.
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(
-            f,
-            "   🚨 {}",
+    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
+        let mut s = "".to_string();
+        s += &format!(
+            "   🚨 {}\n",
             "Counter Example:".on_bright_red().white().bold()
-        )?;
-        writeln!(f, "      {}", self.flag);
-        writeln!(f, "      {}", "🔍 Assignment Details:".blue().bold())?;
+        );
+        s += &format!("      {}\n", self.flag);
+        s += &format!("      {}\n", "🔍 Assignment Details:".blue().bold());
 
         for (var, value) in &self.assignment {
-            writeln!(
-                f,
-                "           {} {} = {}",
+            s += &format!(
+                "           {} {} = {}\n",
                 "➡️".cyan(),
-                var.magenta().bold(),
+                var.lookup_fmt(lookup).magenta().bold(),
                 value.to_string().bright_yellow()
-            )?;
+            );
         }
 
-        Ok(())
+        s
     }
 }
 
@@ -101,21 +104,22 @@ pub fn brute_force_search(
     prime: BigInt,
     id: String,
     sexe: &mut SymbolicExecutor,
-    trace_constraints: &Vec<Box<SymbolicValue>>,
-    side_constraints: &Vec<Box<SymbolicValue>>,
+    trace_constraints: &Vec<Rc<SymbolicValue>>,
+    side_constraints: &Vec<Rc<SymbolicValue>>,
     quick_mode: bool,
     template_param_names: &Vec<String>,
     template_param_values: &Vec<Expression>,
 ) -> Option<CounterExample> {
     let mut trace_variables = extract_variables(trace_constraints);
     let mut side_variables = extract_variables(side_constraints);
+
     let mut variables = Vec::new();
     variables.append(&mut trace_variables);
     variables.append(&mut side_variables);
-    let variables_set: HashSet<String> = variables.iter().cloned().collect();
+    let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
     variables = variables_set.into_iter().collect();
 
-    let mut assignment = HashMap::new();
+    let mut assignment = FxHashMap::default();
 
     let current_iteration = Arc::new(AtomicUsize::new(0));
     let progress_interval = 10000; // Update progress every 1000 iterations
@@ -125,10 +129,10 @@ pub fn brute_force_search(
         id: &String,
         sexe: &mut SymbolicExecutor,
         index: usize,
-        variables: &[String],
-        assignment: &mut HashMap<String, BigInt>,
-        trace_constraints: &[Box<SymbolicValue>],
-        side_constraints: &[Box<SymbolicValue>],
+        variables: &[SymbolicName],
+        assignment: &mut FxHashMap<SymbolicName, BigInt>,
+        trace_constraints: &[Rc<SymbolicValue>],
+        side_constraints: &[Rc<SymbolicValue>],
         current_iteration: &Arc<AtomicUsize>,
         progress_interval: usize,
         quick_mode: bool,
@@ -149,18 +153,23 @@ pub fn brute_force_search(
                 return VerificationResult::OverConstrained;
             } else if !is_satisfy_tc && is_satisfy_sc {
                 sexe.clear();
-                sexe.cur_state.set_owner("main".to_string());
-                sexe.keep_track_unrolled_offset = false;
-                sexe.off_trace = true;
+                sexe.cur_state.add_owner(&OwnerName {
+                    name: sexe.symbolic_library.name2id["main"],
+                    counter: 0,
+                });
                 sexe.feed_arguments(template_param_names, template_param_values);
                 sexe.concrete_execute(id, assignment, true);
 
                 let mut flag = false;
-                if sexe.final_states.len() > 0 {
-                    for vname in &sexe.template_library[id].unrolled_outputs {
+                if sexe.symbolic_store.final_states.len() > 0 {
+                    for vname in &sexe.symbolic_library.template_library
+                        [&sexe.symbolic_library.name2id[id]]
+                        .unrolled_outputs
+                    {
                         //let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
-                        let unboxed_value = sexe.final_states[0].values[&vname.clone()].clone();
-                        if let SymbolicValue::ConstantInt(v) = *unboxed_value {
+                        let unboxed_value =
+                            sexe.symbolic_store.final_states[0].values[&vname.clone()].clone();
+                        if let SymbolicValue::ConstantInt(v) = (*unboxed_value.clone()).clone() {
                             if v != assignment[&vname.clone()] {
                                 flag = true;
                                 break;
@@ -279,12 +288,12 @@ pub fn brute_force_search(
 ///
 /// # Returns
 /// A vector of unique variable names referenced in the constraints.
-fn extract_variables(constraints: &[Box<SymbolicValue>]) -> Vec<String> {
+fn extract_variables(constraints: &[Rc<SymbolicValue>]) -> Vec<SymbolicName> {
     let mut variables = Vec::new();
     for constraint in constraints {
         extract_variables_from_symbolic_value(constraint, &mut variables);
     }
-    variables.sort();
+    //variables.sort();
     variables.dedup();
     variables
 }
@@ -294,9 +303,9 @@ fn extract_variables(constraints: &[Box<SymbolicValue>]) -> Vec<String> {
 /// # Parameters
 /// - `value`: The symbolic value to analyze.
 /// - `variables`: A mutable reference to a vector where variable names will be stored.
-fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut Vec<String>) {
+fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut Vec<SymbolicName>) {
     match value {
-        SymbolicValue::Variable(name, _) => variables.push(name.clone()),
+        SymbolicValue::Variable(name) => variables.push(name.clone()),
         SymbolicValue::BinaryOp(lhs, _, rhs) => {
             extract_variables_from_symbolic_value(&lhs, variables);
             extract_variables_from_symbolic_value(&rhs, variables);
@@ -309,7 +318,7 @@ fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut 
         SymbolicValue::UnaryOp(_, expr) => extract_variables_from_symbolic_value(&expr, variables),
         SymbolicValue::Array(elements) | SymbolicValue::Tuple(elements) => {
             for elem in elements {
-                extract_variables_from_symbolic_value(&Box::new(elem), variables);
+                extract_variables_from_symbolic_value(&elem, variables);
             }
         }
         SymbolicValue::UniformArray(value, size) => {
@@ -318,7 +327,7 @@ fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut 
         }
         SymbolicValue::Call(_, args) => {
             for arg in args {
-                extract_variables_from_symbolic_value(&Box::new(arg), variables);
+                extract_variables_from_symbolic_value(&arg, variables);
             }
         }
         _ => {}
@@ -327,8 +336,8 @@ fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut 
 
 fn evaluate_constraints(
     prime: &BigInt,
-    constraints: &[Box<SymbolicValue>],
-    assignment: &HashMap<String, BigInt>,
+    constraints: &[Rc<SymbolicValue>],
+    assignment: &FxHashMap<SymbolicName, BigInt>,
 ) -> bool {
     constraints.iter().all(|constraint| {
         let sv = evaluate_symbolic_value(prime, constraint, assignment);
@@ -341,8 +350,8 @@ fn evaluate_constraints(
 
 fn count_satisfied_constraints(
     prime: &BigInt,
-    constraints: &[Box<SymbolicValue>],
-    assignment: &HashMap<String, BigInt>,
+    constraints: &[Rc<SymbolicValue>],
+    assignment: &FxHashMap<SymbolicName, BigInt>,
 ) -> usize {
     constraints
         .iter()
@@ -359,12 +368,12 @@ fn count_satisfied_constraints(
 fn evaluate_symbolic_value(
     prime: &BigInt,
     value: &SymbolicValue,
-    assignment: &HashMap<String, BigInt>,
+    assignment: &FxHashMap<SymbolicName, BigInt>,
 ) -> SymbolicValue {
     match value {
         SymbolicValue::ConstantBool(b) => value.clone(),
         SymbolicValue::ConstantInt(v) => value.clone(),
-        SymbolicValue::Variable(name, _) => {
+        SymbolicValue::Variable(name) => {
             SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
         }
         SymbolicValue::BinaryOp(lhs, op, rhs) => {

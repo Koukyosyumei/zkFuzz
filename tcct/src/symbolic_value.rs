@@ -17,6 +17,23 @@ pub enum SymbolicAccess {
     ArrayAccess(SymbolicValue),
 }
 
+impl SymbolicAccess {
+    /// Provides a compact format for displaying symbolic access in expressions.
+    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
+        match &self {
+            SymbolicAccess::ComponentAccess(name) => {
+                format!(".{}", lookup[name])
+            }
+            SymbolicAccess::ArrayAccess(val) => {
+                format!(
+                    "[{}]",
+                    val.lookup_fmt(lookup).replace("\n", "").replace("  ", " ")
+                )
+            }
+        }
+    }
+}
+
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct OwnerName {
     pub name: usize,
@@ -28,6 +45,29 @@ pub struct SymbolicName {
     pub name: usize,
     pub owner: Rc<Vec<OwnerName>>,
     pub access: Option<Vec<SymbolicAccess>>,
+}
+
+impl SymbolicName {
+    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
+        format!(
+            "{}.{}{}",
+            self.owner
+                .iter()
+                .map(|e: &OwnerName| lookup[&e.name].clone())
+                .collect::<Vec<_>>()
+                .join("."),
+            lookup[&self.name].clone(),
+            if let Some(access) = &self.access {
+                access
+                    .iter()
+                    .map(|s: &SymbolicAccess| s.lookup_fmt(lookup))
+                    .collect::<Vec<_>>()
+                    .join("")
+            } else {
+                "".to_string()
+            }
+        )
+    }
 }
 
 /// Represents a symbolic value used in symbolic execution, which can be a constant, variable, or an operation.
@@ -48,6 +88,97 @@ pub enum SymbolicValue {
     Tuple(Vec<Rc<SymbolicValue>>),
     UniformArray(Rc<SymbolicValue>, Rc<SymbolicValue>),
     Call(usize, Vec<Rc<SymbolicValue>>),
+}
+
+/// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
+impl SymbolicValue {
+    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
+        match self {
+            SymbolicValue::ConstantInt(value) => format!("{}", value),
+            SymbolicValue::ConstantBool(flag) => {
+                format!("{} {}", if *flag { "✅" } else { "❌" }, flag)
+            }
+            SymbolicValue::Variable(sname) => sname.lookup_fmt(lookup),
+            SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
+                ExpressionInfixOpcode::Eq
+                | ExpressionInfixOpcode::NotEq
+                | ExpressionInfixOpcode::LesserEq
+                | ExpressionInfixOpcode::GreaterEq
+                | ExpressionInfixOpcode::Lesser
+                | ExpressionInfixOpcode::Greater => {
+                    format!(
+                        "({} {} {})",
+                        format!("{:?}", op).green(),
+                        lhs.lookup_fmt(lookup),
+                        rhs.lookup_fmt(lookup)
+                    )
+                }
+                ExpressionInfixOpcode::ShiftL
+                | ExpressionInfixOpcode::ShiftR
+                | ExpressionInfixOpcode::BitAnd
+                | ExpressionInfixOpcode::BitOr
+                | ExpressionInfixOpcode::BitXor
+                | ExpressionInfixOpcode::Div
+                | ExpressionInfixOpcode::IntDiv => {
+                    format!(
+                        "({} {} {})",
+                        format!("{:?}", op).red(),
+                        lhs.lookup_fmt(lookup),
+                        rhs.lookup_fmt(lookup)
+                    )
+                }
+                _ => format!(
+                    "({} {} {})",
+                    format!("{:?}", op).yellow(),
+                    lhs.lookup_fmt(lookup),
+                    rhs.lookup_fmt(lookup)
+                ),
+            },
+            SymbolicValue::Conditional(cond, if_branch, else_branch) => {
+                format!(
+                    "({} {} {})",
+                    cond.lookup_fmt(lookup),
+                    if_branch.lookup_fmt(lookup),
+                    else_branch.lookup_fmt(lookup)
+                )
+            }
+            SymbolicValue::UnaryOp(op, expr) => match &op.0 {
+                _ => format!(
+                    "({} {})",
+                    format!("{:?}", op).magenta(),
+                    expr.lookup_fmt(lookup)
+                ),
+            },
+            SymbolicValue::Call(name, args) => {
+                format!(
+                    "📞{}({})",
+                    lookup[&name],
+                    args.into_iter()
+                        .map(|a| a.lookup_fmt(lookup))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            SymbolicValue::Array(elems) => {
+                format!(
+                    "🧬 {}",
+                    elems
+                        .into_iter()
+                        .map(|a| a.lookup_fmt(lookup))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            SymbolicValue::UniformArray(elem, counts) => {
+                format!(
+                    "🧬 ({}, {})",
+                    elem.lookup_fmt(lookup),
+                    counts.lookup_fmt(lookup)
+                )
+            }
+            _ => format!("❓Unknown symbolic value"),
+        }
+    }
 }
 
 /// Represents a symbolic template used in the symbolic execution process.
@@ -77,55 +208,22 @@ pub struct SymbolicComponent {
     pub is_done: bool,
 }
 
+#[derive(Default, Clone)]
 pub struct SymbolicLibrary {
     pub template_library: FxHashMap<usize, Box<SymbolicTemplate>>,
+    pub function_library: FxHashMap<usize, Box<SymbolicFunction>>,
     pub name2id: FxHashMap<String, usize>,
     pub id2name: FxHashMap<usize, String>,
-    pub function_library: FxHashMap<usize, Box<SymbolicFunction>>,
     pub function_counter: FxHashMap<usize, usize>,
 }
 
-impl SymbolicAccess {
-    /// Provides a compact format for displaying symbolic access in expressions.
-    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
-        match &self {
-            SymbolicAccess::ComponentAccess(name) => {
-                format!(".{}", lookup[name])
-            }
-            SymbolicAccess::ArrayAccess(val) => {
-                format!(
-                    "[{}]",
-                    val.lookup_fmt(lookup).replace("\n", "").replace("  ", " ")
-                )
-            }
+impl SymbolicLibrary {
+    pub fn clear_function_counter(&mut self) {
+        for (k, _) in self.function_library.iter() {
+            self.function_counter.insert(*k, 0_usize);
         }
     }
-}
 
-impl SymbolicName {
-    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
-        format!(
-            "{}.{}{}",
-            self.owner
-                .iter()
-                .map(|e: &OwnerName| lookup[&e.name].clone())
-                .collect::<Vec<_>>()
-                .join("."),
-            lookup[&self.name].clone(),
-            if let Some(access) = &self.access {
-                access
-                    .iter()
-                    .map(|s: &SymbolicAccess| s.lookup_fmt(lookup))
-                    .collect::<Vec<_>>()
-                    .join("")
-            } else {
-                "*".to_string()
-            }
-        )
-    }
-}
-
-impl SymbolicLibrary {
     // Registers library template by extracting input signals from block statement body provided along with template parameter names list.
     //
     // # Arguments
@@ -225,96 +323,5 @@ impl SymbolicLibrary {
             }),
         );
         self.function_counter.insert(i, 0_usize);
-    }
-}
-
-/// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
-impl SymbolicValue {
-    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
-        match self {
-            SymbolicValue::ConstantInt(value) => format!("{}", value),
-            SymbolicValue::ConstantBool(flag) => {
-                format!("{} {}", if *flag { "✅" } else { "❌" }, flag)
-            }
-            SymbolicValue::Variable(sname) => sname.lookup_fmt(lookup),
-            SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
-                ExpressionInfixOpcode::Eq
-                | ExpressionInfixOpcode::NotEq
-                | ExpressionInfixOpcode::LesserEq
-                | ExpressionInfixOpcode::GreaterEq
-                | ExpressionInfixOpcode::Lesser
-                | ExpressionInfixOpcode::Greater => {
-                    format!(
-                        "({} {} {})",
-                        format!("{:?}", op).green(),
-                        lhs.lookup_fmt(lookup),
-                        rhs.lookup_fmt(lookup)
-                    )
-                }
-                ExpressionInfixOpcode::ShiftL
-                | ExpressionInfixOpcode::ShiftR
-                | ExpressionInfixOpcode::BitAnd
-                | ExpressionInfixOpcode::BitOr
-                | ExpressionInfixOpcode::BitXor
-                | ExpressionInfixOpcode::Div
-                | ExpressionInfixOpcode::IntDiv => {
-                    format!(
-                        "({} {} {})",
-                        format!("{:?}", op).red(),
-                        lhs.lookup_fmt(lookup),
-                        rhs.lookup_fmt(lookup)
-                    )
-                }
-                _ => format!(
-                    "({} {} {})",
-                    format!("{:?}", op).yellow(),
-                    lhs.lookup_fmt(lookup),
-                    rhs.lookup_fmt(lookup)
-                ),
-            },
-            SymbolicValue::Conditional(cond, if_branch, else_branch) => {
-                format!(
-                    "({} {} {})",
-                    cond.lookup_fmt(lookup),
-                    if_branch.lookup_fmt(lookup),
-                    else_branch.lookup_fmt(lookup)
-                )
-            }
-            SymbolicValue::UnaryOp(op, expr) => match &op.0 {
-                _ => format!(
-                    "({} {})",
-                    format!("{:?}", op).magenta(),
-                    expr.lookup_fmt(lookup)
-                ),
-            },
-            SymbolicValue::Call(name, args) => {
-                format!(
-                    "📞{}({})",
-                    lookup[&name],
-                    args.into_iter()
-                        .map(|a| a.lookup_fmt(lookup))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            }
-            SymbolicValue::Array(elems) => {
-                format!(
-                    "🧬 {}",
-                    elems
-                        .into_iter()
-                        .map(|a| a.lookup_fmt(lookup))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            }
-            SymbolicValue::UniformArray(elem, counts) => {
-                format!(
-                    "🧬 ({}, {})",
-                    elem.lookup_fmt(lookup),
-                    counts.lookup_fmt(lookup)
-                )
-            }
-            _ => format!("❓Unknown symbolic value"),
-        }
     }
 }
