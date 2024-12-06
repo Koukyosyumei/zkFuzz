@@ -52,8 +52,8 @@ impl fmt::Display for VerificationResult {
 
 /// Represents a counterexample when constraints are found to be invalid.
 pub struct CounterExample {
-    flag: VerificationResult,
-    assignment: FxHashMap<SymbolicName, BigInt>,
+    pub flag: VerificationResult,
+    pub assignment: FxHashMap<SymbolicName, BigInt>,
 }
 
 impl CounterExample {
@@ -106,7 +106,7 @@ impl CounterExample {
 ///
 /// # Returns
 /// `true` if the result indicates a vulnerability, `false` otherwise.
-fn is_vulnerable(vr: &VerificationResult) -> bool {
+pub fn is_vulnerable(vr: &VerificationResult) -> bool {
     match vr {
         VerificationResult::UnderConstrained => true,
         VerificationResult::OverConstrained => true,
@@ -124,377 +124,6 @@ pub struct VerificationSetting {
     pub template_param_values: Vec<Expression>,
 }
 
-/// Performs a brute-force search over variable assignments to evaluate constraints.
-///
-/// # Parameters
-/// - `sexe`: A mutable reference to the symbolic executor.
-/// - `trace_constraints`: A vector of constraints representing the program trace.
-/// - `side_constraints`: A vector of additional constraints for validation.
-/// - `setting`: The verification settings.
-///
-/// # Returns
-/// An `Option<CounterExample>` containing a counterexample if constraints are invalid, or `None` otherwise.
-pub fn brute_force_search(
-    sexe: &mut SymbolicExecutor,
-    trace_constraints: &Vec<Rc<SymbolicValue>>,
-    side_constraints: &Vec<Rc<SymbolicValue>>,
-    setting: &VerificationSetting,
-) -> Option<CounterExample> {
-    let mut trace_variables = extract_variables(trace_constraints);
-    let mut side_variables = extract_variables(side_constraints);
-
-    let mut variables = Vec::new();
-    variables.append(&mut trace_variables);
-    variables.append(&mut side_variables);
-    let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
-    variables = variables_set.into_iter().collect();
-
-    let mut assignment = FxHashMap::default();
-    let current_iteration = Arc::new(AtomicUsize::new(0));
-
-    fn search(
-        sexe: &mut SymbolicExecutor,
-        trace_constraints: &[Rc<SymbolicValue>],
-        side_constraints: &[Rc<SymbolicValue>],
-        setting: &VerificationSetting,
-        index: usize,
-        variables: &[SymbolicName],
-        assignment: &mut FxHashMap<SymbolicName, BigInt>,
-        current_iteration: &Arc<AtomicUsize>,
-    ) -> VerificationResult {
-        if index == variables.len() {
-            let iter = current_iteration.fetch_add(1, Ordering::SeqCst);
-            if iter % setting.progress_interval == 0 {
-                print!(
-                    "\rProgress: {} / {}^{}",
-                    iter,
-                    &setting.prime,
-                    variables.len()
-                );
-                io::stdout().flush().unwrap();
-            }
-
-            return verify_assignment(
-                sexe,
-                trace_constraints,
-                side_constraints,
-                assignment,
-                setting,
-            );
-        }
-
-        let var = &variables[index];
-        if setting.quick_mode {
-            let candidates = vec![BigInt::zero(), BigInt::one(), -1 * BigInt::one()];
-            for c in candidates.into_iter() {
-                assignment.insert(var.clone(), c.clone());
-                let result = search(
-                    sexe,
-                    trace_constraints,
-                    side_constraints,
-                    setting,
-                    index + 1,
-                    variables,
-                    assignment,
-                    current_iteration,
-                );
-                if is_vulnerable(&result) {
-                    return result;
-                }
-                assignment.remove(var);
-            }
-        } else {
-            let mut value = BigInt::zero();
-            while value < setting.prime {
-                assignment.insert(var.clone(), value.clone());
-                let result = search(
-                    sexe,
-                    trace_constraints,
-                    side_constraints,
-                    setting,
-                    index + 1,
-                    variables,
-                    assignment,
-                    current_iteration,
-                );
-                if is_vulnerable(&result) {
-                    return result;
-                }
-                assignment.remove(var);
-                value += BigInt::one();
-            }
-        }
-        VerificationResult::WellConstrained
-    }
-
-    let flag = search(
-        sexe,
-        &trace_constraints,
-        &side_constraints,
-        setting,
-        0,
-        &variables,
-        &mut assignment,
-        &current_iteration,
-    );
-
-    print!(
-        "\rProgress: {} / {}^{}",
-        current_iteration.load(Ordering::SeqCst),
-        setting.prime,
-        variables.len()
-    );
-    io::stdout().flush().unwrap();
-
-    println!("\n • Search completed");
-    println!(
-        "     ├─ Total iterations: {}",
-        current_iteration.load(Ordering::SeqCst)
-    );
-    println!("     └─ Verification result: {}", flag);
-
-    if is_vulnerable(&flag) {
-        Some(CounterExample {
-            flag: flag,
-            assignment: assignment,
-        })
-    } else {
-        None
-    }
-}
-
-pub fn genetic_algorithm_search(
-    sexe: &mut SymbolicExecutor,
-    trace_constraints: &Vec<Rc<SymbolicValue>>,
-    side_constraints: &Vec<Rc<SymbolicValue>>,
-    setting: &VerificationSetting,
-) -> Option<CounterExample> {
-    let mut variables = extract_variables(trace_constraints);
-    variables.append(&mut extract_variables(side_constraints));
-    let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
-    variables = variables_set.into_iter().collect();
-
-    let population_size = 100;
-    let max_generations = 1000;
-    let mutation_rate = 0.3;
-    let crossover_rate = 0.5;
-
-    let mut rng = rand::thread_rng();
-    let mut population = initialize_population(&variables, &setting.prime, population_size);
-    let current_iteration = Arc::new(AtomicUsize::new(0));
-
-    for generation in 0..max_generations {
-        let mut new_population = Vec::new();
-
-        for _ in 0..population_size {
-            let parent1 = selection(&population, &mut rng);
-            let parent2 = selection(&population, &mut rng);
-
-            let mut child = if rng.gen::<f64>() < crossover_rate {
-                crossover(parent1, parent2, &mut rng)
-            } else {
-                parent1.clone()
-            };
-
-            if rng.gen::<f64>() < mutation_rate {
-                mutate(&mut child, &setting.prime, &mut rng);
-            }
-
-            new_population.push(child);
-        }
-
-        population = new_population;
-
-        // In your genetic algorithm function
-        let best_individual = population
-            .iter()
-            .max_by(|a, b| {
-                let fitness_a = fitness(&setting.prime, trace_constraints, side_constraints, a);
-                let fitness_b = fitness(&setting.prime, trace_constraints, side_constraints, b);
-                fitness_a
-                    .partial_cmp(&fitness_b)
-                    .unwrap_or(std::cmp::Ordering::Equal)
-            })
-            .unwrap();
-
-        let best_score = fitness(
-            &setting.prime,
-            trace_constraints,
-            side_constraints,
-            best_individual,
-        );
-
-        if best_score == 1.0 {
-            let flag = verify_assignment(
-                sexe,
-                trace_constraints,
-                side_constraints,
-                best_individual,
-                setting,
-            );
-            if is_vulnerable(&flag) {
-                print!(
-                    "\rGeneration: {}/{} ({:.3})",
-                    generation, max_generations, best_score
-                );
-                println!("\n └─ Solution found in generation {}", generation);
-                return Some(CounterExample {
-                    flag: flag,
-                    assignment: best_individual.clone(),
-                });
-            }
-        }
-
-        if generation % 10 == 0 {
-            print!(
-                "\rGeneration: {}/{} ({:.3})",
-                generation, max_generations, best_score
-            );
-            io::stdout().flush().unwrap();
-        }
-    }
-
-    println!(
-        "\n └─ No solution found after {} generations",
-        max_generations
-    );
-    None
-}
-
-fn initialize_population(
-    variables: &[SymbolicName],
-    prime: &BigInt,
-    size: usize,
-) -> Vec<FxHashMap<SymbolicName, BigInt>> {
-    let mut rng = rand::thread_rng();
-    (0..size)
-        .map(|_| {
-            variables
-                .iter()
-                .map(|var| {
-                    (
-                        var.clone(),
-                        rng.gen_bigint_range(
-                            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-                            &(BigInt::from_str("2").unwrap() * BigInt::one()),
-                        ),
-                    )
-                })
-                .collect()
-        })
-        .collect()
-}
-
-fn selection<'a>(
-    population: &'a [FxHashMap<SymbolicName, BigInt>],
-    rng: &mut ThreadRng,
-) -> &'a FxHashMap<SymbolicName, BigInt> {
-    population.choose(rng).unwrap()
-}
-
-fn crossover(
-    parent1: &FxHashMap<SymbolicName, BigInt>,
-    parent2: &FxHashMap<SymbolicName, BigInt>,
-    rng: &mut ThreadRng,
-) -> FxHashMap<SymbolicName, BigInt> {
-    parent1
-        .iter()
-        .map(|(var, val)| {
-            if rng.gen::<bool>() {
-                (var.clone(), val.clone())
-            } else {
-                (var.clone(), parent2[var].clone())
-            }
-        })
-        .collect()
-}
-
-fn mutate(individual: &mut FxHashMap<SymbolicName, BigInt>, prime: &BigInt, rng: &mut ThreadRng) {
-    let var = individual.keys().choose(rng).unwrap();
-    individual.insert(
-        var.clone(),
-        rng.gen_bigint_range(
-            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-            &(BigInt::from_str("2").unwrap() * BigInt::one()),
-        ),
-    );
-}
-
-fn fitness(
-    prime: &BigInt,
-    trace_constraints: &[Rc<SymbolicValue>],
-    side_constraints: &[Rc<SymbolicValue>],
-    assignment: &FxHashMap<SymbolicName, BigInt>,
-) -> f64 {
-    let total_constraints = trace_constraints.len() + side_constraints.len();
-    let satisfied_trace = count_satisfied_constraints(prime, trace_constraints, assignment);
-    let satisfied_side = count_satisfied_constraints(prime, side_constraints, assignment);
-
-    let trace_ratio = satisfied_trace as f64 / trace_constraints.len() as f64;
-    let side_ratio = satisfied_side as f64 / side_constraints.len() as f64;
-
-    if (trace_ratio == 1.0 && side_ratio < 1.0) || (trace_ratio < 1.0 && side_ratio == 1.0) {
-        1.0
-    } else if trace_ratio == 1.0 && side_ratio == 1.0 {
-        0.5
-    } else {
-        let distance_to_desired = (1.0 - trace_ratio).abs() + (1.0 - side_ratio).abs();
-        1.0 / (1.0 + distance_to_desired)
-    }
-}
-
-pub fn verify_assignment(
-    sexe: &mut SymbolicExecutor,
-    trace_constraints: &[Rc<SymbolicValue>],
-    side_constraints: &[Rc<SymbolicValue>],
-    assignment: &FxHashMap<SymbolicName, BigInt>,
-    setting: &VerificationSetting,
-) -> VerificationResult {
-    let is_satisfy_tc = evaluate_constraints(&setting.prime, trace_constraints, assignment);
-    let is_satisfy_sc = evaluate_constraints(&setting.prime, side_constraints, assignment);
-
-    if is_satisfy_tc && !is_satisfy_sc {
-        return VerificationResult::OverConstrained;
-    } else if !is_satisfy_tc && is_satisfy_sc {
-        sexe.clear();
-        sexe.cur_state.add_owner(&OwnerName {
-            name: sexe.symbolic_library.name2id["main"],
-            counter: 0,
-        });
-        sexe.feed_arguments(
-            &setting.template_param_names,
-            &setting.template_param_values,
-        );
-        sexe.concrete_execute(&setting.id, assignment);
-
-        let mut flag = false;
-        if sexe.symbolic_store.final_states.len() > 0 {
-            for vname in &sexe.symbolic_library.template_library
-                [&sexe.symbolic_library.name2id[&setting.id]]
-                .unrolled_outputs
-            {
-                //let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
-                let unboxed_value =
-                    sexe.symbolic_store.final_states[0].values[&vname.clone()].clone();
-                if let SymbolicValue::ConstantInt(v) = (*unboxed_value.clone()).clone() {
-                    if v != assignment[&vname.clone()] {
-                        flag = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        if flag {
-            return VerificationResult::UnderConstrained;
-        } else {
-            return VerificationResult::WellConstrained;
-        }
-    } else {
-        return VerificationResult::WellConstrained;
-    }
-}
-
 /// Extracts all unique variable names referenced in a set of constraints.
 ///
 /// # Parameters
@@ -502,7 +131,7 @@ pub fn verify_assignment(
 ///
 /// # Returns
 /// A vector of unique `SymbolicName`s referenced in the constraints.
-fn extract_variables(constraints: &[Rc<SymbolicValue>]) -> Vec<SymbolicName> {
+pub fn extract_variables(constraints: &[Rc<SymbolicValue>]) -> Vec<SymbolicName> {
     let mut variables = Vec::new();
     for constraint in constraints {
         extract_variables_from_symbolic_value(constraint, &mut variables);
@@ -517,7 +146,10 @@ fn extract_variables(constraints: &[Rc<SymbolicValue>]) -> Vec<SymbolicName> {
 /// # Parameters
 /// - `value`: The `SymbolicValue` to analyze.
 /// - `variables`: A mutable reference to a vector where extracted variable names will be stored.
-fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut Vec<SymbolicName>) {
+pub fn extract_variables_from_symbolic_value(
+    value: &SymbolicValue,
+    variables: &mut Vec<SymbolicName>,
+) {
     match value {
         SymbolicValue::Variable(name) => variables.push(name.clone()),
         SymbolicValue::BinaryOp(lhs, _, rhs) => {
@@ -557,7 +189,7 @@ fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut 
 ///
 /// # Returns
 /// `true` if all constraints are satisfied, `false` otherwise.
-fn evaluate_constraints(
+pub fn evaluate_constraints(
     prime: &BigInt,
     constraints: &[Rc<SymbolicValue>],
     assignment: &FxHashMap<SymbolicName, BigInt>,
@@ -580,7 +212,7 @@ fn evaluate_constraints(
 ///
 /// # Returns
 /// The number of satisfied constraints.
-fn count_satisfied_constraints(
+pub fn count_satisfied_constraints(
     prime: &BigInt,
     constraints: &[Rc<SymbolicValue>],
     assignment: &FxHashMap<SymbolicName, BigInt>,
@@ -606,7 +238,7 @@ fn count_satisfied_constraints(
 ///
 /// # Returns
 /// The evaluated `SymbolicValue`.
-fn evaluate_symbolic_value(
+pub fn evaluate_symbolic_value(
     prime: &BigInt,
     value: &SymbolicValue,
     assignment: &FxHashMap<SymbolicName, BigInt>,
@@ -701,5 +333,57 @@ fn evaluate_symbolic_value(
             }
         }
         _ => todo!(),
+    }
+}
+
+pub fn verify_assignment(
+    sexe: &mut SymbolicExecutor,
+    trace_constraints: &[Rc<SymbolicValue>],
+    side_constraints: &[Rc<SymbolicValue>],
+    assignment: &FxHashMap<SymbolicName, BigInt>,
+    setting: &VerificationSetting,
+) -> VerificationResult {
+    let is_satisfy_tc = evaluate_constraints(&setting.prime, trace_constraints, assignment);
+    let is_satisfy_sc = evaluate_constraints(&setting.prime, side_constraints, assignment);
+
+    if is_satisfy_tc && !is_satisfy_sc {
+        return VerificationResult::OverConstrained;
+    } else if !is_satisfy_tc && is_satisfy_sc {
+        sexe.clear();
+        sexe.cur_state.add_owner(&OwnerName {
+            name: sexe.symbolic_library.name2id["main"],
+            counter: 0,
+        });
+        sexe.feed_arguments(
+            &setting.template_param_names,
+            &setting.template_param_values,
+        );
+        sexe.concrete_execute(&setting.id, assignment);
+
+        let mut flag = false;
+        if sexe.symbolic_store.final_states.len() > 0 {
+            for vname in &sexe.symbolic_library.template_library
+                [&sexe.symbolic_library.name2id[&setting.id]]
+                .unrolled_outputs
+            {
+                //let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
+                let unboxed_value =
+                    sexe.symbolic_store.final_states[0].values[&vname.clone()].clone();
+                if let SymbolicValue::ConstantInt(v) = (*unboxed_value.clone()).clone() {
+                    if v != assignment[&vname.clone()] {
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if flag {
+            return VerificationResult::UnderConstrained;
+        } else {
+            return VerificationResult::WellConstrained;
+        }
+    } else {
+        return VerificationResult::WellConstrained;
     }
 }

@@ -22,7 +22,10 @@ use rustc_hash::FxHashMap;
 
 use debug_ast::simplify_statement;
 use program_structure::ast::Expression;
-use solver::{brute_force_search, genetic_algorithm_search, VerificationSetting};
+use solver::{
+    brute_force::brute_force_search, genetic_algorithm::genetic_algorithm_search,
+    utils::VerificationSetting,
+};
 use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
 use symbolic_value::{OwnerName, SymbolicLibrary};
