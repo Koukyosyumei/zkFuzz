@@ -38,44 +38,36 @@ pub enum DebugAccess {
 #[derive(Clone)]
 pub enum DebugExpression {
     InfixOp {
-        meta: Meta,
         lhe: Box<DebugExpression>,
         infix_op: DebugExpressionInfixOpcode,
         rhe: Box<DebugExpression>,
     },
     PrefixOp {
-        meta: Meta,
         prefix_op: DebugExpressionPrefixOpcode,
         rhe: Box<DebugExpression>,
     },
     InlineSwitchOp {
-        meta: Meta,
         cond: Box<DebugExpression>,
         if_true: Box<DebugExpression>,
         if_false: Box<DebugExpression>,
     },
     ParallelOp {
-        meta: Meta,
         rhe: Box<DebugExpression>,
     },
     Variable {
-        meta: Meta,
         name: usize,
         access: Vec<DebugAccess>,
     },
-    Number(Meta, BigInt),
+    Number(BigInt),
     Call {
-        meta: Meta,
         id: usize,
         args: Vec<DebugExpression>,
     },
     BusCall {
-        meta: Meta,
         id: usize,
         args: Vec<DebugExpression>,
     },
     AnonymousComp {
-        meta: Meta,
         id: usize,
         is_parallel: bool,
         params: Vec<DebugExpression>,
@@ -83,15 +75,12 @@ pub enum DebugExpression {
         names: Option<Vec<(AssignOp, String)>>,
     },
     ArrayInLine {
-        meta: Meta,
         values: Vec<DebugExpression>,
     },
     Tuple {
-        meta: Meta,
         values: Vec<DebugExpression>,
     },
     UniformArray {
-        meta: Meta,
         value: Box<DebugExpression>,
         dimension: Box<DebugExpression>,
     },
@@ -196,41 +185,41 @@ impl DebugExpression {
     ) -> Self {
         match expr {
             Expression::InfixOp {
-                meta,
+                meta: _,
                 lhe,
                 infix_op,
                 rhe,
             } => DebugExpression::InfixOp {
-                meta,
                 lhe: Box::new(DebugExpression::from(*lhe, name2id, id2name)),
                 infix_op: DebugExpressionInfixOpcode(infix_op),
                 rhe: Box::new(DebugExpression::from(*rhe, name2id, id2name)),
             },
             Expression::PrefixOp {
-                meta,
+                meta: _,
                 prefix_op,
                 rhe,
             } => DebugExpression::PrefixOp {
-                meta,
                 prefix_op: DebugExpressionPrefixOpcode(prefix_op),
                 rhe: Box::new(DebugExpression::from(*rhe, name2id, id2name)),
             },
             Expression::InlineSwitchOp {
-                meta,
+                meta: _,
                 cond,
                 if_true,
                 if_false,
             } => DebugExpression::InlineSwitchOp {
-                meta,
                 cond: Box::new(DebugExpression::from(*cond, name2id, id2name)),
                 if_true: Box::new(DebugExpression::from(*if_true, name2id, id2name)),
                 if_false: Box::new(DebugExpression::from(*if_false, name2id, id2name)),
             },
-            Expression::ParallelOp { meta, rhe } => DebugExpression::ParallelOp {
-                meta,
+            Expression::ParallelOp { meta: _, rhe } => DebugExpression::ParallelOp {
                 rhe: Box::new(DebugExpression::from(*rhe, name2id, id2name)),
             },
-            Expression::Variable { meta, name, access } => {
+            Expression::Variable {
+                meta: _,
+                name,
+                access,
+            } => {
                 let i = if let Some(i) = name2id.get(&name) {
                     *i
                 } else {
@@ -239,7 +228,6 @@ impl DebugExpression {
                     name2id.len() - 1
                 };
                 DebugExpression::Variable {
-                    meta: meta,
                     name: i,
                     access: access
                         .into_iter()
@@ -247,8 +235,8 @@ impl DebugExpression {
                         .collect(),
                 }
             }
-            Expression::Number(meta, value) => DebugExpression::Number(meta, value),
-            Expression::Call { meta, id, args } => {
+            Expression::Number(_, value) => DebugExpression::Number(value),
+            Expression::Call { meta: _, id, args } => {
                 let i = if let Some(i) = name2id.get(&id) {
                     *i
                 } else {
@@ -257,7 +245,6 @@ impl DebugExpression {
                     name2id.len() - 1
                 };
                 DebugExpression::Call {
-                    meta: meta,
                     id: i,
                     args: args
                         .into_iter()
@@ -265,7 +252,7 @@ impl DebugExpression {
                         .collect(),
                 }
             }
-            Expression::BusCall { meta, id, args } => {
+            Expression::BusCall { meta: _, id, args } => {
                 let i = if let Some(i) = name2id.get(&id) {
                     *i
                 } else {
@@ -274,7 +261,6 @@ impl DebugExpression {
                     name2id.len() - 1
                 };
                 DebugExpression::BusCall {
-                    meta: meta,
                     id: i,
                     args: args
                         .into_iter()
@@ -283,7 +269,7 @@ impl DebugExpression {
                 }
             }
             Expression::AnonymousComp {
-                meta,
+                meta: _,
                 id,
                 is_parallel,
                 params,
@@ -298,7 +284,6 @@ impl DebugExpression {
                     name2id.len() - 1
                 };
                 DebugExpression::AnonymousComp {
-                    meta,
                     id: i,
                     is_parallel,
                     params: params
@@ -312,26 +297,23 @@ impl DebugExpression {
                     names,
                 }
             }
-            Expression::ArrayInLine { meta, values } => DebugExpression::ArrayInLine {
-                meta,
+            Expression::ArrayInLine { meta: _, values } => DebugExpression::ArrayInLine {
                 values: values
                     .into_iter()
                     .map(|v| DebugExpression::from(v, name2id, id2name))
                     .collect(),
             },
-            Expression::Tuple { meta, values } => DebugExpression::Tuple {
-                meta,
+            Expression::Tuple { meta: _, values } => DebugExpression::Tuple {
                 values: values
                     .into_iter()
                     .map(|v| DebugExpression::from(v, name2id, id2name))
                     .collect(),
             },
             Expression::UniformArray {
-                meta,
+                meta: _,
                 value,
                 dimension,
             } => DebugExpression::UniformArray {
-                meta,
                 value: Box::new(DebugExpression::from(*value, name2id, id2name)),
                 dimension: Box::new(DebugExpression::from(*dimension, name2id, id2name)),
             },
@@ -735,7 +717,7 @@ impl DebugExpression {
     fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
         let indentation = "  ".repeat(indent);
         match &self {
-            DebugExpression::Number(_, value) => {
+            DebugExpression::Number(value) => {
                 writeln!(f, "{}{}Number:{} {}", indentation, BLUE, RESET, value)
             }
             DebugExpression::InfixOp {

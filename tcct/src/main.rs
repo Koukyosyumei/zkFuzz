@@ -105,7 +105,6 @@ fn start() -> Result<(), ()> {
         Expression::Call { id, args, .. } => {
             let start_time = time::Instant::now();
             let template = program_archive.templates[id].clone();
-            let body = simplify_statement(&template.get_body().clone());
 
             println!(
                 "{}",

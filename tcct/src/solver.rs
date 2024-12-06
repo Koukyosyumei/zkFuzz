@@ -157,7 +157,7 @@ pub fn brute_force_search(
                     counter: 0,
                 });
                 sexe.feed_arguments(template_param_names, template_param_values);
-                sexe.concrete_execute(id, assignment, true);
+                sexe.concrete_execute(id, assignment);
 
                 let mut flag = false;
                 if sexe.symbolic_store.final_states.len() > 0 {
@@ -370,8 +370,8 @@ fn evaluate_symbolic_value(
     assignment: &FxHashMap<SymbolicName, BigInt>,
 ) -> SymbolicValue {
     match value {
-        SymbolicValue::ConstantBool(b) => value.clone(),
-        SymbolicValue::ConstantInt(v) => value.clone(),
+        SymbolicValue::ConstantBool(_b) => value.clone(),
+        SymbolicValue::ConstantInt(_v) => value.clone(),
         SymbolicValue::Variable(name) => {
             SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
         }

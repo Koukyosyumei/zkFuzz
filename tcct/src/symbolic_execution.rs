@@ -882,12 +882,7 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    pub fn concrete_execute(
-        &mut self,
-        id: &String,
-        assignment: &FxHashMap<SymbolicName, BigInt>,
-        off_trace: bool,
-    ) {
+    pub fn concrete_execute(&mut self, id: &String, assignment: &FxHashMap<SymbolicName, BigInt>) {
         self.cur_state.template_id = self.symbolic_library.name2id[id];
         for (vname, value) in assignment.into_iter() {
             self.cur_state
@@ -1119,12 +1114,8 @@ impl<'a> SymbolicExecutor<'a> {
     /// A `SymbolicValue` representing the evaluated expression.
     fn evaluate_expression(&mut self, expr: &DebugExpression) -> SymbolicValue {
         match &expr {
-            DebugExpression::Number(_meta, value) => SymbolicValue::ConstantInt(value.clone()),
-            DebugExpression::Variable {
-                name,
-                access,
-                meta: _,
-            } => {
+            DebugExpression::Number(value) => SymbolicValue::ConstantInt(value.clone()),
+            DebugExpression::Variable { name, access } => {
                 let resolved_name = if access.is_empty() {
                     SymbolicName {
                         name: *name,
@@ -1168,26 +1159,16 @@ impl<'a> SymbolicExecutor<'a> {
                 };
                 SymbolicValue::Variable(resolved_name)
             }
-            DebugExpression::InfixOp {
-                meta: _,
-                lhe,
-                infix_op,
-                rhe,
-            } => {
+            DebugExpression::InfixOp { lhe, infix_op, rhe } => {
                 let lhs = self.evaluate_expression(lhe);
                 let rhs = self.evaluate_expression(rhe);
                 SymbolicValue::BinaryOp(Rc::new(lhs), infix_op.clone(), Rc::new(rhs))
             }
-            DebugExpression::PrefixOp {
-                meta: _,
-                prefix_op,
-                rhe,
-            } => {
+            DebugExpression::PrefixOp { prefix_op, rhe } => {
                 let expr = self.evaluate_expression(rhe);
                 SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(expr))
             }
             DebugExpression::InlineSwitchOp {
-                meta: _,
                 cond,
                 if_true,
                 if_false,
@@ -1202,14 +1183,14 @@ impl<'a> SymbolicExecutor<'a> {
                 )
             }
             DebugExpression::ParallelOp { rhe, .. } => self.evaluate_expression(rhe),
-            DebugExpression::ArrayInLine { meta: _, values } => {
+            DebugExpression::ArrayInLine { values } => {
                 let elements = values
                     .iter()
                     .map(|v| Rc::new(self.evaluate_expression(v)))
                     .collect();
                 SymbolicValue::Array(elements)
             }
-            DebugExpression::Tuple { meta: _, values } => {
+            DebugExpression::Tuple { values } => {
                 let elements = values
                     .iter()
                     .map(|v| Rc::new(self.evaluate_expression(v)))
