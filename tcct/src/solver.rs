@@ -1,7 +1,6 @@
 use colored::Colorize;
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
-use num_traits::Pow;
 use num_traits::Signed;
 use num_traits::{One, Zero};
 use rustc_hash::FxHashMap;

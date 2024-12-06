@@ -16,7 +16,6 @@ use log::{info, warn};
 use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
 use std::env;
-use std::rc::Rc;
 use std::str::FromStr;
 use std::time;
 
