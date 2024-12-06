@@ -167,49 +167,13 @@ pub fn brute_force_search(
                 io::stdout().flush().unwrap();
             }
 
-            let is_satisfy_tc = evaluate_constraints(&setting.prime, trace_constraints, assignment);
-            let is_satisfy_sc = evaluate_constraints(&setting.prime, side_constraints, assignment);
-
-            if is_satisfy_tc && !is_satisfy_sc {
-                return VerificationResult::OverConstrained;
-            } else if !is_satisfy_tc && is_satisfy_sc {
-                sexe.clear();
-                sexe.cur_state.add_owner(&OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
-                    counter: 0,
-                });
-                sexe.feed_arguments(
-                    &setting.template_param_names,
-                    &setting.template_param_values,
-                );
-                sexe.concrete_execute(&setting.id, assignment);
-
-                let mut flag = false;
-                if sexe.symbolic_store.final_states.len() > 0 {
-                    for vname in &sexe.symbolic_library.template_library
-                        [&sexe.symbolic_library.name2id[&setting.id]]
-                        .unrolled_outputs
-                    {
-                        //let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
-                        let unboxed_value =
-                            sexe.symbolic_store.final_states[0].values[&vname.clone()].clone();
-                        if let SymbolicValue::ConstantInt(v) = (*unboxed_value.clone()).clone() {
-                            if v != assignment[&vname.clone()] {
-                                flag = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if flag {
-                    return VerificationResult::UnderConstrained;
-                } else {
-                    return VerificationResult::WellConstrained;
-                }
-            } else {
-                return VerificationResult::WellConstrained;
-            }
+            return verify_assignment(
+                sexe,
+                trace_constraints,
+                side_constraints,
+                assignment,
+                setting,
+            );
         }
 
         let var = &variables[index];
@@ -289,6 +253,176 @@ pub fn brute_force_search(
         })
     } else {
         None
+    }
+}
+
+/*
+pub fn genetic_algorithm_search(
+    sexe: &mut SymbolicExecutor,
+    trace_constraints: &Vec<Rc<SymbolicValue>>,
+    side_constraints: &Vec<Rc<SymbolicValue>>,
+    setting: &VerificationSetting,
+) -> Option<CounterExample> {
+    let mut variables = extract_variables(trace_constraints);
+    variables.append(&mut extract_variables(side_constraints));
+    let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
+    variables = variables_set.into_iter().collect();
+
+    let population_size = 100;
+    let max_generations = 1000;
+    let mutation_rate = 0.1;
+    let crossover_rate = 0.8;
+
+    let mut rng = rand::thread_rng();
+    let mut population = initialize_population(&variables, &setting.prime, population_size);
+    let current_iteration = Arc::new(AtomicUsize::new(0));
+
+    for generation in 0..max_generations {
+        let mut new_population = Vec::new();
+
+        for _ in 0..population_size {
+            let parent1 = selection(&population, &rng);
+            let parent2 = selection(&population, &rng);
+
+            let mut child = if rng.gen::<f64>() < crossover_rate {
+                crossover(parent1, parent2, &rng)
+            } else {
+                parent1.clone()
+            };
+
+            if rng.gen::<f64>() < mutation_rate {
+                mutate(&mut child, &setting.prime, &rng);
+            }
+
+            new_population.push(child);
+        }
+
+        population = new_population;
+
+        let best_individual = population
+            .iter()
+            .max_by_key(|ind| {
+                fitness(
+                    ind,
+                    sexe,
+                    trace_constraints,
+                    side_constraints,
+                    setting,
+                    &current_iteration,
+                )
+            })
+            .unwrap();
+
+        if let Some(counter_example) = evaluate_individual(
+            best_individual,
+            sexe,
+            trace_constraints,
+            side_constraints,
+            setting,
+        ) {
+            println!("\nSolution found in generation {}", generation);
+            return Some(counter_example);
+        }
+
+        if generation % 10 == 0 {
+            print!("\rGeneration: {}/{}", generation, max_generations);
+            io::stdout().flush().unwrap();
+        }
+    }
+
+    println!("\nNo solution found after {} generations", max_generations);
+    None
+}
+
+fn initialize_population(
+    variables: &[SymbolicName],
+    prime: &BigInt,
+    size: usize,
+) -> Vec<FxHashMap<SymbolicName, BigInt>> {
+    let mut rng = rand::thread_rng();
+    (0..size)
+        .map(|_| {
+            variables
+                .iter()
+                .map(|var| (var.clone(), rng.gen_bigint_range(&BigInt::zero(), prime)))
+                .collect()
+        })
+        .collect()
+}
+
+fn selection<'a>(
+    population: &'a [FxHashMap<SymbolicName, BigInt>],
+    rng: &mut ThreadRng,
+) -> &'a FxHashMap<SymbolicName, BigInt> {
+    population.choose(rng).unwrap()
+}
+
+fn crossover(
+    parent1: &FxHashMap<SymbolicName, BigInt>,
+    parent2: &FxHashMap<SymbolicName, BigInt>,
+    rng: &mut ThreadRng,
+) -> FxHashMap<SymbolicName, BigInt> {
+    parent1
+        .iter()
+        .map(|(var, val)| {
+            if rng.gen::<bool>() {
+                (var.clone(), val.clone())
+            } else {
+                (var.clone(), parent2[var].clone())
+            }
+        })
+        .collect()
+}*/
+
+pub fn verify_assignment(
+    sexe: &mut SymbolicExecutor,
+    trace_constraints: &[Rc<SymbolicValue>],
+    side_constraints: &[Rc<SymbolicValue>],
+    assignment: &FxHashMap<SymbolicName, BigInt>,
+    setting: &VerificationSetting,
+) -> VerificationResult {
+    let is_satisfy_tc = evaluate_constraints(&setting.prime, trace_constraints, assignment);
+    let is_satisfy_sc = evaluate_constraints(&setting.prime, side_constraints, assignment);
+
+    if is_satisfy_tc && !is_satisfy_sc {
+        return VerificationResult::OverConstrained;
+    } else if !is_satisfy_tc && is_satisfy_sc {
+        sexe.clear();
+        sexe.cur_state.add_owner(&OwnerName {
+            name: sexe.symbolic_library.name2id["main"],
+            counter: 0,
+        });
+        sexe.feed_arguments(
+            &setting.template_param_names,
+            &setting.template_param_values,
+        );
+        sexe.concrete_execute(&setting.id, assignment);
+
+        let mut flag = false;
+        if sexe.symbolic_store.final_states.len() > 0 {
+            for vname in &sexe.symbolic_library.template_library
+                [&sexe.symbolic_library.name2id[&setting.id]]
+                .unrolled_outputs
+            {
+                //let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
+                let unboxed_value =
+                    sexe.symbolic_store.final_states[0].values[&vname.clone()].clone();
+                if let SymbolicValue::ConstantInt(v) = (*unboxed_value.clone()).clone() {
+                    if v != assignment[&vname.clone()] {
+                        flag = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if flag {
+            return VerificationResult::UnderConstrained;
+        } else {
+            return VerificationResult::WellConstrained;
+        }
+    } else {
+        return VerificationResult::WellConstrained;
     }
 }
 
