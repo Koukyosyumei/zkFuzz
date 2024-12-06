@@ -21,6 +21,7 @@ use crate::symbolic_value::SymbolicName;
 use crate::symbolic_value::{OwnerName, SymbolicValue};
 use crate::utils::extended_euclidean;
 
+/// Represents the result of a constraint verification process.
 pub enum VerificationResult {
     UnderConstrained,
     OverConstrained,
@@ -28,8 +29,10 @@ pub enum VerificationResult {
 }
 
 impl fmt::Display for VerificationResult {
-    /// Provides a user-friendly string representation of the `VerificationResult`,
-    /// with colored highlights to indicate the constraint status.
+    /// Formats the `VerificationResult` for display, using color-coded output.
+    ///
+    /// # Returns
+    /// A `fmt::Result` indicating success or failure of the formatting
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output = match self {
             VerificationResult::UnderConstrained => "🔥 UnderConstrained 🔥".red().bold(),
@@ -40,15 +43,20 @@ impl fmt::Display for VerificationResult {
     }
 }
 
-/// A structure representing a counterexample when constraints are invalid.
+/// Represents a counterexample when constraints are found to be invalid.
 pub struct CounterExample {
     flag: VerificationResult,
     assignment: FxHashMap<SymbolicName, BigInt>,
 }
 
 impl CounterExample {
-    /// Provides a detailed, user-friendly debug output for a counterexample,
-    /// including variable assignments.
+    /// Generates a detailed, user-friendly debug output for the counterexample.
+    ///
+    /// # Parameters
+    /// - `lookup`: A hash map associating variable IDs with their string representations.
+    ///
+    /// # Returns
+    /// A formatted string containing the counterexample details.
     pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         let mut s = "".to_string();
         s += &format!(
@@ -71,13 +79,13 @@ impl CounterExample {
     }
 }
 
-/// Determines if a given verification result indicates vulnerability.
+/// Determines if a given verification result indicates a vulnerability.
 ///
 /// # Parameters
-/// - `vr`: The verification result to evaluate.
+/// - `vr`: The `VerificationResult` to evaluate.
 ///
 /// # Returns
-/// `true` if the result indicates a vulnerability, otherwise `false`.
+/// `true` if the result indicates a vulnerability, `false` otherwise.
 fn is_vulnerable(vr: &VerificationResult) -> bool {
     match vr {
         VerificationResult::UnderConstrained => true,
@@ -86,6 +94,7 @@ fn is_vulnerable(vr: &VerificationResult) -> bool {
     }
 }
 
+/// Configures the settings for the verification process.
 pub struct VerificationSetting {
     pub id: String,
     pub prime: BigInt,
@@ -95,17 +104,16 @@ pub struct VerificationSetting {
     pub template_param_values: Vec<Expression>,
 }
 
-/// Performs brute-force search over variable assignments to evaluate constraints.
+/// Performs a brute-force search over variable assignments to evaluate constraints.
 ///
 /// # Parameters
-/// - `prime`: The prime modulus for computations.
-/// - `id`: The identifier of the symbolic executor's current context.
 /// - `sexe`: A mutable reference to the symbolic executor.
-/// - `trace_constraints`: The constraints representing the program trace.
-/// - `side_constraints`: Additional constraints for validation.
+/// - `trace_constraints`: A vector of constraints representing the program trace.
+/// - `side_constraints`: A vector of additional constraints for validation.
+/// - `setting`: The verification settings.
 ///
 /// # Returns
-/// A `CounterExample` if constraints are invalid, otherwise `None`.
+/// An `Option<CounterExample>` containing a counterexample if constraints are invalid, or `None` otherwise.
 pub fn brute_force_search(
     sexe: &mut SymbolicExecutor,
     trace_constraints: &Vec<Rc<SymbolicValue>>,
@@ -122,9 +130,7 @@ pub fn brute_force_search(
     variables = variables_set.into_iter().collect();
 
     let mut assignment = FxHashMap::default();
-
     let current_iteration = Arc::new(AtomicUsize::new(0));
-    //let progress_interval = 10000; // Update progress every 1000 iterations
 
     fn search(
         sexe: &mut SymbolicExecutor,
@@ -277,7 +283,7 @@ pub fn brute_force_search(
 /// - `constraints`: A slice of symbolic values representing the constraints.
 ///
 /// # Returns
-/// A vector of unique variable names referenced in the constraints.
+/// A vector of unique `SymbolicName`s referenced in the constraints.
 fn extract_variables(constraints: &[Rc<SymbolicValue>]) -> Vec<SymbolicName> {
     let mut variables = Vec::new();
     for constraint in constraints {
@@ -291,8 +297,8 @@ fn extract_variables(constraints: &[Rc<SymbolicValue>]) -> Vec<SymbolicName> {
 /// Recursively extracts variable names from a symbolic value.
 ///
 /// # Parameters
-/// - `value`: The symbolic value to analyze.
-/// - `variables`: A mutable reference to a vector where variable names will be stored.
+/// - `value`: The `SymbolicValue` to analyze.
+/// - `variables`: A mutable reference to a vector where extracted variable names will be stored.
 fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut Vec<SymbolicName>) {
     match value {
         SymbolicValue::Variable(name) => variables.push(name.clone()),
@@ -324,6 +330,15 @@ fn extract_variables_from_symbolic_value(value: &SymbolicValue, variables: &mut 
     }
 }
 
+/// Evaluates a set of constraints given a variable assignment.
+///
+/// # Parameters
+/// - `prime`: The prime modulus for computations.
+/// - `constraints`: A slice of symbolic values representing the constraints to evaluate.
+/// - `assignment`: A hash map of variable assignments.
+///
+/// # Returns
+/// `true` if all constraints are satisfied, `false` otherwise.
 fn evaluate_constraints(
     prime: &BigInt,
     constraints: &[Rc<SymbolicValue>],
@@ -338,6 +353,15 @@ fn evaluate_constraints(
     })
 }
 
+/// Counts the number of satisfied constraints given a variable assignment.
+///
+/// # Parameters
+/// - `prime`: The prime modulus for computations.
+/// - `constraints`: A slice of symbolic values representing the constraints to evaluate.
+/// - `assignment`: A hash map of variable assignments.
+///
+/// # Returns
+/// The number of satisfied constraints.
 fn count_satisfied_constraints(
     prime: &BigInt,
     constraints: &[Rc<SymbolicValue>],
@@ -355,6 +379,15 @@ fn count_satisfied_constraints(
         .count()
 }
 
+/// Evaluates a symbolic value given a variable assignment.
+///
+/// # Parameters
+/// - `prime`: The prime modulus for computations.
+/// - `value`: The `SymbolicValue` to evaluate.
+/// - `assignment`: A hash map of variable assignments.
+///
+/// # Returns
+/// The evaluated `SymbolicValue`.
 fn evaluate_symbolic_value(
     prime: &BigInt,
     value: &SymbolicValue,

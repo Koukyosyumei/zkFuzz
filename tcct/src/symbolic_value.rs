@@ -19,6 +19,14 @@ pub enum SymbolicAccess {
 
 impl SymbolicAccess {
     /// Provides a compact format for displaying symbolic access in expressions.
+    ///
+    /// # Arguments
+    ///
+    /// * `lookup` - A hash map containing mappings of usize keys to String values.
+    ///
+    /// # Returns
+    ///
+    /// A String representation of the symbolic access.
     pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         match &self {
             SymbolicAccess::ComponentAccess(name) => {
@@ -34,6 +42,10 @@ impl SymbolicAccess {
     }
 }
 
+/// Represents a symbolic value used in symbolic execution.
+///
+/// This enum can represent constants, variables, or operations such as binary, unary,
+/// conditional, arrays, tuples, uniform arrays, and function calls.
 #[derive(Clone, PartialEq, Eq, Hash)]
 pub struct OwnerName {
     pub name: usize,
@@ -70,8 +82,10 @@ impl SymbolicName {
     }
 }
 
-/// Represents a symbolic value used in symbolic execution, which can be a constant, variable, or an operation.
-/// It supports various operations like binary, unary, conditional, arrays, tuples, uniform arrays, and function calls.
+/// Represents a symbolic value used in symbolic execution.
+///
+/// This enum can represent constants, variables, or operations such as binary, unary,
+/// conditional, arrays, tuples, uniform arrays, and function calls.
 #[derive(Clone, Hash, Eq, PartialEq)]
 pub enum SymbolicValue {
     ConstantInt(BigInt),
@@ -90,8 +104,16 @@ pub enum SymbolicValue {
     Call(usize, Vec<Rc<SymbolicValue>>),
 }
 
-/// Implements the `Debug` trait for `SymbolicValue` to provide custom formatting for debugging purposes.
 impl SymbolicValue {
+    /// Formats the symbolic value for lookup and debugging purposes.
+    ///
+    /// # Arguments
+    ///
+    /// * `lookup` - A hash map containing mappings of usize keys to String values.
+    ///
+    /// # Returns
+    ///
+    /// A String representation of the symbolic value.
     pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         match self {
             SymbolicValue::ConstantInt(value) => format!("{}", value),
@@ -208,6 +230,7 @@ pub struct SymbolicComponent {
     pub is_done: bool,
 }
 
+/// Manages symbolic libraries, templates, and functions for symbolic execution.
 #[derive(Default, Clone)]
 pub struct SymbolicLibrary {
     pub template_library: FxHashMap<usize, Box<SymbolicTemplate>>,
@@ -218,19 +241,20 @@ pub struct SymbolicLibrary {
 }
 
 impl SymbolicLibrary {
+    /// Clears the function counter for all registered functions.
     pub fn clear_function_counter(&mut self) {
         for (k, _) in self.function_library.iter() {
             self.function_counter.insert(*k, 0_usize);
         }
     }
 
-    // Registers library template by extracting input signals from block statement body provided along with template parameter names list.
-    //
-    // # Arguments
-    //
-    // * 'name' : Name under which template will be registered within library .
-    // * 'body' : Block statement serving as main logic body defining behavior captured by template .
-    // * 'template_parameter_names': List containing names identifying parameters used within template logic .
+    /// Registers a library template by extracting input signals from the provided block statement body.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name under which the template will be registered within the library.
+    /// * `body` - Block statement serving as the main logic body defining the behavior captured by the template.
+    /// * `template_parameter_names` - List of names identifying parameters used within the template logic.
     pub fn register_library(
         &mut self,
         name: String,
@@ -297,6 +321,13 @@ impl SymbolicLibrary {
         );
     }
 
+    /// Registers a function in the symbolic library.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name of the function to be registered.
+    /// * `body` - The function body as a Statement.
+    /// * `function_argument_names` - List of argument names for the function.
     pub fn register_function(
         &mut self,
         name: String,
