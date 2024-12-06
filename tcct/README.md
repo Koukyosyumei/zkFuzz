@@ -33,33 +33,79 @@ ARGS:
 **Example command:**
 
 ```bash
-./target/debug/tcct ../sample/iszero_vuln.circom --debug_prime 3 --search_mode="quick"
+RUST_LOG=info ./target/release/tcct ../sample/iszero_vuln.circom --search_mode="quick"
 ```
 
 **Example output:**
 
 ```bash
+
+  ████████╗ ██████╗ ██████╗████████╗
+  ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝
+     ██║   ██║     ██║        ██║
+     ██║   ██║     ██║        ██║
+     ██║   ╚██████╗╚██████╗   ██║
+     ╚═╝    ╚═════╝ ╚═════╝   ╚═╝
+ Trace-Constraint Consistency Test
+     ZKP Circuit Debugger v0.0
+
+Welcome to the TCCT Debugging Tool
+════════════════════════════════════════════════════════════════
 🧩 Parsing Templates...
 ⚙️ Parsing Function...
 🛒 Gathering Trace/Side Constraints...
-===========================================================
-===========================================================
-🩺 Scanning TCCT Instances...
-   🚨 Counter Example:
-      🔥 UnderConstrained 🔥
-      🔍 Assignment Details:
-           ➡️ main.out = 1
-           ➡️ main.inv = 0
-           ➡️ main.in = 1
+════════════════════════════════════════════════════════════════
+[2024-12-06T18:04:58Z INFO  tcct] Final State: 🛠️ SymbolicState [
+      👤 owner: "main"
+      📏 depth: 0
+      📋 values:
+          main.in: main.in
+          main.out: (Add (Mul (Minus main.in) 0) 1)
+          main.inv: 0
+      🪶 trace_constraints: (BoolNot (NEq main.in 0)), (Eq main.inv 0), (Eq main.out (Add (Mul (Minus main.in) 0) 1)), (Eq (Mul main.out (Sub main.out 1)) 0)
+      ⛓️ side_constraints: (BoolNot (NEq main.in 0)), (Eq main.out (Add (Mul (Minus main.in) 0) 1)), (Eq (Mul main.out (Sub main.out 1)) 0)
+    ]
 
-======================= TCCT Report =======================
+[2024-12-06T18:04:58Z INFO  tcct] Final State: 🛠️ SymbolicState [
+      👤 owner: "main"
+      📏 depth: 0
+      📋 values:
+          main.in: main.in
+          main.out: (Add (Mul (Minus main.in) main.inv) 1)
+          main.inv: (Div 1 main.in)
+      🪶 trace_constraints: (NEq main.in 0), (Eq main.inv (Div 1 main.in)), (Eq main.out (Add (Mul (Minus main.in) main.inv) 1)), (Eq (Mul main.out (Sub main.out 1)) 0)
+      ⛓️ side_constraints: (NEq main.in 0), (Eq main.out (Add (Mul (Minus main.in) main.inv) 1)), (Eq (Mul main.out (Sub main.out 1)) 0)
+    ]
+
+════════════════════════════════════════════════════════════════
+🩺 Scanning TCCT Instances...
+Progress: 27 / 21888242871839275222246405745257275088548364400416034343698204186575808495617^3
+ • Search completed
+     ├─ Total iterations: 27
+     └─ Verification result: ✅ WellConstrained ✅
+Progress: 13 / 21888242871839275222246405745257275088548364400416034343698204186575808495617^3
+ • Search completed
+     ├─ Total iterations: 13
+     └─ Verification result: 🔥 UnderConstrained 🔥
+╔══════════════════════════════════════════════════════════════╗
+║🚨 Counter Example:                                           ║
+║    🔥 UnderConstrained 🔥
+║    🔍 Assignment Details:
+║           ➡️ main.in = 1
+║           ➡️ main.out = 1
+║           ➡️ main.inv = 0
+╚══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║                        TCCT Report                            ║
+╚═══════════════════════════════════════════════════════════════╝
 📊 Execution Summary:
-  - Prime Number        : 3
-  - Total Paths Explored: 2
-  - Compression Rate    : 50.00% (4/8)
-  - Verification        : 💥 NOT SAFE 💥
-  - Execution Time      : 3.5248ms
-===========================================================
+ ├─ Prime Number      : 21888242871839275222246405745257275088548364400416034343698204186575808495617
+ ├─ Total Paths       : 2
+ ├─ Compression Rate  : 71.43% (5/7)
+ ├─ Verification      : 💥 NOT SAFE 💥
+ └─ Execution Time    : 511.6µs
+════════════════════════════════════════════════════════════════
 Everything went okay
 ```
 
