@@ -60,20 +60,33 @@ impl CounterExample {
     pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         let mut s = "".to_string();
         s += &format!(
-            "   🚨 {}\n",
+            "{}",
+            "╔══════════════════════════════════════════════════════════════╗\n".red()
+        );
+        s += &format!("{}", "║".red());
+        s += &format!(
+            "🚨 {}                                           ",
             "Counter Example:".on_bright_red().white().bold()
         );
-        s += &format!("      {}\n", self.flag);
-        s += &format!("      {}\n", "🔍 Assignment Details:".blue().bold());
+        s += &format!("{}", "║\n".red());
+        s += &format!("{}", "║".red());
+        s += &format!("    {} \n", self.flag);
+        s += &format!("{}", "║".red());
+        s += &format!("    {} \n", "🔍 Assignment Details:".blue().bold());
 
         for (var, value) in &self.assignment {
+            s += &format!("{}", "║".red());
             s += &format!(
-                "           {} {} = {}\n",
+                "           {} {} = {} \n",
                 "➡️".cyan(),
                 var.lookup_fmt(lookup).magenta().bold(),
                 value.to_string().bright_yellow()
             );
         }
+        s += &format!(
+            "{}",
+            "╚══════════════════════════════════════════════════════════════╝\n".red()
+        );
 
         s
     }
