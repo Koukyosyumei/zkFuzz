@@ -22,7 +22,7 @@ use rustc_hash::FxHashMap;
 
 use debug_ast::simplify_statement;
 use program_structure::ast::Expression;
-use solver::{brute_force_search, VerificationSetting};
+use solver::{brute_force_search, genetic_algorithm_search, VerificationSetting};
 use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
 use symbolic_value::{OwnerName, SymbolicLibrary};
@@ -226,6 +226,12 @@ fn start() -> Result<(), ()> {
                             &verification_setting,
                         ),
                         "full" => brute_force_search(
+                            &mut sub_sexe,
+                            &s.trace_constraints.clone(),
+                            &s.side_constraints.clone(),
+                            &verification_setting,
+                        ),
+                        "ga" => genetic_algorithm_search(
                             &mut sub_sexe,
                             &s.trace_constraints.clone(),
                             &s.side_constraints.clone(),

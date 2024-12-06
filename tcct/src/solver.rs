@@ -17,6 +17,7 @@ use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use rustc_hash::FxHashMap;
+use std::str::FromStr;
 
 use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
@@ -275,8 +276,8 @@ pub fn genetic_algorithm_search(
 
     let population_size = 100;
     let max_generations = 1000;
-    let mutation_rate = 0.1;
-    let crossover_rate = 0.8;
+    let mutation_rate = 0.3;
+    let crossover_rate = 0.5;
 
     let mut rng = rand::thread_rng();
     let mut population = initialize_population(&variables, &setting.prime, population_size);
@@ -316,34 +317,47 @@ pub fn genetic_algorithm_search(
             })
             .unwrap();
 
-        /*
-        let best_individual = population
-            .iter()
-            .max_by_key(|ind| fitness(&setting.prime, trace_constraints, side_constraints, ind))
-            .unwrap();*/
-
-        let flag = verify_assignment(
-            sexe,
+        let best_score = fitness(
+            &setting.prime,
             trace_constraints,
             side_constraints,
             best_individual,
-            setting,
         );
-        if is_vulnerable(&flag) {
-            println!("\nSolution found in generation {}", generation);
-            return Some(CounterExample {
-                flag: flag,
-                assignment: best_individual.clone(),
-            });
+
+        if best_score == 1.0 {
+            let flag = verify_assignment(
+                sexe,
+                trace_constraints,
+                side_constraints,
+                best_individual,
+                setting,
+            );
+            if is_vulnerable(&flag) {
+                print!(
+                    "\rGeneration: {}/{} ({:.3})",
+                    generation, max_generations, best_score
+                );
+                println!("\n └─ Solution found in generation {}", generation);
+                return Some(CounterExample {
+                    flag: flag,
+                    assignment: best_individual.clone(),
+                });
+            }
         }
 
         if generation % 10 == 0 {
-            print!("\rGeneration: {}/{}", generation, max_generations);
+            print!(
+                "\rGeneration: {}/{} ({:.3})",
+                generation, max_generations, best_score
+            );
             io::stdout().flush().unwrap();
         }
     }
 
-    println!("\nNo solution found after {} generations", max_generations);
+    println!(
+        "\n └─ No solution found after {} generations",
+        max_generations
+    );
     None
 }
 
@@ -357,7 +371,15 @@ fn initialize_population(
         .map(|_| {
             variables
                 .iter()
-                .map(|var| (var.clone(), rng.gen_bigint_range(&BigInt::zero(), prime)))
+                .map(|var| {
+                    (
+                        var.clone(),
+                        rng.gen_bigint_range(
+                            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
+                            &(BigInt::from_str("2").unwrap() * BigInt::one()),
+                        ),
+                    )
+                })
                 .collect()
         })
         .collect()
@@ -389,7 +411,13 @@ fn crossover(
 
 fn mutate(individual: &mut FxHashMap<SymbolicName, BigInt>, prime: &BigInt, rng: &mut ThreadRng) {
     let var = individual.keys().choose(rng).unwrap();
-    individual.insert(var.clone(), rng.gen_bigint_range(&BigInt::zero(), prime));
+    individual.insert(
+        var.clone(),
+        rng.gen_bigint_range(
+            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
+            &(BigInt::from_str("2").unwrap() * BigInt::one()),
+        ),
+    );
 }
 
 fn fitness(
