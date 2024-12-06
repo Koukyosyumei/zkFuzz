@@ -15,7 +15,6 @@ use num_traits::{One, Zero};
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
-use rand::thread_rng;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
