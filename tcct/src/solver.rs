@@ -1,9 +1,3 @@
-use colored::Colorize;
-use num_bigint_dig::BigInt;
-use num_traits::cast::ToPrimitive;
-use num_traits::Signed;
-use num_traits::{One, Zero};
-use rustc_hash::FxHashMap;
 use std::collections::HashSet;
 use std::fmt;
 use std::io;
@@ -11,6 +5,19 @@ use std::io::Write;
 use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
+
+use colored::Colorize;
+use num_bigint_dig::BigInt;
+use num_bigint_dig::RandBigInt;
+use num_traits::cast::ToPrimitive;
+use num_traits::Signed;
+use num_traits::{One, Zero};
+use rand::rngs::ThreadRng;
+use rand::seq::IteratorRandom;
+use rand::seq::SliceRandom;
+use rand::thread_rng;
+use rand::Rng;
+use rustc_hash::FxHashMap;
 
 use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
@@ -256,7 +263,6 @@ pub fn brute_force_search(
     }
 }
 
-/*
 pub fn genetic_algorithm_search(
     sexe: &mut SymbolicExecutor,
     trace_constraints: &Vec<Rc<SymbolicValue>>,
@@ -281,17 +287,17 @@ pub fn genetic_algorithm_search(
         let mut new_population = Vec::new();
 
         for _ in 0..population_size {
-            let parent1 = selection(&population, &rng);
-            let parent2 = selection(&population, &rng);
+            let parent1 = selection(&population, &mut rng);
+            let parent2 = selection(&population, &mut rng);
 
             let mut child = if rng.gen::<f64>() < crossover_rate {
-                crossover(parent1, parent2, &rng)
+                crossover(parent1, parent2, &mut rng)
             } else {
                 parent1.clone()
             };
 
             if rng.gen::<f64>() < mutation_rate {
-                mutate(&mut child, &setting.prime, &rng);
+                mutate(&mut child, &setting.prime, &mut rng);
             }
 
             new_population.push(child);
@@ -299,29 +305,37 @@ pub fn genetic_algorithm_search(
 
         population = new_population;
 
+        // In your genetic algorithm function
         let best_individual = population
             .iter()
-            .max_by_key(|ind| {
-                fitness(
-                    ind,
-                    sexe,
-                    trace_constraints,
-                    side_constraints,
-                    setting,
-                    &current_iteration,
-                )
+            .max_by(|a, b| {
+                let fitness_a = fitness(&setting.prime, trace_constraints, side_constraints, a);
+                let fitness_b = fitness(&setting.prime, trace_constraints, side_constraints, b);
+                fitness_a
+                    .partial_cmp(&fitness_b)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             })
             .unwrap();
 
-        if let Some(counter_example) = evaluate_individual(
-            best_individual,
+        /*
+        let best_individual = population
+            .iter()
+            .max_by_key(|ind| fitness(&setting.prime, trace_constraints, side_constraints, ind))
+            .unwrap();*/
+
+        let flag = verify_assignment(
             sexe,
             trace_constraints,
             side_constraints,
+            best_individual,
             setting,
-        ) {
+        );
+        if is_vulnerable(&flag) {
             println!("\nSolution found in generation {}", generation);
-            return Some(counter_example);
+            return Some(CounterExample {
+                flag: flag,
+                assignment: best_individual.clone(),
+            });
         }
 
         if generation % 10 == 0 {
@@ -372,7 +386,35 @@ fn crossover(
             }
         })
         .collect()
-}*/
+}
+
+fn mutate(individual: &mut FxHashMap<SymbolicName, BigInt>, prime: &BigInt, rng: &mut ThreadRng) {
+    let var = individual.keys().choose(rng).unwrap();
+    individual.insert(var.clone(), rng.gen_bigint_range(&BigInt::zero(), prime));
+}
+
+fn fitness(
+    prime: &BigInt,
+    trace_constraints: &[Rc<SymbolicValue>],
+    side_constraints: &[Rc<SymbolicValue>],
+    assignment: &FxHashMap<SymbolicName, BigInt>,
+) -> f64 {
+    let total_constraints = trace_constraints.len() + side_constraints.len();
+    let satisfied_trace = count_satisfied_constraints(prime, trace_constraints, assignment);
+    let satisfied_side = count_satisfied_constraints(prime, side_constraints, assignment);
+
+    let trace_ratio = satisfied_trace as f64 / trace_constraints.len() as f64;
+    let side_ratio = satisfied_side as f64 / side_constraints.len() as f64;
+
+    if (trace_ratio == 1.0 && side_ratio < 1.0) || (trace_ratio < 1.0 && side_ratio == 1.0) {
+        1.0
+    } else if trace_ratio == 1.0 && side_ratio == 1.0 {
+        0.5
+    } else {
+        let distance_to_desired = (1.0 - trace_ratio).abs() + (1.0 - side_ratio).abs();
+        1.0 / (1.0 + distance_to_desired)
+    }
+}
 
 pub fn verify_assignment(
     sexe: &mut SymbolicExecutor,
