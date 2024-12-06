@@ -14,6 +14,7 @@ use std::str::FromStr;
 use std::time;
 
 use ansi_term::Colour;
+use colored::Colorize;
 use env_logger;
 use input_user::Input;
 use log::{info, warn};
@@ -31,7 +32,29 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";
 const BACK_GRAY_SCRIPT_BLACK: &str = "\x1b[30;100m"; //94
 
+fn display_tcct_logo() {
+    let logo = r#"
+  ████████╗ ██████╗ ██████╗████████╗
+  ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝
+     ██║   ██║     ██║        ██║   
+     ██║   ██║     ██║        ██║   
+     ██║   ╚██████╗╚██████╗   ██║   
+     ╚═╝    ╚═════╝ ╚═════╝   ╚═╝   
+ Trace-Constraint Consistency Test
+     ZKP Circuit Debugger v0.0
+    "#;
+
+    println!("{}", logo.bright_cyan().bold());
+    println!("{}", "Welcome to the TCCT Debugging Tool".green().bold());
+    println!(
+        "{}",
+        "════════════════════════════════════════════════════════════════".green()
+    );
+}
+
 fn main() {
+    display_tcct_logo();
+
     let result = start();
     if result.is_err() {
         eprintln!("{}", Colour::Red.paint("previous errors were found"));
