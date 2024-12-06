@@ -13,7 +13,6 @@ use std::env;
 use std::str::FromStr;
 use std::time;
 
-use ansi_term::Colour;
 use colored::Colorize;
 use env_logger;
 use input_user::Input;
@@ -57,10 +56,10 @@ fn main() {
 
     let result = start();
     if result.is_err() {
-        eprintln!("{}", Colour::Red.paint("previous errors were found"));
+        eprintln!("{}", "previous errors were found".red());
         std::process::exit(1);
     } else {
-        println!("{}", Colour::Green.paint("Everything went okay"));
+        println!("{}", "Everything went okay".green());
         //std::process::exit(0);
     }
 }
@@ -82,7 +81,7 @@ fn start() -> Result<(), ()> {
         function_counter: FxHashMap::default(),
     };
 
-    println!("{}", Colour::Green.paint("🧩 Parsing Templates..."));
+    println!("{}", "🧩 Parsing Templates...".green());
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
         symbolic_library.register_library(k.clone(), &body.clone(), v.get_name_of_params());
@@ -99,7 +98,7 @@ fn start() -> Result<(), ()> {
         }
     }
 
-    println!("{}", Colour::Green.paint("⚙️ Parsing Function..."));
+    println!("{}", "⚙️ Parsing Function...".green());
     for (k, v) in program_archive.functions.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
         symbolic_library.register_function(k.clone(), body.clone(), v.get_name_of_params());
@@ -131,10 +130,7 @@ fn start() -> Result<(), ()> {
             let start_time = time::Instant::now();
             let template = program_archive.templates[id].clone();
 
-            println!(
-                "{}",
-                Colour::Green.paint("🛒 Gathering Trace/Side Constraints...")
-            );
+            println!("{}", "🛒 Gathering Trace/Side Constraints...".green());
 
             sexe.symbolic_library
                 .name2id
@@ -161,8 +157,7 @@ fn start() -> Result<(), ()> {
 
             println!(
                 "{}",
-                Colour::Green
-                    .paint("════════════════════════════════════════════════════════════════")
+                "════════════════════════════════════════════════════════════════".green()
             );
             let mut ts = ConstraintStatistics::new();
             let mut ss = ConstraintStatistics::new();
@@ -183,10 +178,9 @@ fn start() -> Result<(), ()> {
             if user_input.search_mode != "none" {
                 println!(
                     "{}",
-                    Colour::Green
-                        .paint("════════════════════════════════════════════════════════════════")
+                    "════════════════════════════════════════════════════════════════".green()
                 );
-                println!("{}", Colour::Green.paint("🩺 Scanning TCCT Instances..."));
+                println!("{}", "🩺 Scanning TCCT Instances...".green());
 
                 let sub_setting = SymbolicExecutorSetting {
                     prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
@@ -257,20 +251,17 @@ fn start() -> Result<(), ()> {
 
             println!(
                 "{}",
-                Colour::Green
-                    .paint("╔═══════════════════════════════════════════════════════════════╗")
+                "╔═══════════════════════════════════════════════════════════════╗".green()
             );
             println!(
                 "{}",
-                Colour::Green
-                    .paint("║                        TCCT Report                            ║")
+                "║                        TCCT Report                            ║".green()
             );
             println!(
                 "{}",
-                Colour::Green
-                    .paint("╚═══════════════════════════════════════════════════════════════╝")
+                "╚═══════════════════════════════════════════════════════════════╝".green()
             );
-            println!("{}", Colour::Cyan.bold().paint("📊 Execution Summary:"));
+            println!("{}", "📊 Execution Summary:".cyan().bold());
             println!(" ├─ Prime Number      : {}", user_input.debug_prime());
             println!(
                 " ├─ Total Paths       : {}",
@@ -285,9 +276,9 @@ fn start() -> Result<(), ()> {
             println!(
                 " ├─ Verification      : {}",
                 if is_safe {
-                    Colour::Green.bold().paint("🆗 No Counter Example Found")
+                    "🆗 No Counter Example Found".green().bold()
                 } else {
-                    Colour::Red.bold().paint("💥 NOT SAFE 💥")
+                    "💥 NOT SAFE 💥".red().bold()
                 }
             );
             println!(" └─ Execution Time    : {:?}", start_time.elapsed());
@@ -295,23 +286,22 @@ fn start() -> Result<(), ()> {
             if user_input.flag_printout_stats {
                 println!(
                     "\n{}",
-                    Colour::Yellow
+                    "🪶 Stats of Trace Constraint ══════════════════════"
+                        .yellow()
                         .bold()
-                        .paint("🪶 Stats of Trace Constraint ══════════════════════")
                 );
                 print_constraint_summary_statistics_pretty(&ts);
                 println!(
                     "\n{}",
-                    Colour::Yellow
+                    "⛓️ Stats of Side Constraint ══════════════════════"
+                        .yellow()
                         .bold()
-                        .paint("⛓️ Stats of Side Constraint ══════════════════════")
                 );
                 print_constraint_summary_statistics_pretty(&ss);
             }
             println!(
                 "{}",
-                Colour::Green
-                    .paint("════════════════════════════════════════════════════════════════")
+                "════════════════════════════════════════════════════════════════".green()
             );
         }
         _ => {
