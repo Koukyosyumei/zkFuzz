@@ -1,17 +1,14 @@
 use std::collections::HashSet;
-use std::fmt;
 use std::io;
 use std::io::Write;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::atomic::AtomicUsize;
 use std::sync::Arc;
 
-use colored::Colorize;
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
-use num_traits::cast::ToPrimitive;
 use num_traits::Signed;
-use num_traits::{One, Zero};
+use num_traits::One;
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
@@ -19,18 +16,14 @@ use rand::Rng;
 use rustc_hash::FxHashMap;
 use std::str::FromStr;
 
-use program_structure::ast::Expression;
-use program_structure::ast::ExpressionInfixOpcode;
-use program_structure::ast::ExpressionPrefixOpcode;
 
 use crate::symbolic_execution::SymbolicExecutor;
 use crate::symbolic_value::SymbolicName;
-use crate::symbolic_value::{OwnerName, SymbolicValue};
-use crate::utils::extended_euclidean;
+use crate::symbolic_value::SymbolicValue;
 
 use crate::solver::utils::{
-    count_satisfied_constraints, evaluate_constraints, extract_variables, is_vulnerable,
-    verify_assignment, CounterExample, VerificationResult, VerificationSetting,
+    count_satisfied_constraints, extract_variables, is_vulnerable,
+    verify_assignment, CounterExample, VerificationSetting,
 };
 
 pub fn genetic_algorithm_search(

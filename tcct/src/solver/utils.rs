@@ -1,23 +1,13 @@
-use std::collections::HashSet;
 use std::fmt;
-use std::io;
 use std::io::Write;
 use std::rc::Rc;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
 
 use colored::Colorize;
 use num_bigint_dig::BigInt;
-use num_bigint_dig::RandBigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::Signed;
-use num_traits::{One, Zero};
-use rand::rngs::ThreadRng;
-use rand::seq::IteratorRandom;
-use rand::seq::SliceRandom;
-use rand::Rng;
+use num_traits::Zero;
 use rustc_hash::FxHashMap;
-use std::str::FromStr;
 
 use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
