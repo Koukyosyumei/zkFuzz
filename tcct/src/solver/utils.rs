@@ -366,11 +366,9 @@ pub fn verify_assignment(
                 [&sexe.symbolic_library.name2id[&setting.id]]
                 .unrolled_outputs
             {
-                //let vname = format!("{}.{}", sexe.cur_state.get_owner(), n.to_string());
-                let unboxed_value =
-                    sexe.symbolic_store.final_states[0].values[&vname.clone()].clone();
-                if let SymbolicValue::ConstantInt(v) = (*unboxed_value.clone()).clone() {
-                    if v != assignment[&vname.clone()] {
+                let unboxed_value = &sexe.symbolic_store.final_states[0].values[&vname];
+                if let SymbolicValue::ConstantInt(v) = &(*unboxed_value.clone()) {
+                    if *v != assignment[&vname] {
                         flag = true;
                         break;
                     }
