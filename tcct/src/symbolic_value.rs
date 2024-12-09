@@ -91,6 +91,7 @@ pub enum SymbolicValue {
     ConstantInt(BigInt),
     ConstantBool(bool),
     Variable(SymbolicName),
+    Assign(Rc<SymbolicValue>, Rc<SymbolicValue>),
     BinaryOp(
         Rc<SymbolicValue>,
         DebugExpressionInfixOpcode,
@@ -121,6 +122,14 @@ impl SymbolicValue {
                 format!("{} {}", if *flag { "✅" } else { "❌" }, flag)
             }
             SymbolicValue::Variable(sname) => sname.lookup_fmt(lookup),
+            SymbolicValue::Assign(lhs, rhs) => {
+                format!(
+                    "({} {} {})",
+                    "Assign".green(),
+                    lhs.lookup_fmt(lookup),
+                    rhs.lookup_fmt(lookup)
+                )
+            }
             SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
                 ExpressionInfixOpcode::Eq
                 | ExpressionInfixOpcode::NotEq

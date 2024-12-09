@@ -142,6 +142,10 @@ pub fn extract_variables_from_symbolic_value(
 ) {
     match value {
         SymbolicValue::Variable(name) => variables.push(name.clone()),
+        SymbolicValue::Assign(lhs, rhs) => {
+            extract_variables_from_symbolic_value(&lhs, variables);
+            extract_variables_from_symbolic_value(&rhs, variables);
+        }
         SymbolicValue::BinaryOp(lhs, _, rhs) => {
             extract_variables_from_symbolic_value(&lhs, variables);
             extract_variables_from_symbolic_value(&rhs, variables);
@@ -238,6 +242,16 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::ConstantInt(_v) => value.clone(),
         SymbolicValue::Variable(name) => {
             SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
+        }
+        SymbolicValue::Assign(lhs, rhs) => {
+            let lhs_val = evaluate_symbolic_value(prime, lhs, assignment);
+            let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
+            match (&lhs_val, &rhs_val) {
+                (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
+                    SymbolicValue::ConstantBool(lv % prime == rv % prime)
+                }
+                _ => panic!("Unassigned variables exist"),
+            }
         }
         SymbolicValue::BinaryOp(lhs, op, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment);
