@@ -33,12 +33,12 @@ ARGS:
 **Example command:**
 
 ```bash
-RUST_LOG=info ./target/release/tcct ../sample/iszero_vuln.circom --search_mode="quick"
+./target/release/tcct ../sample/iszero_vuln.circom --search_mode="quick"
 ```
 
 **Example output:**
 
-<img src="img/main_result.png" alt="Result" src=300>
+<img src="img/main_result.png" alt="Result" width=600>
 
 This tool also provides multiple verbosity levels for detailed analysis with the environmental variable `RUST_LOG`:
 
