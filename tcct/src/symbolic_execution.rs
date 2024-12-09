@@ -810,8 +810,9 @@ impl<'a> SymbolicExecutor<'a> {
                                     self.cur_state.push_trace_constraint(&cont);
 
                                     if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
-                                        let original_cont = SymbolicValue::Assign(
+                                        let original_cont = SymbolicValue::BinaryOp(
                                             Rc::new(SymbolicValue::Variable(var_name)),
+                                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                                             Rc::new(original_value),
                                         );
                                         self.cur_state.push_side_constraint(&original_cont);
@@ -840,8 +841,11 @@ impl<'a> SymbolicExecutor<'a> {
                     if self.setting.keep_track_constraints {
                         self.cur_state.push_trace_constraint(&cont);
                         if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
-                            let simple_cont =
-                                SymbolicValue::Assign(Rc::new(simple_lhs), Rc::new(simple_rhs));
+                            let simple_cont = SymbolicValue::BinaryOp(
+                                Rc::new(simple_lhs),
+                                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                Rc::new(simple_rhs),
+                            );
                             self.cur_state.push_side_constraint(&simple_cont);
                         }
                     }

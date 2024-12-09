@@ -174,6 +174,40 @@ pub fn extract_variables_from_symbolic_value(
     }
 }
 
+pub fn is_contain_key(value: &SymbolicValue, name: &SymbolicName) -> bool {
+    match value {
+        SymbolicValue::Variable(name) => name == name,
+        SymbolicValue::Assign(lhs, rhs) => is_contain_key(&lhs, name) || is_contain_key(&rhs, name),
+        SymbolicValue::BinaryOp(lhs, _, rhs) => {
+            is_contain_key(&lhs, name) || is_contain_key(&rhs, name)
+        }
+        SymbolicValue::Conditional(cond, if_true, if_false) => {
+            is_contain_key(&cond, name)
+                || is_contain_key(&if_true, name)
+                || is_contain_key(&if_false, name)
+        }
+        SymbolicValue::UnaryOp(_, expr) => is_contain_key(&expr, name),
+        SymbolicValue::Array(elements) | SymbolicValue::Tuple(elements) => {
+            let mut flag = false;
+            for elem in elements {
+                flag = flag || is_contain_key(&elem, name);
+            }
+            flag
+        }
+        SymbolicValue::UniformArray(value, size) => {
+            is_contain_key(&value, name) || is_contain_key(&size, name)
+        }
+        SymbolicValue::Call(_, args) => {
+            let mut flag = false;
+            for arg in args {
+                flag = flag || is_contain_key(&arg, name);
+            }
+            flag
+        }
+        _ => false,
+    }
+}
+
 /// Evaluates a set of constraints given a variable assignment.
 ///
 /// # Parameters
@@ -221,6 +255,77 @@ pub fn count_satisfied_constraints(
             }
         })
         .count()
+}
+
+pub fn emulate_symbolic_values(
+    prime: &BigInt,
+    values: &[Rc<SymbolicValue>],
+    assignment: &mut FxHashMap<SymbolicName, BigInt>,
+) -> bool {
+    for value in values {
+        match value.as_ref() {
+            SymbolicValue::ConstantBool(b) => {
+                if !b {
+                    return false;
+                }
+            }
+            SymbolicValue::Assign(lhs, rhs) => {
+                if let SymbolicValue::Variable(name) = lhs.as_ref() {
+                    let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
+                    if let SymbolicValue::ConstantInt(num) = &rhs_val {
+                        assignment.insert(name.clone(), num.clone());
+                    } else {
+                        panic!("Right hand is not completely folded");
+                    }
+                } else {
+                    panic!("Left hand of the assignment is not a variable");
+                }
+            }
+            SymbolicValue::BinaryOp(lhs, op, rhs) => {
+                let lhs_val = evaluate_symbolic_value(prime, lhs, assignment);
+                let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
+                let flag = match (&lhs_val, &rhs_val) {
+                    (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
+                        match op.0 {
+                            ExpressionInfixOpcode::Lesser => lv % prime < rv % prime,
+                            ExpressionInfixOpcode::Greater => lv % prime > rv % prime,
+                            ExpressionInfixOpcode::LesserEq => lv % prime <= rv % prime,
+                            ExpressionInfixOpcode::GreaterEq => lv % prime >= rv % prime,
+                            ExpressionInfixOpcode::Eq => lv % prime == rv % prime,
+                            ExpressionInfixOpcode::NotEq => lv % prime != rv % prime,
+                            _ => panic!("Non-Boolean Operation"),
+                        }
+                    }
+                    (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => {
+                        match &op.0 {
+                            ExpressionInfixOpcode::BoolAnd => *lv && *rv,
+                            ExpressionInfixOpcode::BoolOr => *lv || *rv,
+                            _ => todo!(),
+                        }
+                    }
+                    _ => panic!("Unassigned variables exist"),
+                };
+                if !flag {
+                    return false;
+                }
+            }
+            SymbolicValue::UnaryOp(op, expr) => {
+                let expr_val = evaluate_symbolic_value(prime, expr, assignment);
+                let flag = match &expr_val {
+                    SymbolicValue::ConstantBool(rv) => match op.0 {
+                        ExpressionPrefixOpcode::BoolNot => !rv,
+                        _ => panic!("Unassigned variables exist"),
+                    },
+                    _ => panic!("Non-Boolean Operation"),
+                };
+                if !flag {
+                    return false;
+                }
+            }
+            _ => todo!(),
+        }
+    }
+    return true;
 }
 
 /// Evaluates a symbolic value given a variable assignment.
