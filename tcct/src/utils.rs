@@ -1,3 +1,4 @@
+use num_bigint_dig::BigInt;
 use num_traits::{One, Zero};
 use std::ops::{Div, Rem, Sub};
 
@@ -26,6 +27,23 @@ where
     }
 
     (r0, s0, t0)
+}
+
+pub fn modpow(base: &BigInt, exp: &BigInt, modulus: &BigInt) -> BigInt {
+    let mut result = BigInt::from(1);
+    let mut base = base % modulus; // Reduce base mod modulus initially
+    let mut exp = exp.clone();
+
+    while exp > BigInt::from(0) {
+        // If exp is odd, multiply base with result
+        if &exp % 2 == BigInt::from(1) {
+            result = (result * &base) % modulus;
+        }
+        // Square the base and halve the exponent
+        base = (&base * &base) % modulus;
+        exp /= 2;
+    }
+    result
 }
 
 pub fn italic(text: &str) -> String {

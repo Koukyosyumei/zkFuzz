@@ -20,7 +20,7 @@ use crate::debug_ast::{
 use crate::symbolic_value::{
     OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue,
 };
-use crate::utils::{extended_euclidean, italic};
+use crate::utils::{extended_euclidean, italic, modpow};
 
 /// Represents the state of symbolic execution, holding symbolic values,
 /// trace constraints, side constraints, and depth information.
@@ -1039,6 +1039,9 @@ impl<'a> SymbolicExecutor<'a> {
                             }
                             ExpressionInfixOpcode::Mul => {
                                 SymbolicValue::ConstantInt((lv * rv) % &self.setting.prime)
+                            }
+                            ExpressionInfixOpcode::Pow => {
+                                SymbolicValue::ConstantInt(modpow(lv, rv, &self.setting.prime))
                             }
                             ExpressionInfixOpcode::Div => {
                                 if rv.is_zero() {
