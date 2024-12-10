@@ -357,9 +357,6 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::ConstantBool(_b) => value.clone(),
         SymbolicValue::ConstantInt(_v) => value.clone(),
         SymbolicValue::Variable(name) => {
-            if !assignment.contains_key(name) {
-                println!("{:?} - {:?}", name, assignment);
-            }
             SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
         }
         SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
@@ -497,6 +494,13 @@ pub fn verify_assignment(
                             flag = true;
                             break;
                         }
+                    } else {
+                        panic!(
+                            "Undetermined Output: {}",
+                            unboxed_value
+                                .clone()
+                                .lookup_fmt(&sexe.symbolic_library.id2name)
+                        );
                     }
                 }
             }

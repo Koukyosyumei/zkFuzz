@@ -252,6 +252,7 @@ pub struct SymbolicExecutorSetting {
     pub skip_initialization_blocks: bool,
     pub off_trace: bool,
     pub keep_track_constraints: bool,
+    pub substitute_output: bool,
 }
 
 /// A symbolic execution engine for analyzing and executing statements symbolically.
@@ -987,7 +988,19 @@ impl<'a> SymbolicExecutor<'a> {
                     {
                         if let Some(typ) = template.var2type.get(&sname.name) {
                             if let VariableType::Signal(SignalType::Output, _) = typ {
-                                return symval.clone();
+                                if self.setting.substitute_output {
+                                    return (*self
+                                        .cur_state
+                                        .get_symval(&sname)
+                                        .cloned()
+                                        .unwrap_or_else(|| {
+                                            Rc::new(SymbolicValue::Variable(sname.clone()))
+                                        })
+                                        .clone())
+                                    .clone();
+                                } else {
+                                    return symval.clone();
+                                }
                             } else if let VariableType::Var = typ {
                                 return (*self
                                     .cur_state

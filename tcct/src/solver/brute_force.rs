@@ -9,14 +9,13 @@ use num_bigint_dig::BigInt;
 use num_traits::{One, Zero};
 use rustc_hash::FxHashMap;
 
-
 use crate::symbolic_execution::SymbolicExecutor;
 use crate::symbolic_value::SymbolicName;
 use crate::symbolic_value::SymbolicValue;
 
 use crate::solver::utils::{
-    extract_variables, is_vulnerable, verify_assignment, CounterExample,
-    VerificationResult, VerificationSetting,
+    extract_variables, is_vulnerable, verify_assignment, CounterExample, VerificationResult,
+    VerificationSetting,
 };
 
 /// Performs a brute-force search over variable assignments to evaluate constraints.

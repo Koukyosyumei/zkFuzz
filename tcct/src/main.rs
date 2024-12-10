@@ -23,8 +23,8 @@ use rustc_hash::FxHashMap;
 use debug_ast::simplify_statement;
 use program_structure::ast::Expression;
 use solver::{
-    brute_force::brute_force_search,
-    mutation_test::mutation_test_search, utils::VerificationSetting,
+    brute_force::brute_force_search, mutation_test::mutation_test_search,
+    utils::VerificationSetting,
 };
 use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
@@ -124,6 +124,7 @@ fn start() -> Result<(), ()> {
         skip_initialization_blocks: false,
         off_trace: false,
         keep_track_constraints: true,
+        substitute_output: false,
     };
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
 
@@ -190,6 +191,7 @@ fn start() -> Result<(), ()> {
                     skip_initialization_blocks: true,
                     off_trace: true,
                     keep_track_constraints: false,
+                    substitute_output: true,
                 };
                 let mut sub_sexe = SymbolicExecutor::new(&mut sexe.symbolic_library, &sub_setting);
 
