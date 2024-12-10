@@ -7,6 +7,7 @@ use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::{Signed, Zero};
 use rustc_hash::FxHashMap;
+use std::str::FromStr;
 
 use program_structure::ast::{
     AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType,
@@ -690,6 +691,7 @@ impl<'a> SymbolicExecutor<'a> {
                                         .clone(),
                                 );
 
+                                // Set template parameters
                                 for i in 0..(templ.template_parameter_names.len()) {
                                     let n = SymbolicName {
                                         name: templ.template_parameter_names[i],
@@ -703,6 +705,19 @@ impl<'a> SymbolicExecutor<'a> {
                                     );
                                 }
 
+                                let upper_bound = if templ.require_bound_check {
+                                    if let SymbolicValue::ConstantInt(n) =
+                                        &(*self.symbolic_store.components_store[&var_name].args[0])
+                                    {
+                                        n.to_u32().unwrap()
+                                    } else {
+                                        0_u32
+                                    }
+                                } else {
+                                    0_u32
+                                };
+
+                                // Set the inputs to the component
                                 for (k, v) in self.symbolic_store.components_store[&var_name]
                                     .inputs
                                     .iter()
@@ -713,6 +728,19 @@ impl<'a> SymbolicExecutor<'a> {
                                         access: None,
                                     };
                                     subse.cur_state.set_symval(n, v.clone().unwrap());
+
+                                    if templ.require_bound_check {
+                                        let cond = SymbolicValue::BinaryOp(
+                                            Rc::new(v.clone().unwrap()),
+                                            DebugExpressionInfixOpcode(
+                                                ExpressionInfixOpcode::Lesser,
+                                            ),
+                                            Rc::new(SymbolicValue::ConstantInt(BigInt::from(
+                                                2_u32.pow(upper_bound),
+                                            ))),
+                                        );
+                                        self.cur_state.push_trace_constraint(&cond);
+                                    }
                                 }
 
                                 if !self.setting.off_trace {
