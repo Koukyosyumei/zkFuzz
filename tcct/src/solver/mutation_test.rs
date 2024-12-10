@@ -1,4 +1,6 @@
 use std::collections::HashSet;
+use std::io;
+use std::io::Write;
 use std::rc::Rc;
 
 use num_bigint_dig::BigInt;
@@ -62,8 +64,7 @@ pub fn mutation_test_search(
     }
 
     for generation in 0..max_generations {
-        let input_population =
-            initialize_input_population(&input_variables, input_population_size);
+        let input_population = initialize_input_population(&input_variables, input_population_size);
 
         let mut new_trace_population = Vec::new();
         for _ in 0..program_population_size {
@@ -122,7 +123,10 @@ pub fn mutation_test_search(
         if best_score.1 == 1.0 {
             let mut mutated_trace_constraints = trace_constraints.clone();
             for (k, v) in best_mutated_trace {
-                mutated_trace_constraints[*k] = Rc::new(v.clone());
+                if let SymbolicValue::Assign(lv, rv) = &v {
+                    mutated_trace_constraints[*k] =
+                        Rc::new(SymbolicValue::Assign(lv.clone(), Rc::new(v.clone())));
+                }
             }
 
             let mut assignment = input_population[best_score.0].clone();
@@ -145,6 +149,14 @@ pub fn mutation_test_search(
                     assignment: assignment.clone(),
                 });
             }
+        }
+
+        if generation % 10 == 0 {
+            print!(
+                "\rGeneration: {}/{} ({:.3})",
+                generation, max_generations, best_score.1
+            );
+            io::stdout().flush().unwrap();
         }
     }
 
@@ -242,7 +254,10 @@ fn trace_fitness(
 ) -> (usize, f64) {
     let mut mutated_trace_constraints = trace_constraints.clone();
     for (k, v) in trace_mutation {
-        mutated_trace_constraints[*k] = Rc::new(v.clone());
+        if let SymbolicValue::Assign(lv, rv) = &v {
+            mutated_trace_constraints[*k] =
+                Rc::new(SymbolicValue::Assign(lv.clone(), Rc::new(v.clone())));
+        }
     }
 
     let mut max_idx = 0_usize;

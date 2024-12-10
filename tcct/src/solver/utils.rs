@@ -333,7 +333,7 @@ pub fn emulate_symbolic_values(
                     return false;
                 }
             }
-            _ => todo!(),
+            _ => panic!("Non-Supported SymbolicValue"),
         }
     }
     return true;
