@@ -174,6 +174,51 @@ pub fn extract_variables_from_symbolic_value(
     }
 }
 
+pub fn get_dependency_graph(
+    values: &[Rc<SymbolicValue>],
+    graph: &mut FxHashMap<SymbolicName, FxHashSet<SymbolicName>>,
+) {
+    for value in values {
+        match value.as_ref() {
+            SymbolicValue::Assign(lhs, rhs) => {
+                if let SymbolicValue::Variable(name) = lhs.as_ref() {
+                    graph.entry(name.clone()).or_default();
+                    extract_variables_from_symbolic_value(&rhs, graph.get_mut(&name).unwrap());
+                } else {
+                    panic!("Left hand of the assignment is not a variable");
+                }
+            }
+            SymbolicValue::BinaryOp(lhs, op, rhs) => {
+                let mut variables = FxHashSet::default();
+                extract_variables_from_symbolic_value(&lhs, &mut variables);
+                extract_variables_from_symbolic_value(&rhs, &mut variables);
+
+                for v1 in &variables {
+                    for v2 in &variables {
+                        if v1 != v2 {
+                            graph.entry(v1.clone()).or_default().insert(v2.clone());
+                            graph.entry(v2.clone()).or_default().insert(v1.clone());
+                        }
+                    }
+                }
+            }
+            SymbolicValue::UnaryOp(op, expr) => {
+                let mut variables = FxHashSet::default();
+                extract_variables_from_symbolic_value(&expr, &mut variables);
+                for v1 in &variables {
+                    for v2 in &variables {
+                        if v1 != v2 {
+                            graph.entry(v1.clone()).or_default().insert(v2.clone());
+                            graph.entry(v2.clone()).or_default().insert(v1.clone());
+                        }
+                    }
+                }
+            }
+            _ => todo!(),
+        }
+    }
+}
+
 pub fn is_contain_key(value: &SymbolicValue, name: &SymbolicName) -> bool {
     match value {
         SymbolicValue::Variable(name) => name == name,
@@ -471,15 +516,18 @@ pub fn verify_assignment(
 
         let mut flag = false;
         if sexe.symbolic_store.final_states.len() > 0 {
-            for vname in &sexe.symbolic_library.template_library
-                [&sexe.symbolic_library.name2id[&setting.id]]
-                .unrolled_outputs
-            {
-                let unboxed_value = &sexe.symbolic_store.final_states[0].values[&vname];
-                if let SymbolicValue::ConstantInt(v) = &(*unboxed_value.clone()) {
-                    if *v != assignment[&vname] {
-                        flag = true;
-                        break;
+            for (k, v) in assignment {
+                if sexe.symbolic_library.template_library
+                    [&sexe.symbolic_library.name2id[&setting.id]]
+                    .outputs
+                    .contains(&k.name)
+                {
+                    let unboxed_value = &sexe.symbolic_store.final_states[0].values[&k];
+                    if let SymbolicValue::ConstantInt(num) = &(*unboxed_value.clone()) {
+                        if *num != *v {
+                            flag = true;
+                            break;
+                        }
                     }
                 }
             }

@@ -1,7 +1,7 @@
 use colored::Colorize;
 use log::warn;
 use num_bigint_dig::BigInt;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::rc::Rc;
@@ -216,8 +216,8 @@ impl SymbolicValue {
 #[derive(Default, Clone)]
 pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<usize>,
-    pub inputs: Vec<usize>,
-    pub outputs: Vec<usize>,
+    pub inputs: FxHashSet<usize>,
+    pub outputs: FxHashSet<usize>,
     pub unrolled_outputs: HashSet<SymbolicName>,
     pub var2type: FxHashMap<usize, VariableType>,
     pub body: Vec<DebugStatement>,
@@ -270,8 +270,8 @@ impl SymbolicLibrary {
         body: &Statement,
         template_parameter_names: &Vec<String>,
     ) {
-        let mut inputs: Vec<usize> = vec![];
-        let mut outputs: Vec<usize> = vec![];
+        let mut inputs = FxHashSet::default();
+        let mut outputs = FxHashSet::default();
         let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
 
         let i = if let Some(i) = self.name2id.get(&name) {
@@ -296,10 +296,10 @@ impl SymbolicLibrary {
                                 if let VariableType::Signal(typ, _taglist) = &xtype {
                                     match typ {
                                         SignalType::Input => {
-                                            inputs.push(*name);
+                                            inputs.insert(*name);
                                         }
                                         SignalType::Output => {
-                                            outputs.push(*name);
+                                            outputs.insert(*name);
                                         }
                                         SignalType::Intermediate => {}
                                     }
