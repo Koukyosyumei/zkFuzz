@@ -142,7 +142,7 @@ pub fn extract_variables_from_symbolic_value(
         SymbolicValue::Variable(name) => {
             variables.insert(name.clone());
         }
-        SymbolicValue::Assign(lhs, rhs) => {
+        SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
             extract_variables_from_symbolic_value(&lhs, variables);
             extract_variables_from_symbolic_value(&rhs, variables);
         }
@@ -180,7 +180,7 @@ pub fn get_dependency_graph(
 ) {
     for value in values {
         match value.as_ref() {
-            SymbolicValue::Assign(lhs, rhs) => {
+            SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
                 if let SymbolicValue::Variable(name) = lhs.as_ref() {
                     graph.entry(name.clone()).or_default();
                     extract_variables_from_symbolic_value(&rhs, graph.get_mut(&name).unwrap());
@@ -216,40 +216,6 @@ pub fn get_dependency_graph(
             }
             _ => todo!(),
         }
-    }
-}
-
-pub fn is_contain_key(value: &SymbolicValue, name: &SymbolicName) -> bool {
-    match value {
-        SymbolicValue::Variable(name) => name == name,
-        SymbolicValue::Assign(lhs, rhs) => is_contain_key(&lhs, name) || is_contain_key(&rhs, name),
-        SymbolicValue::BinaryOp(lhs, _, rhs) => {
-            is_contain_key(&lhs, name) || is_contain_key(&rhs, name)
-        }
-        SymbolicValue::Conditional(cond, if_true, if_false) => {
-            is_contain_key(&cond, name)
-                || is_contain_key(&if_true, name)
-                || is_contain_key(&if_false, name)
-        }
-        SymbolicValue::UnaryOp(_, expr) => is_contain_key(&expr, name),
-        SymbolicValue::Array(elements) | SymbolicValue::Tuple(elements) => {
-            let mut flag = false;
-            for elem in elements {
-                flag = flag || is_contain_key(&elem, name);
-            }
-            flag
-        }
-        SymbolicValue::UniformArray(value, size) => {
-            is_contain_key(&value, name) || is_contain_key(&size, name)
-        }
-        SymbolicValue::Call(_, args) => {
-            let mut flag = false;
-            for arg in args {
-                flag = flag || is_contain_key(&arg, name);
-            }
-            flag
-        }
-        _ => false,
     }
 }
 
@@ -314,7 +280,7 @@ pub fn emulate_symbolic_values(
                     return false;
                 }
             }
-            SymbolicValue::Assign(lhs, rhs) => {
+            SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
                 if let SymbolicValue::Variable(name) = lhs.as_ref() {
                     let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
                     if let SymbolicValue::ConstantInt(num) = &rhs_val {
@@ -393,7 +359,7 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::Variable(name) => {
             SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
         }
-        SymbolicValue::Assign(lhs, rhs) => {
+        SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
             match (&lhs_val, &rhs_val) {

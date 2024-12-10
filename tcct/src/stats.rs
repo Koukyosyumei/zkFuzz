@@ -51,6 +51,14 @@ impl ConstraintStatistics {
                 self.update_from_symbolic_value(lhs, depth + 1);
                 self.update_from_symbolic_value(rhs, depth + 1);
             }
+            SymbolicValue::AssignEq(lhs, rhs) => {
+                *self
+                    .operator_counts
+                    .entry("AssignEq".to_string())
+                    .or_insert(0) += 1;
+                self.update_from_symbolic_value(lhs, depth + 1);
+                self.update_from_symbolic_value(rhs, depth + 1);
+            }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
                 let op_name = format!("{:?}", op);
                 *self.operator_counts.entry(op_name).or_insert(0) += 1;

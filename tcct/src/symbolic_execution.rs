@@ -777,20 +777,32 @@ impl<'a> SymbolicExecutor<'a> {
                         }
                         _ => {
                             if self.symbolic_store.variable_types[var].0 != VariableType::Var {
-                                let cont = SymbolicValue::Assign(
-                                    Rc::new(SymbolicValue::Variable(var_name.clone())),
-                                    Rc::new(value),
-                                );
                                 if self.setting.keep_track_constraints {
-                                    self.cur_state.push_trace_constraint(&cont);
+                                    match op {
+                                        DebugAssignOp(AssignOp::AssignConstraintSignal) => {
+                                            let cont = SymbolicValue::AssignEq(
+                                                Rc::new(SymbolicValue::Variable(var_name.clone())),
+                                                Rc::new(value),
+                                            );
+                                            self.cur_state.push_trace_constraint(&cont);
 
-                                    if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
-                                        let original_cont = SymbolicValue::BinaryOp(
-                                            Rc::new(SymbolicValue::Variable(var_name)),
-                                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                            Rc::new(original_value),
-                                        );
-                                        self.cur_state.push_side_constraint(&original_cont);
+                                            let original_cont = SymbolicValue::BinaryOp(
+                                                Rc::new(SymbolicValue::Variable(var_name)),
+                                                DebugExpressionInfixOpcode(
+                                                    ExpressionInfixOpcode::Eq,
+                                                ),
+                                                Rc::new(original_value),
+                                            );
+                                            self.cur_state.push_side_constraint(&original_cont);
+                                        }
+                                        DebugAssignOp(AssignOp::AssignSignal) => {
+                                            let cont = SymbolicValue::Assign(
+                                                Rc::new(SymbolicValue::Variable(var_name.clone())),
+                                                Rc::new(value),
+                                            );
+                                            self.cur_state.push_trace_constraint(&cont);
+                                        }
+                                        _ => {}
                                     }
                                 }
                             }
@@ -811,19 +823,27 @@ impl<'a> SymbolicExecutor<'a> {
                     let simple_rhs = self.fold_variables(&rhe_val, true);
                     let rhs = self.fold_variables(&rhe_val, !self.setting.propagate_substitution);
 
-                    // Handle multiple substitution (simplified)
-                    let cont = SymbolicValue::Assign(Rc::new(lhs), Rc::new(rhs));
                     if self.setting.keep_track_constraints {
-                        self.cur_state.push_trace_constraint(&cont);
-                        if let DebugAssignOp(AssignOp::AssignConstraintSignal) = op {
-                            let simple_cont = SymbolicValue::BinaryOp(
-                                Rc::new(simple_lhs),
-                                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                Rc::new(simple_rhs),
-                            );
-                            self.cur_state.push_side_constraint(&simple_cont);
+                        match op {
+                            DebugAssignOp(AssignOp::AssignConstraintSignal) => {
+                                let cont = SymbolicValue::AssignEq(Rc::new(lhs), Rc::new(rhs));
+                                self.cur_state.push_trace_constraint(&cont);
+
+                                let simple_cont = SymbolicValue::BinaryOp(
+                                    Rc::new(simple_lhs),
+                                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                    Rc::new(simple_rhs),
+                                );
+                                self.cur_state.push_side_constraint(&simple_cont);
+                            }
+                            DebugAssignOp(AssignOp::AssignSignal) => {
+                                let cont = SymbolicValue::Assign(Rc::new(lhs), Rc::new(rhs));
+                                self.cur_state.push_trace_constraint(&cont);
+                            }
+                            _ => {}
                         }
                     }
+
                     self.execute(statements, cur_bid + 1);
                 }
                 DebugStatement::ConstraintEquality { meta, lhe, rhe } => {

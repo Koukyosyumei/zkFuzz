@@ -92,6 +92,7 @@ pub enum SymbolicValue {
     ConstantBool(bool),
     Variable(SymbolicName),
     Assign(Rc<SymbolicValue>, Rc<SymbolicValue>),
+    AssignEq(Rc<SymbolicValue>, Rc<SymbolicValue>),
     BinaryOp(
         Rc<SymbolicValue>,
         DebugExpressionInfixOpcode,
@@ -126,6 +127,14 @@ impl SymbolicValue {
                 format!(
                     "({} {} {})",
                     "Assign".green(),
+                    lhs.lookup_fmt(lookup),
+                    rhs.lookup_fmt(lookup)
+                )
+            }
+            SymbolicValue::AssignEq(lhs, rhs) => {
+                format!(
+                    "({} {} {})",
+                    "AssignEq".green(),
                     lhs.lookup_fmt(lookup),
                     rhs.lookup_fmt(lookup)
                 )
