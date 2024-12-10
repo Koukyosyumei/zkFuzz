@@ -46,6 +46,9 @@ pub fn mutation_test_search(
             _ => {}
         }
     }
+    if assign_pos.is_empty() {
+        return None;
+    }
     let mut trace_population =
         initialize_trace_mutation(&assign_pos, program_population_size, &mut rng);
 
@@ -136,24 +139,26 @@ pub fn mutation_test_search(
             }
 
             let mut assignment = input_population[best_score.0].clone();
-            emulate_symbolic_values(&setting.prime, &mutated_trace_constraints, &mut assignment);
-            let flag = verify_assignment(
-                sexe,
-                trace_constraints,
-                side_constraints,
-                &assignment,
-                setting,
-            );
-            if is_vulnerable(&flag) {
-                print!(
-                    "\rGeneration: {}/{} ({:.3})",
-                    generation, max_generations, best_score.1
+            if emulate_symbolic_values(&setting.prime, &mutated_trace_constraints, &mut assignment)
+            {
+                let flag = verify_assignment(
+                    sexe,
+                    trace_constraints,
+                    side_constraints,
+                    &assignment,
+                    setting,
                 );
-                println!("\n └─ Solution found in generation {}", generation);
-                return Some(CounterExample {
-                    flag: flag,
-                    assignment: assignment.clone(),
-                });
+                if is_vulnerable(&flag) {
+                    print!(
+                        "\rGeneration: {}/{} ({:.3})",
+                        generation, max_generations, best_score.1
+                    );
+                    println!("\n └─ Solution found in generation {}", generation);
+                    return Some(CounterExample {
+                        flag: flag,
+                        assignment: assignment.clone(),
+                    });
+                }
             }
         }
 
@@ -208,8 +213,8 @@ fn initialize_trace_mutation(
                     (
                         p.clone(),
                         SymbolicValue::ConstantInt(rng.gen_bigint_range(
-                            &(BigInt::from_str("0").unwrap() * -BigInt::one()),
-                            &(BigInt::from_str("1").unwrap() * BigInt::one()),
+                            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
+                            &(BigInt::from_str("2").unwrap() * BigInt::one()),
                         )),
                     )
                 })
