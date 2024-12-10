@@ -555,23 +555,34 @@ impl<'a> SymbolicExecutor<'a> {
 
                     if let SymbolicValue::ConstantBool(flag) = evaled_condition {
                         if flag {
+                            let mut stack_states = self.symbolic_store.block_end_states.clone();
+                            self.symbolic_store.block_end_states.clear();
                             self.execute(&vec![*stmt.clone()], 0);
-                            self.symbolic_store.block_end_states.pop();
-                            self.execute(statements, cur_bid);
+
+                            self.expand_all_stack_states(
+                                statements,
+                                cur_bid,
+                                self.cur_state.get_depth(),
+                            );
+
+                            self.symbolic_store
+                                .block_end_states
+                                .append(&mut stack_states);
                         } else {
                             self.symbolic_store
                                 .block_end_states
                                 .push(self.cur_state.clone());
+
+                            self.expand_all_stack_states(
+                                statements,
+                                cur_bid + 1,
+                                self.cur_state.get_depth(),
+                            );
                         }
                     } else {
                         panic!("This tool currently cannot handle the symbolic condition of While Loop: {}", evaled_condition.lookup_fmt(&self.symbolic_library.id2name));
                     }
 
-                    self.expand_all_stack_states(
-                        statements,
-                        cur_bid + 1,
-                        self.cur_state.get_depth(),
-                    );
                     // Note: This doesn't handle loop invariants or fixed-point computation
                 }
                 DebugStatement::Return { meta, value, .. } => {
