@@ -218,7 +218,6 @@ pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<usize>,
     pub inputs: FxHashSet<usize>,
     pub outputs: FxHashSet<usize>,
-    pub unrolled_outputs: HashSet<SymbolicName>,
     pub var2type: FxHashMap<usize, VariableType>,
     pub body: Vec<DebugStatement>,
 }
@@ -323,7 +322,6 @@ impl SymbolicLibrary {
                     .collect::<Vec<_>>(),
                 inputs: inputs,
                 outputs: outputs,
-                unrolled_outputs: HashSet::new(),
                 var2type: var2type,
                 body: vec![dbody.clone(), DebugStatement::Ret],
             }),

@@ -260,7 +260,6 @@ pub struct SymbolicExecutorSetting {
     pub propagate_substitution: bool,
     pub skip_initialization_blocks: bool,
     pub off_trace: bool,
-    pub keep_track_unrolled_offset: bool,
     pub keep_track_constraints: bool,
 }
 
@@ -649,30 +648,6 @@ impl<'a> SymbolicExecutor<'a> {
                             )
                         },
                     };
-
-                    if self.setting.keep_track_unrolled_offset {
-                        if self
-                            .symbolic_library
-                            .template_library
-                            .contains_key(&self.cur_state.template_id)
-                            && self.symbolic_library.template_library[&self.cur_state.template_id]
-                                .var2type
-                                .contains_key(&var.clone())
-                        {
-                            if let Some(&VariableType::Signal(SignalType::Output, _)) =
-                                self.symbolic_library.template_library[&self.cur_state.template_id]
-                                    .var2type
-                                    .get(&var)
-                            {
-                                self.symbolic_library
-                                    .template_library
-                                    .get_mut(&self.cur_state.template_id)
-                                    .unwrap()
-                                    .unrolled_outputs
-                                    .insert(var_name.clone());
-                            }
-                        }
-                    }
 
                     self.cur_state.set_symval(var_name.clone(), value.clone());
 

@@ -124,7 +124,6 @@ fn start() -> Result<(), ()> {
         skip_initialization_blocks: false,
         off_trace: false,
         keep_track_constraints: true,
-        keep_track_unrolled_offset: true,
     };
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
 
@@ -191,7 +190,6 @@ fn start() -> Result<(), ()> {
                     skip_initialization_blocks: true,
                     off_trace: true,
                     keep_track_constraints: false,
-                    keep_track_unrolled_offset: false,
                 };
                 let mut sub_sexe = SymbolicExecutor::new(&mut sexe.symbolic_library, &sub_setting);
 
