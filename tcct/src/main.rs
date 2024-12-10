@@ -87,7 +87,7 @@ fn start() -> Result<(), ()> {
     println!("{}", "🧩 Parsing Templates...".green());
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = simplify_statement(&v.get_body().clone());
-        symbolic_library.register_library(k.clone(), &body.clone(), v.get_name_of_params());
+        symbolic_library.register_template(k.clone(), &body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
             println!(

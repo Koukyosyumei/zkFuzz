@@ -228,6 +228,7 @@ pub struct SymbolicTemplate {
     pub outputs: FxHashSet<usize>,
     pub var2type: FxHashMap<usize, VariableType>,
     pub body: Vec<DebugStatement>,
+    pub require_bound_check: bool,
 }
 
 /// Represents a symbolic function used in the symbolic execution process.
@@ -271,7 +272,7 @@ impl SymbolicLibrary {
     /// * `name` - Name under which the template will be registered within the library.
     /// * `body` - Block statement serving as the main logic body defining the behavior captured by the template.
     /// * `template_parameter_names` - List of names identifying parameters used within the template logic.
-    pub fn register_library(
+    pub fn register_template(
         &mut self,
         name: String,
         body: &Statement,
@@ -280,6 +281,11 @@ impl SymbolicLibrary {
         let mut inputs = FxHashSet::default();
         let mut outputs = FxHashSet::default();
         let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
+
+        let require_bound_check = &name == "LessThan"
+            || &name == "LessEqThan"
+            || &name == "GreaterThan"
+            || &name == "GreaterEqThan";
 
         let i = if let Some(i) = self.name2id.get(&name) {
             *i
@@ -332,6 +338,7 @@ impl SymbolicLibrary {
                 outputs: outputs,
                 var2type: var2type,
                 body: vec![dbody.clone(), DebugStatement::Ret],
+                require_bound_check: require_bound_check,
             }),
         );
     }
