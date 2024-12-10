@@ -65,9 +65,11 @@ pub fn mutation_test_search(
             input_variables.push(v);
         }
     }
-    let mut input_population = initialize_input_population(&input_variables, input_population_size);
 
     for generation in 0..max_generations {
+        let mut input_population =
+            initialize_input_population(&input_variables, input_population_size);
+
         let mut new_trace_population = Vec::new();
         for _ in 0..program_population_size {
             let parent1 = trace_selection(&trace_population, &mut rng);
