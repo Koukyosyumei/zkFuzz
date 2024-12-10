@@ -7,7 +7,7 @@ use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::Signed;
 use num_traits::Zero;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
@@ -122,13 +122,11 @@ pub struct VerificationSetting {
 /// # Returns
 /// A vector of unique `SymbolicName`s referenced in the constraints.
 pub fn extract_variables(constraints: &[Rc<SymbolicValue>]) -> Vec<SymbolicName> {
-    let mut variables = Vec::new();
+    let mut variables = FxHashSet::default();
     for constraint in constraints {
         extract_variables_from_symbolic_value(constraint, &mut variables);
     }
-    //variables.sort();
-    variables.dedup();
-    variables
+    variables.into_iter().collect()
 }
 
 /// Recursively extracts variable names from a symbolic value.
@@ -138,10 +136,12 @@ pub fn extract_variables(constraints: &[Rc<SymbolicValue>]) -> Vec<SymbolicName>
 /// - `variables`: A mutable reference to a vector where extracted variable names will be stored.
 pub fn extract_variables_from_symbolic_value(
     value: &SymbolicValue,
-    variables: &mut Vec<SymbolicName>,
+    variables: &mut FxHashSet<SymbolicName>,
 ) {
     match value {
-        SymbolicValue::Variable(name) => variables.push(name.clone()),
+        SymbolicValue::Variable(name) => {
+            variables.insert(name.clone());
+        }
         SymbolicValue::Assign(lhs, rhs) => {
             extract_variables_from_symbolic_value(&lhs, variables);
             extract_variables_from_symbolic_value(&rhs, variables);
