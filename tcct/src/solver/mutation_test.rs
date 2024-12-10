@@ -89,7 +89,7 @@ pub fn mutation_test_search(
         }
         trace_population = new_trace_population;
 
-        let best_individual = trace_population
+        let best_mutated_trace = trace_population
             .iter()
             .max_by(|a, b| {
                 let fitness_a = trace_fitness(
@@ -120,13 +120,13 @@ pub fn mutation_test_search(
             &setting,
             trace_constraints,
             side_constraints,
-            best_individual,
+            best_mutated_trace,
             &input_population,
         );
 
         if best_score.1 == 1.0 {
             let mut mutated_trace_constraints = trace_constraints.clone();
-            for (k, v) in best_individual {
+            for (k, v) in best_mutated_trace {
                 mutated_trace_constraints[*k] = Rc::new(v.clone());
             }
 

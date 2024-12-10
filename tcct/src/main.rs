@@ -232,7 +232,7 @@ fn start() -> Result<(), ()> {
                             &s.side_constraints.clone(),
                             &verification_setting,
                         ),
-                        "ga" => genetic_algorithm_search(
+                        "ga" => mutation_test_search(
                             &mut sub_sexe,
                             &s.trace_constraints.clone(),
                             &s.side_constraints.clone(),
