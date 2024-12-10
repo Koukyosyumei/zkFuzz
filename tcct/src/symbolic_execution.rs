@@ -179,16 +179,7 @@ impl SymbolicState {
         s += &format!(
             "  {} {}\n",
             format!("👤 {}", "owner:").cyan(),
-            italic(&format!(
-                "{:?}",
-                &self
-                    .owner_name
-                    .iter()
-                    .map(|c: &OwnerName| lookup[&c.name].clone())
-                    .collect::<Vec<_>>()
-                    .join(", ")
-            ))
-            .magenta()
+            italic(&format!("{:?}", &self.get_owner(lookup))).magenta()
         );
         s += &format!("  📏 {} {}\n", format!("{}", "depth:").cyan(), self.depth);
         s += &format!("  📋 {}\n", format!("{}", "values:").cyan());

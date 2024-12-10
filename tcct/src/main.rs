@@ -23,7 +23,7 @@ use rustc_hash::FxHashMap;
 use debug_ast::simplify_statement;
 use program_structure::ast::Expression;
 use solver::{
-    brute_force::brute_force_search, genetic_algorithm::genetic_algorithm_search,
+    brute_force::brute_force_search,
     mutation_test::mutation_test_search, utils::VerificationSetting,
 };
 use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};

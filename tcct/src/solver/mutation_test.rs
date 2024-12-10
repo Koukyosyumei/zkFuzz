@@ -1,14 +1,9 @@
 use std::collections::HashSet;
-use std::io;
-use std::io::Write;
 use std::rc::Rc;
-use std::sync::atomic::AtomicUsize;
-use std::sync::Arc;
 
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
 use num_traits::One;
-use num_traits::Signed;
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
@@ -22,7 +17,7 @@ use crate::symbolic_value::SymbolicValue;
 
 use crate::solver::utils::{
     count_satisfied_constraints, emulate_symbolic_values, extract_variables, is_vulnerable,
-    verify_assignment, CounterExample, VerificationResult, VerificationSetting,
+    verify_assignment, CounterExample, VerificationSetting,
 };
 
 pub fn mutation_test_search(
@@ -67,7 +62,7 @@ pub fn mutation_test_search(
     }
 
     for generation in 0..max_generations {
-        let mut input_population =
+        let input_population =
             initialize_input_population(&input_variables, input_population_size);
 
         let mut new_trace_population = Vec::new();

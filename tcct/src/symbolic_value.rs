@@ -2,7 +2,6 @@ use colored::Colorize;
 use log::warn;
 use num_bigint_dig::BigInt;
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::collections::HashSet;
 use std::hash::Hash;
 use std::rc::Rc;
 
