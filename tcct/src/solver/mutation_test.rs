@@ -19,7 +19,7 @@ use crate::symbolic_value::SymbolicValue;
 
 use crate::solver::utils::{
     count_satisfied_constraints, emulate_symbolic_values, extract_variables, is_vulnerable,
-    verify_assignment, CounterExample, VerificationResult, VerificationSetting,
+    verify_assignment, CounterExample, VerificationSetting,
 };
 
 pub fn mutation_test_search(
