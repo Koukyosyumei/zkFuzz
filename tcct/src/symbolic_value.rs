@@ -10,7 +10,7 @@ use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, Varia
 use crate::debug_ast::{DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement};
 
 /// Represents the access type within a symbolic expression, such as component or array access.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum SymbolicAccess {
     ComponentAccess(usize),
     ArrayAccess(SymbolicValue),
@@ -45,13 +45,13 @@ impl SymbolicAccess {
 ///
 /// This enum can represent constants, variables, or operations such as binary, unary,
 /// conditional, arrays, tuples, uniform arrays, and function calls.
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct OwnerName {
     pub name: usize,
     pub counter: usize,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct SymbolicName {
     pub name: usize,
     pub owner: Rc<Vec<OwnerName>>,
@@ -85,7 +85,7 @@ impl SymbolicName {
 ///
 /// This enum can represent constants, variables, or operations such as binary, unary,
 /// conditional, arrays, tuples, uniform arrays, and function calls.
-#[derive(Clone, Hash, Eq, PartialEq)]
+#[derive(Clone, Hash, Eq, PartialEq, Debug)]
 pub enum SymbolicValue {
     ConstantInt(BigInt),
     ConstantBool(bool),

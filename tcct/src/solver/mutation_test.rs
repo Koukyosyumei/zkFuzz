@@ -19,7 +19,7 @@ use crate::symbolic_value::SymbolicValue;
 
 use crate::solver::utils::{
     count_satisfied_constraints, emulate_symbolic_values, extract_variables, is_vulnerable,
-    verify_assignment, CounterExample, VerificationSetting,
+    verify_assignment, CounterExample, VerificationResult, VerificationSetting,
 };
 
 pub fn mutation_test_search(
@@ -30,8 +30,8 @@ pub fn mutation_test_search(
 ) -> Option<CounterExample> {
     // Parameters
     let program_population_size = 10;
-    let input_population_size = 30;
-    let max_generations = 1000;
+    let input_population_size = 100;
+    let max_generations = 100;
     let mutation_rate = 0.3;
     let crossover_rate = 0.5;
     let mut rng = rand::thread_rng();
@@ -46,7 +46,8 @@ pub fn mutation_test_search(
             _ => {}
         }
     }
-    let mut trace_population = initialize_trace_mutation(&assign_pos, program_population_size);
+    let mut trace_population =
+        initialize_trace_mutation(&assign_pos, program_population_size, &mut rng);
 
     // Initial Pupulation of Mutated Inputs
     let mut variables = extract_variables(trace_constraints);
@@ -64,7 +65,8 @@ pub fn mutation_test_search(
     }
 
     for generation in 0..max_generations {
-        let input_population = initialize_input_population(&input_variables, input_population_size);
+        let input_population =
+            initialize_input_population(&input_variables, input_population_size, &mut rng);
 
         let mut new_trace_population = Vec::new();
         for _ in 0..program_population_size {
@@ -123,9 +125,13 @@ pub fn mutation_test_search(
         if best_score.1 == 1.0 {
             let mut mutated_trace_constraints = trace_constraints.clone();
             for (k, v) in best_mutated_trace {
-                if let SymbolicValue::Assign(lv, rv) = &v {
+                if let SymbolicValue::Assign(lv, rv) =
+                    mutated_trace_constraints[*k].as_ref().clone()
+                {
                     mutated_trace_constraints[*k] =
                         Rc::new(SymbolicValue::Assign(lv.clone(), Rc::new(v.clone())));
+                } else {
+                    panic!("We can only mutate SymbolicValue::Assign");
                 }
             }
 
@@ -170,8 +176,8 @@ pub fn mutation_test_search(
 fn initialize_input_population(
     variables: &[SymbolicName],
     size: usize,
+    rng: &mut ThreadRng,
 ) -> Vec<FxHashMap<SymbolicName, BigInt>> {
-    let mut rng = rand::thread_rng();
     (0..size)
         .map(|_| {
             variables
@@ -190,8 +196,11 @@ fn initialize_input_population(
         .collect()
 }
 
-fn initialize_trace_mutation(pos: &[usize], size: usize) -> Vec<FxHashMap<usize, SymbolicValue>> {
-    let mut rng = rand::thread_rng();
+fn initialize_trace_mutation(
+    pos: &[usize],
+    size: usize,
+    rng: &mut ThreadRng,
+) -> Vec<FxHashMap<usize, SymbolicValue>> {
     (0..size)
         .map(|_| {
             pos.iter()
@@ -199,8 +208,8 @@ fn initialize_trace_mutation(pos: &[usize], size: usize) -> Vec<FxHashMap<usize,
                     (
                         p.clone(),
                         SymbolicValue::ConstantInt(rng.gen_bigint_range(
-                            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-                            &(BigInt::from_str("2").unwrap() * BigInt::one()),
+                            &(BigInt::from_str("0").unwrap() * -BigInt::one()),
+                            &(BigInt::from_str("1").unwrap() * BigInt::one()),
                         )),
                     )
                 })
@@ -254,9 +263,11 @@ fn trace_fitness(
 ) -> (usize, f64) {
     let mut mutated_trace_constraints = trace_constraints.clone();
     for (k, v) in trace_mutation {
-        if let SymbolicValue::Assign(lv, rv) = &v {
+        if let SymbolicValue::Assign(lv, rv) = mutated_trace_constraints[*k].as_ref().clone() {
             mutated_trace_constraints[*k] =
                 Rc::new(SymbolicValue::Assign(lv.clone(), Rc::new(v.clone())));
+        } else {
+            panic!("We can only mutate SymbolicValue::Assign");
         }
     }
 
