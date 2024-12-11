@@ -125,7 +125,7 @@ pub fn mutation_test_search(
             &input_population,
         );
 
-        if best_score.1 == 1.0 {
+        if best_score.1 >= 1.0 {
             let mut mutated_trace_constraints = trace_constraints.clone();
             for (k, v) in best_mutated_trace {
                 if let SymbolicValue::Assign(lv, rv) =
@@ -305,6 +305,8 @@ fn trace_fitness(
                     );
                     if !is_vulnerable(&flag) {
                         side_ratio = 0.9;
+                    } else {
+                        side_ratio = 1.1;
                     }
                 }
             }
