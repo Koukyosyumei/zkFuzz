@@ -858,22 +858,33 @@ impl<'a> SymbolicExecutor<'a> {
                                         );
                                     } else {
                                         for p in positions {
-                                            comp_inputs.insert(
-                                                SymbolicName {
-                                                    name: inp_name.clone(),
-                                                    owner: Rc::new(Vec::new()),
-                                                    access: if p.len() == 1 {
-                                                        Some(vec![SymbolicAccess::ArrayAccess(
-                                                            SymbolicValue::ConstantInt(
-                                                                BigInt::from_usize(p[0]).unwrap(),
-                                                            ),
-                                                        )])
-                                                    } else {
-                                                        Some(vec![SymbolicAccess::ArrayAccess(
-                                                            SymbolicValue::Array(
-                                                                p.iter()
-                                                                    .map(|arg0: &usize| {
-                                                                        Rc::new(
+                                            if p.is_empty() {
+                                                comp_inputs.insert(
+                                                    SymbolicName {
+                                                        name: inp_name.clone(),
+                                                        owner: Rc::new(Vec::new()),
+                                                        access: None,
+                                                    },
+                                                    None,
+                                                );
+                                            } else {
+                                                comp_inputs.insert(
+                                                    SymbolicName {
+                                                        name: inp_name.clone(),
+                                                        owner: Rc::new(Vec::new()),
+                                                        access: if p.len() == 1 {
+                                                            Some(vec![SymbolicAccess::ArrayAccess(
+                                                                SymbolicValue::ConstantInt(
+                                                                    BigInt::from_usize(p[0])
+                                                                        .unwrap(),
+                                                                ),
+                                                            )])
+                                                        } else {
+                                                            Some(vec![SymbolicAccess::ArrayAccess(
+                                                                SymbolicValue::Array(
+                                                                    p.iter()
+                                                                        .map(|arg0: &usize| {
+                                                                            Rc::new(
                                                                         SymbolicValue::ConstantInt(
                                                                             BigInt::from_usize(
                                                                                 *arg0,
@@ -881,14 +892,15 @@ impl<'a> SymbolicExecutor<'a> {
                                                                             .unwrap(),
                                                                         ),
                                                                     )
-                                                                    })
-                                                                    .collect::<Vec<_>>(),
-                                                            ),
-                                                        )])
+                                                                        })
+                                                                        .collect::<Vec<_>>(),
+                                                                ),
+                                                            )])
+                                                        },
                                                     },
-                                                },
-                                                None,
-                                            );
+                                                    None,
+                                                );
+                                            }
                                         }
                                     }
                                 }
@@ -898,6 +910,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     inputs: comp_inputs,
                                     is_done: false,
                                 };
+
                                 self.symbolic_store
                                     .components_store
                                     .insert(var_name.clone(), c);
