@@ -18,8 +18,8 @@ use crate::symbolic_value::SymbolicName;
 use crate::symbolic_value::SymbolicValue;
 
 use crate::solver::utils::{
-    count_satisfied_constraints, emulate_symbolic_values, extract_variables, is_vulnerable,
-    verify_assignment, CounterExample, VerificationSetting,
+    count_satisfied_constraints, emulate_symbolic_values, evaluate_constraints, extract_variables,
+    is_vulnerable, verify_assignment, CounterExample, VerificationResult, VerificationSetting,
 };
 
 pub fn mutation_test_search(
@@ -159,6 +159,13 @@ pub fn mutation_test_search(
                         assignment: assignment.clone(),
                     });
                 }
+            } else {
+                if evaluate_constraints(&setting.prime, side_constraints, &assignment) {
+                    return Some(CounterExample {
+                        flag: VerificationResult::UnderConstrained,
+                        assignment: assignment.clone(),
+                    });
+                }
             }
         }
 
@@ -280,21 +287,25 @@ fn trace_fitness(
     let mut max_score = 0 as f64;
     for (i, inp) in inputs.iter().enumerate() {
         let mut assignment = inp.clone();
-        if emulate_symbolic_values(&setting.prime, &mutated_trace_constraints, &mut assignment) {
+        let is_success =
+            emulate_symbolic_values(&setting.prime, &mutated_trace_constraints, &mut assignment);
+        {
             let satisfied_side =
                 count_satisfied_constraints(&setting.prime, side_constraints, &assignment);
             let mut side_ratio = satisfied_side as f64 / side_constraints.len() as f64;
 
             if side_ratio == 1.0 as f64 {
-                let flag = verify_assignment(
-                    sexe,
-                    trace_constraints,
-                    side_constraints,
-                    &assignment,
-                    setting,
-                );
-                if !is_vulnerable(&flag) {
-                    side_ratio = 0.9;
+                if is_success {
+                    let flag = verify_assignment(
+                        sexe,
+                        trace_constraints,
+                        side_constraints,
+                        &assignment,
+                        setting,
+                    );
+                    if !is_vulnerable(&flag) {
+                        side_ratio = 0.9;
+                    }
                 }
             }
 

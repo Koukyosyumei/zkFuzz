@@ -273,11 +273,12 @@ pub fn emulate_symbolic_values(
     values: &[Rc<SymbolicValue>],
     assignment: &mut FxHashMap<SymbolicName, BigInt>,
 ) -> bool {
+    let mut success = true;
     for value in values {
         match value.as_ref() {
             SymbolicValue::ConstantBool(b) => {
                 if !b {
-                    return false;
+                    success = false;
                 }
             }
             SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
@@ -317,7 +318,7 @@ pub fn emulate_symbolic_values(
                     _ => panic!("Unassigned variables exist"),
                 };
                 if !flag {
-                    return false;
+                    success = false;
                 }
             }
             SymbolicValue::UnaryOp(op, expr) => {
@@ -330,13 +331,13 @@ pub fn emulate_symbolic_values(
                     _ => panic!("Non-Boolean Operation"),
                 };
                 if !flag {
-                    return false;
+                    success = false;
                 }
             }
             _ => panic!("Non-Supported SymbolicValue"),
         }
     }
-    return true;
+    return success;
 }
 
 /// Evaluates a symbolic value given a variable assignment.
