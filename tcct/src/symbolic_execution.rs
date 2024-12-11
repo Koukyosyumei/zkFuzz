@@ -686,6 +686,23 @@ impl<'a> SymbolicExecutor<'a> {
                                 .template_library
                                 .contains_key(&callee_name)
                             {
+                                // Temporalily set template-parameters
+                                let template =
+                                    &self.symbolic_library.template_library[&callee_name];
+                                let mut escaped_vars = vec![];
+                                for i in 0..(template.template_parameter_names.len()) {
+                                    let n = SymbolicName {
+                                        name: template.template_parameter_names[i],
+                                        owner: self.cur_state.owner_name.clone(),
+                                        access: None,
+                                    };
+                                    if let Some(val) = self.cur_state.get_symval(&n) {
+                                        escaped_vars.push((n.clone(), val.clone()));
+                                    }
+                                    self.cur_state.set_rc_symval(n, args[i].clone());
+                                }
+
+                                // Initialize template-inputs
                                 let mut comp_inputs: FxHashMap<
                                     SymbolicName,
                                     Option<SymbolicValue>,
@@ -701,12 +718,13 @@ impl<'a> SymbolicExecutor<'a> {
                                         .clone()
                                         .iter()
                                         .map(|arg0: &DebugExpression| {
-                                            if let SymbolicValue::ConstantInt(bint) =
-                                                self.evaluate_expression(arg0)
-                                            {
+                                            let evaled_arg0 = self.evaluate_expression(arg0);
+                                            let folded_arg0 =
+                                                self.fold_variables(&evaled_arg0, false);
+                                            if let SymbolicValue::ConstantInt(bint) = &folded_arg0 {
                                                 bint.to_usize().unwrap()
                                             } else {
-                                                panic!("Unkonwn dimension")
+                                                panic!("Undetermined dimension: {:?}", folded_arg0)
                                             }
                                         })
                                         .collect::<Vec<_>>();
@@ -781,6 +799,12 @@ impl<'a> SymbolicExecutor<'a> {
                                         }
                                     }
                                 }
+
+                                // Restore the overwritten variables
+                                for (n, v) in &escaped_vars {
+                                    self.cur_state.set_rc_symval(n.clone(), v.clone());
+                                }
+
                                 let c = SymbolicComponent {
                                     template_name: callee_name.clone(),
                                     args: args.clone(),
