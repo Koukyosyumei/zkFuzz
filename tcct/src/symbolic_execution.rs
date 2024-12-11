@@ -661,6 +661,155 @@ impl<'a> SymbolicExecutor<'a> {
                     };
                     self.cur_state.set_symval(var_name.clone(), value.clone());
 
+                    match value {
+                        SymbolicValue::Call(callee_name, ref args) => {
+                            // Initializing the Template Component
+                            if self
+                                .symbolic_library
+                                .template_library
+                                .contains_key(&callee_name)
+                            {
+                                let mut comp_inputs: FxHashMap<
+                                    SymbolicName,
+                                    Option<SymbolicValue>,
+                                > = FxHashMap::default();
+                                for inp_name in &self.symbolic_library.template_library
+                                    [&callee_name]
+                                    .inputs
+                                    .clone()
+                                {
+                                    let template_library = &self.symbolic_library.template_library;
+                                    let dims = template_library[&callee_name].input_dimensions
+                                        [&inp_name]
+                                        .clone()
+                                        .iter()
+                                        .map(|arg0: &DebugExpression| {
+                                            if let SymbolicValue::ConstantInt(bint) =
+                                                self.evaluate_expression(arg0)
+                                            {
+                                                bint.to_usize().unwrap()
+                                            } else {
+                                                panic!("Unkonwn dimension")
+                                            }
+                                        })
+                                        .collect::<Vec<_>>();
+
+                                    let mut positions = vec![vec![]];
+                                    for size in dims {
+                                        let mut new_positions = vec![];
+                                        for combination in &positions {
+                                            for i in 0..size {
+                                                let mut new_combination = combination.clone();
+                                                new_combination.push(i);
+                                                new_positions.push(new_combination);
+                                            }
+                                        }
+                                        positions = new_positions;
+                                    }
+
+                                    if positions.is_empty() {
+                                        comp_inputs.insert(
+                                            SymbolicName {
+                                                name: inp_name.clone(),
+                                                owner: Rc::new(Vec::new()),
+                                                access: None,
+                                            },
+                                            None,
+                                        );
+                                    } else {
+                                        for p in positions {
+                                            if p.is_empty() {
+                                                comp_inputs.insert(
+                                                    SymbolicName {
+                                                        name: inp_name.clone(),
+                                                        owner: Rc::new(Vec::new()),
+                                                        access: None,
+                                                    },
+                                                    None,
+                                                );
+                                            } else {
+                                                comp_inputs.insert(
+                                                    SymbolicName {
+                                                        name: inp_name.clone(),
+                                                        owner: Rc::new(Vec::new()),
+                                                        access: if p.len() == 1 {
+                                                            Some(vec![SymbolicAccess::ArrayAccess(
+                                                                SymbolicValue::ConstantInt(
+                                                                    BigInt::from_usize(p[0])
+                                                                        .unwrap(),
+                                                                ),
+                                                            )])
+                                                        } else {
+                                                            Some(vec![SymbolicAccess::ArrayAccess(
+                                                                SymbolicValue::Array(
+                                                                    p.iter()
+                                                                        .map(|arg0: &usize| {
+                                                                            Rc::new(
+                                                                        SymbolicValue::ConstantInt(
+                                                                            BigInt::from_usize(
+                                                                                *arg0,
+                                                                            )
+                                                                            .unwrap(),
+                                                                        ),
+                                                                    )
+                                                                        })
+                                                                        .collect::<Vec<_>>(),
+                                                                ),
+                                                            )])
+                                                        },
+                                                    },
+                                                    None,
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                                let c = SymbolicComponent {
+                                    template_name: callee_name.clone(),
+                                    args: args.clone(),
+                                    inputs: comp_inputs,
+                                    is_done: false,
+                                };
+
+                                self.symbolic_store
+                                    .components_store
+                                    .insert(var_name.clone(), c);
+                            }
+                        }
+                        _ => {
+                            if self.symbolic_store.variable_types[var].0 != VariableType::Var {
+                                if self.setting.keep_track_constraints {
+                                    match op {
+                                        DebugAssignOp(AssignOp::AssignConstraintSignal) => {
+                                            let cont = SymbolicValue::AssignEq(
+                                                Rc::new(SymbolicValue::Variable(var_name.clone())),
+                                                Rc::new(value.clone()),
+                                            );
+                                            self.cur_state.push_trace_constraint(&cont);
+
+                                            let original_cont = SymbolicValue::BinaryOp(
+                                                Rc::new(SymbolicValue::Variable(var_name)),
+                                                DebugExpressionInfixOpcode(
+                                                    ExpressionInfixOpcode::Eq,
+                                                ),
+                                                Rc::new(original_value),
+                                            );
+                                            self.cur_state.push_side_constraint(&original_cont);
+                                        }
+                                        DebugAssignOp(AssignOp::AssignSignal) => {
+                                            let cont = SymbolicValue::Assign(
+                                                Rc::new(SymbolicValue::Variable(var_name.clone())),
+                                                Rc::new(value.clone()),
+                                            );
+                                            self.cur_state.push_trace_constraint(&cont);
+                                        }
+                                        _ => {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if !access.is_empty() {
                         let mut component_name = 0_usize;
                         let mut dims = Vec::new();
@@ -796,155 +945,6 @@ impl<'a> SymbolicExecutor<'a> {
                                         "{}",
                                         format!("{}", "===========================").cyan()
                                     );
-                                }
-                            }
-                        }
-                    }
-
-                    match value {
-                        SymbolicValue::Call(callee_name, args) => {
-                            // Initializing the Template Component
-                            if self
-                                .symbolic_library
-                                .template_library
-                                .contains_key(&callee_name)
-                            {
-                                let mut comp_inputs: FxHashMap<
-                                    SymbolicName,
-                                    Option<SymbolicValue>,
-                                > = FxHashMap::default();
-                                for inp_name in &self.symbolic_library.template_library
-                                    [&callee_name]
-                                    .inputs
-                                    .clone()
-                                {
-                                    let template_library = &self.symbolic_library.template_library;
-                                    let dims = template_library[&callee_name].input_dimensions
-                                        [&inp_name]
-                                        .clone()
-                                        .iter()
-                                        .map(|arg0: &DebugExpression| {
-                                            if let SymbolicValue::ConstantInt(bint) =
-                                                self.evaluate_expression(arg0)
-                                            {
-                                                bint.to_usize().unwrap()
-                                            } else {
-                                                panic!("Unkonwn dimension")
-                                            }
-                                        })
-                                        .collect::<Vec<_>>();
-
-                                    let mut positions = vec![vec![]];
-                                    for size in dims {
-                                        let mut new_positions = vec![];
-                                        for combination in &positions {
-                                            for i in 0..size {
-                                                let mut new_combination = combination.clone();
-                                                new_combination.push(i);
-                                                new_positions.push(new_combination);
-                                            }
-                                        }
-                                        positions = new_positions;
-                                    }
-
-                                    if positions.is_empty() {
-                                        comp_inputs.insert(
-                                            SymbolicName {
-                                                name: inp_name.clone(),
-                                                owner: Rc::new(Vec::new()),
-                                                access: None,
-                                            },
-                                            None,
-                                        );
-                                    } else {
-                                        for p in positions {
-                                            if p.is_empty() {
-                                                comp_inputs.insert(
-                                                    SymbolicName {
-                                                        name: inp_name.clone(),
-                                                        owner: Rc::new(Vec::new()),
-                                                        access: None,
-                                                    },
-                                                    None,
-                                                );
-                                            } else {
-                                                comp_inputs.insert(
-                                                    SymbolicName {
-                                                        name: inp_name.clone(),
-                                                        owner: Rc::new(Vec::new()),
-                                                        access: if p.len() == 1 {
-                                                            Some(vec![SymbolicAccess::ArrayAccess(
-                                                                SymbolicValue::ConstantInt(
-                                                                    BigInt::from_usize(p[0])
-                                                                        .unwrap(),
-                                                                ),
-                                                            )])
-                                                        } else {
-                                                            Some(vec![SymbolicAccess::ArrayAccess(
-                                                                SymbolicValue::Array(
-                                                                    p.iter()
-                                                                        .map(|arg0: &usize| {
-                                                                            Rc::new(
-                                                                        SymbolicValue::ConstantInt(
-                                                                            BigInt::from_usize(
-                                                                                *arg0,
-                                                                            )
-                                                                            .unwrap(),
-                                                                        ),
-                                                                    )
-                                                                        })
-                                                                        .collect::<Vec<_>>(),
-                                                                ),
-                                                            )])
-                                                        },
-                                                    },
-                                                    None,
-                                                );
-                                            }
-                                        }
-                                    }
-                                }
-                                let c = SymbolicComponent {
-                                    template_name: callee_name.clone(),
-                                    args: args.clone(),
-                                    inputs: comp_inputs,
-                                    is_done: false,
-                                };
-
-                                self.symbolic_store
-                                    .components_store
-                                    .insert(var_name.clone(), c);
-                            }
-                        }
-                        _ => {
-                            if self.symbolic_store.variable_types[var].0 != VariableType::Var {
-                                if self.setting.keep_track_constraints {
-                                    match op {
-                                        DebugAssignOp(AssignOp::AssignConstraintSignal) => {
-                                            let cont = SymbolicValue::AssignEq(
-                                                Rc::new(SymbolicValue::Variable(var_name.clone())),
-                                                Rc::new(value),
-                                            );
-                                            self.cur_state.push_trace_constraint(&cont);
-
-                                            let original_cont = SymbolicValue::BinaryOp(
-                                                Rc::new(SymbolicValue::Variable(var_name)),
-                                                DebugExpressionInfixOpcode(
-                                                    ExpressionInfixOpcode::Eq,
-                                                ),
-                                                Rc::new(original_value),
-                                            );
-                                            self.cur_state.push_side_constraint(&original_cont);
-                                        }
-                                        DebugAssignOp(AssignOp::AssignSignal) => {
-                                            let cont = SymbolicValue::Assign(
-                                                Rc::new(SymbolicValue::Variable(var_name.clone())),
-                                                Rc::new(value),
-                                            );
-                                            self.cur_state.push_trace_constraint(&cont);
-                                        }
-                                        _ => {}
-                                    }
                                 }
                             }
                         }
