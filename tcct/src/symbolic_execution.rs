@@ -5,6 +5,7 @@ use colored::Colorize;
 use log::{error, trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
+use num_traits::FromPrimitive;
 use num_traits::{Signed, Zero};
 use rustc_hash::FxHashMap;
 use std::str::FromStr;
@@ -638,6 +639,12 @@ impl<'a> SymbolicExecutor<'a> {
                     let original_value = self.fold_variables(&expr, true);
                     let value = self.fold_variables(&expr, !self.setting.propagate_substitution);
 
+                    let base_name = SymbolicName {
+                        name: *var,
+                        owner: self.cur_state.owner_name.clone(),
+                        access: None,
+                    };
+
                     let var_name = SymbolicName {
                         name: *var,
                         owner: self.cur_state.owner_name.clone(),
@@ -652,24 +659,40 @@ impl<'a> SymbolicExecutor<'a> {
                             )
                         },
                     };
-
                     self.cur_state.set_symval(var_name.clone(), value.clone());
 
                     if !access.is_empty() {
+                        let mut component_name = 0_usize;
+                        let mut dims = Vec::new();
                         for acc in access {
-                            if let DebugAccess::ComponentAccess(tmp_name) = acc {
-                                if let Some(component) =
-                                    self.symbolic_store.components_store.get_mut(&var_name)
-                                {
-                                    component
-                                        .inputs
-                                        .insert(tmp_name.clone(), Some(value.clone()));
+                            let evaled_access = self.evaluate_access(&acc.clone());
+                            match evaled_access {
+                                SymbolicAccess::ComponentAccess(tmp_name) => {
+                                    component_name = tmp_name.clone();
+                                }
+                                SymbolicAccess::ArrayAccess(_) => {
+                                    dims.push(evaled_access);
                                 }
                             }
                         }
+                        let inp_name = SymbolicName {
+                            name: component_name,
+                            owner: Rc::new(Vec::new()),
+                            access: if dims.is_empty() {
+                                None
+                            } else {
+                                Some(dims.clone())
+                            },
+                        };
 
-                        if self.is_ready(&var_name) {
-                            if !self.symbolic_store.components_store[&var_name].is_done {
+                        if let Some(component) =
+                            self.symbolic_store.components_store.get_mut(&base_name)
+                        {
+                            component.inputs.insert(inp_name, Some(value.clone()));
+                        }
+
+                        if self.is_ready(&base_name) {
+                            if !self.symbolic_store.components_store[&base_name].is_done {
                                 let symbolic_library = &mut self.symbolic_library;
                                 let mut subse =
                                     SymbolicExecutor::new(symbolic_library, self.setting);
@@ -683,10 +706,10 @@ impl<'a> SymbolicExecutor<'a> {
 
                                 let templ = &subse.symbolic_library.template_library[&self
                                     .symbolic_store
-                                    .components_store[&var_name]
+                                    .components_store[&base_name]
                                     .template_name];
                                 subse.cur_state.set_template_id(
-                                    self.symbolic_store.components_store[&var_name]
+                                    self.symbolic_store.components_store[&base_name]
                                         .template_name
                                         .clone(),
                                 );
@@ -700,32 +723,32 @@ impl<'a> SymbolicExecutor<'a> {
                                     };
                                     subse.cur_state.set_rc_symval(
                                         n,
-                                        self.symbolic_store.components_store[&var_name].args[i]
+                                        self.symbolic_store.components_store[&base_name].args[i]
                                             .clone(),
                                     );
                                 }
 
                                 let upper_bound = if templ.require_bound_check {
                                     if let SymbolicValue::ConstantInt(n) =
-                                        &(*self.symbolic_store.components_store[&var_name].args[0])
+                                        &(*self.symbolic_store.components_store[&base_name].args[0])
                                     {
                                         n.to_u32().unwrap()
                                     } else {
-                                        0_u32
+                                        panic!("Undetermined upper bound for bound check")
                                     }
                                 } else {
                                     0_u32
                                 };
 
                                 // Set the inputs to the component
-                                for (k, v) in self.symbolic_store.components_store[&var_name]
+                                for (k, v) in self.symbolic_store.components_store[&base_name]
                                     .inputs
                                     .iter()
                                 {
                                     let n = SymbolicName {
-                                        name: *k,
+                                        name: k.name,
                                         owner: subse.cur_state.owner_name.clone(),
-                                        access: None,
+                                        access: k.access.clone(),
                                     };
                                     subse.cur_state.set_symval(n, v.clone().unwrap());
 
@@ -752,7 +775,7 @@ impl<'a> SymbolicExecutor<'a> {
                                         "📞 Call {}",
                                         subse.symbolic_library.id2name[&self
                                             .symbolic_store
-                                            .components_store[&var_name]
+                                            .components_store[&base_name]
                                             .template_name]
                                     );
                                 }
@@ -786,14 +809,88 @@ impl<'a> SymbolicExecutor<'a> {
                                 .template_library
                                 .contains_key(&callee_name)
                             {
-                                let mut comp_inputs: FxHashMap<usize, Option<SymbolicValue>> =
-                                    FxHashMap::default();
+                                let mut comp_inputs: FxHashMap<
+                                    SymbolicName,
+                                    Option<SymbolicValue>,
+                                > = FxHashMap::default();
                                 for inp_name in &self.symbolic_library.template_library
                                     [&callee_name]
                                     .inputs
                                     .clone()
                                 {
-                                    comp_inputs.insert(inp_name.clone(), None);
+                                    let template_library = &self.symbolic_library.template_library;
+                                    let dims = template_library[&callee_name].input_dimensions
+                                        [&inp_name]
+                                        .clone()
+                                        .iter()
+                                        .map(|arg0: &DebugExpression| {
+                                            if let SymbolicValue::ConstantInt(bint) =
+                                                self.evaluate_expression(arg0)
+                                            {
+                                                bint.to_usize().unwrap()
+                                            } else {
+                                                panic!("Unkonwn dimension")
+                                            }
+                                        })
+                                        .collect::<Vec<_>>();
+
+                                    let mut positions = vec![vec![]];
+                                    for size in dims {
+                                        let mut new_positions = vec![];
+                                        for combination in &positions {
+                                            for i in 0..size {
+                                                let mut new_combination = combination.clone();
+                                                new_combination.push(i);
+                                                new_positions.push(new_combination);
+                                            }
+                                        }
+                                        positions = new_positions;
+                                    }
+
+                                    if positions.is_empty() {
+                                        comp_inputs.insert(
+                                            SymbolicName {
+                                                name: inp_name.clone(),
+                                                owner: Rc::new(Vec::new()),
+                                                access: None,
+                                            },
+                                            None,
+                                        );
+                                    } else {
+                                        for p in positions {
+                                            comp_inputs.insert(
+                                                SymbolicName {
+                                                    name: inp_name.clone(),
+                                                    owner: Rc::new(Vec::new()),
+                                                    access: if p.len() == 1 {
+                                                        Some(vec![SymbolicAccess::ArrayAccess(
+                                                            SymbolicValue::ConstantInt(
+                                                                BigInt::from_usize(p[0]).unwrap(),
+                                                            ),
+                                                        )])
+                                                    } else {
+                                                        Some(vec![SymbolicAccess::ArrayAccess(
+                                                            SymbolicValue::Array(
+                                                                p.iter()
+                                                                    .map(|arg0: &usize| {
+                                                                        Rc::new(
+                                                                        SymbolicValue::ConstantInt(
+                                                                            BigInt::from_usize(
+                                                                                *arg0,
+                                                                            )
+                                                                            .unwrap(),
+                                                                        ),
+                                                                    )
+                                                                    })
+                                                                    .collect::<Vec<_>>(),
+                                                            ),
+                                                        )])
+                                                    },
+                                                },
+                                                None,
+                                            );
+                                        }
+                                    }
                                 }
                                 let c = SymbolicComponent {
                                     template_name: callee_name.clone(),

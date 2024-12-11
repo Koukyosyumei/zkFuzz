@@ -7,7 +7,9 @@ use std::rc::Rc;
 
 use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, VariableType};
 
-use crate::debug_ast::{DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement};
+use crate::debug_ast::{
+    DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement,
+};
 
 /// Represents the access type within a symbolic expression, such as component or array access.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -225,6 +227,7 @@ impl SymbolicValue {
 pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<usize>,
     pub inputs: FxHashSet<usize>,
+    pub input_dimensions: FxHashMap<usize, Vec<DebugExpression>>,
     pub outputs: FxHashSet<usize>,
     pub var2type: FxHashMap<usize, VariableType>,
     pub body: Vec<DebugStatement>,
@@ -243,7 +246,7 @@ pub struct SymbolicFunction {
 pub struct SymbolicComponent {
     pub template_name: usize,
     pub args: Vec<Rc<SymbolicValue>>,
-    pub inputs: FxHashMap<usize, Option<SymbolicValue>>,
+    pub inputs: FxHashMap<SymbolicName, Option<SymbolicValue>>,
     pub is_done: bool,
 }
 
@@ -279,6 +282,7 @@ impl SymbolicLibrary {
         template_parameter_names: &Vec<String>,
     ) {
         let mut inputs = FxHashSet::default();
+        let mut input_dimensions = FxHashMap::default();
         let mut outputs = FxHashSet::default();
         let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
 
@@ -304,12 +308,19 @@ impl SymbolicLibrary {
                     } = &s
                     {
                         for init in initializations {
-                            if let DebugStatement::Declaration { name, xtype, .. } = &init {
+                            if let DebugStatement::Declaration {
+                                name,
+                                xtype,
+                                dimensions,
+                                ..
+                            } = &init
+                            {
                                 var2type.insert(name.clone(), xtype.clone());
                                 if let VariableType::Signal(typ, _taglist) = &xtype {
                                     match typ {
                                         SignalType::Input => {
                                             inputs.insert(*name);
+                                            input_dimensions.insert(*name, dimensions.clone());
                                         }
                                         SignalType::Output => {
                                             outputs.insert(*name);
@@ -335,6 +346,7 @@ impl SymbolicLibrary {
                     .map(|p: &String| self.name2id[p])
                     .collect::<Vec<_>>(),
                 inputs: inputs,
+                input_dimensions: input_dimensions,
                 outputs: outputs,
                 var2type: var2type,
                 body: vec![dbody.clone(), DebugStatement::Ret],
