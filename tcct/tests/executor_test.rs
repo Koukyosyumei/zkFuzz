@@ -245,35 +245,79 @@ fn test_lessthan() {
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
 
-    let ground_truth_trace_constraints = vec![SymbolicValue::AssignEq(
-        Rc::new(SymbolicValue::Variable(SymbolicName {
-            name: sexe.symbolic_library.name2id["in"],
-            owner: Rc::new(vec![
-                OwnerName {
+    let ground_truth_trace_constraints = vec![
+        SymbolicValue::AssignEq(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["in"],
+                owner: Rc::new(vec![
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    },
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["lt"],
+                        access: None,
+                        counter: 0,
+                    },
+                ]),
+                access: Some(vec![SymbolicAccess::ArrayAccess(
+                    SymbolicValue::ConstantInt(BigInt::zero()),
+                )]),
+            })),
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["a"],
+                owner: Rc::new(vec![OwnerName {
                     name: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
-                },
-                OwnerName {
-                    name: sexe.symbolic_library.name2id["lt"],
+                }]),
+                access: None,
+            })),
+        ),
+        SymbolicValue::AssignEq(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["in"],
+                owner: Rc::new(vec![
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    },
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["lt"],
+                        access: None,
+                        counter: 0,
+                    },
+                ]),
+                access: Some(vec![SymbolicAccess::ArrayAccess(
+                    SymbolicValue::ConstantInt(BigInt::one()),
+                )]),
+            })),
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["b"],
+                owner: Rc::new(vec![OwnerName {
+                    name: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
-                },
-            ]),
-            access: Some(vec![SymbolicAccess::ArrayAccess(
-                SymbolicValue::ConstantInt(BigInt::zero()),
-            )]),
-        })),
-        Rc::new(SymbolicValue::Variable(SymbolicName {
-            name: sexe.symbolic_library.name2id["a"],
-            owner: Rc::new(vec![OwnerName {
-                name: sexe.symbolic_library.name2id["main"],
+                }]),
                 access: None,
-                counter: 0,
-            }]),
-            access: None,
-        })),
-    )];
+            })),
+        ),
+        SymbolicValue::BinaryOp(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["a"],
+                owner: Rc::new(vec![OwnerName {
+                    name: sexe.symbolic_library.name2id["main"],
+                    access: None,
+                    counter: 0,
+                }]),
+                access: None,
+            })),
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
+            Rc::new(SymbolicValue::ConstantInt(BigInt::from_str("8").unwrap())),
+        ),
+    ];
 
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
