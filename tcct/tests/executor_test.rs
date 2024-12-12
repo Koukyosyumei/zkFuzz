@@ -1,20 +1,23 @@
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
+use std::rc::Rc;
 use std::str::FromStr;
 
 use num_bigint_dig::BigInt;
+use num_traits::identities::Zero;
+use num_traits::One;
 use rustc_hash::FxHashMap;
 
-use program_structure::ast::Expression;
+use program_structure::ast::{Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode};
 use program_structure::constants::UsefulConstants;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 
-use tcct::executor::debug_ast::simplify_statement;
+use tcct::executor::debug_ast::DebugExpressionPrefixOpcode;
+use tcct::executor::debug_ast::{simplify_statement, DebugExpressionInfixOpcode};
 use tcct::executor::symbolic_execution::SymbolicExecutor;
 use tcct::executor::symbolic_execution::SymbolicExecutorSetting;
-use tcct::executor::symbolic_value::OwnerName;
-use tcct::executor::symbolic_value::SymbolicLibrary;
+use tcct::executor::symbolic_value::{OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue};
 use tcct::input_user::Input;
 use tcct::type_analysis_user::analyse_project;
 
@@ -110,4 +113,111 @@ fn test_if_else() {
     };
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    assert_eq!(sexe.symbolic_store.final_states.len(), 2);
+    assert_eq!(sexe.symbolic_library.id2name.len(), 5);
+    assert!(sexe.symbolic_library.name2id.contains_key("IsZero"));
+    assert!(sexe.symbolic_library.name2id.contains_key("in"));
+    assert!(sexe.symbolic_library.name2id.contains_key("inv"));
+    assert!(sexe.symbolic_library.name2id.contains_key("out"));
+    assert!(sexe.symbolic_library.name2id.contains_key("main"));
+
+    let trace_constraints_if_branch = vec![
+        SymbolicValue::UnaryOp(
+            DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
+            Rc::new(SymbolicValue::BinaryOp(
+                Rc::new(SymbolicValue::Variable(SymbolicName {
+                    name: sexe.symbolic_library.name2id["in"],
+                    owner: Rc::new(vec![OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    }]),
+                    access: None,
+                })),
+                DebugExpressionInfixOpcode(ExpressionInfixOpcode::NotEq),
+                Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+            )),
+        ),
+        SymbolicValue::Assign(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["inv"],
+                owner: Rc::new(vec![OwnerName {
+                    name: sexe.symbolic_library.name2id["main"],
+                    access: None,
+                    counter: 0,
+                }]),
+                access: None,
+            })),
+            Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+        ),
+        SymbolicValue::AssignEq(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["out"],
+                owner: Rc::new(vec![OwnerName {
+                    name: sexe.symbolic_library.name2id["main"],
+                    access: None,
+                    counter: 0,
+                }]),
+                access: None,
+            })),
+            Rc::new(SymbolicValue::BinaryOp(
+                Rc::new(SymbolicValue::BinaryOp(
+                    Rc::new(SymbolicValue::UnaryOp(
+                        DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::Sub),
+                        Rc::new(SymbolicValue::Variable(SymbolicName {
+                            name: sexe.symbolic_library.name2id["in"],
+                            owner: Rc::new(vec![OwnerName {
+                                name: sexe.symbolic_library.name2id["main"],
+                                access: None,
+                                counter: 0,
+                            }]),
+                            access: None,
+                        })),
+                    )),
+                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+                )),
+                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
+            )),
+        ),
+        SymbolicValue::BinaryOp(
+            Rc::new(SymbolicValue::BinaryOp(
+                Rc::new(SymbolicValue::Variable(SymbolicName {
+                    name: sexe.symbolic_library.name2id["in"],
+                    owner: Rc::new(vec![OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    }]),
+                    access: None,
+                })),
+                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                Rc::new(SymbolicValue::Variable(SymbolicName {
+                    name: sexe.symbolic_library.name2id["out"],
+                    owner: Rc::new(vec![OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    }]),
+                    access: None,
+                })),
+            )),
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+            Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+        ),
+    ];
+
+    assert_eq!(
+        sexe.symbolic_store.final_states[0].trace_constraints.len(),
+        4
+    );
+    for i in 0..4 {
+        assert_eq!(
+            trace_constraints_if_branch[i],
+            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+        );
+    }
 }
