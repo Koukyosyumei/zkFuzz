@@ -49,7 +49,7 @@ pub fn mutation_test_search(
         return None;
     }
     let mut trace_population =
-        initialize_trace_mutation(&assign_pos, program_population_size, &mut rng);
+        initialize_trace_mutation(&assign_pos, program_population_size, setting, &mut rng);
 
     // Initial Pupulation of Mutated Inputs
     let mut variables = extract_variables(trace_constraints);
@@ -86,7 +86,7 @@ pub fn mutation_test_search(
             };
 
             if rng.gen::<f64>() < mutation_rate {
-                trace_mutate(&mut child, &mut rng);
+                trace_mutate(&mut child, setting, &mut rng);
             }
 
             new_trace_population.push(child);
@@ -188,6 +188,20 @@ pub fn mutation_test_search(
     None
 }
 
+fn draw_random_constant(setting: &VerificationSetting, rng: &mut ThreadRng) -> BigInt {
+    if rng.gen::<bool>() {
+        rng.gen_bigint_range(
+            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
+            &(BigInt::from_str("2").unwrap()),
+        )
+    } else {
+        rng.gen_bigint_range(
+            &(setting.prime.clone() - BigInt::from_str("2").unwrap()),
+            &(setting.prime),
+        )
+    }
+}
+
 fn initialize_input_population(
     variables: &[SymbolicName],
     size: usize,
@@ -198,22 +212,7 @@ fn initialize_input_population(
         .map(|_| {
             variables
                 .iter()
-                .map(|var| {
-                    (
-                        var.clone(),
-                        if rng.gen::<bool>() {
-                            rng.gen_bigint_range(
-                                &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-                                &(BigInt::from_str("2").unwrap()),
-                            )
-                        } else {
-                            rng.gen_bigint_range(
-                                &(setting.prime.clone() - BigInt::from_str("2").unwrap()),
-                                &(setting.prime),
-                            )
-                        },
-                    )
-                })
+                .map(|var| (var.clone(), draw_random_constant(setting, rng)))
                 .collect()
         })
         .collect()
@@ -222,6 +221,7 @@ fn initialize_input_population(
 fn initialize_trace_mutation(
     pos: &[usize],
     size: usize,
+    setting: &VerificationSetting,
     rng: &mut ThreadRng,
 ) -> Vec<FxHashMap<usize, SymbolicValue>> {
     (0..size)
@@ -230,10 +230,7 @@ fn initialize_trace_mutation(
                 .map(|p| {
                     (
                         p.clone(),
-                        SymbolicValue::ConstantInt(rng.gen_bigint_range(
-                            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-                            &(BigInt::from_str("2").unwrap()),
-                        )),
+                        SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
                     )
                 })
                 .collect()
@@ -269,15 +266,16 @@ fn trace_crossover(
         .collect()
 }
 
-fn trace_mutate(individual: &mut FxHashMap<usize, SymbolicValue>, rng: &mut ThreadRng) {
+fn trace_mutate(
+    individual: &mut FxHashMap<usize, SymbolicValue>,
+    setting: &VerificationSetting,
+    rng: &mut ThreadRng,
+) {
     if !individual.is_empty() {
         let var = individual.keys().choose(rng).unwrap();
         individual.insert(
             var.clone(),
-            SymbolicValue::ConstantInt(rng.gen_bigint_range(
-                &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-                &(BigInt::from_str("2").unwrap()),
-            )),
+            SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
         );
     }
 }
