@@ -98,7 +98,7 @@ pub fn execute(sexe: &mut SymbolicExecutor, program_archive: &ProgramArchive) {
 
 #[test]
 fn test_if_else() {
-    let path = "../sample/iszero_safe.circom".to_string();
+    let path = "./tests/sample/iszero_safe.circom".to_string();
     let prime = BigInt::from_str(
         "21888242871839275222246405745257275088548364400416034343698204186575808495617",
     )
@@ -226,7 +226,7 @@ fn test_if_else() {
 
 #[test]
 fn test_lessthan() {
-    let path = "../sample/lessthan3.circom".to_string();
+    let path = "./tests/sample/lessthan3.circom".to_string();
     let prime = BigInt::from_str(
         "21888242871839275222246405745257275088548364400416034343698204186575808495617",
     )
