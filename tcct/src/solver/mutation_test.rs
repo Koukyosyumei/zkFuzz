@@ -265,7 +265,7 @@ fn trace_crossover(
 }
 
 fn trace_mutate(individual: &mut FxHashMap<usize, SymbolicValue>, rng: &mut ThreadRng) {
-    if individual.is_empty() {
+    if !individual.is_empty() {
         let var = individual.keys().choose(rng).unwrap();
         individual.insert(
             var.clone(),
