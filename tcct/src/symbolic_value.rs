@@ -92,19 +92,19 @@ pub enum SymbolicValue {
     ConstantInt(BigInt),
     ConstantBool(bool),
     Variable(SymbolicName),
-    Assign(Rc<SymbolicValue>, Rc<SymbolicValue>),
-    AssignEq(Rc<SymbolicValue>, Rc<SymbolicValue>),
+    Assign(SymbolicValueRef, SymbolicValueRef),
+    AssignEq(SymbolicValueRef, SymbolicValueRef),
     BinaryOp(
-        Rc<SymbolicValue>,
+        SymbolicValueRef,
         DebugExpressionInfixOpcode,
-        Rc<SymbolicValue>,
+        SymbolicValueRef,
     ),
-    Conditional(Rc<SymbolicValue>, Rc<SymbolicValue>, Rc<SymbolicValue>),
-    UnaryOp(DebugExpressionPrefixOpcode, Rc<SymbolicValue>),
-    Array(Vec<Rc<SymbolicValue>>),
-    Tuple(Vec<Rc<SymbolicValue>>),
-    UniformArray(Rc<SymbolicValue>, Rc<SymbolicValue>),
-    Call(usize, Vec<Rc<SymbolicValue>>),
+    Conditional(SymbolicValueRef, SymbolicValueRef, SymbolicValueRef),
+    UnaryOp(DebugExpressionPrefixOpcode, SymbolicValueRef),
+    Array(Vec<SymbolicValueRef>),
+    Tuple(Vec<SymbolicValueRef>),
+    UniformArray(SymbolicValueRef, SymbolicValueRef),
+    Call(usize, Vec<SymbolicValueRef>),
 }
 
 impl SymbolicValue {
@@ -222,6 +222,8 @@ impl SymbolicValue {
     }
 }
 
+pub type SymbolicValueRef = Rc<SymbolicValue>;
+
 /// Represents a symbolic template used in the symbolic execution process.
 #[derive(Default, Clone)]
 pub struct SymbolicTemplate {
@@ -245,7 +247,7 @@ pub struct SymbolicFunction {
 #[derive(Default, Clone)]
 pub struct SymbolicComponent {
     pub template_name: usize,
-    pub args: Vec<Rc<SymbolicValue>>,
+    pub args: Vec<SymbolicValueRef>,
     pub inputs: FxHashMap<SymbolicName, Option<SymbolicValue>>,
     pub is_done: bool,
 }

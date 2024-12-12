@@ -10,8 +10,7 @@ use num_traits::{One, Zero};
 use rustc_hash::FxHashMap;
 
 use crate::symbolic_execution::SymbolicExecutor;
-use crate::symbolic_value::SymbolicName;
-use crate::symbolic_value::SymbolicValue;
+use crate::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::utils::{
     extract_variables, is_vulnerable, verify_assignment, CounterExample, VerificationResult,
@@ -30,8 +29,8 @@ use crate::solver::utils::{
 /// An `Option<CounterExample>` containing a counterexample if constraints are invalid, or `None` otherwise.
 pub fn brute_force_search(
     sexe: &mut SymbolicExecutor,
-    trace_constraints: &Vec<Rc<SymbolicValue>>,
-    side_constraints: &Vec<Rc<SymbolicValue>>,
+    trace_constraints: &Vec<SymbolicValueRef>,
+    side_constraints: &Vec<SymbolicValueRef>,
     setting: &VerificationSetting,
 ) -> Option<CounterExample> {
     let mut trace_variables = extract_variables(trace_constraints);
@@ -48,8 +47,8 @@ pub fn brute_force_search(
 
     fn search(
         sexe: &mut SymbolicExecutor,
-        trace_constraints: &[Rc<SymbolicValue>],
-        side_constraints: &[Rc<SymbolicValue>],
+        trace_constraints: &[SymbolicValueRef],
+        side_constraints: &[SymbolicValueRef],
         setting: &VerificationSetting,
         index: usize,
         variables: &[SymbolicName],

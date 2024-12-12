@@ -14,8 +14,7 @@ use rustc_hash::FxHashMap;
 use std::str::FromStr;
 
 use crate::symbolic_execution::SymbolicExecutor;
-use crate::symbolic_value::SymbolicName;
-use crate::symbolic_value::SymbolicValue;
+use crate::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::utils::{
     count_satisfied_constraints, emulate_symbolic_values, evaluate_constraints, extract_variables,
@@ -24,8 +23,8 @@ use crate::solver::utils::{
 
 pub fn mutation_test_search(
     sexe: &mut SymbolicExecutor,
-    trace_constraints: &Vec<Rc<SymbolicValue>>,
-    side_constraints: &Vec<Rc<SymbolicValue>>,
+    trace_constraints: &Vec<SymbolicValueRef>,
+    side_constraints: &Vec<SymbolicValueRef>,
     setting: &VerificationSetting,
 ) -> Option<CounterExample> {
     // Parameters
@@ -268,8 +267,8 @@ fn trace_mutate(individual: &mut FxHashMap<usize, SymbolicValue>, rng: &mut Thre
 fn trace_fitness(
     sexe: &mut SymbolicExecutor,
     setting: &VerificationSetting,
-    trace_constraints: &Vec<Rc<SymbolicValue>>,
-    side_constraints: &Vec<Rc<SymbolicValue>>,
+    trace_constraints: &Vec<SymbolicValueRef>,
+    side_constraints: &Vec<SymbolicValueRef>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
     inputs: &Vec<FxHashMap<SymbolicName, BigInt>>,
 ) -> (usize, f64) {

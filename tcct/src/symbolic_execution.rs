@@ -21,6 +21,7 @@ use crate::debug_ast::{
 };
 use crate::symbolic_value::{
     OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue,
+    SymbolicValueRef,
 };
 use crate::utils::{extended_euclidean, italic, modpow};
 
@@ -31,9 +32,9 @@ pub struct SymbolicState {
     pub owner_name: Rc<Vec<OwnerName>>,
     pub template_id: usize,
     depth: usize,
-    pub values: FxHashMap<SymbolicName, Rc<SymbolicValue>>,
-    pub trace_constraints: Vec<Rc<SymbolicValue>>,
-    pub side_constraints: Vec<Rc<SymbolicValue>>,
+    pub values: FxHashMap<SymbolicName, SymbolicValueRef>,
+    pub trace_constraints: Vec<SymbolicValueRef>,
+    pub side_constraints: Vec<SymbolicValueRef>,
 }
 
 impl SymbolicState {
@@ -61,9 +62,9 @@ impl SymbolicState {
     ///
     /// * `oname` - The `OwnerName` to be added.
     pub fn add_owner(&mut self, oname: &OwnerName) {
-        let mut on = (*self.owner_name.clone()).clone();
-        on.push(oname.clone());
-        self.owner_name = Rc::new(on);
+        let mut updated_owner_list = (*self.owner_name.clone()).clone();
+        updated_owner_list.push(oname.clone());
+        self.owner_name = Rc::new(updated_owner_list);
     }
 
     /// Retrieves the full owner name as a string.
@@ -72,15 +73,15 @@ impl SymbolicState {
     ///
     /// # Arguments
     ///
-    /// * `lookup` - A hash map containing mappings from usize to String for name lookups.
+    /// * `name_lookup_map` - A hash map containing mappings from usize to String for name lookups.
     ///
     /// # Returns
     ///
     /// A string representing the full owner name.
-    pub fn get_owner(&self, lookup: &FxHashMap<usize, String>) -> String {
+    pub fn get_owner(&self, name_lookup_map: &FxHashMap<usize, String>) -> String {
         self.owner_name
             .iter()
-            .map(|e: &OwnerName| lookup[&e.name].clone())
+            .map(|e: &OwnerName| name_lookup_map[&e.name].clone())
             .collect::<Vec<_>>()
             .join(".")
     }
@@ -99,8 +100,8 @@ impl SymbolicState {
     /// # Arguments
     ///
     /// * `d` - The depth level to set.
-    pub fn set_depth(&mut self, d: usize) {
-        self.depth = d;
+    pub fn set_depth(&mut self, depth_level: usize) {
+        self.depth = depth_level;
     }
 
     /// Retrieves the current depth of the symbolic state.
@@ -128,7 +129,7 @@ impl SymbolicState {
     ///
     /// * `name` - The name of the variable.
     /// * `value` - The reference-counted symbolic value to associate with the variable.
-    pub fn set_rc_symval(&mut self, name: SymbolicName, value: Rc<SymbolicValue>) {
+    pub fn set_rc_symval(&mut self, name: SymbolicName, value: SymbolicValueRef) {
         self.values.insert(name, value);
     }
 
@@ -141,7 +142,7 @@ impl SymbolicState {
     /// # Returns
     ///
     /// An optional reference to the symbolic value if it exists.
-    pub fn get_symval(&self, name: &SymbolicName) -> Option<&Rc<SymbolicValue>> {
+    pub fn get_symval(&self, name: &SymbolicName) -> Option<&SymbolicValueRef> {
         self.values.get(name)
     }
 
@@ -170,26 +171,26 @@ impl SymbolicState {
     ///
     /// # Arguments
     ///
-    /// * `lookup` - A hash map containing mappings from usize to String for name lookups.
+    /// * `name_lookup_map` - A hash map containing mappings from usize to String for name lookups.
     ///
     /// # Returns
     ///
     /// A formatted string representation of the symbolic state.
-    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
+    pub fn lookup_fmt(&self, name_lookup_map: &FxHashMap<usize, String>) -> String {
         let mut s = "".to_string();
         s += &format!("🛠️ {}", format!("{}", "SymbolicState [\n").cyan());
         s += &format!(
             "  {} {}\n",
             format!("👤 {}", "owner:").cyan(),
-            italic(&format!("{:?}", &self.get_owner(lookup))).magenta()
+            italic(&format!("{:?}", &self.get_owner(name_lookup_map))).magenta()
         );
         s += &format!("  📏 {} {}\n", format!("{}", "depth:").cyan(), self.depth);
         s += &format!("  📋 {}\n", format!("{}", "values:").cyan());
         for (k, v) in self.values.iter() {
             s += &format!(
                 "      {}: {}\n",
-                k.lookup_fmt(lookup),
-                format!("{}", v.lookup_fmt(lookup))
+                k.lookup_fmt(name_lookup_map),
+                format!("{}", v.lookup_fmt(name_lookup_map))
                     .replace("\n", "")
                     .replace("  ", " ")
             );
@@ -202,7 +203,7 @@ impl SymbolicState {
                 &self
                     .trace_constraints
                     .iter()
-                    .map(|c| c.lookup_fmt(lookup))
+                    .map(|c| c.lookup_fmt(name_lookup_map))
                     .collect::<Vec<_>>()
                     .join(", ")
             )
@@ -218,7 +219,7 @@ impl SymbolicState {
                 &self
                     .side_constraints
                     .iter()
-                    .map(|c| c.lookup_fmt(lookup))
+                    .map(|c| c.lookup_fmt(name_lookup_map))
                     .collect::<Vec<_>>()
                     .join(", ")
             )
@@ -691,15 +692,15 @@ impl<'a> SymbolicExecutor<'a> {
                                     &self.symbolic_library.template_library[&callee_name];
                                 let mut escaped_vars = vec![];
                                 for i in 0..(template.template_parameter_names.len()) {
-                                    let n = SymbolicName {
+                                    let tp_name = SymbolicName {
                                         name: template.template_parameter_names[i],
                                         owner: self.cur_state.owner_name.clone(),
                                         access: None,
                                     };
-                                    if let Some(val) = self.cur_state.get_symval(&n) {
-                                        escaped_vars.push((n.clone(), val.clone()));
+                                    if let Some(val) = self.cur_state.get_symval(&tp_name) {
+                                        escaped_vars.push((tp_name.clone(), val.clone()));
                                     }
-                                    self.cur_state.set_rc_symval(n, args[i].clone());
+                                    self.cur_state.set_rc_symval(tp_name, args[i].clone());
                                 }
 
                                 // Initialize template-inputs
@@ -887,12 +888,13 @@ impl<'a> SymbolicExecutor<'a> {
                                 let mut subse =
                                     SymbolicExecutor::new(symbolic_library, self.setting);
 
-                                let mut on = (*self.cur_state.owner_name.clone()).clone();
-                                on.push(OwnerName {
+                                let mut updated_owner_list =
+                                    (*self.cur_state.owner_name.clone()).clone();
+                                updated_owner_list.push(OwnerName {
                                     name: *var,
                                     counter: 0,
                                 });
-                                subse.cur_state.owner_name = Rc::new(on);
+                                subse.cur_state.owner_name = Rc::new(updated_owner_list);
 
                                 let templ = &subse.symbolic_library.template_library[&self
                                     .symbolic_store
@@ -906,13 +908,13 @@ impl<'a> SymbolicExecutor<'a> {
 
                                 // Set template parameters
                                 for i in 0..(templ.template_parameter_names.len()) {
-                                    let n = SymbolicName {
+                                    let tp_name = SymbolicName {
                                         name: templ.template_parameter_names[i],
                                         owner: subse.cur_state.owner_name.clone(),
                                         access: None,
                                     };
                                     subse.cur_state.set_rc_symval(
-                                        n,
+                                        tp_name,
                                         self.symbolic_store.components_store[&base_name].args[i]
                                             .clone(),
                                     );
@@ -1485,12 +1487,12 @@ impl<'a> SymbolicExecutor<'a> {
                     let symbolic_library = &mut self.symbolic_library;
                     let mut subse = SymbolicExecutor::new(symbolic_library, self.setting);
 
-                    let mut on = (*self.cur_state.owner_name.clone()).clone();
-                    on.push(OwnerName {
+                    let mut updated_owner_list = (*self.cur_state.owner_name.clone()).clone();
+                    updated_owner_list.push(OwnerName {
                         name: *id,
                         counter: subse.symbolic_library.function_counter[id],
                     });
-                    subse.cur_state.owner_name = Rc::new(on);
+                    subse.cur_state.owner_name = Rc::new(updated_owner_list);
                     subse
                         .symbolic_library
                         .function_counter
