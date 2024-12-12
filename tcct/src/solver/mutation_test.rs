@@ -67,8 +67,12 @@ pub fn mutation_test_search(
     }
 
     for generation in 0..max_generations {
-        let input_population =
-            initialize_input_population(&input_variables, input_population_size, &mut rng);
+        let input_population = initialize_input_population(
+            &input_variables,
+            input_population_size,
+            &setting,
+            &mut rng,
+        );
 
         let mut new_trace_population = vec![FxHashMap::default()];
         for _ in 0..program_population_size {
@@ -187,6 +191,7 @@ pub fn mutation_test_search(
 fn initialize_input_population(
     variables: &[SymbolicName],
     size: usize,
+    setting: &VerificationSetting,
     rng: &mut ThreadRng,
 ) -> Vec<FxHashMap<SymbolicName, BigInt>> {
     (0..size)
@@ -203,8 +208,8 @@ fn initialize_input_population(
                             )
                         } else {
                             rng.gen_bigint_range(
-                                &(BigInt::from_str("12").unwrap()),
-                                &(BigInt::from_str("22").unwrap()),
+                                &(setting.prime.clone() - BigInt::from_str("2").unwrap()),
+                                &(setting.prime),
                             )
                         },
                     )
