@@ -70,7 +70,7 @@ pub fn mutation_test_search(
         let input_population =
             initialize_input_population(&input_variables, input_population_size, &mut rng);
 
-        let mut new_trace_population = Vec::new();
+        let mut new_trace_population = vec![FxHashMap::default()];
         for _ in 0..program_population_size {
             let parent1 = trace_selection(&trace_population, &mut rng);
             let parent2 = trace_selection(&trace_population, &mut rng);
@@ -196,10 +196,17 @@ fn initialize_input_population(
                 .map(|var| {
                     (
                         var.clone(),
-                        rng.gen_bigint_range(
-                            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-                            &(BigInt::from_str("2").unwrap() * BigInt::one()),
-                        ),
+                        if rng.gen::<bool>() {
+                            rng.gen_bigint_range(
+                                &(BigInt::from_str("2").unwrap() * -BigInt::one()),
+                                &(BigInt::from_str("2").unwrap()),
+                            )
+                        } else {
+                            rng.gen_bigint_range(
+                                &(BigInt::from_str("12").unwrap()),
+                                &(BigInt::from_str("22").unwrap()),
+                            )
+                        },
                     )
                 })
                 .collect()
@@ -220,7 +227,7 @@ fn initialize_trace_mutation(
                         p.clone(),
                         SymbolicValue::ConstantInt(rng.gen_bigint_range(
                             &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-                            &(BigInt::from_str("2").unwrap() * BigInt::one()),
+                            &(BigInt::from_str("2").unwrap()),
                         )),
                     )
                 })
@@ -247,21 +254,27 @@ fn trace_crossover(
             if rng.gen::<bool>() {
                 (var.clone(), val.clone())
             } else {
-                (var.clone(), parent2[var].clone())
+                if parent2.contains_key(var) {
+                    (var.clone(), parent2[var].clone())
+                } else {
+                    (var.clone(), val.clone())
+                }
             }
         })
         .collect()
 }
 
 fn trace_mutate(individual: &mut FxHashMap<usize, SymbolicValue>, rng: &mut ThreadRng) {
-    let var = individual.keys().choose(rng).unwrap();
-    individual.insert(
-        var.clone(),
-        SymbolicValue::ConstantInt(rng.gen_bigint_range(
-            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-            &(BigInt::from_str("2").unwrap() * BigInt::one()),
-        )),
-    );
+    if individual.is_empty() {
+        let var = individual.keys().choose(rng).unwrap();
+        individual.insert(
+            var.clone(),
+            SymbolicValue::ConstantInt(rng.gen_bigint_range(
+                &(BigInt::from_str("2").unwrap() * -BigInt::one()),
+                &(BigInt::from_str("2").unwrap()),
+            )),
+        );
+    }
 }
 
 fn trace_fitness(
