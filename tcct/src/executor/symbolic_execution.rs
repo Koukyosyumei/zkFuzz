@@ -824,19 +824,10 @@ impl<'a> SymbolicExecutor<'a> {
                                                     SymbolicName {
                                                         name: inp_name.clone(),
                                                         owner: Rc::new(Vec::new()),
-                                                        access: if p.len() == 1 {
-                                                            Some(vec![SymbolicAccess::ArrayAccess(
-                                                                SymbolicValue::ConstantInt(
-                                                                    BigInt::from_usize(p[0])
-                                                                        .unwrap(),
-                                                                ),
-                                                            )])
-                                                        } else {
-                                                            Some(vec![SymbolicAccess::ArrayAccess(
-                                                                SymbolicValue::Array(
-                                                                    p.iter()
-                                                                        .map(|arg0: &usize| {
-                                                                            Rc::new(
+                                                        access: Some(
+                                                            p.iter()
+                                                                .map(|arg0: &usize| {
+                                                                    SymbolicAccess::ArrayAccess(
                                                                         SymbolicValue::ConstantInt(
                                                                             BigInt::from_usize(
                                                                                 *arg0,
@@ -844,11 +835,9 @@ impl<'a> SymbolicExecutor<'a> {
                                                                             .unwrap(),
                                                                         ),
                                                                     )
-                                                                        })
-                                                                        .collect::<Vec<_>>(),
-                                                                ),
-                                                            )])
-                                                        },
+                                                                })
+                                                                .collect::<Vec<_>>(),
+                                                        ),
                                                     },
                                                     None,
                                                 );
@@ -1046,6 +1035,9 @@ impl<'a> SymbolicExecutor<'a> {
                                 if subse.symbolic_store.final_states.len() > 1 {
                                     warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
                                 }
+                                //self.cur_state
+                                //    .values
+                                //    .extend(subse.symbolic_store.final_states[0].values.clone());
                                 self.cur_state.trace_constraints.append(
                                     &mut subse.symbolic_store.final_states[0].trace_constraints,
                                 );
