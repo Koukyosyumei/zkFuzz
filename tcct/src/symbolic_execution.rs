@@ -81,7 +81,20 @@ impl SymbolicState {
     pub fn get_owner(&self, name_lookup_map: &FxHashMap<usize, String>) -> String {
         self.owner_name
             .iter()
-            .map(|e: &OwnerName| name_lookup_map[&e.name].clone())
+            .map(|e: &OwnerName| {
+                let access_str = if e.access.is_none() {
+                    ""
+                } else {
+                    &e.access
+                        .clone()
+                        .unwrap()
+                        .iter()
+                        .map(|s: &SymbolicAccess| s.lookup_fmt(name_lookup_map))
+                        .collect::<Vec<_>>()
+                        .join("")
+                };
+                name_lookup_map[&e.name].clone() + &access_str
+            })
             .collect::<Vec<_>>()
             .join(".")
     }
@@ -416,6 +429,89 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    fn construct_symbolic_name(
+        &mut self,
+        base_id: usize,
+        access: &Vec<DebugAccess>,
+    ) -> (SymbolicName, SymbolicName) {
+        // Style of component access: owner[access].component[access]
+        // Example: bits[0].dblIn[0];
+        let mut pre_dims = Vec::new();
+        let mut component_name = None;
+        let mut post_dims = Vec::new();
+        let mut found_component = false;
+        for acc in access {
+            let evaled_access = self.evaluate_access(&acc.clone());
+            match evaled_access {
+                SymbolicAccess::ComponentAccess(tmp_name) => {
+                    found_component = true;
+                    component_name = Some(tmp_name.clone());
+                }
+                SymbolicAccess::ArrayAccess(_) => {
+                    if found_component {
+                        post_dims.push(evaled_access);
+                    } else {
+                        pre_dims.push(evaled_access);
+                    }
+                }
+            }
+        }
+
+        if component_name.is_none() {
+            (
+                SymbolicName {
+                    name: base_id,
+                    owner: self.cur_state.owner_name.clone(),
+                    access: if pre_dims.is_empty() {
+                        None
+                    } else {
+                        Some(pre_dims.clone())
+                    },
+                },
+                SymbolicName {
+                    name: base_id,
+                    owner: self.cur_state.owner_name.clone(),
+                    access: if pre_dims.is_empty() {
+                        None
+                    } else {
+                        Some(pre_dims)
+                    },
+                },
+            )
+        } else {
+            let mut owner_name = (*self.cur_state.owner_name.clone()).clone();
+            owner_name.push(OwnerName {
+                name: base_id,
+                counter: 0,
+                access: if pre_dims.is_empty() {
+                    None
+                } else {
+                    Some(pre_dims.clone())
+                },
+            });
+            (
+                SymbolicName {
+                    name: base_id,
+                    owner: self.cur_state.owner_name.clone(),
+                    access: if pre_dims.is_empty() {
+                        None
+                    } else {
+                        Some(pre_dims)
+                    },
+                },
+                SymbolicName {
+                    name: component_name.unwrap(),
+                    owner: Rc::new(owner_name),
+                    access: if post_dims.is_empty() {
+                        None
+                    } else {
+                        Some(post_dims)
+                    },
+                },
+            )
+        }
+    }
+
     /// Executes a sequence of statements symbolically.
     ///
     /// This method starts execution from a specified block index, updating internal states
@@ -640,43 +736,12 @@ impl<'a> SymbolicExecutor<'a> {
                     let original_value = self.fold_variables(&expr, true);
                     let value = self.fold_variables(&expr, !self.setting.propagate_substitution);
 
-                    let base_name = SymbolicName {
+                    /*let base_name = SymbolicName {
                         name: *var,
                         owner: self.cur_state.owner_name.clone(),
                         access: None,
-                    };
-
-                    let mut component_name = None;
-                    let mut dims = Vec::new();
-                    for acc in access {
-                        let evaled_access = self.evaluate_access(&acc.clone());
-                        match evaled_access {
-                            SymbolicAccess::ComponentAccess(tmp_name) => {
-                                component_name = Some(tmp_name.clone());
-                            }
-                            SymbolicAccess::ArrayAccess(_) => {
-                                dims.push(evaled_access);
-                            }
-                        }
-                    }
-                    let var_name = if component_name.is_none() {
-                        SymbolicName {
-                            name: *var,
-                            owner: self.cur_state.owner_name.clone(),
-                            access: if dims.is_empty() { None } else { Some(dims) },
-                        }
-                    } else {
-                        let mut owner_name = (*self.cur_state.owner_name.clone()).clone();
-                        owner_name.push(OwnerName {
-                            name: *var,
-                            counter: 0,
-                        });
-                        SymbolicName {
-                            name: component_name.unwrap(),
-                            owner: Rc::new(owner_name),
-                            access: if dims.is_empty() { None } else { Some(dims) },
-                        }
-                    };
+                    };*/
+                    let (base_name, var_name) = self.construct_symbolic_name(*var, access);
                     self.cur_state.set_symval(var_name.clone(), value.clone());
 
                     match value {
@@ -854,25 +919,33 @@ impl<'a> SymbolicExecutor<'a> {
 
                     if !access.is_empty() {
                         let mut component_name = 0_usize;
-                        let mut dims = Vec::new();
+                        let mut pre_dims = Vec::new();
+                        let mut post_dims = Vec::new();
+                        let mut found_component = false;
                         for acc in access {
                             let evaled_access = self.evaluate_access(&acc.clone());
                             match evaled_access {
                                 SymbolicAccess::ComponentAccess(tmp_name) => {
+                                    found_component = true;
                                     component_name = tmp_name.clone();
                                 }
                                 SymbolicAccess::ArrayAccess(_) => {
-                                    dims.push(evaled_access);
+                                    if found_component {
+                                        post_dims.push(evaled_access);
+                                    } else {
+                                        pre_dims.push(evaled_access);
+                                    }
                                 }
                             }
                         }
+
                         let inp_name = SymbolicName {
                             name: component_name,
                             owner: Rc::new(Vec::new()),
-                            access: if dims.is_empty() {
+                            access: if post_dims.is_empty() {
                                 None
                             } else {
-                                Some(dims.clone())
+                                Some(post_dims.clone())
                             },
                         };
 
@@ -893,6 +966,11 @@ impl<'a> SymbolicExecutor<'a> {
                                 updated_owner_list.push(OwnerName {
                                     name: *var,
                                     counter: 0,
+                                    access: if pre_dims.is_empty() {
+                                        None
+                                    } else {
+                                        Some(pre_dims.clone())
+                                    },
                                 });
                                 subse.cur_state.owner_name = Rc::new(updated_owner_list);
 
@@ -1406,24 +1484,7 @@ impl<'a> SymbolicExecutor<'a> {
                         }
                     }
 
-                    if component_name.is_none() {
-                        SymbolicName {
-                            name: *name,
-                            owner: self.cur_state.owner_name.clone(),
-                            access: if dims.is_empty() { None } else { Some(dims) },
-                        }
-                    } else {
-                        let mut owner_name = (*self.cur_state.owner_name.clone()).clone();
-                        owner_name.push(OwnerName {
-                            name: *name,
-                            counter: 0,
-                        });
-                        SymbolicName {
-                            name: component_name.unwrap(),
-                            owner: Rc::new(owner_name),
-                            access: if dims.is_empty() { None } else { Some(dims) },
-                        }
-                    }
+                    self.construct_symbolic_name(*name, access).1
                 };
                 SymbolicValue::Variable(resolved_name)
             }
@@ -1491,6 +1552,7 @@ impl<'a> SymbolicExecutor<'a> {
                     updated_owner_list.push(OwnerName {
                         name: *id,
                         counter: subse.symbolic_library.function_counter[id],
+                        access: None,
                     });
                     subse.cur_state.owner_name = Rc::new(updated_owner_list);
                     subse

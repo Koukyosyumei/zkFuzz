@@ -50,6 +50,7 @@ impl SymbolicAccess {
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct OwnerName {
     pub name: usize,
+    pub access: Option<Vec<SymbolicAccess>>,
     pub counter: usize,
 }
 
@@ -66,7 +67,20 @@ impl SymbolicName {
             "{}.{}{}",
             self.owner
                 .iter()
-                .map(|e: &OwnerName| lookup[&e.name].clone())
+                .map(|e: &OwnerName| {
+                    let access_str = if e.access.is_none() {
+                        ""
+                    } else {
+                        &e.access
+                            .clone()
+                            .unwrap()
+                            .iter()
+                            .map(|s: &SymbolicAccess| s.lookup_fmt(lookup))
+                            .collect::<Vec<_>>()
+                            .join("")
+                    };
+                    lookup[&e.name].clone() + &access_str
+                })
                 .collect::<Vec<_>>()
                 .join("."),
             lookup[&self.name].clone(),

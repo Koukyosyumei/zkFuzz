@@ -145,6 +145,7 @@ fn start() -> Result<(), ()> {
             sexe.cur_state.add_owner(&OwnerName {
                 name: sexe.symbolic_library.name2id["main"],
                 counter: 0,
+                access: None,
             });
             sexe.cur_state
                 .set_template_id(sexe.symbolic_library.name2id[id]);

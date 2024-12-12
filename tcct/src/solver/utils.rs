@@ -473,6 +473,7 @@ pub fn verify_assignment(
         sexe.cur_state.add_owner(&OwnerName {
             name: sexe.symbolic_library.name2id["main"],
             counter: 0,
+            access: None,
         });
         sexe.feed_arguments(
             &setting.template_param_names,
