@@ -1,6 +1,5 @@
 use std::fmt;
 use std::io::Write;
-use std::rc::Rc;
 
 use colored::Colorize;
 use num_bigint_dig::BigInt;

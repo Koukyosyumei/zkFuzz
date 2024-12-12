@@ -8,7 +8,6 @@ use num_traits::cast::ToPrimitive;
 use num_traits::FromPrimitive;
 use num_traits::{Signed, Zero};
 use rustc_hash::FxHashMap;
-use std::str::FromStr;
 
 use program_structure::ast::{
     AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType,

@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 use std::io;
 use std::io::Write;
-use std::rc::Rc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 
@@ -10,7 +9,7 @@ use num_traits::{One, Zero};
 use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_value::{SymbolicName, SymbolicValueRef};
 
 use crate::solver::utils::{
     extract_variables, is_vulnerable, verify_assignment, CounterExample, VerificationResult,
