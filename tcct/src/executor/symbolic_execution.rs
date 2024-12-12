@@ -287,14 +287,6 @@ pub struct SymbolicExecutorSetting {
 /// * `setting`: A reference to the execution settings.
 /// * `symbolic_store`: A store for components, variable types, and execution states.
 /// * `cur_state`: The current symbolic execution state.
-///
-/// # Examples
-///
-/// ```
-/// # use your_crate::{SymbolicLibrary, SymbolicExecutorSetting, SymbolicExecutor};
-/// let mut executor = SymbolicExecutor::new(&mut library, &setting);
-/// // Use the executor to symbolically execute statements
-/// ```
 pub struct SymbolicExecutor<'a> {
     pub symbolic_library: &'a mut SymbolicLibrary,
     pub setting: &'a SymbolicExecutorSetting,
