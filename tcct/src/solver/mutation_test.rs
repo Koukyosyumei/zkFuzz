@@ -13,8 +13,8 @@ use rand::Rng;
 use rustc_hash::FxHashMap;
 use std::str::FromStr;
 
-use crate::symbolic_execution::SymbolicExecutor;
-use crate::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_execution::SymbolicExecutor;
+use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::utils::{
     count_satisfied_constraints, emulate_symbolic_values, evaluate_constraints, extract_variables,

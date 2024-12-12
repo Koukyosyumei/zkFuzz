@@ -15,15 +15,15 @@ use program_structure::ast::{
     VariableType,
 };
 
-use crate::debug_ast::{
+use crate::executor::debug_ast::{
     DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode,
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
-use crate::symbolic_value::{
+use crate::executor::symbolic_value::{
     OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue,
     SymbolicValueRef,
 };
-use crate::utils::{extended_euclidean, italic, modpow};
+use crate::executor::utils::{extended_euclidean, italic, modpow};
 
 /// Represents the state of symbolic execution, holding symbolic values,
 /// trace constraints, side constraints, and depth information.

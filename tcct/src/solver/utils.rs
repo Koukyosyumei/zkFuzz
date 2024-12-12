@@ -13,9 +13,9 @@ use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
 
-use crate::symbolic_execution::SymbolicExecutor;
-use crate::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
-use crate::utils::extended_euclidean;
+use crate::executor::symbolic_execution::SymbolicExecutor;
+use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::utils::extended_euclidean;
 
 /// Represents the result of a constraint verification process.
 pub enum VerificationResult {

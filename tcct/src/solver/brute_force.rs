@@ -9,8 +9,8 @@ use num_bigint_dig::BigInt;
 use num_traits::{One, Zero};
 use rustc_hash::FxHashMap;
 
-use crate::symbolic_execution::SymbolicExecutor;
-use crate::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_execution::SymbolicExecutor;
+use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::utils::{
     extract_variables, is_vulnerable, verify_assignment, CounterExample, VerificationResult,

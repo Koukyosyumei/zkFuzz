@@ -7,7 +7,7 @@ use std::rc::Rc;
 
 use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, VariableType};
 
-use crate::debug_ast::{
+use crate::executor::debug_ast::{
     DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement,
 };
 

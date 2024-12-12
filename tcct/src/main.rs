@@ -1,13 +1,9 @@
 //mod execution_user;
-mod debug_ast;
+mod executor;
 mod input_user;
 mod parser_user;
 mod solver;
-mod stats;
-mod symbolic_execution;
-mod symbolic_value;
 mod type_analysis_user;
-mod utils;
 
 use std::env;
 use std::str::FromStr;
@@ -20,15 +16,16 @@ use log::{info, warn};
 use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
 
-use debug_ast::simplify_statement;
 use program_structure::ast::Expression;
+
+use executor::debug_ast::simplify_statement;
+use executor::stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
+use executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
+use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
     utils::VerificationSetting,
 };
-use stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
-use symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
-use symbolic_value::{OwnerName, SymbolicLibrary};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";
