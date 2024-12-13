@@ -769,23 +769,11 @@ impl<'a> SymbolicExecutor<'a> {
                                     .inputs
                                     .clone()
                                 {
-                                    let template_library = &self.symbolic_library.template_library;
-                                    let dims = template_library[&callee_name].input_dimensions
-                                        [&inp_name]
-                                        .clone()
-                                        .iter()
-                                        .map(|arg0: &DebugExpression| {
-                                            let evaled_arg0 = self.evaluate_expression(arg0);
-                                            let folded_arg0 =
-                                                self.fold_variables(&evaled_arg0, false);
-                                            if let SymbolicValue::ConstantInt(bint) = &folded_arg0 {
-                                                bint.to_usize().unwrap()
-                                            } else {
-                                                panic!("Undetermined dimension: {:?}", folded_arg0)
-                                            }
-                                        })
-                                        .collect::<Vec<_>>();
-
+                                    let dims = self.evaluate_dimension(
+                                        &self.symbolic_library.template_library[&callee_name]
+                                            .input_dimensions[&inp_name]
+                                            .clone(),
+                                    );
                                     register_array_elements(
                                         *inp_name,
                                         &dims,
@@ -1150,6 +1138,20 @@ impl<'a> SymbolicExecutor<'a> {
                 SymbolicAccess::ArrayAccess(self.fold_variables(&tmp_e, false))
             }
         }
+    }
+
+    fn evaluate_dimension(&mut self, dims: &Vec<DebugExpression>) -> Vec<usize> {
+        dims.iter()
+            .map(|arg0: &DebugExpression| {
+                let evaled_arg0 = self.evaluate_expression(arg0);
+                let folded_arg0 = self.fold_variables(&evaled_arg0, false);
+                if let SymbolicValue::ConstantInt(bint) = &folded_arg0 {
+                    bint.to_usize().unwrap()
+                } else {
+                    panic!("Undetermined dimension: {:?}", folded_arg0)
+                }
+            })
+            .collect::<Vec<_>>()
     }
 
     /// Folds variables in a symbolic expression, potentially simplifying it.
