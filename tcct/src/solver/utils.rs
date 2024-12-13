@@ -427,12 +427,12 @@ pub fn evaluate_symbolic_value(
                     ExpressionInfixOpcode::NotEq => {
                         SymbolicValue::ConstantBool(lv % prime != rv % prime)
                     }
-                    _ => todo!(),
+                    _ => todo!("{:?}", value),
                 },
                 (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => match &op.0 {
                     ExpressionInfixOpcode::BoolAnd => SymbolicValue::ConstantBool(*lv && *rv),
                     ExpressionInfixOpcode::BoolOr => SymbolicValue::ConstantBool(*lv || *rv),
-                    _ => todo!(),
+                    _ => todo!("{:?}", value),
                 },
                 _ => panic!("Unassigned variables exist"),
             }
@@ -448,7 +448,7 @@ pub fn evaluate_symbolic_value(
                     ExpressionPrefixOpcode::BoolNot => SymbolicValue::ConstantBool(!rv),
                     _ => panic!("Unassigned variables exist"),
                 },
-                _ => todo!(),
+                _ => todo!("{:?}", value),
             }
         }
         _ => todo!("{:?}", value),
