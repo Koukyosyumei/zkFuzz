@@ -455,16 +455,16 @@ pub fn access_multidimensional_array(
 ///
 /// ```
 /// use rustc_hash::FxHashMap;
-/// use tcct::executor::symbolic_value::register_array_elements;
+/// use tcct::executor::symbolic_value::{register_array_elements,SymbolicName,SymbolicValue};
 ///
-/// let mut elements = FxHashMap::default();
+/// let mut elements: FxHashMap<SymbolicName, Option<SymbolicValue>> = FxHashMap::default();
 /// register_array_elements(0, &vec![2, 3], &mut elements);
 /// assert_eq!(elements.len(), 6); // 2 * 3 elements registered
 /// ```
-pub fn register_array_elements(
+pub fn register_array_elements<T>(
     name: usize,
     dims: &Vec<usize>,
-    elements_of_component: &mut FxHashMap<SymbolicName, Option<SymbolicValue>>,
+    elements_of_component: &mut FxHashMap<SymbolicName, Option<T>>,
 ) {
     let mut positions = vec![vec![]];
     for size in dims {
