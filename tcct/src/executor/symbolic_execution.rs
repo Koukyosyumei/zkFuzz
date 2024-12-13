@@ -19,8 +19,8 @@ use crate::executor::debug_ast::{
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
 use crate::executor::symbolic_value::{
-    access_multidimensional_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
-    SymbolicName, SymbolicValue, SymbolicValueRef,
+    access_multidimensional_array, register_array_elements, OwnerName, SymbolicAccess,
+    SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::{extended_euclidean, italic, modpow};
 
@@ -760,7 +760,7 @@ impl<'a> SymbolicExecutor<'a> {
                                 }
 
                                 // Initialize template-inputs
-                                let mut comp_inputs: FxHashMap<
+                                let mut inputs_of_component: FxHashMap<
                                     SymbolicName,
                                     Option<SymbolicValue>,
                                 > = FxHashMap::default();
@@ -786,64 +786,11 @@ impl<'a> SymbolicExecutor<'a> {
                                         })
                                         .collect::<Vec<_>>();
 
-                                    let mut positions = vec![vec![]];
-                                    for size in dims {
-                                        let mut new_positions = vec![];
-                                        for combination in &positions {
-                                            for i in 0..size {
-                                                let mut new_combination = combination.clone();
-                                                new_combination.push(i);
-                                                new_positions.push(new_combination);
-                                            }
-                                        }
-                                        positions = new_positions;
-                                    }
-
-                                    if positions.is_empty() {
-                                        comp_inputs.insert(
-                                            SymbolicName {
-                                                name: inp_name.clone(),
-                                                owner: Rc::new(Vec::new()),
-                                                access: None,
-                                            },
-                                            None,
-                                        );
-                                    } else {
-                                        for p in positions {
-                                            if p.is_empty() {
-                                                comp_inputs.insert(
-                                                    SymbolicName {
-                                                        name: inp_name.clone(),
-                                                        owner: Rc::new(Vec::new()),
-                                                        access: None,
-                                                    },
-                                                    None,
-                                                );
-                                            } else {
-                                                comp_inputs.insert(
-                                                    SymbolicName {
-                                                        name: inp_name.clone(),
-                                                        owner: Rc::new(Vec::new()),
-                                                        access: Some(
-                                                            p.iter()
-                                                                .map(|arg0: &usize| {
-                                                                    SymbolicAccess::ArrayAccess(
-                                                                        SymbolicValue::ConstantInt(
-                                                                            BigInt::from_usize(
-                                                                                *arg0,
-                                                                            )
-                                                                            .unwrap(),
-                                                                        ),
-                                                                    )
-                                                                })
-                                                                .collect::<Vec<_>>(),
-                                                        ),
-                                                    },
-                                                    None,
-                                                );
-                                            }
-                                        }
-                                    }
+                                    register_array_elements(
+                                        *inp_name,
+                                        &dims,
+                                        &mut inputs_of_component,
+                                    );
                                 }
 
                                 // Restore the overwritten variables
@@ -854,7 +801,7 @@ impl<'a> SymbolicExecutor<'a> {
                                 let c = SymbolicComponent {
                                     template_name: callee_name.clone(),
                                     args: args.clone(),
-                                    inputs: comp_inputs,
+                                    inputs: inputs_of_component,
                                     is_done: false,
                                 };
 

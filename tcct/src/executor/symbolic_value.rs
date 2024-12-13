@@ -4,6 +4,7 @@ use std::rc::Rc;
 use colored::Colorize;
 use log::warn;
 use num_bigint_dig::BigInt;
+use num_traits::FromPrimitive;
 use num_traits::ToPrimitive;
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -432,4 +433,86 @@ pub fn access_multidimensional_array(
         }
     }
     panic!("Incomplete dimensions");
+}
+
+/// Registers all elements of a multi-dimensional array in a component's map.
+///
+/// This function generates all possible index combinations for a multi-dimensional
+/// array and registers each combination in the `elements_of_component` map.
+/// For scalar values (i.e., when `dims` is empty), it registers a single entry without array access.
+///
+/// # Arguments
+///
+/// * `name` - The unique identifier for the array.
+/// * `dims` - A vector containing the dimensions of the array.
+/// * `elements_of_component` - A mutable reference to the map storing the component's elements.
+///
+/// # Examples
+///
+/// ```
+/// use rustc_hash::FxHashMap;
+/// use tcct::executor::symbolic_value::register_array_elements;
+///
+/// let mut elements = FxHashMap::default();
+/// register_array_elements(0, &vec![2, 3], &mut elements);
+/// assert_eq!(elements.len(), 6); // 2 * 3 elements registered
+/// ```
+pub fn register_array_elements(
+    name: usize,
+    dims: &Vec<usize>,
+    elements_of_component: &mut FxHashMap<SymbolicName, Option<SymbolicValue>>,
+) {
+    let mut positions = vec![vec![]];
+    for size in dims {
+        let mut new_positions = vec![];
+        for combination in &positions {
+            for i in 0..*size {
+                let mut new_combination = combination.clone();
+                new_combination.push(i);
+                new_positions.push(new_combination);
+            }
+        }
+        positions = new_positions;
+    }
+
+    if positions.is_empty() {
+        elements_of_component.insert(
+            SymbolicName {
+                name: name.clone(),
+                owner: Rc::new(Vec::new()),
+                access: None,
+            },
+            None,
+        );
+    } else {
+        for p in positions {
+            if p.is_empty() {
+                elements_of_component.insert(
+                    SymbolicName {
+                        name: name.clone(),
+                        owner: Rc::new(Vec::new()),
+                        access: None,
+                    },
+                    None,
+                );
+            } else {
+                elements_of_component.insert(
+                    SymbolicName {
+                        name: name.clone(),
+                        owner: Rc::new(Vec::new()),
+                        access: Some(
+                            p.iter()
+                                .map(|arg0: &usize| {
+                                    SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(
+                                        BigInt::from_usize(*arg0).unwrap(),
+                                    ))
+                                })
+                                .collect::<Vec<_>>(),
+                        ),
+                    },
+                    None,
+                );
+            }
+        }
+    }
 }
