@@ -247,6 +247,7 @@ pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<usize>,
     pub inputs: FxHashSet<usize>,
     pub input_dimensions: FxHashMap<usize, Vec<DebugExpression>>,
+    pub output_dimensions: FxHashMap<usize, Vec<DebugExpression>>,
     pub outputs: FxHashSet<usize>,
     pub var2type: FxHashMap<usize, VariableType>,
     pub body: Vec<DebugStatement>,
@@ -302,6 +303,7 @@ impl SymbolicLibrary {
     ) {
         let mut inputs = FxHashSet::default();
         let mut input_dimensions = FxHashMap::default();
+        let mut output_dimensions = FxHashMap::default();
         let mut outputs = FxHashSet::default();
         let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
 
@@ -343,6 +345,7 @@ impl SymbolicLibrary {
                                         }
                                         SignalType::Output => {
                                             outputs.insert(*name);
+                                            output_dimensions.insert(*name, dimensions.clone());
                                         }
                                         SignalType::Intermediate => {}
                                     }
@@ -366,6 +369,7 @@ impl SymbolicLibrary {
                     .collect::<Vec<_>>(),
                 inputs: inputs,
                 input_dimensions: input_dimensions,
+                output_dimensions: output_dimensions,
                 outputs: outputs,
                 var2type: var2type,
                 body: vec![dbody.clone(), DebugStatement::Ret],
