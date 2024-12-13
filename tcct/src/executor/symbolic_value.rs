@@ -1,9 +1,11 @@
+use std::hash::Hash;
+use std::rc::Rc;
+
 use colored::Colorize;
 use log::warn;
 use num_bigint_dig::BigInt;
+use num_traits::ToPrimitive;
 use rustc_hash::{FxHashMap, FxHashSet};
-use std::hash::Hash;
-use std::rc::Rc;
 
 use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, VariableType};
 
@@ -405,4 +407,29 @@ impl SymbolicLibrary {
         );
         self.function_counter.insert(i, 0_usize);
     }
+}
+
+pub fn access_multidimensional_array(
+    values: &Vec<SymbolicValueRef>,
+    dims: &[SymbolicAccess],
+) -> SymbolicValue {
+    let mut current_values = values.clone();
+    for dim in dims {
+        if let SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(a)) = dim {
+            let index = a.to_usize().unwrap();
+            if index < current_values.len() {
+                match &*current_values[index] {
+                    SymbolicValue::Array(inner_values) => {
+                        current_values = inner_values.clone();
+                    }
+                    value => return value.clone(),
+                };
+            } else {
+                panic!("Out of range");
+            }
+        } else {
+            panic!("dims should be a list of SymbolicAccess::ArrayAccess");
+        }
+    }
+    panic!("Incomplete dimensions");
 }

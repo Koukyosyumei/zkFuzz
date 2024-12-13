@@ -19,8 +19,8 @@ use crate::executor::debug_ast::{
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
 use crate::executor::symbolic_value::{
-    OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue,
-    SymbolicValueRef,
+    access_multidimensional_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
+    SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::{extended_euclidean, italic, modpow};
 
@@ -1456,14 +1456,11 @@ impl<'a> SymbolicExecutor<'a> {
                     }
 
                     if sv.is_some() && component_name.is_none() {
-                        if let SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(a)) = &dims[0]
-                        {
-                            match (*sv.unwrap().clone()).clone() {
-                                SymbolicValue::Array(values) => {
-                                    return (*values[a.to_usize().unwrap()].clone()).clone();
-                                }
-                                _ => {}
+                        match (*sv.unwrap().clone()).clone() {
+                            SymbolicValue::Array(values) => {
+                                return access_multidimensional_array(&values, &dims);
                             }
+                            _ => {}
                         }
                     }
 
