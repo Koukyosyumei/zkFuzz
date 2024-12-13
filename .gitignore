@@ -1,4 +1,5 @@
 tcct/experiment/
+*tarpaulin-report.html
 
 # circom
 *.r1cs
