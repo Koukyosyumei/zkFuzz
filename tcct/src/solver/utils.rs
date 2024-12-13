@@ -451,7 +451,7 @@ pub fn evaluate_symbolic_value(
                 _ => todo!(),
             }
         }
-        _ => todo!(),
+        _ => todo!("{:?}", value),
     }
 }
 
