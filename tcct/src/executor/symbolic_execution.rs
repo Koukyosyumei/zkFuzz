@@ -777,6 +777,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     register_array_elements(
                                         *inp_name,
                                         &dims,
+                                        None,
                                         &mut inputs_of_component,
                                     );
                                 }
@@ -1140,7 +1141,7 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn evaluate_dimension(&mut self, dims: &Vec<DebugExpression>) -> Vec<usize> {
+    pub fn evaluate_dimension(&mut self, dims: &Vec<DebugExpression>) -> Vec<usize> {
         dims.iter()
             .map(|arg0: &DebugExpression| {
                 let evaled_arg0 = self.evaluate_expression(arg0);

@@ -464,6 +464,7 @@ pub fn access_multidimensional_array(
 pub fn register_array_elements<T>(
     name: usize,
     dims: &Vec<usize>,
+    owner: Option<Rc<Vec<OwnerName>>>,
     elements_of_component: &mut FxHashMap<SymbolicName, Option<T>>,
 ) {
     let mut positions = vec![vec![]];
@@ -483,7 +484,11 @@ pub fn register_array_elements<T>(
         elements_of_component.insert(
             SymbolicName {
                 name: name.clone(),
-                owner: Rc::new(Vec::new()),
+                owner: if owner.is_none() {
+                    Rc::new(Vec::new())
+                } else {
+                    owner.clone().unwrap()
+                },
                 access: None,
             },
             None,
@@ -494,7 +499,11 @@ pub fn register_array_elements<T>(
                 elements_of_component.insert(
                     SymbolicName {
                         name: name.clone(),
-                        owner: Rc::new(Vec::new()),
+                        owner: if owner.is_none() {
+                            Rc::new(Vec::new())
+                        } else {
+                            owner.clone().unwrap()
+                        },
                         access: None,
                     },
                     None,
@@ -503,7 +512,11 @@ pub fn register_array_elements<T>(
                 elements_of_component.insert(
                     SymbolicName {
                         name: name.clone(),
-                        owner: Rc::new(Vec::new()),
+                        owner: if owner.is_none() {
+                            Rc::new(Vec::new())
+                        } else {
+                            owner.clone().unwrap()
+                        },
                         access: Some(
                             p.iter()
                                 .map(|arg0: &usize| {
