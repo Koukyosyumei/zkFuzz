@@ -458,7 +458,7 @@ pub fn access_multidimensional_array(
 /// use tcct::executor::symbolic_value::{register_array_elements,SymbolicName,SymbolicValue};
 ///
 /// let mut elements: FxHashMap<SymbolicName, Option<SymbolicValue>> = FxHashMap::default();
-/// register_array_elements(0, &vec![2, 3], &mut elements);
+/// register_array_elements(0, &vec![2, 3], None, &mut elements);
 /// assert_eq!(elements.len(), 6); // 2 * 3 elements registered
 /// ```
 pub fn register_array_elements<T>(
