@@ -21,7 +21,8 @@ use crate::executor::symbolic_value::{
 
 use crate::solver::utils::{
     count_satisfied_constraints, emulate_symbolic_values, evaluate_constraints, extract_variables,
-    is_vulnerable, verify_assignment, CounterExample, VerificationResult, VerificationSetting,
+    is_vulnerable, verify_assignment, CounterExample, UnderConstrainedType, VerificationResult,
+    VerificationSetting,
 };
 
 pub fn check_unused_outputs(
@@ -64,7 +65,7 @@ pub fn check_unused_outputs(
             .map(|uo| (uo.clone(), BigInt::zero()))
             .collect();
         Some(CounterExample {
-            flag: VerificationResult::UnusedOutput,
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::UnusedOutput),
             assignment: dummy_assignment,
         })
     } else {

@@ -21,7 +21,8 @@ use crate::executor::symbolic_value::{
 
 use crate::solver::utils::{
     count_satisfied_constraints, emulate_symbolic_values, evaluate_constraints, extract_variables,
-    is_vulnerable, verify_assignment, CounterExample, VerificationResult, VerificationSetting,
+    is_vulnerable, verify_assignment, CounterExample, UnderConstrainedType, VerificationResult,
+    VerificationSetting,
 };
 
 pub fn mutation_test_search(
@@ -170,7 +171,9 @@ pub fn mutation_test_search(
             } else {
                 if evaluate_constraints(&setting.prime, side_constraints, &assignment) {
                     return Some(CounterExample {
-                        flag: VerificationResult::UnderConstrained,
+                        flag: VerificationResult::UnderConstrained(
+                            UnderConstrainedType::Deterministic,
+                        ),
                         assignment: assignment.clone(),
                     });
                 }
