@@ -21,6 +21,8 @@ use tcct::executor::symbolic_value::{
     OwnerName, SymbolicAccess, SymbolicLibrary, SymbolicName, SymbolicValue,
 };
 use tcct::input_user::Input;
+use tcct::solver::unused_outputs::check_unused_outputs;
+use tcct::solver::utils::VerificationSetting;
 use tcct::type_analysis_user::analyse_project;
 
 pub fn parse_project(initial_file: String, prime: BigInt) -> Result<ProgramArchive, ()> {
@@ -763,4 +765,50 @@ fn test_2darray_component() {
             *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
         );
     }
+}
+
+#[test]
+fn test_check_unused_outputs() {
+    let path = "./tests/sample/unused_output.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = SymbolicExecutorSetting {
+        prime: prime.clone(),
+        propagate_substitution: false,
+        skip_initialization_blocks: false,
+        off_trace: false,
+        keep_track_constraints: true,
+        substitute_output: false,
+    };
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    let mut main_template_id = "";
+    let mut template_param_names = Vec::new();
+    let mut template_param_values = Vec::new();
+    match &program_archive.initial_template_call {
+        Expression::Call { id, args, .. } => {
+            main_template_id = id;
+            let template = program_archive.templates[id].clone();
+            template_param_names = template.get_name_of_params().clone();
+            template_param_values = args.clone();
+        }
+        _ => unimplemented!(),
+    }
+
+    let verification_setting = VerificationSetting {
+        id: main_template_id.to_string(),
+        prime: prime.clone(),
+        quick_mode: false,
+        progress_interval: 10000,
+        template_param_names: template_param_names,
+        template_param_values: template_param_values,
+    };
+
+    assert!(check_unused_outputs(&mut sexe, &verification_setting).is_some());
 }
