@@ -31,7 +31,7 @@ impl fmt::Display for VerificationResult {
     /// A `fmt::Result` indicating success or failure of the formatting
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let output = match self {
-            VerificationResult::UnusedOutput => "💥 UnusedOutput 💥".red().bold(),
+            VerificationResult::UnusedOutput => "👻 UnusedOutput 👻".red().bold(),
             VerificationResult::UnderConstrained => "🔥 UnderConstrained 🔥".red().bold(),
             VerificationResult::OverConstrained => "💣 OverConstrained 💣".yellow().bold(),
             VerificationResult::WellConstrained => "✅ WellConstrained ✅".green().bold(),
