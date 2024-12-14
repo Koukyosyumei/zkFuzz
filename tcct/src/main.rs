@@ -24,7 +24,7 @@ use executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
-    utils::VerificationSetting,
+    unused_outputs::check_unused_outputs, utils::VerificationSetting,
 };
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
@@ -183,16 +183,6 @@ fn start() -> Result<(), ()> {
                 );
                 println!("{}", "🩺 Scanning TCCT Instances...".green());
 
-                let sub_setting = SymbolicExecutorSetting {
-                    prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                    propagate_substitution: user_input.flag_propagate_substitution,
-                    skip_initialization_blocks: true,
-                    off_trace: true,
-                    keep_track_constraints: false,
-                    substitute_output: true,
-                };
-                let mut sub_sexe = SymbolicExecutor::new(&mut sexe.symbolic_library, &sub_setting);
-
                 let mut main_template_id = "";
                 let mut template_param_names = Vec::new();
                 let mut template_param_values = Vec::new();
@@ -203,7 +193,6 @@ fn start() -> Result<(), ()> {
                         if !user_input.flag_symbolic_template_params {
                             template_param_names = template.get_name_of_params().clone();
                             template_param_values = args.clone();
-                            sub_sexe.feed_arguments(template.get_name_of_params(), args);
                         }
                     }
                     _ => unimplemented!(),
@@ -218,40 +207,66 @@ fn start() -> Result<(), ()> {
                     template_param_values: template_param_values,
                 };
 
-                for s in &sexe.symbolic_store.final_states {
-                    let counterexample = match &*user_input.search_mode {
-                        "quick" => brute_force_search(
-                            &mut sub_sexe,
-                            &s.trace_constraints.clone(),
-                            &s.side_constraints.clone(),
-                            &verification_setting,
-                        ),
-                        "full" => brute_force_search(
-                            &mut sub_sexe,
-                            &s.trace_constraints.clone(),
-                            &s.side_constraints.clone(),
-                            &verification_setting,
-                        ),
-                        "ga" => mutation_test_search(
-                            &mut sub_sexe,
-                            &s.trace_constraints.clone(),
-                            &s.side_constraints.clone(),
-                            &verification_setting,
-                        ),
-                        _ => panic!(
-                            "search_mode={} is not supported",
-                            user_input.search_mode.to_string()
-                        ),
+                if let Some(counter_example_for_unused_outputs) =
+                    check_unused_outputs(&mut sexe, &verification_setting)
+                {
+                    is_safe = false;
+                    println!(
+                        "{}",
+                        counter_example_for_unused_outputs
+                            .lookup_fmt(&sexe.symbolic_library.id2name)
+                    );
+                } else {
+                    let sub_setting = SymbolicExecutorSetting {
+                        prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                        propagate_substitution: user_input.flag_propagate_substitution,
+                        skip_initialization_blocks: true,
+                        off_trace: true,
+                        keep_track_constraints: false,
+                        substitute_output: true,
                     };
-                    if counterexample.is_some() {
-                        is_safe = false;
-                        println!(
-                            "{}",
-                            counterexample
-                                .unwrap()
-                                .lookup_fmt(&sub_sexe.symbolic_library.id2name)
-                        );
-                        break;
+                    let mut sub_sexe =
+                        SymbolicExecutor::new(&mut sexe.symbolic_library, &sub_setting);
+                    sub_sexe.feed_arguments(
+                        &verification_setting.template_param_names,
+                        &verification_setting.template_param_values,
+                    );
+
+                    for s in &sexe.symbolic_store.final_states {
+                        let counterexample = match &*user_input.search_mode {
+                            "quick" => brute_force_search(
+                                &mut sub_sexe,
+                                &s.trace_constraints.clone(),
+                                &s.side_constraints.clone(),
+                                &verification_setting,
+                            ),
+                            "full" => brute_force_search(
+                                &mut sub_sexe,
+                                &s.trace_constraints.clone(),
+                                &s.side_constraints.clone(),
+                                &verification_setting,
+                            ),
+                            "ga" => mutation_test_search(
+                                &mut sub_sexe,
+                                &s.trace_constraints.clone(),
+                                &s.side_constraints.clone(),
+                                &verification_setting,
+                            ),
+                            _ => panic!(
+                                "search_mode={} is not supported",
+                                user_input.search_mode.to_string()
+                            ),
+                        };
+                        if counterexample.is_some() {
+                            is_safe = false;
+                            println!(
+                                "{}",
+                                counterexample
+                                    .unwrap()
+                                    .lookup_fmt(&sub_sexe.symbolic_library.id2name)
+                            );
+                            break;
+                        }
                     }
                 }
             }

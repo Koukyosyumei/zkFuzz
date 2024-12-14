@@ -64,47 +64,6 @@ pub fn mutation_test_search(
         }
     }
 
-    // Check unused outputs
-    sexe.clear();
-    sexe.cur_state.add_owner(&OwnerName {
-        name: sexe.symbolic_library.name2id["main"],
-        counter: 0,
-        access: None,
-    });
-    let mut used_outputs: FxHashMap<SymbolicName, Option<bool>> = FxHashMap::default();
-    for oup_name in &sexe.symbolic_library.template_library
-        [&sexe.symbolic_library.name2id[&setting.id]]
-        .outputs
-        .clone()
-    {
-        let dims = sexe.evaluate_dimension(
-            &sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[&setting.id]]
-                .output_dimensions[&oup_name]
-                .clone(),
-        );
-        register_array_elements(
-            *oup_name,
-            &dims,
-            Some(sexe.cur_state.owner_name.clone()),
-            &mut used_outputs,
-        );
-    }
-    let unused_outputs: Vec<SymbolicName> = used_outputs
-        .keys()
-        .filter(|key| !variables_set.contains(*key))
-        .cloned()
-        .collect();
-    if !unused_outputs.is_empty() {
-        let dummy_assignment: FxHashMap<SymbolicName, BigInt> = unused_outputs
-            .iter()
-            .map(|uo| (uo.clone(), BigInt::zero()))
-            .collect();
-        return Some(CounterExample {
-            flag: VerificationResult::UnusedOutput,
-            assignment: dummy_assignment,
-        });
-    }
-
     if assign_pos.is_empty() {
         return None;
     }
