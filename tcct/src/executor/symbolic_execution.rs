@@ -938,113 +938,6 @@ impl<'a> SymbolicExecutor<'a> {
                                         access: k.access.clone(),
                                     };
                                     subse.cur_state.set_symval(n, v.clone().unwrap());
-
-                                    /*
-                                    // quick check for LessThan components
-                                    if templ.is_lessthan {
-                                        let cond = SymbolicValue::BinaryOp(
-                                            Rc::new(v.clone().unwrap()),
-                                            DebugExpressionInfixOpcode(
-                                                ExpressionInfixOpcode::Lesser,
-                                            ),
-                                            Rc::new(SymbolicValue::ConstantInt(BigInt::from(
-                                                2_u32.pow(n_bits),
-                                            ))),
-                                        );
-                                        self.cur_state.push_trace_constraint(&cond);
-                                    }*/
-                                }
-
-                                // rigorous check for LessThan components
-                                if templ.is_lessthan {
-                                    let in_0 = Rc::new(
-                                        self.symbolic_store.components_store[&base_name].inputs
-                                            [&SymbolicName {
-                                                name: subse.symbolic_library.name2id["in"],
-                                                owner: Rc::new(Vec::new()),
-                                                access: Some(vec![SymbolicAccess::ArrayAccess(
-                                                    SymbolicValue::ConstantInt(BigInt::zero()),
-                                                )]),
-                                            }]
-                                            .clone()
-                                            .unwrap(),
-                                    );
-                                    let in_1 = Rc::new(
-                                        self.symbolic_store.components_store[&base_name].inputs
-                                            [&SymbolicName {
-                                                name: subse.symbolic_library.name2id["in"],
-                                                owner: Rc::new(Vec::new()),
-                                                access: Some(vec![SymbolicAccess::ArrayAccess(
-                                                    SymbolicValue::ConstantInt(BigInt::one()),
-                                                )]),
-                                            }]
-                                            .clone()
-                                            .unwrap(),
-                                    );
-                                    // ((in[0] + 2^n - in[1]) >> n) & 1
-                                    let flag_bit = Rc::new(SymbolicValue::BinaryOp(
-                                        Rc::new(SymbolicValue::BinaryOp(
-                                            Rc::new(SymbolicValue::BinaryOp(
-                                                in_0.clone(),
-                                                DebugExpressionInfixOpcode(
-                                                    ExpressionInfixOpcode::Add,
-                                                ),
-                                                Rc::new(SymbolicValue::BinaryOp(
-                                                    Rc::new(SymbolicValue::ConstantInt(
-                                                        BigInt::from(2_u32.pow(n_bits)),
-                                                    )),
-                                                    DebugExpressionInfixOpcode(
-                                                        ExpressionInfixOpcode::Sub,
-                                                    ),
-                                                    in_1.clone(),
-                                                )),
-                                            )),
-                                            DebugExpressionInfixOpcode(
-                                                ExpressionInfixOpcode::ShiftR,
-                                            ),
-                                            Rc::new(SymbolicValue::ConstantInt(
-                                                BigInt::from_u32(n_bits).unwrap(),
-                                            )),
-                                        )),
-                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BitAnd),
-                                        Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
-                                    ));
-                                    let cond_0 = SymbolicValue::BinaryOp(
-                                        Rc::new(SymbolicValue::BinaryOp(
-                                            Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-                                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                            flag_bit.clone(),
-                                        )),
-                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
-                                        Rc::new(SymbolicValue::BinaryOp(
-                                            in_0.clone(),
-                                            DebugExpressionInfixOpcode(
-                                                ExpressionInfixOpcode::Lesser,
-                                            ),
-                                            in_1.clone(),
-                                        )),
-                                    );
-                                    let cond_1 = SymbolicValue::BinaryOp(
-                                        Rc::new(SymbolicValue::BinaryOp(
-                                            Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
-                                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                                            flag_bit,
-                                        )),
-                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
-                                        Rc::new(SymbolicValue::BinaryOp(
-                                            in_0,
-                                            DebugExpressionInfixOpcode(
-                                                ExpressionInfixOpcode::GreaterEq,
-                                            ),
-                                            in_1,
-                                        )),
-                                    );
-                                    let cond = SymbolicValue::BinaryOp(
-                                        Rc::new(cond_0),
-                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolOr),
-                                        Rc::new(cond_1),
-                                    );
-                                    self.cur_state.push_trace_constraint(&cond);
                                 }
 
                                 if !self.setting.off_trace {
@@ -1061,20 +954,79 @@ impl<'a> SymbolicExecutor<'a> {
                                     );
                                 }
 
+                                let is_lessthan = templ.is_lessthan;
                                 subse.execute(&templ.body.clone(), 0);
 
                                 if subse.symbolic_store.final_states.len() > 1 {
                                     warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
                                 }
-                                //self.cur_state
-                                //    .values
-                                //    .extend(subse.symbolic_store.final_states[0].values.clone());
+
                                 self.cur_state.trace_constraints.append(
                                     &mut subse.symbolic_store.final_states[0].trace_constraints,
                                 );
                                 self.cur_state.side_constraints.append(
                                     &mut subse.symbolic_store.final_states[0].side_constraints,
                                 );
+
+                                if is_lessthan {
+                                    let in_0 = Rc::new(SymbolicValue::Variable(SymbolicName {
+                                        name: subse.symbolic_library.name2id["in"],
+                                        owner: subse.cur_state.owner_name.clone(),
+                                        access: Some(vec![SymbolicAccess::ArrayAccess(
+                                            SymbolicValue::ConstantInt(BigInt::zero()),
+                                        )]),
+                                    }));
+                                    let in_1 = Rc::new(SymbolicValue::Variable(SymbolicName {
+                                        name: subse.symbolic_library.name2id["in"],
+                                        owner: subse.cur_state.owner_name.clone(),
+                                        access: Some(vec![SymbolicAccess::ArrayAccess(
+                                            SymbolicValue::ConstantInt(BigInt::one()),
+                                        )]),
+                                    }));
+                                    let lessthan_out =
+                                        Rc::new(SymbolicValue::Variable(SymbolicName {
+                                            name: subse.symbolic_library.name2id["out"],
+                                            owner: subse.cur_state.owner_name.clone(),
+                                            access: None,
+                                        }));
+                                    let cond_1 = SymbolicValue::BinaryOp(
+                                        Rc::new(SymbolicValue::BinaryOp(
+                                            Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
+                                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                            lessthan_out.clone(),
+                                        )),
+                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
+                                        Rc::new(SymbolicValue::BinaryOp(
+                                            in_0.clone(),
+                                            DebugExpressionInfixOpcode(
+                                                ExpressionInfixOpcode::Lesser,
+                                            ),
+                                            in_1.clone(),
+                                        )),
+                                    );
+                                    let cond_0 = SymbolicValue::BinaryOp(
+                                        Rc::new(SymbolicValue::BinaryOp(
+                                            Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+                                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                                            lessthan_out.clone(),
+                                        )),
+                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
+                                        Rc::new(SymbolicValue::BinaryOp(
+                                            in_0,
+                                            DebugExpressionInfixOpcode(
+                                                ExpressionInfixOpcode::GreaterEq,
+                                            ),
+                                            in_1,
+                                        )),
+                                    );
+                                    let cond = SymbolicValue::BinaryOp(
+                                        Rc::new(cond_1),
+                                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolOr),
+                                        Rc::new(cond_0),
+                                    );
+                                    self.cur_state.push_trace_constraint(&cond);
+                                }
+
                                 if !self.setting.off_trace {
                                     trace!(
                                         "{}",
