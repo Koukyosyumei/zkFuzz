@@ -316,7 +316,7 @@ impl SymbolicLibrary {
             *i
         } else {
             self.name2id.insert(name.clone(), self.name2id.len());
-            self.id2name.insert(self.name2id[&name], name);
+            self.id2name.insert(self.name2id[&name], name.clone());
             self.name2id.len() - 1
         };
 
@@ -365,7 +365,15 @@ impl SymbolicLibrary {
             Box::new(SymbolicTemplate {
                 template_parameter_names: template_parameter_names
                     .iter()
-                    .map(|p: &String| self.name2id[p])
+                    .map(|p: &String| {
+                        if let Some(i) = self.name2id.get(p) {
+                            *i
+                        } else {
+                            self.name2id.insert(p.clone(), self.name2id.len());
+                            self.id2name.insert(self.name2id[p], name.clone());
+                            self.name2id.len() - 1
+                        }
+                    })
                     .collect::<Vec<_>>(),
                 inputs: inputs,
                 input_dimensions: input_dimensions,
