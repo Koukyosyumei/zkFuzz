@@ -308,20 +308,72 @@ fn test_lessthan() {
                 access: None,
             })),
         ),
-        SymbolicValue::BinaryOp(
-            Rc::new(SymbolicValue::Variable(SymbolicName {
-                name: sexe.symbolic_library.name2id["a"],
-                owner: Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
-                    access: None,
-                    counter: 0,
-                }]),
-                access: None,
-            })),
-            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
-            Rc::new(SymbolicValue::ConstantInt(BigInt::from_str("8").unwrap())),
-        ),
     ];
+
+    let owner_name = Rc::new(vec![
+        OwnerName {
+            name: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        },
+        OwnerName {
+            name: sexe.symbolic_library.name2id["lt"],
+            access: None,
+            counter: 0,
+        },
+    ]);
+    let in_0 = Rc::new(SymbolicValue::Variable(SymbolicName {
+        name: sexe.symbolic_library.name2id["in"],
+        owner: owner_name.clone(),
+        access: Some(vec![SymbolicAccess::ArrayAccess(
+            SymbolicValue::ConstantInt(BigInt::zero()),
+        )]),
+    }));
+    let in_1 = Rc::new(SymbolicValue::Variable(SymbolicName {
+        name: sexe.symbolic_library.name2id["in"],
+        owner: owner_name.clone(),
+        access: Some(vec![SymbolicAccess::ArrayAccess(
+            SymbolicValue::ConstantInt(BigInt::one()),
+        )]),
+    }));
+    let lessthan_out = Rc::new(SymbolicValue::Variable(SymbolicName {
+        name: sexe.symbolic_library.name2id["out"],
+        owner: owner_name.clone(),
+        access: None,
+    }));
+    let cond_1 = SymbolicValue::BinaryOp(
+        Rc::new(SymbolicValue::BinaryOp(
+            Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+            lessthan_out.clone(),
+        )),
+        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
+        Rc::new(SymbolicValue::BinaryOp(
+            in_0.clone(),
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
+            in_1.clone(),
+        )),
+    );
+    let cond_0 = SymbolicValue::BinaryOp(
+        Rc::new(SymbolicValue::BinaryOp(
+            Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+            lessthan_out.clone(),
+        )),
+        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
+        Rc::new(SymbolicValue::BinaryOp(
+            in_0,
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq),
+            in_1,
+        )),
+    );
+    let cond = SymbolicValue::BinaryOp(
+        Rc::new(cond_1),
+        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolOr),
+        Rc::new(cond_0),
+    );
+
+    // (BoolOr (BoolAnd (Eq 1 main.lt.out) (Lt main.lt.in[0] main.lt.in[1])) (BoolAnd (Eq 0 main.lt.out) (GEq main.lt.in[0] main.lt.in[1]))),
 
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
@@ -329,6 +381,12 @@ fn test_lessthan() {
             *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
         );
     }
+
+    let n = sexe.symbolic_store.final_states[0].trace_constraints.len();
+    assert_eq!(
+        cond,
+        *sexe.symbolic_store.final_states[0].trace_constraints[n - 2].clone()
+    );
 }
 
 #[test]
