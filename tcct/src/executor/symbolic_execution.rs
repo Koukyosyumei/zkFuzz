@@ -914,7 +914,7 @@ impl<'a> SymbolicExecutor<'a> {
                                     );
                                 }
 
-                                let upper_bound = if templ.require_bound_check {
+                                let n_bits = if templ.is_lessthan {
                                     if let SymbolicValue::ConstantInt(n) =
                                         &(*self.symbolic_store.components_store[&base_name].args[0])
                                     {
@@ -938,14 +938,14 @@ impl<'a> SymbolicExecutor<'a> {
                                     };
                                     subse.cur_state.set_symval(n, v.clone().unwrap());
 
-                                    if templ.require_bound_check {
+                                    if templ.is_lessthan {
                                         let cond = SymbolicValue::BinaryOp(
                                             Rc::new(v.clone().unwrap()),
                                             DebugExpressionInfixOpcode(
                                                 ExpressionInfixOpcode::Lesser,
                                             ),
                                             Rc::new(SymbolicValue::ConstantInt(BigInt::from(
-                                                2_u32.pow(upper_bound),
+                                                2_u32.pow(n_bits),
                                             ))),
                                         );
                                         self.cur_state.push_trace_constraint(&cond);

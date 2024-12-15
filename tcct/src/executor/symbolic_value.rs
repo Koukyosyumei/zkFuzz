@@ -251,7 +251,7 @@ pub struct SymbolicTemplate {
     pub outputs: FxHashSet<usize>,
     pub var2type: FxHashMap<usize, VariableType>,
     pub body: Vec<DebugStatement>,
-    pub require_bound_check: bool,
+    pub is_lessthan: bool,
 }
 
 /// Represents a symbolic function used in the symbolic execution process.
@@ -307,10 +307,7 @@ impl SymbolicLibrary {
         let mut outputs = FxHashSet::default();
         let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
 
-        let require_bound_check = &name == "LessThan"
-            || &name == "LessEqThan"
-            || &name == "GreaterThan"
-            || &name == "GreaterEqThan";
+        let is_lessthan = &name == "LessThan";
 
         let i = if let Some(i) = self.name2id.get(&name) {
             *i
@@ -381,7 +378,7 @@ impl SymbolicLibrary {
                 outputs: outputs,
                 var2type: var2type,
                 body: vec![dbody.clone(), DebugStatement::Ret],
-                require_bound_check: require_bound_check,
+                is_lessthan: is_lessthan,
             }),
         );
     }
