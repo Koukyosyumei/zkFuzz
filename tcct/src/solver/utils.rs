@@ -14,7 +14,7 @@ use program_structure::ast::ExpressionPrefixOpcode;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
-use crate::executor::utils::extended_euclidean;
+use crate::executor::utils::{extended_euclidean, modpow};
 
 pub enum UnderConstrainedType {
     UnusedOutput,
@@ -392,6 +392,7 @@ pub fn evaluate_symbolic_value(
                     ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt((lv + rv) % prime),
                     ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt((lv - rv) % prime),
                     ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt((lv * rv) % prime),
+                    ExpressionInfixOpcode::Pow => SymbolicValue::ConstantInt(modpow(lv, rv, prime)),
                     ExpressionInfixOpcode::Div => {
                         if rv.is_zero() {
                             SymbolicValue::ConstantInt(BigInt::zero())
