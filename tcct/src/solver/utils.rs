@@ -85,14 +85,27 @@ impl CounterExample {
         s += &format!("{}", "║".red());
         s += &format!("    {} \n", "🔍 Assignment Details:".blue().bold());
 
-        for (var, value) in &self.assignment {
-            s += &format!("{}", "║".red());
-            s += &format!(
-                "           {} {} = {} \n",
-                "➡️".cyan(),
-                var.lookup_fmt(lookup).magenta().bold(),
-                value.to_string().bright_yellow()
-            );
+        for (var_name, value) in &self.assignment {
+            if var_name.owner.len() == 1 {
+                s += &format!("{}", "║".red());
+                s += &format!(
+                    "           {} {} = {} \n",
+                    "➡️".cyan(),
+                    var_name.lookup_fmt(lookup).magenta().bold(),
+                    value.to_string().bright_yellow()
+                );
+            }
+        }
+        for (var_name, value) in &self.assignment {
+            if var_name.owner.len() != 1 {
+                s += &format!("{}", "║".red());
+                s += &format!(
+                    "           {} {} = {} \n",
+                    "➡️".cyan(),
+                    var_name.lookup_fmt(lookup).magenta().bold(),
+                    value.to_string().bright_yellow()
+                );
+            }
         }
         s += &format!(
             "{}",
