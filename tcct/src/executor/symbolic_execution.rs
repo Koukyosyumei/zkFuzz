@@ -370,13 +370,15 @@ impl<'a> SymbolicExecutor<'a> {
                 &mut name2id,
                 &mut id2name,
             ));
+            let simplified_a =
+                self.simplify_variables(&evaled_a, !self.setting.propagate_substitution);
             self.cur_state.set_symval(
                 SymbolicName {
                     name: name2id[n],
                     owner: self.cur_state.owner_name.clone(),
                     access: None,
                 },
-                evaled_a,
+                simplified_a,
             );
         }
     }
@@ -559,9 +561,9 @@ impl<'a> SymbolicExecutor<'a> {
                 } => {
                     self.trace_if_enabled(&meta);
                     let tmp_cond = self.evaluate_expression(cond);
-                    let original_evaled_condition = self.fold_variables(&tmp_cond, true);
+                    let original_evaled_condition = self.simplify_variables(&tmp_cond, true);
                     let evaled_condition =
-                        self.fold_variables(&tmp_cond, !self.setting.propagate_substitution);
+                        self.simplify_variables(&tmp_cond, !self.setting.propagate_substitution);
 
                     // Save the current state
                     let cur_depth = self.cur_state.get_depth();
@@ -643,7 +645,7 @@ impl<'a> SymbolicExecutor<'a> {
                     // Symbolic execution of loops is complex. This is a simplified approach.
                     let tmp_cond = self.evaluate_expression(cond);
                     let evaled_condition =
-                        self.fold_variables(&tmp_cond, !self.setting.propagate_substitution);
+                        self.simplify_variables(&tmp_cond, !self.setting.propagate_substitution);
 
                     if let SymbolicValue::ConstantBool(flag) = evaled_condition {
                         if flag {
@@ -681,7 +683,7 @@ impl<'a> SymbolicExecutor<'a> {
                     self.trace_if_enabled(&meta);
                     let tmp_val = self.evaluate_expression(value);
                     let return_value =
-                        self.fold_variables(&tmp_val, !self.setting.propagate_substitution);
+                        self.simplify_variables(&tmp_val, !self.setting.propagate_substitution);
                     // Handle return value (e.g., store in a special "return" variable)
 
                     if !self.symbolic_library.id2name.contains_key(&usize::MAX) {
@@ -725,8 +727,9 @@ impl<'a> SymbolicExecutor<'a> {
                 } => {
                     self.trace_if_enabled(&meta);
                     let expr = self.evaluate_expression(rhe);
-                    let original_value = self.fold_variables(&expr, true);
-                    let value = self.fold_variables(&expr, !self.setting.propagate_substitution);
+                    let original_value = self.simplify_variables(&expr, true);
+                    let value =
+                        self.simplify_variables(&expr, !self.setting.propagate_substitution);
 
                     /*let base_name = SymbolicName {
                         name: *var,
@@ -1046,10 +1049,12 @@ impl<'a> SymbolicExecutor<'a> {
 
                     let lhe_val = self.evaluate_expression(lhe);
                     let rhe_val = self.evaluate_expression(rhe);
-                    let simple_lhs = self.fold_variables(&lhe_val, true);
-                    let lhs = self.fold_variables(&lhe_val, !self.setting.propagate_substitution);
-                    let simple_rhs = self.fold_variables(&rhe_val, true);
-                    let rhs = self.fold_variables(&rhe_val, !self.setting.propagate_substitution);
+                    let simple_lhs = self.simplify_variables(&lhe_val, true);
+                    let lhs =
+                        self.simplify_variables(&lhe_val, !self.setting.propagate_substitution);
+                    let simple_rhs = self.simplify_variables(&rhe_val, true);
+                    let rhs =
+                        self.simplify_variables(&rhe_val, !self.setting.propagate_substitution);
 
                     if self.setting.keep_track_constraints {
                         match op {
@@ -1079,10 +1084,12 @@ impl<'a> SymbolicExecutor<'a> {
 
                     let lhe_val = self.evaluate_expression(lhe);
                     let rhe_val = self.evaluate_expression(rhe);
-                    let original_lhs = self.fold_variables(&lhe_val, true);
-                    let lhs = self.fold_variables(&lhe_val, !self.setting.propagate_substitution);
-                    let original_rhs = self.fold_variables(&rhe_val, true);
-                    let rhs = self.fold_variables(&rhe_val, !self.setting.propagate_substitution);
+                    let original_lhs = self.simplify_variables(&lhe_val, true);
+                    let lhs =
+                        self.simplify_variables(&lhe_val, !self.setting.propagate_substitution);
+                    let original_rhs = self.simplify_variables(&rhe_val, true);
+                    let rhs =
+                        self.simplify_variables(&rhe_val, !self.setting.propagate_substitution);
 
                     let original_cond = SymbolicValue::BinaryOp(
                         Rc::new(original_lhs),
@@ -1105,7 +1112,7 @@ impl<'a> SymbolicExecutor<'a> {
                     self.trace_if_enabled(&meta);
                     let expr = self.evaluate_expression(&arg);
                     let condition =
-                        self.fold_variables(&expr, !self.setting.propagate_substitution);
+                        self.simplify_variables(&expr, !self.setting.propagate_substitution);
                     if self.setting.keep_track_constraints {
                         self.cur_state.push_trace_constraint(&condition);
                     }
@@ -1183,7 +1190,7 @@ impl<'a> SymbolicExecutor<'a> {
             DebugAccess::ComponentAccess(name) => SymbolicAccess::ComponentAccess(name.clone()),
             DebugAccess::ArrayAccess(expr) => {
                 let tmp_e = self.evaluate_expression(&expr);
-                SymbolicAccess::ArrayAccess(self.fold_variables(&tmp_e, false))
+                SymbolicAccess::ArrayAccess(self.simplify_variables(&tmp_e, false))
             }
         }
     }
@@ -1192,11 +1199,14 @@ impl<'a> SymbolicExecutor<'a> {
         dims.iter()
             .map(|arg0: &DebugExpression| {
                 let evaled_arg0 = self.evaluate_expression(arg0);
-                let folded_arg0 = self.fold_variables(&evaled_arg0, false);
-                if let SymbolicValue::ConstantInt(bint) = &folded_arg0 {
+                let simplified_arg0 = self.simplify_variables(&evaled_arg0, false);
+                if let SymbolicValue::ConstantInt(bint) = &simplified_arg0 {
                     bint.to_usize().unwrap()
                 } else {
-                    panic!("Undetermined dimension: {:?}", folded_arg0)
+                    panic!(
+                        "Undetermined dimension: {}",
+                        simplified_arg0.lookup_fmt(&self.symbolic_library.id2name)
+                    )
                 }
             })
             .collect::<Vec<_>>()
@@ -1211,8 +1221,8 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// # Returns
     ///
-    /// A new `SymbolicValue` representing the folded expression.
-    fn fold_variables(
+    /// A new `SymbolicValue` representing the simplified expression.
+    fn simplify_variables(
         &self,
         symval: &SymbolicValue,
         only_constatant_folding: bool,
@@ -1270,8 +1280,8 @@ impl<'a> SymbolicExecutor<'a> {
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
-                let lhs = self.fold_variables(lv, only_constatant_folding);
-                let rhs = self.fold_variables(rv, only_constatant_folding);
+                let lhs = self.simplify_variables(lv, only_constatant_folding);
+                let rhs = self.simplify_variables(rv, only_constatant_folding);
                 match (&lhs, &rhs) {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                         match &infix_op.0 {
@@ -1364,44 +1374,44 @@ impl<'a> SymbolicExecutor<'a> {
                 }
             }
             SymbolicValue::Conditional(cond, then_val, else_val) => SymbolicValue::Conditional(
-                Rc::new(self.fold_variables(cond, only_constatant_folding)),
-                Rc::new(self.fold_variables(then_val, only_constatant_folding)),
-                Rc::new(self.fold_variables(else_val, only_constatant_folding)),
+                Rc::new(self.simplify_variables(cond, only_constatant_folding)),
+                Rc::new(self.simplify_variables(then_val, only_constatant_folding)),
+                Rc::new(self.simplify_variables(else_val, only_constatant_folding)),
             ),
             SymbolicValue::UnaryOp(prefix_op, value) => {
-                let folded_symval = self.fold_variables(value, only_constatant_folding);
-                match &folded_symval {
+                let simplified_symval = self.simplify_variables(value, only_constatant_folding);
+                match &simplified_symval {
                     SymbolicValue::ConstantInt(rv) => match prefix_op.0 {
                         ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
-                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(folded_symval)),
+                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(simplified_symval)),
                     },
                     SymbolicValue::ConstantBool(rv) => match prefix_op.0 {
                         ExpressionPrefixOpcode::BoolNot => SymbolicValue::ConstantBool(!rv),
-                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(folded_symval)),
+                        _ => SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(simplified_symval)),
                     },
-                    _ => SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(folded_symval)),
+                    _ => SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(simplified_symval)),
                 }
             }
             SymbolicValue::Array(elements) => SymbolicValue::Array(
                 elements
                     .iter()
-                    .map(|e| Rc::new(self.fold_variables(e, only_constatant_folding)))
+                    .map(|e| Rc::new(self.simplify_variables(e, only_constatant_folding)))
                     .collect(),
             ),
             SymbolicValue::Tuple(elements) => SymbolicValue::Tuple(
                 elements
                     .iter()
-                    .map(|e| Rc::new(self.fold_variables(e, only_constatant_folding)))
+                    .map(|e| Rc::new(self.simplify_variables(e, only_constatant_folding)))
                     .collect(),
             ),
             SymbolicValue::UniformArray(element, count) => SymbolicValue::UniformArray(
-                Rc::new(self.fold_variables(element, only_constatant_folding)),
-                Rc::new(self.fold_variables(count, only_constatant_folding)),
+                Rc::new(self.simplify_variables(element, only_constatant_folding)),
+                Rc::new(self.simplify_variables(count, only_constatant_folding)),
             ),
             SymbolicValue::Call(func_name, args) => SymbolicValue::Call(
                 func_name.clone(),
                 args.iter()
-                    .map(|arg| Rc::new(self.fold_variables(arg, only_constatant_folding)))
+                    .map(|arg| Rc::new(self.simplify_variables(arg, only_constatant_folding)))
                     .collect(),
             ),
             _ => symval.clone(),
@@ -1517,7 +1527,7 @@ impl<'a> SymbolicExecutor<'a> {
                     .collect();
                 let evaluated_args = tmp_args
                     .iter()
-                    .map(|arg| Rc::new(self.fold_variables(&arg, false)))
+                    .map(|arg| Rc::new(self.simplify_variables(&arg, false)))
                     .collect();
                 if self.symbolic_library.template_library.contains_key(id) {
                     SymbolicValue::Call(id.clone(), evaluated_args)
