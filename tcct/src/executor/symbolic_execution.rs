@@ -31,6 +31,7 @@ use crate::executor::utils::{extended_euclidean, italic, modpow};
 pub struct SymbolicState {
     pub owner_name: Rc<Vec<OwnerName>>,
     pub template_id: usize,
+    pub is_within_initialization_block: bool,
     depth: usize,
     pub values: FxHashMap<SymbolicName, SymbolicValueRef>,
     pub trace_constraints: Vec<SymbolicValueRef>,
@@ -47,6 +48,7 @@ impl SymbolicState {
         SymbolicState {
             owner_name: Rc::new(Vec::new()),
             template_id: usize::MAX,
+            is_within_initialization_block: false,
             depth: 0_usize,
             values: FxHashMap::default(),
             trace_constraints: Vec::new(),
@@ -262,9 +264,11 @@ impl SymbolicStore {
     }
 }
 
+#[derive(Clone)]
 pub struct SymbolicExecutorSetting {
     pub prime: BigInt,
     pub propagate_substitution: bool,
+    pub only_initialization_blocks: bool,
     pub skip_initialization_blocks: bool,
     pub off_trace: bool,
     pub keep_track_constraints: bool,
@@ -520,6 +524,18 @@ impl<'a> SymbolicExecutor<'a> {
             self.symbolic_store.max_depth =
                 max(self.symbolic_store.max_depth, self.cur_state.get_depth());
 
+            if self.setting.only_initialization_blocks {
+                match &statements[cur_bid] {
+                    DebugStatement::InitializationBlock { .. } | DebugStatement::Block { .. } => {}
+                    _ => {
+                        if !self.cur_state.is_within_initialization_block {
+                            self.execute(statements, cur_bid + 1);
+                            return;
+                        }
+                    }
+                }
+            }
+
             match &statements[cur_bid] {
                 DebugStatement::InitializationBlock {
                     initializations,
@@ -530,12 +546,13 @@ impl<'a> SymbolicExecutor<'a> {
                     if let VariableType::Signal(SignalType::Input, _taglist) = &xtype {
                         is_input = true;
                     }
-
+                    self.cur_state.is_within_initialization_block = true;
                     if !(self.setting.skip_initialization_blocks && is_input) {
                         for init in initializations {
                             self.execute(&vec![init.clone()], 0);
                         }
                     }
+                    self.cur_state.is_within_initialization_block = false;
                     self.symbolic_store.block_end_states = vec![self.cur_state.clone()];
                     self.expand_all_stack_states(
                         statements,
@@ -747,9 +764,21 @@ impl<'a> SymbolicExecutor<'a> {
                                 .template_library
                                 .contains_key(&callee_name)
                             {
+                                // Prepare temporal executor
+                                let mut subse_setting = self.setting.clone();
+                                subse_setting.only_initialization_blocks = true;
+                                subse_setting.off_trace = true;
+                                let mut se_for_initialization = SymbolicExecutor::new(
+                                    &mut self.symbolic_library,
+                                    &subse_setting,
+                                );
+
                                 // Temporalily set template-parameters
-                                let template =
-                                    &self.symbolic_library.template_library[&callee_name];
+                                let template = se_for_initialization
+                                    .symbolic_library
+                                    .template_library[&callee_name]
+                                    .clone();
+
                                 let mut escaped_vars = vec![];
                                 for i in 0..(template.template_parameter_names.len()) {
                                     let tp_name = SymbolicName {
@@ -763,20 +792,40 @@ impl<'a> SymbolicExecutor<'a> {
                                     self.cur_state.set_rc_symval(tp_name, args[i].clone());
                                 }
 
+                                // Initialization
+                                //let symbolic_library = &mut self.symbolic_library.clone();
+
+                                se_for_initialization.cur_state.owner_name =
+                                    self.cur_state.owner_name.clone();
+                                for i in 0..(template.template_parameter_names.len()) {
+                                    se_for_initialization.cur_state.set_rc_symval(
+                                        SymbolicName {
+                                            name: template.template_parameter_names[i],
+                                            owner: se_for_initialization
+                                                .cur_state
+                                                .owner_name
+                                                .clone(),
+                                            access: None,
+                                        },
+                                        self.cur_state.values[&SymbolicName {
+                                            name: template.template_parameter_names[i],
+                                            owner: self.cur_state.owner_name.clone(),
+                                            access: None,
+                                        }]
+                                            .clone(),
+                                    );
+                                }
+                                se_for_initialization.execute(&template.body.clone(), 0);
+
                                 // Initialize template-inputs
                                 let mut inputs_of_component: FxHashMap<
                                     SymbolicName,
                                     Option<SymbolicValue>,
                                 > = FxHashMap::default();
-                                for inp_name in &self.symbolic_library.template_library
-                                    [&callee_name]
-                                    .inputs
-                                    .clone()
-                                {
-                                    let dims = self.evaluate_dimension(
-                                        &self.symbolic_library.template_library[&callee_name]
-                                            .input_dimensions[&inp_name]
-                                            .clone(),
+                                //  & &self.symbolic_library.template_library[&callee_name]
+                                for inp_name in &template.inputs.clone() {
+                                    let dims = se_for_initialization.evaluate_dimension(
+                                        &template.input_dimensions[&inp_name].clone(),
                                     );
                                     register_array_elements(
                                         *inp_name,
