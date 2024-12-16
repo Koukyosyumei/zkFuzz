@@ -1,5 +1,6 @@
 use std::fmt;
 use std::io::Write;
+use std::rc::Rc;
 
 use colored::Colorize;
 use num_bigint_dig::BigInt;
@@ -387,6 +388,12 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::Variable(name) => {
             SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
         }
+        SymbolicValue::Array(elements) => SymbolicValue::Array(
+            elements
+                .iter()
+                .map(|e| Rc::new(evaluate_symbolic_value(prime, e, assignment)))
+                .collect(),
+        ),
         SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);

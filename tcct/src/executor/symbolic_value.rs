@@ -438,7 +438,8 @@ pub fn access_multidimensional_array(
                 panic!("Out of range");
             }
         } else {
-            panic!("dims should be a list of SymbolicAccess::ArrayAccess");
+            //panic!("dims should be a list of SymbolicAccess::ArrayAccess");
+            return SymbolicValue::Array(current_values);
         }
     }
     panic!("Incomplete dimensions");
