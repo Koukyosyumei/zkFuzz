@@ -754,11 +754,6 @@ impl<'a> SymbolicExecutor<'a> {
                         SymbolicValue::Array(ref elements) => {
                             let enumerated_elements = enumerate_array(&value);
                             for (pos, elem) in enumerated_elements {
-                                println!(
-                                    "{:?}, {}",
-                                    pos,
-                                    elem.lookup_fmt(&self.symbolic_library.id2name)
-                                );
                                 let mut new_var_name = var_name.clone();
                                 let mut new_access = if new_var_name.access.is_none() {
                                     Vec::new()
