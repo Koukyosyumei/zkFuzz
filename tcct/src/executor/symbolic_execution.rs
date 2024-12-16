@@ -20,8 +20,9 @@ use crate::executor::debug_ast::{
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
 use crate::executor::symbolic_value::{
-    access_multidimensional_array, register_array_elements, OwnerName, SymbolicAccess,
-    SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
+    access_multidimensional_array, enumerate_array, register_array_elements, OwnerName,
+    SymbolicAccess, SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue,
+    SymbolicValueRef,
 };
 use crate::executor::utils::{extended_euclidean, italic, modpow};
 
@@ -748,13 +749,37 @@ impl<'a> SymbolicExecutor<'a> {
                     let value =
                         self.simplify_variables(&expr, !self.setting.propagate_substitution);
 
-                    /*let base_name = SymbolicName {
-                        name: *var,
-                        owner: self.cur_state.owner_name.clone(),
-                        access: None,
-                    };*/
                     let (base_name, var_name) = self.construct_symbolic_name(*var, access);
-                    self.cur_state.set_symval(var_name.clone(), value.clone());
+                    match value {
+                        SymbolicValue::Array(ref elements) => {
+                            let enumerated_elements = enumerate_array(&value);
+                            for (pos, elem) in enumerated_elements {
+                                println!(
+                                    "{:?}, {}",
+                                    pos,
+                                    elem.lookup_fmt(&self.symbolic_library.id2name)
+                                );
+                                let mut new_var_name = var_name.clone();
+                                let mut new_access = if new_var_name.access.is_none() {
+                                    Vec::new()
+                                } else {
+                                    new_var_name.access.clone().unwrap()
+                                };
+                                for p in pos {
+                                    new_access.push(SymbolicAccess::ArrayAccess(
+                                        SymbolicValue::ConstantInt(
+                                            BigInt::from_usize(p.clone()).unwrap(),
+                                        ),
+                                    ));
+                                }
+                                new_var_name.access = Some(new_access);
+                                self.cur_state.set_symval(new_var_name, elem.clone());
+                            }
+                        }
+                        _ => {
+                            self.cur_state.set_symval(var_name.clone(), value.clone());
+                        }
+                    }
 
                     match value {
                         SymbolicValue::Call(callee_name, ref args) => {

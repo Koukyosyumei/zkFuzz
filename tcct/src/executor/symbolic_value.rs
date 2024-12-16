@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::hash::Hash;
 use std::rc::Rc;
 
@@ -538,4 +539,27 @@ pub fn register_array_elements<T>(
             }
         }
     }
+}
+
+pub fn enumerate_array(value: &SymbolicValue) -> Vec<(Vec<usize>, &SymbolicValue)> {
+    let mut result = Vec::new();
+    let mut queue = VecDeque::new();
+    queue.push_back((Vec::new(), value));
+
+    while let Some((index, val)) = queue.pop_front() {
+        match val {
+            SymbolicValue::Array(arr) => {
+                for (i, item) in arr.iter().enumerate() {
+                    let mut new_index = index.clone();
+                    new_index.push(i);
+                    queue.push_back((new_index, item));
+                }
+            }
+            _ => {
+                result.push((index, val));
+            }
+        }
+    }
+
+    result
 }
