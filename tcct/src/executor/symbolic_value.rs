@@ -194,7 +194,7 @@ impl SymbolicValue {
             },
             SymbolicValue::Conditional(cond, if_branch, else_branch) => {
                 format!(
-                    "({} {} {})",
+                    "(🤔 {} ? {} : {})",
                     cond.lookup_fmt(lookup),
                     if_branch.lookup_fmt(lookup),
                     else_branch.lookup_fmt(lookup)

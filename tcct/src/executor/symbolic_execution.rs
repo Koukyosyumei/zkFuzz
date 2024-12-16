@@ -772,6 +772,8 @@ impl<'a> SymbolicExecutor<'a> {
                                     &mut self.symbolic_library,
                                     &subse_setting,
                                 );
+                                se_for_initialization.cur_state.owner_name =
+                                    self.cur_state.owner_name.clone();
 
                                 // Temporalily set template-parameters
                                 let template = se_for_initialization
@@ -789,14 +791,14 @@ impl<'a> SymbolicExecutor<'a> {
                                     if let Some(val) = self.cur_state.get_symval(&tp_name) {
                                         escaped_vars.push((tp_name.clone(), val.clone()));
                                     }
-                                    self.cur_state.set_rc_symval(tp_name, args[i].clone());
+                                    self.cur_state
+                                        .set_rc_symval(tp_name.clone(), args[i].clone());
+                                    se_for_initialization
+                                        .cur_state
+                                        .set_rc_symval(tp_name, args[i].clone());
                                 }
 
                                 // Initialization
-                                //let symbolic_library = &mut self.symbolic_library.clone();
-
-                                se_for_initialization.cur_state.owner_name =
-                                    self.cur_state.owner_name.clone();
                                 for i in 0..(template.template_parameter_names.len()) {
                                     se_for_initialization.cur_state.set_rc_symval(
                                         SymbolicName {
@@ -1422,11 +1424,22 @@ impl<'a> SymbolicExecutor<'a> {
                     _ => SymbolicValue::BinaryOp(Rc::new(lhs), infix_op.clone(), Rc::new(rhs)),
                 }
             }
-            SymbolicValue::Conditional(cond, then_val, else_val) => SymbolicValue::Conditional(
-                Rc::new(self.simplify_variables(cond, only_constatant_folding)),
-                Rc::new(self.simplify_variables(then_val, only_constatant_folding)),
-                Rc::new(self.simplify_variables(else_val, only_constatant_folding)),
-            ),
+            SymbolicValue::Conditional(cond, then_val, else_val) => {
+                let simplified_cond = self.simplify_variables(cond, only_constatant_folding);
+                match simplified_cond {
+                    SymbolicValue::ConstantBool(true) => {
+                        self.simplify_variables(then_val, only_constatant_folding)
+                    }
+                    SymbolicValue::ConstantBool(false) => {
+                        self.simplify_variables(else_val, only_constatant_folding)
+                    }
+                    _ => SymbolicValue::Conditional(
+                        Rc::new(self.simplify_variables(cond, only_constatant_folding)),
+                        Rc::new(self.simplify_variables(then_val, only_constatant_folding)),
+                        Rc::new(self.simplify_variables(else_val, only_constatant_folding)),
+                    ),
+                }
+            }
             SymbolicValue::UnaryOp(prefix_op, value) => {
                 let simplified_symval = self.simplify_variables(value, only_constatant_folding);
                 match &simplified_symval {
