@@ -84,9 +84,21 @@ impl ASTStats {
             self.num_assign_var,
             self.num_assign_constraint_signal,
             self.num_assign_signal,
-            self.loc_constraint_equality / self.num_constraint_equality,
-            self.loc_assign_constraint_signal / self.num_assign_constraint_signal,
-            self.loc_assign_signal / self.num_assign_signal,
+            if self.num_constraint_equality == 0 {
+                0
+            } else {
+                self.loc_constraint_equality / self.num_constraint_equality
+            },
+            if self.num_assign_constraint_signal == 0 {
+                0
+            } else {
+                self.loc_assign_constraint_signal / self.num_assign_constraint_signal
+            },
+            if self.num_assign_signal == 0 {
+                0
+            } else {
+                self.loc_assign_signal / self.num_assign_signal
+            },
         )
         .to_string()
     }
