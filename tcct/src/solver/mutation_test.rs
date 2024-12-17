@@ -149,8 +149,12 @@ pub fn mutation_test_search(
             }
 
             let mut assignment = input_population[best_score.0].clone();
-            if emulate_symbolic_values(&setting.prime, &mutated_trace_constraints, &mut assignment)
-            {
+            if emulate_symbolic_values(
+                &setting.prime,
+                &mutated_trace_constraints,
+                &mut assignment,
+                &mut sexe.symbolic_library,
+            ) {
                 let flag = verify_assignment(
                     sexe,
                     trace_constraints,
@@ -170,7 +174,12 @@ pub fn mutation_test_search(
                     });
                 }
             } else {
-                if evaluate_constraints(&setting.prime, side_constraints, &assignment) {
+                if evaluate_constraints(
+                    &setting.prime,
+                    side_constraints,
+                    &assignment,
+                    &mut sexe.symbolic_library,
+                ) {
                     return Some(CounterExample {
                         flag: VerificationResult::UnderConstrained(
                             UnderConstrainedType::Deterministic,
@@ -311,12 +320,24 @@ fn trace_fitness(
     let mut max_score = 0 as f64;
     for (i, inp) in inputs.iter().enumerate() {
         let mut assignment = inp.clone();
-        let is_success =
-            emulate_symbolic_values(&setting.prime, &mutated_trace_constraints, &mut assignment);
+        let is_success = emulate_symbolic_values(
+            &setting.prime,
+            &mutated_trace_constraints,
+            &mut assignment,
+            &mut sexe.symbolic_library,
+        );
         {
-            let satisfied_side =
-                count_satisfied_constraints(&setting.prime, side_constraints, &assignment);
-            let mut side_ratio = satisfied_side as f64 / side_constraints.len() as f64;
+            let satisfied_side = count_satisfied_constraints(
+                &setting.prime,
+                side_constraints,
+                &assignment,
+                &mut sexe.symbolic_library,
+            );
+            let mut side_ratio = if side_constraints.is_empty() {
+                1.0 as f64
+            } else {
+                satisfied_side as f64 / side_constraints.len() as f64
+            };
 
             if side_ratio == 1.0 as f64 {
                 if is_success {

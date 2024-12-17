@@ -13,8 +13,10 @@ use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
 
-use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
+use crate::executor::symbolic_value::{
+    OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
+};
 use crate::executor::utils::{extended_euclidean, modpow};
 
 pub enum UnderConstrainedType {
@@ -260,14 +262,19 @@ pub fn evaluate_constraints(
     prime: &BigInt,
     constraints: &[SymbolicValueRef],
     assignment: &FxHashMap<SymbolicName, BigInt>,
+    symbolic_library: &mut SymbolicLibrary,
 ) -> bool {
-    constraints.iter().all(|constraint| {
-        let sv = evaluate_symbolic_value(prime, constraint, assignment);
-        match sv {
-            SymbolicValue::ConstantBool(b) => b,
-            _ => panic!("Non-bool output value is detected when evaluating a constraint"),
-        }
-    })
+    if constraints.is_empty() {
+        true
+    } else {
+        constraints.iter().all(|constraint| {
+            let sv = evaluate_symbolic_value(prime, constraint, assignment, symbolic_library);
+            match sv {
+                SymbolicValue::ConstantBool(b) => b,
+                _ => panic!("Non-bool output value is detected when evaluating a constraint"),
+            }
+        })
+    }
 }
 
 /// Counts the number of satisfied constraints given a variable assignment.
@@ -283,11 +290,12 @@ pub fn count_satisfied_constraints(
     prime: &BigInt,
     constraints: &[SymbolicValueRef],
     assignment: &FxHashMap<SymbolicName, BigInt>,
+    symbolic_library: &mut SymbolicLibrary,
 ) -> usize {
     constraints
         .iter()
         .filter(|constraint| {
-            let sv = evaluate_symbolic_value(prime, constraint, assignment);
+            let sv = evaluate_symbolic_value(prime, constraint, assignment, symbolic_library);
             match sv {
                 SymbolicValue::ConstantBool(b) => b,
                 _ => panic!("Non-bool output value is detected when evaluating a constraint"),
@@ -300,6 +308,7 @@ pub fn emulate_symbolic_values(
     prime: &BigInt,
     values: &[SymbolicValueRef],
     assignment: &mut FxHashMap<SymbolicName, BigInt>,
+    symbolic_library: &mut SymbolicLibrary,
 ) -> bool {
     let mut success = true;
     for value in values {
@@ -311,19 +320,19 @@ pub fn emulate_symbolic_values(
             }
             SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
                 if let SymbolicValue::Variable(name) = lhs.as_ref() {
-                    let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
+                    let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
                     if let SymbolicValue::ConstantInt(num) = &rhs_val {
                         assignment.insert(name.clone(), num.clone());
                     } else {
-                        panic!("Right hand is not completely folded");
+                        success = false;
                     }
                 } else {
                     panic!("Left hand of the assignment is not a variable");
                 }
             }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
-                let lhs_val = evaluate_symbolic_value(prime, lhs, assignment);
-                let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
+                let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
+                let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
                 let flag = match (&lhs_val, &rhs_val) {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                         match op.0 {
@@ -350,7 +359,7 @@ pub fn emulate_symbolic_values(
                 }
             }
             SymbolicValue::UnaryOp(op, expr) => {
-                let expr_val = evaluate_symbolic_value(prime, expr, assignment);
+                let expr_val = evaluate_symbolic_value(prime, expr, assignment, symbolic_library);
                 let flag = match &expr_val {
                     SymbolicValue::ConstantBool(rv) => match op.0 {
                         ExpressionPrefixOpcode::BoolNot => !rv,
@@ -381,6 +390,7 @@ pub fn evaluate_symbolic_value(
     prime: &BigInt,
     value: &SymbolicValue,
     assignment: &FxHashMap<SymbolicName, BigInt>,
+    symbolic_library: &mut SymbolicLibrary,
 ) -> SymbolicValue {
     match value {
         SymbolicValue::ConstantBool(_b) => value.clone(),
@@ -391,12 +401,19 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::Array(elements) => SymbolicValue::Array(
             elements
                 .iter()
-                .map(|e| Rc::new(evaluate_symbolic_value(prime, e, assignment)))
+                .map(|e| {
+                    Rc::new(evaluate_symbolic_value(
+                        prime,
+                        e,
+                        assignment,
+                        symbolic_library,
+                    ))
+                })
                 .collect(),
         ),
         SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
-            let lhs_val = evaluate_symbolic_value(prime, lhs, assignment);
-            let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
+            let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
+            let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
             match (&lhs_val, &rhs_val) {
                 (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                     SymbolicValue::ConstantBool(lv % prime == rv % prime)
@@ -405,8 +422,8 @@ pub fn evaluate_symbolic_value(
             }
         }
         SymbolicValue::BinaryOp(lhs, op, rhs) => {
-            let lhs_val = evaluate_symbolic_value(prime, lhs, assignment);
-            let rhs_val = evaluate_symbolic_value(prime, rhs, assignment);
+            let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
+            let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
             match (&lhs_val, &rhs_val) {
                 (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match op.0 {
                     ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt((lv + rv) % prime),
@@ -475,7 +492,7 @@ pub fn evaluate_symbolic_value(
             }
         }
         SymbolicValue::UnaryOp(op, expr) => {
-            let expr_val = evaluate_symbolic_value(prime, expr, assignment);
+            let expr_val = evaluate_symbolic_value(prime, expr, assignment, symbolic_library);
             match &expr_val {
                 SymbolicValue::ConstantInt(rv) => match op.0 {
                     ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
@@ -486,6 +503,50 @@ pub fn evaluate_symbolic_value(
                     _ => panic!("Unassigned variables exist"),
                 },
                 _ => todo!("{:?}", value),
+            }
+        }
+        SymbolicValue::Call(id, args) => {
+            let setting = SymbolicExecutorSetting {
+                prime: prime.clone(),
+                propagate_substitution: false,
+                skip_initialization_blocks: false,
+                only_initialization_blocks: false,
+                off_trace: true,
+                keep_track_constraints: false,
+                substitute_output: false,
+            };
+            let mut subse = SymbolicExecutor::new(symbolic_library, &setting);
+
+            let func = subse.symbolic_library.function_library[id].clone();
+            for i in 0..(func.function_argument_names.len()) {
+                let sname = SymbolicName {
+                    name: func.function_argument_names[i],
+                    owner: subse.cur_state.owner_name.clone(),
+                    access: None,
+                };
+                subse.cur_state.set_rc_symval(
+                    sname,
+                    Rc::new(evaluate_symbolic_value(
+                        prime,
+                        &args[i],
+                        assignment,
+                        subse.symbolic_library,
+                    )),
+                );
+            }
+            subse.execute(&func.body.clone(), 0);
+
+            if !subse.symbolic_store.final_states.is_empty() {
+                let return_name = SymbolicName {
+                    name: usize::MAX,
+                    owner: subse.symbolic_store.final_states[0].owner_name.clone(),
+                    access: None,
+                };
+                let return_value =
+                    (*subse.symbolic_store.final_states[0].values[&return_name].clone()).clone();
+                return_value
+            } else {
+                panic!("Empty Final State");
             }
         }
         _ => todo!("{:?}", value),
@@ -499,8 +560,18 @@ pub fn verify_assignment(
     assignment: &FxHashMap<SymbolicName, BigInt>,
     setting: &VerificationSetting,
 ) -> VerificationResult {
-    let is_satisfy_tc = evaluate_constraints(&setting.prime, trace_constraints, assignment);
-    let is_satisfy_sc = evaluate_constraints(&setting.prime, side_constraints, assignment);
+    let is_satisfy_tc = evaluate_constraints(
+        &setting.prime,
+        trace_constraints,
+        assignment,
+        &mut sexe.symbolic_library,
+    );
+    let is_satisfy_sc = evaluate_constraints(
+        &setting.prime,
+        side_constraints,
+        assignment,
+        &mut sexe.symbolic_library,
+    );
 
     if is_satisfy_tc && !is_satisfy_sc {
         return VerificationResult::OverConstrained;
