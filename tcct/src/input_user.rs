@@ -38,6 +38,7 @@ pub struct Input {
     pub flag_printout_stats: bool,
     pub flag_symbolic_template_params: bool,
     pub flag_propagate_substitution: bool,
+    pub show_stats_of_ast: bool,
     pub prime: String,
     pub debug_prime: String,
     pub search_mode: String,
@@ -120,6 +121,7 @@ impl Input {
             flag_printout_stats: input_processing::get_stats(&matches),
             flag_symbolic_template_params: input_processing::get_symbolic_template_params(&matches),
             flag_propagate_substitution: input_processing::get_propagate_substitution(&matches),
+            show_stats_of_ast: input_processing::get_show_stats_of_ast(&matches),
             prime: input_processing::get_prime(&matches)?,
             debug_prime: input_processing::get_debug_prime(&matches)?,
             search_mode: input_processing::get_search_mode(&matches)?,
@@ -342,6 +344,10 @@ mod input_processing {
 
     pub fn get_propagate_substitution(matches: &ArgMatches) -> bool {
         matches.is_present("propagate_substitution")
+    }
+
+    pub fn get_show_stats_of_ast(matches: &ArgMatches) -> bool {
+        matches.is_present("show_stats_of_ast")
     }
 
     /* 
@@ -582,6 +588,13 @@ mod input_processing {
                     .default_value("bn128")
                     .display_order(300)
                     .help("To choose the prime number to use to generate the circuit. Receives the name of the curve (bn128, bls12381, goldilocks, grumpkin, pallas, vesta, secq256r1)"),
+            )
+            .arg(
+                Arg::with_name("show_stats_of_ast")
+                    .long("show_stats_of_ast")
+                    .takes_value(false)
+                    .display_order(999)
+                    .help("(TCCT) Prints the basic stats of AST"),
             )
             .arg(
                 Arg::with_name("print_ast")

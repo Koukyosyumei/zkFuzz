@@ -3,6 +3,7 @@ mod executor;
 mod input_user;
 mod parser_user;
 mod solver;
+mod stats;
 mod type_analysis_user;
 
 use std::env;
@@ -17,6 +18,7 @@ use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
 
 use program_structure::ast::Expression;
+use program_structure::program_archive::ProgramArchive;
 
 use executor::debug_ast::simplify_statement;
 use executor::stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
@@ -26,6 +28,7 @@ use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
     unused_outputs::check_unused_outputs, utils::VerificationSetting,
 };
+use stats::ast_stats::ASTStats;
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";
@@ -43,9 +46,9 @@ fn display_tcct_logo() {
      ZKP Circuit Debugger v0.0
     "#;
 
-    println!("{}", logo.bright_cyan().bold());
-    println!("{}", "Welcome to the TCCT Debugging Tool".green().bold());
-    println!(
+    eprintln!("{}", logo.bright_cyan().bold());
+    eprintln!("{}", "Welcome to the TCCT Debugging Tool".green().bold());
+    eprintln!(
         "{}",
         "════════════════════════════════════════════════════════════════".green()
     );
@@ -59,8 +62,17 @@ fn main() {
         eprintln!("{}", "previous errors were found".red());
         std::process::exit(1);
     } else {
-        println!("{}", "Everything went okay".green());
+        eprintln!("{}", "Everything went okay".green());
         //std::process::exit(0);
+    }
+}
+
+fn show_stats(program_archive: &ProgramArchive) {
+    println!("template_name,num_statements,num_variables,num_if_then_else,num_while,num_constraint_equality,num_assign_var,num_assign_constraint_signal,num_assign_signal,avg_loc_constraint_equality,avg_loc_assign_constraint_signal,avg_loc_assign_signal");
+    for (k, v) in program_archive.templates.clone().into_iter() {
+        let mut ass = ASTStats::default();
+        ass.collect_stats(v.get_body());
+        println!("{},{}", k, ass.get_csv());
     }
 }
 
@@ -70,6 +82,11 @@ fn start() -> Result<(), ()> {
     let user_input = Input::new()?;
     let mut program_archive = parser_user::parse_project(&user_input)?;
     type_analysis_user::analyse_project(&mut program_archive)?;
+
+    if user_input.show_stats_of_ast {
+        show_stats(&program_archive);
+        return Result::Ok(());
+    }
 
     env_logger::init();
 
