@@ -563,3 +563,11 @@ pub fn enumerate_array(value: &SymbolicValue) -> Vec<(Vec<usize>, &SymbolicValue
 
     result
 }
+
+pub fn is_true(val: &SymbolicValue) -> bool {
+    if let SymbolicValue::ConstantBool(true) = val {
+        true
+    } else {
+        false
+    }
+}

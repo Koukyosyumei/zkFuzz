@@ -20,7 +20,7 @@ use crate::executor::debug_ast::{
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
 use crate::executor::symbolic_value::{
-    access_multidimensional_array, enumerate_array, register_array_elements, OwnerName,
+    access_multidimensional_array, enumerate_array, is_true, register_array_elements, OwnerName,
     SymbolicAccess, SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue,
     SymbolicValueRef,
 };
@@ -600,7 +600,7 @@ impl<'a> SymbolicExecutor<'a> {
                             );
                         }
                     } else {
-                        if self.setting.keep_track_constraints {
+                        if self.setting.keep_track_constraints && (!is_true(&evaled_condition)) {
                             if_state.push_trace_constraint(&evaled_condition);
                             if_state.push_side_constraint(&original_evaled_condition);
                         }
@@ -639,7 +639,8 @@ impl<'a> SymbolicExecutor<'a> {
                             );
                         }
                     } else {
-                        if self.setting.keep_track_constraints {
+                        if self.setting.keep_track_constraints && (!is_true(&neg_evaled_condition))
+                        {
                             else_state.push_trace_constraint(&neg_evaled_condition);
                             else_state.push_side_constraint(&original_neg_evaled_condition);
                         }
@@ -1687,9 +1688,9 @@ impl<'a> SymbolicExecutor<'a> {
                         self.cur_state
                             .trace_constraints
                             .append(&mut subse.symbolic_store.final_states[0].trace_constraints);
-                        self.cur_state
-                            .side_constraints
-                            .append(&mut subse.symbolic_store.final_states[0].side_constraints);
+                        //self.cur_state
+                        //    .side_constraints
+                        //    .append(&mut subse.symbolic_store.final_states[0].side_constraints);
 
                         if !subse.setting.off_trace {
                             trace!("{}", format!("{}", "===========================").cyan());
