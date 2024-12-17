@@ -1215,7 +1215,6 @@ impl<'a> SymbolicExecutor<'a> {
                         self.simplify_variables(&expr, !self.setting.propagate_substitution);
                     if self.setting.keep_track_constraints {
                         self.cur_state.push_trace_constraint(&condition);
-                        self.cur_state.push_side_constraint(&condition);
                     }
                     self.execute(statements, cur_bid + 1);
                 }
