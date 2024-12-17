@@ -1644,7 +1644,9 @@ impl<'a> SymbolicExecutor<'a> {
                     SymbolicValue::Call(id.clone(), simplified_args)
                 } else if self.symbolic_library.function_library.contains_key(id) {
                     let symbolic_library = &mut self.symbolic_library;
-                    let mut subse = SymbolicExecutor::new(symbolic_library, self.setting);
+                    let mut subse_setting = self.setting.clone();
+                    subse_setting.only_initialization_blocks = false;
+                    let mut subse = SymbolicExecutor::new(symbolic_library, &subse_setting);
 
                     let mut updated_owner_list = (*self.cur_state.owner_name.clone()).clone();
                     updated_owner_list.push(OwnerName {
