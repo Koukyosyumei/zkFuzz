@@ -428,6 +428,37 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Constructs symbolic names for a given base ID and access pattern.
+    ///
+    /// This function parses a sequence of accesses to create symbolic names
+    /// representing the accessed component or variable. It handles both simple
+    /// variable access and complex component access patterns.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_id` - The base identifier for the variable or component.
+    /// * `access` - A vector of `DebugAccess` representing the access pattern.
+    ///
+    /// # Returns
+    ///
+    /// A tuple of two `SymbolicName`s:
+    /// * The first represents the base variable or component.
+    /// * The second represents the fully resolved name, including component access if present.
+    ///
+    /// # Examples
+    ///
+    /// Suppose the current owner_name is `[m]`.
+    /// For a simple variable access like `x[0]`:
+    /// * Returns `(SymbolicName{name: x, owner: [m], access: [0]}, SymbolicName{name: x, owner: [m], access: [0]})`
+    ///
+    /// For a component access like `x[0].y[1]`:
+    /// * Returns `(SymbolicName{name: x, owner: [m], access: [0]}, SymbolicName{name: y, owner: [m, x[0]], access: [1]})`
+    ///
+    /// # Notes
+    ///
+    /// * The function distinguishes between array accesses before and after a component access.
+    /// * If no component access is found, both returned `SymbolicName`s will be based on the `base_id`.
+    /// * The owner of the returned `SymbolicName`s is set based on the current state's owner name.
     fn construct_symbolic_name(
         &mut self,
         base_id: usize,
