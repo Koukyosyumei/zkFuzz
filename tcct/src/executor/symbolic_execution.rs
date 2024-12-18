@@ -1622,7 +1622,10 @@ impl<'a> SymbolicExecutor<'a> {
                             _ => SymbolicValue::Call(id.clone(), simplified_args),
                         }
                     } else {
-                        panic!("Empty Final State");
+                        panic!(
+                            "{} did not return any final state",
+                            subse.symbolic_library.id2name[id]
+                        );
                     }
                 } else {
                     panic!("Unknown Callee: {}", self.symbolic_library.id2name[id]);
