@@ -21,7 +21,6 @@ use program_structure::ast::Expression;
 use program_structure::program_archive::ProgramArchive;
 
 use executor::debug_ast::simplify_statement;
-use executor::stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 use executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 use solver::{
@@ -29,6 +28,7 @@ use solver::{
     unused_outputs::check_unused_outputs, utils::VerificationSetting,
 };
 use stats::ast_stats::ASTStats;
+use stats::symbolic_stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";
