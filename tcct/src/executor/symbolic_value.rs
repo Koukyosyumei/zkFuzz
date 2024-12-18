@@ -7,7 +7,7 @@ use log::warn;
 use num_bigint_dig::BigInt;
 use num_traits::FromPrimitive;
 use num_traits::ToPrimitive;
-use num_traits::{Signed, Zero};
+use num_traits::{One, Signed, Zero};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, VariableType};
@@ -650,4 +650,60 @@ pub fn evaluate_binary_op(
         },
         _ => SymbolicValue::BinaryOp(Rc::new(lhs.clone()), op.clone(), Rc::new(rhs.clone())),
     }
+}
+
+pub fn generate_lessthan_constraint(
+    name2id: &FxHashMap<String, usize>,
+    owner_name: Rc<Vec<OwnerName>>,
+) -> SymbolicValue {
+    let in_0 = Rc::new(SymbolicValue::Variable(SymbolicName {
+        name: name2id["in"],
+        owner: owner_name.clone(),
+        access: Some(vec![SymbolicAccess::ArrayAccess(
+            SymbolicValue::ConstantInt(BigInt::zero()),
+        )]),
+    }));
+    let in_1 = Rc::new(SymbolicValue::Variable(SymbolicName {
+        name: name2id["in"],
+        owner: owner_name.clone(),
+        access: Some(vec![SymbolicAccess::ArrayAccess(
+            SymbolicValue::ConstantInt(BigInt::one()),
+        )]),
+    }));
+    let lessthan_out = Rc::new(SymbolicValue::Variable(SymbolicName {
+        name: name2id["out"],
+        owner: owner_name,
+        access: None,
+    }));
+    let cond_1 = SymbolicValue::BinaryOp(
+        Rc::new(SymbolicValue::BinaryOp(
+            Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+            lessthan_out.clone(),
+        )),
+        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
+        Rc::new(SymbolicValue::BinaryOp(
+            in_0.clone(),
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
+            in_1.clone(),
+        )),
+    );
+    let cond_0 = SymbolicValue::BinaryOp(
+        Rc::new(SymbolicValue::BinaryOp(
+            Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+            lessthan_out.clone(),
+        )),
+        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
+        Rc::new(SymbolicValue::BinaryOp(
+            in_0,
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq),
+            in_1,
+        )),
+    );
+    SymbolicValue::BinaryOp(
+        Rc::new(cond_1),
+        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolOr),
+        Rc::new(cond_0),
+    )
 }
