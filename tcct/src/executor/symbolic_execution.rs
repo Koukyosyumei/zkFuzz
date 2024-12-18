@@ -1181,13 +1181,7 @@ impl<'a> SymbolicExecutor<'a> {
                     self.cur_state.set_symval(var_name, value);
                     self.execute(statements, cur_bid + 1);
                 }
-                DebugStatement::Substitution {
-                    meta,
-                    var,
-                    access,
-                    op,
-                    rhe,
-                } => {
+                DebugStatement::Substitution { .. } => {
                     self.handle_substitution(statements, cur_bid);
                 }
                 DebugStatement::MultSubstitution {

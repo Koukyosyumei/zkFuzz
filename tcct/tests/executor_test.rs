@@ -114,7 +114,7 @@ pub fn get_setting(prime: &BigInt) -> SymbolicExecutorSetting {
 
 #[test]
 fn test_if_else() {
-    let path = "./tests/sample/iszero_safe.circom".to_string();
+    let path = "./tests/sample/test_if_else.circom".to_string();
     let prime = BigInt::from_str(
         "21888242871839275222246405745257275088548364400416034343698204186575808495617",
     )
