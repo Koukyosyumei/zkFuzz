@@ -1,5 +1,7 @@
 tcct/experiment/
 *tarpaulin-report.html
+*perf.data
+*perf.data.old
 
 # circom
 *.r1cs
