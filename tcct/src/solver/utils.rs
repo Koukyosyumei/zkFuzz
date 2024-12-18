@@ -15,7 +15,7 @@ use program_structure::ast::ExpressionPrefixOpcode;
 
 use crate::executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
 use crate::executor::symbolic_value::{
-    OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
+    evaluate_binary_op, OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::{extended_euclidean, modpow};
 
@@ -424,72 +424,7 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::BinaryOp(lhs, op, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
-            match (&lhs_val, &rhs_val) {
-                (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match op.0 {
-                    ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt((lv + rv) % prime),
-                    ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt((lv - rv) % prime),
-                    ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt((lv * rv) % prime),
-                    ExpressionInfixOpcode::Pow => SymbolicValue::ConstantInt(modpow(lv, rv, prime)),
-                    ExpressionInfixOpcode::Div => {
-                        if rv.is_zero() {
-                            SymbolicValue::ConstantInt(BigInt::zero())
-                        } else {
-                            let mut r = prime.clone();
-                            let mut new_r = rv.clone();
-                            if r.is_negative() {
-                                r += prime;
-                            }
-                            if new_r.is_negative() {
-                                new_r += prime;
-                            }
-
-                            let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
-                            rv_inv %= prime;
-                            if rv_inv.is_negative() {
-                                rv_inv += prime;
-                            }
-
-                            SymbolicValue::ConstantInt((lv * rv_inv) % prime)
-                        }
-                    }
-                    ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
-                    ExpressionInfixOpcode::Mod => SymbolicValue::ConstantInt(lv % rv),
-                    ExpressionInfixOpcode::BitOr => SymbolicValue::ConstantInt(lv | rv),
-                    ExpressionInfixOpcode::BitAnd => SymbolicValue::ConstantInt(lv & rv),
-                    ExpressionInfixOpcode::BitXor => SymbolicValue::ConstantInt(lv ^ rv),
-                    ExpressionInfixOpcode::ShiftL => {
-                        SymbolicValue::ConstantInt(lv << rv.to_usize().unwrap())
-                    }
-                    ExpressionInfixOpcode::ShiftR => {
-                        SymbolicValue::ConstantInt(lv >> rv.to_usize().unwrap())
-                    }
-                    ExpressionInfixOpcode::Lesser => {
-                        SymbolicValue::ConstantBool(lv % prime < rv % prime)
-                    }
-                    ExpressionInfixOpcode::Greater => {
-                        SymbolicValue::ConstantBool(lv % prime > rv % prime)
-                    }
-                    ExpressionInfixOpcode::LesserEq => {
-                        SymbolicValue::ConstantBool(lv % prime <= rv % prime)
-                    }
-                    ExpressionInfixOpcode::GreaterEq => {
-                        SymbolicValue::ConstantBool(lv % prime >= rv % prime)
-                    }
-                    ExpressionInfixOpcode::Eq => {
-                        SymbolicValue::ConstantBool(lv % prime == rv % prime)
-                    }
-                    ExpressionInfixOpcode::NotEq => {
-                        SymbolicValue::ConstantBool(lv % prime != rv % prime)
-                    }
-                    _ => todo!("{:?}", value),
-                },
-                (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => match &op.0 {
-                    ExpressionInfixOpcode::BoolAnd => SymbolicValue::ConstantBool(*lv && *rv),
-                    ExpressionInfixOpcode::BoolOr => SymbolicValue::ConstantBool(*lv || *rv),
-                    _ => todo!("{:?}", value),
-                },
-                _ => panic!("Unassigned variables exist"),
-            }
+            evaluate_binary_op(&lhs_val, &rhs_val, &prime, &op)
         }
         SymbolicValue::UnaryOp(op, expr) => {
             let expr_val = evaluate_symbolic_value(prime, expr, assignment, symbolic_library);
