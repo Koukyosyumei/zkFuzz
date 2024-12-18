@@ -1332,10 +1332,10 @@ impl<'a> SymbolicExecutor<'a> {
                             }
                         }
                     }
-                    if let Some(boxed_value) = self.cur_state.get_symval(&sname) {
-                        if let SymbolicValue::ConstantInt(v) = (*boxed_value.clone()).clone() {
-                            return SymbolicValue::ConstantInt(v);
-                        }
+                    if let Some(SymbolicValue::ConstantInt(v)) =
+                        self.cur_state.get_symval(&sname).map(|v| &**v)
+                    {
+                        return SymbolicValue::ConstantInt(v.clone());
                     }
                     symval.clone()
                 } else {
