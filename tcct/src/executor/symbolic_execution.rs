@@ -1406,17 +1406,17 @@ impl<'a> SymbolicExecutor<'a> {
         value: &SymbolicValue,
     ) {
         let (component_name, pre_dims, post_dims) = self.parse_component_access(access);
-        let inp_name = SymbolicName {
-            name: component_name,
-            owner: Rc::new(Vec::new()),
-            access: if post_dims.is_empty() {
-                None
-            } else {
-                Some(post_dims)
-            },
-        };
 
         if let Some(component) = self.symbolic_store.components_store.get_mut(base_name) {
+            let inp_name = SymbolicName {
+                name: component_name,
+                owner: Rc::new(Vec::new()),
+                access: if post_dims.is_empty() {
+                    None
+                } else {
+                    Some(post_dims)
+                },
+            };
             component.inputs.insert(inp_name, Some(value.clone()));
         }
 
