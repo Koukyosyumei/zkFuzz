@@ -564,7 +564,7 @@ impl<'a> SymbolicExecutor<'a> {
                         .template_library
                         .get(&self.cur_state.template_id)
                     {
-                        if let Some(typ) = template.var2type.get(&sname.name) {
+                        if let Some(typ) = template.id2type.get(&sname.name) {
                             if let VariableType::Signal(SignalType::Output, _) = typ {
                                 if self.setting.substitute_output {
                                     return (*self
@@ -1323,7 +1323,7 @@ impl<'a> SymbolicExecutor<'a> {
         inputs_of_component: &mut FxHashMap<SymbolicName, Option<SymbolicValue>>,
     ) {
         for inp_name in &template.inputs {
-            let dims = self.evaluate_dimension(&template.var2dimensions[inp_name]);
+            let dims = self.evaluate_dimension(&template.id2dimensions[inp_name]);
             register_array_elements(*inp_name, &dims, None, inputs_of_component);
         }
     }

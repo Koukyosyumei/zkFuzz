@@ -252,8 +252,8 @@ pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<usize>,
     pub inputs: FxHashSet<usize>,
     pub outputs: FxHashSet<usize>,
-    pub var2type: FxHashMap<usize, VariableType>,
-    pub var2dimensions: FxHashMap<usize, Vec<DebugExpression>>,
+    pub id2type: FxHashMap<usize, VariableType>,
+    pub id2dimensions: FxHashMap<usize, Vec<DebugExpression>>,
     pub body: Vec<DebugStatement>,
     pub is_lessthan: bool,
 }
@@ -307,8 +307,8 @@ impl SymbolicLibrary {
     ) {
         let mut inputs = FxHashSet::default();
         let mut outputs = FxHashSet::default();
-        let mut var2type = FxHashMap::default();
-        let mut var2dimensions = FxHashMap::default();
+        let mut id2type = FxHashMap::default();
+        let mut id2dimensions = FxHashMap::default();
 
         let is_lessthan = &name == "LessThan";
 
@@ -336,8 +336,8 @@ impl SymbolicLibrary {
                                 ..
                             } = &init
                             {
-                                var2type.insert(name.clone(), xtype.clone());
-                                var2dimensions.insert(name.clone(), dimensions.clone());
+                                id2type.insert(name.clone(), xtype.clone());
+                                id2dimensions.insert(name.clone(), dimensions.clone());
                                 if let VariableType::Signal(typ, _taglist) = &xtype {
                                     match typ {
                                         SignalType::Input => {
@@ -376,8 +376,8 @@ impl SymbolicLibrary {
                     .collect::<Vec<_>>(),
                 inputs: inputs,
                 outputs: outputs,
-                var2type: var2type,
-                var2dimensions: var2dimensions,
+                id2type: id2type,
+                id2dimensions: id2dimensions,
                 body: vec![dbody.clone(), DebugStatement::Ret],
                 is_lessthan: is_lessthan,
             }),
