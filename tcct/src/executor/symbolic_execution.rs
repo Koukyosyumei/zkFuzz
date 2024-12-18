@@ -1591,21 +1591,19 @@ impl<'a> SymbolicExecutor<'a> {
 
                     subse.execute(&func.body.clone(), 0);
 
+                    if !subse.setting.off_trace {
+                        trace!("{}", format!("{}", "===========================").cyan());
+                    }
+
                     if subse.symbolic_store.final_states.len() > 1 {
                         warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
                     }
 
                     if !subse.symbolic_store.final_states.is_empty() {
+                        // NOTE: a function does not produce any constraint
                         self.cur_state
                             .trace_constraints
                             .append(&mut subse.symbolic_store.final_states[0].trace_constraints);
-                        //self.cur_state
-                        //    .side_constraints
-                        //    .append(&mut subse.symbolic_store.final_states[0].side_constraints);
-
-                        if !subse.setting.off_trace {
-                            trace!("{}", format!("{}", "===========================").cyan());
-                        }
 
                         let return_name = SymbolicName {
                             name: usize::MAX,
