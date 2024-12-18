@@ -33,7 +33,7 @@ ARGS:
 **Example command:**
 
 ```bash
-./target/release/tcct ../sample/iszero_vuln.circom --search_mode="quick"
+./target/release/tcct ../sample/iszero_vuln.circom --search_mode="ga"
 ```
 
 **Example output:**
