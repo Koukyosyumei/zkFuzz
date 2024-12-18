@@ -251,10 +251,9 @@ pub type SymbolicValueRef = Rc<SymbolicValue>;
 pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<usize>,
     pub inputs: FxHashSet<usize>,
-    pub input_dimensions: FxHashMap<usize, Vec<DebugExpression>>,
-    pub output_dimensions: FxHashMap<usize, Vec<DebugExpression>>,
     pub outputs: FxHashSet<usize>,
     pub var2type: FxHashMap<usize, VariableType>,
+    pub var2dimensions: FxHashMap<usize, Vec<DebugExpression>>,
     pub body: Vec<DebugStatement>,
     pub is_lessthan: bool,
 }
@@ -307,10 +306,9 @@ impl SymbolicLibrary {
         template_parameter_names: &Vec<String>,
     ) {
         let mut inputs = FxHashSet::default();
-        let mut input_dimensions = FxHashMap::default();
-        let mut output_dimensions = FxHashMap::default();
         let mut outputs = FxHashSet::default();
-        let mut var2type: FxHashMap<usize, VariableType> = FxHashMap::default();
+        let mut var2type = FxHashMap::default();
+        let mut var2dimensions = FxHashMap::default();
 
         let is_lessthan = &name == "LessThan";
 
@@ -339,15 +337,14 @@ impl SymbolicLibrary {
                             } = &init
                             {
                                 var2type.insert(name.clone(), xtype.clone());
+                                var2dimensions.insert(name.clone(), dimensions.clone());
                                 if let VariableType::Signal(typ, _taglist) = &xtype {
                                     match typ {
                                         SignalType::Input => {
                                             inputs.insert(*name);
-                                            input_dimensions.insert(*name, dimensions.clone());
                                         }
                                         SignalType::Output => {
                                             outputs.insert(*name);
-                                            output_dimensions.insert(*name, dimensions.clone());
                                         }
                                         SignalType::Intermediate => {}
                                     }
@@ -378,10 +375,9 @@ impl SymbolicLibrary {
                     })
                     .collect::<Vec<_>>(),
                 inputs: inputs,
-                input_dimensions: input_dimensions,
-                output_dimensions: output_dimensions,
                 outputs: outputs,
                 var2type: var2type,
+                var2dimensions: var2dimensions,
                 body: vec![dbody.clone(), DebugStatement::Ret],
                 is_lessthan: is_lessthan,
             }),

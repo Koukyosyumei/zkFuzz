@@ -5,9 +5,7 @@ use num_traits::Zero;
 use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_value::{
-    register_array_elements, SymbolicName,
-};
+use crate::executor::symbolic_value::{register_array_elements, SymbolicName};
 
 use crate::solver::utils::{
     extract_variables, CounterExample, UnderConstrainedType, VerificationResult,
@@ -33,7 +31,7 @@ pub fn check_unused_outputs(
     {
         let dims = sexe.evaluate_dimension(
             &sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[&setting.id]]
-                .output_dimensions[&oup_name]
+                .var2dimensions[&oup_name]
                 .clone(),
         );
         register_array_elements(

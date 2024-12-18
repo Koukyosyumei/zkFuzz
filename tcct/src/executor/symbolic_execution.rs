@@ -1323,7 +1323,7 @@ impl<'a> SymbolicExecutor<'a> {
         inputs_of_component: &mut FxHashMap<SymbolicName, Option<SymbolicValue>>,
     ) {
         for inp_name in &template.inputs {
-            let dims = self.evaluate_dimension(&template.input_dimensions[inp_name]);
+            let dims = self.evaluate_dimension(&template.var2dimensions[inp_name]);
             register_array_elements(*inp_name, &dims, None, inputs_of_component);
         }
     }
