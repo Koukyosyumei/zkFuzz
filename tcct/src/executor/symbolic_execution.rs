@@ -341,23 +341,6 @@ impl<'a> SymbolicExecutor<'a> {
         self.symbolic_library.clear_function_counter();
     }
 
-    /// Checks if a component is ready based on its inputs being fully specified.
-    ///
-    /// # Arguments
-    ///
-    /// * `name` - Name of the component to check readiness for.
-    ///
-    /// # Returns
-    ///
-    /// A boolean indicating readiness status.
-    fn is_ready(&self, name: &SymbolicName) -> bool {
-        self.symbolic_store.components_store.contains_key(name)
-            && self.symbolic_store.components_store[name]
-                .inputs
-                .iter()
-                .all(|(_, v)| v.is_some())
-    }
-
     /// Feeds arguments into current state variables.
     ///
     /// This method evaluates the provided expressions and assigns their results
@@ -412,659 +395,6 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    /// Traces the current state if tracing is enabled.
-    ///
-    /// This method logs the current state information if tracing is not disabled.
-    ///
-    /// # Arguments
-    ///
-    /// * `meta` - The metadata associated with the current execution point.
-    fn trace_if_enabled(&self, meta: &Meta) {
-        if !self.setting.off_trace {
-            trace!(
-                "(elem_id={}) {}",
-                meta.elem_id,
-                self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
-            );
-        }
-    }
-
-    /// Constructs symbolic names for a given base ID and access pattern.
-    ///
-    /// This function parses a sequence of accesses to create symbolic names
-    /// representing the accessed component or variable. It handles both simple
-    /// variable access and complex component access patterns.
-    ///
-    /// # Arguments
-    ///
-    /// * `base_id` - The base identifier for the variable or component.
-    /// * `access` - A vector of `DebugAccess` representing the access pattern.
-    ///
-    /// # Returns
-    ///
-    /// A tuple of two `SymbolicName`s:
-    /// * The first represents the base variable or component.
-    /// * The second represents the fully resolved name, including component access if present.
-    ///
-    /// # Examples
-    ///
-    /// Suppose the current owner_name is `[m]`.
-    /// For a simple variable access like `x[0]`:
-    /// * Returns `(SymbolicName{name: x, owner: [m], access: [0]}, SymbolicName{name: x, owner: [m], access: [0]})`
-    ///
-    /// For a component access like `x[0].y[1]`:
-    /// * Returns `(SymbolicName{name: x, owner: [m], access: [0]}, SymbolicName{name: y, owner: [m, x[0]], access: [1]})`
-    ///
-    /// # Notes
-    ///
-    /// * The function distinguishes between array accesses before and after a component access.
-    /// * If no component access is found, both returned `SymbolicName`s will be based on the `base_id`.
-    /// * The owner of the returned `SymbolicName`s is set based on the current state's owner name.
-    fn construct_symbolic_name(
-        &mut self,
-        base_id: usize,
-        access: &Vec<DebugAccess>,
-    ) -> (SymbolicName, SymbolicName) {
-        // Style of component access: owner[access].component[access]
-        // Example: bits[0].dblIn[0];
-        let mut pre_dims = Vec::new();
-        let mut component_name = None;
-        let mut post_dims = Vec::new();
-        let mut found_component = false;
-        for acc in access {
-            let evaled_access = self.evaluate_access(&acc.clone());
-            match evaled_access {
-                SymbolicAccess::ComponentAccess(tmp_name) => {
-                    found_component = true;
-                    component_name = Some(tmp_name.clone());
-                }
-                SymbolicAccess::ArrayAccess(_) => {
-                    if found_component {
-                        post_dims.push(evaled_access);
-                    } else {
-                        pre_dims.push(evaled_access);
-                    }
-                }
-            }
-        }
-
-        if component_name.is_none() {
-            (
-                SymbolicName {
-                    name: base_id,
-                    owner: self.cur_state.owner_name.clone(),
-                    access: if pre_dims.is_empty() {
-                        None
-                    } else {
-                        Some(pre_dims.clone())
-                    },
-                },
-                SymbolicName {
-                    name: base_id,
-                    owner: self.cur_state.owner_name.clone(),
-                    access: if pre_dims.is_empty() {
-                        None
-                    } else {
-                        Some(pre_dims)
-                    },
-                },
-            )
-        } else {
-            let mut owner_name = (*self.cur_state.owner_name.clone()).clone();
-            owner_name.push(OwnerName {
-                name: base_id,
-                counter: 0,
-                access: if pre_dims.is_empty() {
-                    None
-                } else {
-                    Some(pre_dims.clone())
-                },
-            });
-            (
-                SymbolicName {
-                    name: base_id,
-                    owner: self.cur_state.owner_name.clone(),
-                    access: if pre_dims.is_empty() {
-                        None
-                    } else {
-                        Some(pre_dims)
-                    },
-                },
-                SymbolicName {
-                    name: component_name.unwrap(),
-                    owner: Rc::new(owner_name),
-                    access: if post_dims.is_empty() {
-                        None
-                    } else {
-                        Some(post_dims)
-                    },
-                },
-            )
-        }
-    }
-
-    fn handle_initialization_block(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::InitializationBlock {
-            initializations,
-            xtype,
-            ..
-        } = &statements[cur_bid]
-        {
-            let is_input = matches!(xtype, VariableType::Signal(SignalType::Input, _));
-
-            self.cur_state.is_within_initialization_block = true;
-
-            // We do not need to initialize the inputs during concrete execution
-            if !(self.setting.skip_initialization_blocks && is_input) {
-                for init in initializations {
-                    self.execute(&vec![init.clone()], 0);
-                }
-            }
-
-            self.cur_state.is_within_initialization_block = false;
-            self.symbolic_store.block_end_states = vec![self.cur_state.clone()];
-            self.expand_all_stack_states(statements, cur_bid + 1, self.cur_state.get_depth());
-        }
-    }
-
-    fn handle_block(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::Block { meta, stmts, .. } = &statements[cur_bid] {
-            self.trace_if_enabled(&meta);
-            self.execute(&stmts, 0);
-            self.expand_all_stack_states(statements, cur_bid + 1, self.cur_state.get_depth());
-        }
-    }
-
-    fn handle_if_then_else(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::IfThenElse {
-            meta,
-            cond,
-            if_case,
-            else_case,
-            ..
-        } = &statements[cur_bid]
-        {
-            self.trace_if_enabled(meta);
-
-            let evaled_cond = self.evaluate_expression(cond);
-            let original_condition = self.simplify_variables(&evaled_cond, true);
-            let simplified_condition =
-                self.simplify_variables(&evaled_cond, !self.setting.propagate_substitution);
-
-            // Save the current state
-            let saved_state = self.cur_state.clone();
-            let current_depth = self.cur_state.get_depth();
-            let saved_block_end_states = self.symbolic_store.block_end_states.clone();
-
-            // Handle the 'then' branch
-            self.process_branch(
-                &simplified_condition,
-                &original_condition,
-                Some(if_case),
-                statements,
-                cur_bid,
-                meta.elem_id,
-                current_depth,
-                true,
-            );
-
-            let mut then_branch_states = self.symbolic_store.block_end_states.clone();
-            self.cur_state = saved_state;
-            self.symbolic_store.block_end_states = saved_block_end_states;
-
-            // Handle the 'else' branch
-            let negated_condition = negate_condition(&simplified_condition);
-            let original_negated_condition = negate_condition(&original_condition);
-
-            self.process_branch(
-                &negated_condition,
-                &original_negated_condition,
-                else_case.as_ref().map(|boxed| boxed.as_ref()),
-                statements,
-                cur_bid,
-                meta.elem_id,
-                current_depth,
-                false,
-            );
-
-            // Merge the states from both branches
-            self.symbolic_store
-                .block_end_states
-                .append(&mut then_branch_states);
-        }
-    }
-
-    fn process_branch(
-        &mut self,
-        condition: &SymbolicValue,
-        original_condition: &SymbolicValue,
-        branch_case: Option<&DebugStatement>,
-        statements: &Vec<DebugStatement>,
-        cur_bid: usize,
-        meta_elem_id: usize,
-        current_depth: usize,
-        is_then_branch: bool,
-    ) {
-        if let SymbolicValue::ConstantBool(false) = condition {
-            if !self.setting.off_trace {
-                let branch_name = if is_then_branch { "Then" } else { "Else" };
-                trace!(
-                    "{}",
-                    format!(
-                        "(elem_id={}) 🚧 Unreachable `{}` Branch",
-                        meta_elem_id, branch_name
-                    )
-                    .yellow()
-                );
-            }
-            return;
-        }
-
-        let mut branch_state = self.cur_state.clone();
-
-        if self.setting.keep_track_constraints && !is_true(condition) {
-            branch_state.push_trace_constraint(condition);
-            branch_state.push_side_constraint(original_condition);
-        }
-
-        branch_state.set_depth(current_depth + 1);
-        self.cur_state = branch_state;
-
-        if let Some(stmt) = branch_case {
-            self.execute(&vec![stmt.clone()], 0);
-        } else {
-            self.symbolic_store.block_end_states = vec![self.cur_state.clone()];
-        }
-
-        self.expand_all_stack_states(statements, cur_bid + 1, current_depth);
-    }
-
-    fn handle_substitution(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::Substitution {
-            meta,
-            var,
-            access,
-            op,
-            rhe,
-        } = &statements[cur_bid]
-        {
-            self.trace_if_enabled(meta);
-
-            let evaled_rhe = self.evaluate_expression(rhe);
-            let original_simplified_rhe = self.simplify_variables(&evaled_rhe, true);
-            let simplified_rhe =
-                self.simplify_variables(&evaled_rhe, !self.setting.propagate_substitution);
-            let (left_base_name, left_var_name) = self.construct_symbolic_name(*var, access);
-
-            match &simplified_rhe {
-                SymbolicValue::Array(_) => {
-                    self.handle_array_substitution(&left_var_name, &simplified_rhe);
-                }
-                _ => {
-                    self.cur_state
-                        .set_symval(left_var_name.clone(), simplified_rhe.clone());
-                }
-            }
-
-            if let SymbolicValue::Call(callee_name, args) = &simplified_rhe {
-                self.handle_call_substitution(callee_name, args, &left_var_name, &left_base_name);
-            } else {
-                self.handle_non_call_substitution(
-                    op,
-                    &left_var_name,
-                    &simplified_rhe,
-                    &original_simplified_rhe,
-                );
-            }
-
-            if !access.is_empty() {
-                self.handle_component_access(*var, access, &left_base_name, &simplified_rhe);
-            }
-
-            self.execute(statements, cur_bid + 1);
-        }
-    }
-
-    /// Handles array substitution in symbolic execution.
-    ///
-    /// This method processes the assignment of array values, updating the symbolic state
-    /// for each element of the array individually.
-    ///
-    /// # Arguments
-    ///
-    /// * `left_var_name` - The symbolic name of the array variable being assigned.
-    /// * `elements` - A vector of reference-counted symbolic values representing the array elements.
-    ///
-    /// # Side Effects
-    ///
-    /// Updates the current symbolic state with individual array element assignments.
-    fn handle_array_substitution(&mut self, left_var_name: &SymbolicName, arr: &SymbolicValue) {
-        let enumerated_elements = enumerate_array(arr);
-        for (pos, elem) in enumerated_elements {
-            let mut new_left_var_name = left_var_name.clone();
-            let mut access = new_left_var_name.access.unwrap_or_default();
-            for p in pos {
-                access.push(SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(
-                    BigInt::from_usize(p).unwrap(),
-                )));
-            }
-            new_left_var_name.access = Some(access);
-            self.cur_state.set_symval(new_left_var_name, elem.clone());
-        }
-    }
-
-    /// Handles call substitution in symbolic execution.
-    ///
-    /// This method processes the assignment of a template call result,
-    /// potentially initializing a new component in the symbolic store.
-    ///
-    /// # Arguments
-    ///
-    /// * `callee_name` - The name of the called function or template.
-    /// * `args` - The arguments passed to the call.
-    /// * `var_name` - The symbolic name where the call result is being assigned.
-    /// * `base_name` - The base symbolic name for component initialization.
-    ///
-    /// # Side Effects
-    ///
-    /// May initialize a new component in the symbolic store or update
-    fn handle_call_substitution(
-        &mut self,
-        callee_name: &usize,
-        args: &Vec<Rc<SymbolicValue>>,
-        var_name: &SymbolicName,
-        base_name: &SymbolicName,
-    ) {
-        if self
-            .symbolic_library
-            .template_library
-            .contains_key(callee_name)
-        {
-            self.initialize_template_component(callee_name, args, var_name, base_name);
-        }
-    }
-
-    fn initialize_template_component(
-        &mut self,
-        callee_name: &usize,
-        args: &Vec<Rc<SymbolicValue>>,
-        var_name: &SymbolicName,
-        base_name: &SymbolicName,
-    ) {
-        let mut subse_setting = self.setting.clone();
-        subse_setting.only_initialization_blocks = true;
-        subse_setting.off_trace = true;
-        let mut se_for_initialization =
-            SymbolicExecutor::new(&mut self.symbolic_library, &subse_setting);
-        se_for_initialization.cur_state.owner_name = self.cur_state.owner_name.clone();
-
-        let template = se_for_initialization.symbolic_library.template_library[callee_name].clone();
-        let mut escaped_vars = Vec::new();
-
-        // Set template parameters
-        for i in 0..template.template_parameter_names.len() {
-            let tp_name = SymbolicName {
-                name: template.template_parameter_names[i],
-                owner: self.cur_state.owner_name.clone(),
-                access: None,
-            };
-            if let Some(val) = self.cur_state.get_symval(&tp_name) {
-                escaped_vars.push((tp_name.clone(), val.clone()));
-            }
-            self.cur_state
-                .set_rc_symval(tp_name.clone(), args[i].clone());
-            se_for_initialization
-                .cur_state
-                .set_rc_symval(tp_name, args[i].clone());
-        }
-
-        se_for_initialization.execute(&template.body.clone(), 0);
-
-        let mut inputs_of_component = FxHashMap::default();
-
-        se_for_initialization.initialize_template_inputs(&template, &mut inputs_of_component);
-
-        self.restore_escaped_variables(&escaped_vars);
-
-        let component = SymbolicComponent {
-            template_name: *callee_name,
-            args: args.clone(),
-            inputs: inputs_of_component,
-            is_done: false,
-        };
-        self.symbolic_store
-            .components_store
-            .insert(var_name.clone(), component);
-    }
-
-    fn initialize_template_inputs(
-        &mut self,
-        template: &SymbolicTemplate,
-        inputs_of_component: &mut FxHashMap<SymbolicName, Option<SymbolicValue>>,
-    ) {
-        for inp_name in &template.inputs {
-            let dims = self.evaluate_dimension(&template.input_dimensions[inp_name]);
-            register_array_elements(*inp_name, &dims, None, inputs_of_component);
-        }
-    }
-
-    fn restore_escaped_variables(&mut self, escaped_vars: &Vec<(SymbolicName, SymbolicValueRef)>) {
-        for (n, v) in escaped_vars {
-            self.cur_state.set_rc_symval(n.clone(), v.clone());
-        }
-    }
-
-    /// Handles non-call substitution in symbolic execution.
-    ///
-    /// This method processes standard variable assignments, updating the symbolic state
-    /// and potentially adding constraints based on the assignment type.
-    ///
-    /// # Arguments
-    ///
-    /// * `op` - The assignment operator.
-    /// * `var_name` - The symbolic name of the variable being assigned.
-    /// * `value` - The symbolic value being assigned.
-    /// * `original_value` - The original (non-simplified) value being assigned.
-    ///
-    /// # Side Effects
-    ///
-    /// Updates the current symbolic state and may add constraints.
-    fn handle_non_call_substitution(
-        &mut self,
-        op: &DebugAssignOp,
-        var_name: &SymbolicName,
-        value: &SymbolicValue,
-        original_value: &SymbolicValue,
-    ) {
-        if self.setting.keep_track_constraints {
-            match op {
-                DebugAssignOp(AssignOp::AssignConstraintSignal) => {
-                    let cont = SymbolicValue::AssignEq(
-                        Rc::new(SymbolicValue::Variable(var_name.clone())),
-                        Rc::new(value.clone()),
-                    );
-                    self.cur_state.push_trace_constraint(&cont);
-                    let original_cont = SymbolicValue::BinaryOp(
-                        Rc::new(SymbolicValue::Variable(var_name.clone())),
-                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                        Rc::new(original_value.clone()),
-                    );
-                    self.cur_state.push_side_constraint(&original_cont);
-                }
-                DebugAssignOp(AssignOp::AssignSignal) => {
-                    let cont = SymbolicValue::Assign(
-                        Rc::new(SymbolicValue::Variable(var_name.clone())),
-                        Rc::new(value.clone()),
-                    );
-                    self.cur_state.push_trace_constraint(&cont);
-                }
-                _ => {}
-            }
-        }
-    }
-
-    /// Handles component access during substitution.
-    ///
-    /// This method processes assignments involving component access, updating
-    /// the component store and potentially executing ready components.
-    ///
-    /// # Arguments
-    ///
-    /// * `var` - The variable identifier.
-    /// * `access` - A vector of accesses (e.g., array indices, component accesses).
-    /// * `base_name` - The base symbolic name for the accessed component.
-    /// * `value` - The symbolic value being assigned.
-    ///
-    /// # Side Effects
-    ///
-    /// Updates the component store and may trigger execution of ready components.
-    fn handle_component_access(
-        &mut self,
-        var: usize,
-        access: &Vec<DebugAccess>,
-        base_name: &SymbolicName,
-        value: &SymbolicValue,
-    ) {
-        let (component_name, pre_dims, post_dims) = self.parse_component_access(access);
-        let inp_name = SymbolicName {
-            name: component_name,
-            owner: Rc::new(Vec::new()),
-            access: if post_dims.is_empty() {
-                None
-            } else {
-                Some(post_dims)
-            },
-        };
-
-        if let Some(component) = self.symbolic_store.components_store.get_mut(base_name) {
-            component.inputs.insert(inp_name, Some(value.clone()));
-        }
-
-        if self.is_ready(base_name) {
-            self.execute_ready_component(var, base_name, &pre_dims);
-        }
-    }
-
-    fn parse_component_access(
-        &mut self,
-        access: &Vec<DebugAccess>,
-    ) -> (usize, Vec<SymbolicAccess>, Vec<SymbolicAccess>) {
-        let mut component_name = 0;
-        let mut pre_dims = Vec::new();
-        let mut post_dims = Vec::new();
-        let mut found_component = false;
-
-        for acc in access {
-            let evaled_access = self.evaluate_access(acc);
-            match evaled_access {
-                SymbolicAccess::ComponentAccess(tmp_name) => {
-                    found_component = true;
-                    component_name = tmp_name;
-                }
-                SymbolicAccess::ArrayAccess(_) => {
-                    if found_component {
-                        post_dims.push(evaled_access);
-                    } else {
-                        pre_dims.push(evaled_access);
-                    }
-                }
-            }
-        }
-
-        (component_name, pre_dims, post_dims)
-    }
-
-    fn execute_ready_component(
-        &mut self,
-        var: usize,
-        base_name: &SymbolicName,
-        pre_dims: &Vec<SymbolicAccess>,
-    ) {
-        if !self.symbolic_store.components_store[base_name].is_done {
-            let mut subse = SymbolicExecutor::new(&mut self.symbolic_library, self.setting);
-            let mut updated_owner_list = (*self.cur_state.owner_name.clone()).clone();
-            updated_owner_list.push(OwnerName {
-                name: var,
-                counter: 0,
-                access: if pre_dims.is_empty() {
-                    None
-                } else {
-                    Some(pre_dims.clone())
-                },
-            });
-            subse.cur_state.owner_name = Rc::new(updated_owner_list);
-
-            let templ = &subse.symbolic_library.template_library
-                [&self.symbolic_store.components_store[base_name].template_name];
-            subse
-                .cur_state
-                .set_template_id(self.symbolic_store.components_store[base_name].template_name);
-
-            // Set template-parameters of the component
-            for i in 0..templ.template_parameter_names.len() {
-                let tp_name = SymbolicName {
-                    name: templ.template_parameter_names[i],
-                    owner: subse.cur_state.owner_name.clone(),
-                    access: None,
-                };
-                subse.cur_state.set_rc_symval(
-                    tp_name,
-                    self.symbolic_store.components_store[base_name].args[i].clone(),
-                );
-            }
-
-            // Set inputs of the component
-            for (k, v) in self.symbolic_store.components_store[base_name]
-                .inputs
-                .iter()
-            {
-                let n = SymbolicName {
-                    name: k.name,
-                    owner: subse.cur_state.owner_name.clone(),
-                    access: k.access.clone(),
-                };
-                subse.cur_state.set_symval(n, v.clone().unwrap());
-            }
-
-            if !self.setting.off_trace {
-                trace!("{}", "===========================".cyan());
-                trace!(
-                    "📞 Call {}",
-                    subse.symbolic_library.id2name
-                        [&self.symbolic_store.components_store[base_name].template_name]
-                );
-            }
-
-            let is_lessthan = templ.is_lessthan;
-            subse.execute(&templ.body.clone(), 0);
-
-            // Handle the execution results
-            if subse.symbolic_store.final_states.len() > 1 {
-                warn!(
-                    "TODO: This tool currently cannot handle multiple branches within the callee."
-                );
-            }
-            self.cur_state
-                .trace_constraints
-                .append(&mut subse.symbolic_store.final_states[0].trace_constraints);
-            self.cur_state
-                .side_constraints
-                .append(&mut subse.symbolic_store.final_states[0].side_constraints);
-
-            if is_lessthan {
-                let cond = generate_lessthan_constraint(
-                    &subse.symbolic_library.name2id,
-                    subse.cur_state.owner_name.clone(),
-                );
-                self.cur_state.push_trace_constraint(&cond);
-            }
-
-            if !self.setting.off_trace {
-                trace!("{}", "===========================".cyan());
-            }
-        }
-    }
-
     /// Executes a sequence of statements symbolically.
     ///
     /// This method starts execution from a specified block index, updating internal states
@@ -1104,43 +434,7 @@ impl<'a> SymbolicExecutor<'a> {
                 DebugStatement::While {
                     meta, cond, stmt, ..
                 } => {
-                    self.trace_if_enabled(&meta);
-                    // Symbolic execution of loops is complex. This is a simplified approach.
-                    let tmp_cond = self.evaluate_expression(cond);
-                    let evaled_condition =
-                        self.simplify_variables(&tmp_cond, !self.setting.propagate_substitution);
-
-                    if let SymbolicValue::ConstantBool(flag) = evaled_condition {
-                        if flag {
-                            let mut stack_states = self.symbolic_store.block_end_states.clone();
-                            self.symbolic_store.block_end_states.clear();
-                            self.execute(&vec![*stmt.clone()], 0);
-
-                            self.expand_all_stack_states(
-                                statements,
-                                cur_bid,
-                                self.cur_state.get_depth(),
-                            );
-
-                            self.symbolic_store
-                                .block_end_states
-                                .append(&mut stack_states);
-                        } else {
-                            self.symbolic_store
-                                .block_end_states
-                                .push(self.cur_state.clone());
-
-                            self.expand_all_stack_states(
-                                statements,
-                                cur_bid + 1,
-                                self.cur_state.get_depth(),
-                            );
-                        }
-                    } else {
-                        panic!("This tool currently cannot handle the symbolic condition of While Loop: {}", evaled_condition.lookup_fmt(&self.symbolic_library.id2name));
-                    }
-
-                    // Note: This doesn't handle loop invariants or fixed-point computation
+                    self.handle_while(statements, cur_bid);
                 }
                 DebugStatement::Return { meta, value, .. } => {
                     self.trace_if_enabled(&meta);
@@ -1317,7 +611,10 @@ impl<'a> SymbolicExecutor<'a> {
             0,
         );
     }
+}
 
+// Evaluation and simplification methods
+impl<'a> SymbolicExecutor<'a> {
     /// Evaluates a symbolic access expression, converting it into a `SymbolicAccess` value.
     ///
     /// # Arguments
@@ -1692,6 +989,729 @@ impl<'a> SymbolicExecutor<'a> {
                 panic!("Unhandled expression type: {:?}", expr);
                 //SymbolicValue::Variable(format!("Unhandled({:?})", expr), "".to_string())
             }
+        }
+    }
+}
+
+impl<'a> SymbolicExecutor<'a> {
+    fn handle_initialization_block(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
+        if let DebugStatement::InitializationBlock {
+            initializations,
+            xtype,
+            ..
+        } = &statements[cur_bid]
+        {
+            let is_input = matches!(xtype, VariableType::Signal(SignalType::Input, _));
+
+            self.cur_state.is_within_initialization_block = true;
+
+            // We do not need to initialize the inputs during concrete execution
+            if !(self.setting.skip_initialization_blocks && is_input) {
+                for init in initializations {
+                    self.execute(&vec![init.clone()], 0);
+                }
+            }
+
+            self.cur_state.is_within_initialization_block = false;
+            self.symbolic_store.block_end_states = vec![self.cur_state.clone()];
+            self.expand_all_stack_states(statements, cur_bid + 1, self.cur_state.get_depth());
+        }
+    }
+
+    fn handle_block(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
+        if let DebugStatement::Block { meta, stmts, .. } = &statements[cur_bid] {
+            self.trace_if_enabled(&meta);
+            self.execute(&stmts, 0);
+            self.expand_all_stack_states(statements, cur_bid + 1, self.cur_state.get_depth());
+        }
+    }
+
+    fn handle_if_then_else(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
+        if let DebugStatement::IfThenElse {
+            meta,
+            cond,
+            if_case,
+            else_case,
+            ..
+        } = &statements[cur_bid]
+        {
+            self.trace_if_enabled(meta);
+
+            let evaled_cond = self.evaluate_expression(cond);
+            let original_condition = self.simplify_variables(&evaled_cond, true);
+            let simplified_condition =
+                self.simplify_variables(&evaled_cond, !self.setting.propagate_substitution);
+
+            // Save the current state
+            let saved_state = self.cur_state.clone();
+            let current_depth = self.cur_state.get_depth();
+            let saved_block_end_states = self.symbolic_store.block_end_states.clone();
+
+            // Handle the 'then' branch
+            self.process_branch(
+                &simplified_condition,
+                &original_condition,
+                Some(if_case),
+                statements,
+                cur_bid,
+                meta.elem_id,
+                current_depth,
+                true,
+            );
+
+            let mut then_branch_states = self.symbolic_store.block_end_states.clone();
+            self.cur_state = saved_state;
+            self.symbolic_store.block_end_states = saved_block_end_states;
+
+            // Handle the 'else' branch
+            let negated_condition = negate_condition(&simplified_condition);
+            let original_negated_condition = negate_condition(&original_condition);
+
+            self.process_branch(
+                &negated_condition,
+                &original_negated_condition,
+                else_case.as_ref().map(|boxed| boxed.as_ref()),
+                statements,
+                cur_bid,
+                meta.elem_id,
+                current_depth,
+                false,
+            );
+
+            // Merge the states from both branches
+            self.symbolic_store
+                .block_end_states
+                .append(&mut then_branch_states);
+        }
+    }
+
+    fn handle_substitution(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
+        if let DebugStatement::Substitution {
+            meta,
+            var,
+            access,
+            op,
+            rhe,
+        } = &statements[cur_bid]
+        {
+            self.trace_if_enabled(meta);
+
+            let evaled_rhe = self.evaluate_expression(rhe);
+            let original_simplified_rhe = self.simplify_variables(&evaled_rhe, true);
+            let simplified_rhe =
+                self.simplify_variables(&evaled_rhe, !self.setting.propagate_substitution);
+            let (left_base_name, left_var_name) = self.construct_symbolic_name(*var, access);
+
+            match &simplified_rhe {
+                SymbolicValue::Array(_) => {
+                    self.handle_array_substitution(&left_var_name, &simplified_rhe);
+                }
+                _ => {
+                    self.cur_state
+                        .set_symval(left_var_name.clone(), simplified_rhe.clone());
+                }
+            }
+
+            if let SymbolicValue::Call(callee_name, args) = &simplified_rhe {
+                self.handle_call_substitution(callee_name, args, &left_var_name, &left_base_name);
+            } else {
+                self.handle_non_call_substitution(
+                    op,
+                    &left_var_name,
+                    &simplified_rhe,
+                    &original_simplified_rhe,
+                );
+            }
+
+            if !access.is_empty() {
+                self.handle_component_access(*var, access, &left_base_name, &simplified_rhe);
+            }
+
+            self.execute(statements, cur_bid + 1);
+        }
+    }
+
+    fn handle_while(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
+        if let DebugStatement::While {
+            meta, cond, stmt, ..
+        } = &statements[cur_bid]
+        {
+            self.trace_if_enabled(&meta);
+            // Symbolic execution of loops is complex. This is a simplified approach.
+            let tmp_cond = self.evaluate_expression(cond);
+            let evaled_condition =
+                self.simplify_variables(&tmp_cond, !self.setting.propagate_substitution);
+
+            if let SymbolicValue::ConstantBool(flag) = evaled_condition {
+                if flag {
+                    let mut stack_states = self.symbolic_store.block_end_states.clone();
+                    self.symbolic_store.block_end_states.clear();
+                    self.execute(&vec![*stmt.clone()], 0);
+
+                    self.expand_all_stack_states(statements, cur_bid, self.cur_state.get_depth());
+
+                    self.symbolic_store
+                        .block_end_states
+                        .append(&mut stack_states);
+                } else {
+                    self.symbolic_store
+                        .block_end_states
+                        .push(self.cur_state.clone());
+
+                    self.expand_all_stack_states(
+                        statements,
+                        cur_bid + 1,
+                        self.cur_state.get_depth(),
+                    );
+                }
+            } else {
+                panic!(
+                    "This tool currently cannot handle the symbolic condition of While Loop: {}",
+                    evaled_condition.lookup_fmt(&self.symbolic_library.id2name)
+                );
+            }
+        }
+    }
+}
+
+// Utility methods for substitution
+impl<'a> SymbolicExecutor<'a> {
+    /// Handles array substitution in symbolic execution.
+    ///
+    /// This method processes the assignment of array values, updating the symbolic state
+    /// for each element of the array individually.
+    ///
+    /// # Arguments
+    ///
+    /// * `left_var_name` - The symbolic name of the array variable being assigned.
+    /// * `elements` - A vector of reference-counted symbolic values representing the array elements.
+    ///
+    /// # Side Effects
+    ///
+    /// Updates the current symbolic state with individual array element assignments.
+    fn handle_array_substitution(&mut self, left_var_name: &SymbolicName, arr: &SymbolicValue) {
+        let enumerated_elements = enumerate_array(arr);
+        for (pos, elem) in enumerated_elements {
+            let mut new_left_var_name = left_var_name.clone();
+            let mut access = new_left_var_name.access.unwrap_or_default();
+            for p in pos {
+                access.push(SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(
+                    BigInt::from_usize(p).unwrap(),
+                )));
+            }
+            new_left_var_name.access = Some(access);
+            self.cur_state.set_symval(new_left_var_name, elem.clone());
+        }
+    }
+
+    /// Handles call substitution in symbolic execution.
+    ///
+    /// This method processes the assignment of a template call result,
+    /// potentially initializing a new component in the symbolic store.
+    ///
+    /// # Arguments
+    ///
+    /// * `callee_name` - The name of the called function or template.
+    /// * `args` - The arguments passed to the call.
+    /// * `var_name` - The symbolic name where the call result is being assigned.
+    /// * `base_name` - The base symbolic name for component initialization.
+    ///
+    /// # Side Effects
+    ///
+    /// May initialize a new component in the symbolic store or update
+    fn handle_call_substitution(
+        &mut self,
+        callee_name: &usize,
+        args: &Vec<Rc<SymbolicValue>>,
+        var_name: &SymbolicName,
+        base_name: &SymbolicName,
+    ) {
+        if self
+            .symbolic_library
+            .template_library
+            .contains_key(callee_name)
+        {
+            self.initialize_template_component(callee_name, args, var_name, base_name);
+        }
+    }
+
+    fn initialize_template_component(
+        &mut self,
+        callee_name: &usize,
+        args: &Vec<Rc<SymbolicValue>>,
+        var_name: &SymbolicName,
+        base_name: &SymbolicName,
+    ) {
+        let mut subse_setting = self.setting.clone();
+        subse_setting.only_initialization_blocks = true;
+        subse_setting.off_trace = true;
+        let mut se_for_initialization =
+            SymbolicExecutor::new(&mut self.symbolic_library, &subse_setting);
+        se_for_initialization.cur_state.owner_name = self.cur_state.owner_name.clone();
+
+        let template = se_for_initialization.symbolic_library.template_library[callee_name].clone();
+        let mut escaped_vars = Vec::new();
+
+        // Set template parameters
+        for i in 0..template.template_parameter_names.len() {
+            let tp_name = SymbolicName {
+                name: template.template_parameter_names[i],
+                owner: self.cur_state.owner_name.clone(),
+                access: None,
+            };
+            if let Some(val) = self.cur_state.get_symval(&tp_name) {
+                escaped_vars.push((tp_name.clone(), val.clone()));
+            }
+            self.cur_state
+                .set_rc_symval(tp_name.clone(), args[i].clone());
+            se_for_initialization
+                .cur_state
+                .set_rc_symval(tp_name, args[i].clone());
+        }
+
+        se_for_initialization.execute(&template.body.clone(), 0);
+
+        let mut inputs_of_component = FxHashMap::default();
+
+        se_for_initialization.initialize_template_inputs(&template, &mut inputs_of_component);
+
+        self.restore_escaped_variables(&escaped_vars);
+
+        let component = SymbolicComponent {
+            template_name: *callee_name,
+            args: args.clone(),
+            inputs: inputs_of_component,
+            is_done: false,
+        };
+        self.symbolic_store
+            .components_store
+            .insert(var_name.clone(), component);
+    }
+
+    fn initialize_template_inputs(
+        &mut self,
+        template: &SymbolicTemplate,
+        inputs_of_component: &mut FxHashMap<SymbolicName, Option<SymbolicValue>>,
+    ) {
+        for inp_name in &template.inputs {
+            let dims = self.evaluate_dimension(&template.input_dimensions[inp_name]);
+            register_array_elements(*inp_name, &dims, None, inputs_of_component);
+        }
+    }
+
+    fn restore_escaped_variables(&mut self, escaped_vars: &Vec<(SymbolicName, SymbolicValueRef)>) {
+        for (n, v) in escaped_vars {
+            self.cur_state.set_rc_symval(n.clone(), v.clone());
+        }
+    }
+
+    /// Handles non-call substitution in symbolic execution.
+    ///
+    /// This method processes standard variable assignments, updating the symbolic state
+    /// and potentially adding constraints based on the assignment type.
+    ///
+    /// # Arguments
+    ///
+    /// * `op` - The assignment operator.
+    /// * `var_name` - The symbolic name of the variable being assigned.
+    /// * `value` - The symbolic value being assigned.
+    /// * `original_value` - The original (non-simplified) value being assigned.
+    ///
+    /// # Side Effects
+    ///
+    /// Updates the current symbolic state and may add constraints.
+    fn handle_non_call_substitution(
+        &mut self,
+        op: &DebugAssignOp,
+        var_name: &SymbolicName,
+        value: &SymbolicValue,
+        original_value: &SymbolicValue,
+    ) {
+        if self.setting.keep_track_constraints {
+            match op {
+                DebugAssignOp(AssignOp::AssignConstraintSignal) => {
+                    let cont = SymbolicValue::AssignEq(
+                        Rc::new(SymbolicValue::Variable(var_name.clone())),
+                        Rc::new(value.clone()),
+                    );
+                    self.cur_state.push_trace_constraint(&cont);
+                    let original_cont = SymbolicValue::BinaryOp(
+                        Rc::new(SymbolicValue::Variable(var_name.clone())),
+                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                        Rc::new(original_value.clone()),
+                    );
+                    self.cur_state.push_side_constraint(&original_cont);
+                }
+                DebugAssignOp(AssignOp::AssignSignal) => {
+                    let cont = SymbolicValue::Assign(
+                        Rc::new(SymbolicValue::Variable(var_name.clone())),
+                        Rc::new(value.clone()),
+                    );
+                    self.cur_state.push_trace_constraint(&cont);
+                }
+                _ => {}
+            }
+        }
+    }
+
+    /// Handles component access during substitution.
+    ///
+    /// This method processes assignments involving component access, updating
+    /// the component store and potentially executing ready components.
+    ///
+    /// # Arguments
+    ///
+    /// * `var` - The variable identifier.
+    /// * `access` - A vector of accesses (e.g., array indices, component accesses).
+    /// * `base_name` - The base symbolic name for the accessed component.
+    /// * `value` - The symbolic value being assigned.
+    ///
+    /// # Side Effects
+    ///
+    /// Updates the component store and may trigger execution of ready components.
+    fn handle_component_access(
+        &mut self,
+        var: usize,
+        access: &Vec<DebugAccess>,
+        base_name: &SymbolicName,
+        value: &SymbolicValue,
+    ) {
+        let (component_name, pre_dims, post_dims) = self.parse_component_access(access);
+        let inp_name = SymbolicName {
+            name: component_name,
+            owner: Rc::new(Vec::new()),
+            access: if post_dims.is_empty() {
+                None
+            } else {
+                Some(post_dims)
+            },
+        };
+
+        if let Some(component) = self.symbolic_store.components_store.get_mut(base_name) {
+            component.inputs.insert(inp_name, Some(value.clone()));
+        }
+
+        if self.is_ready(base_name) {
+            self.execute_ready_component(var, base_name, &pre_dims);
+        }
+    }
+
+    fn parse_component_access(
+        &mut self,
+        access: &Vec<DebugAccess>,
+    ) -> (usize, Vec<SymbolicAccess>, Vec<SymbolicAccess>) {
+        let mut component_name = 0;
+        let mut pre_dims = Vec::new();
+        let mut post_dims = Vec::new();
+        let mut found_component = false;
+
+        for acc in access {
+            let evaled_access = self.evaluate_access(acc);
+            match evaled_access {
+                SymbolicAccess::ComponentAccess(tmp_name) => {
+                    found_component = true;
+                    component_name = tmp_name;
+                }
+                SymbolicAccess::ArrayAccess(_) => {
+                    if found_component {
+                        post_dims.push(evaled_access);
+                    } else {
+                        pre_dims.push(evaled_access);
+                    }
+                }
+            }
+        }
+
+        (component_name, pre_dims, post_dims)
+    }
+
+    /// Checks if a component is ready based on its inputs being fully specified.
+    ///
+    /// # Arguments
+    ///
+    /// * `name` - Name of the component to check readiness for.
+    ///
+    /// # Returns
+    ///
+    /// A boolean indicating readiness status.
+    fn is_ready(&self, name: &SymbolicName) -> bool {
+        self.symbolic_store.components_store.contains_key(name)
+            && self.symbolic_store.components_store[name]
+                .inputs
+                .iter()
+                .all(|(_, v)| v.is_some())
+    }
+
+    fn execute_ready_component(
+        &mut self,
+        var: usize,
+        base_name: &SymbolicName,
+        pre_dims: &Vec<SymbolicAccess>,
+    ) {
+        if !self.symbolic_store.components_store[base_name].is_done {
+            let mut subse = SymbolicExecutor::new(&mut self.symbolic_library, self.setting);
+            let mut updated_owner_list = (*self.cur_state.owner_name.clone()).clone();
+            updated_owner_list.push(OwnerName {
+                name: var,
+                counter: 0,
+                access: if pre_dims.is_empty() {
+                    None
+                } else {
+                    Some(pre_dims.clone())
+                },
+            });
+            subse.cur_state.owner_name = Rc::new(updated_owner_list);
+
+            let templ = &subse.symbolic_library.template_library
+                [&self.symbolic_store.components_store[base_name].template_name];
+            subse
+                .cur_state
+                .set_template_id(self.symbolic_store.components_store[base_name].template_name);
+
+            // Set template-parameters of the component
+            for i in 0..templ.template_parameter_names.len() {
+                let tp_name = SymbolicName {
+                    name: templ.template_parameter_names[i],
+                    owner: subse.cur_state.owner_name.clone(),
+                    access: None,
+                };
+                subse.cur_state.set_rc_symval(
+                    tp_name,
+                    self.symbolic_store.components_store[base_name].args[i].clone(),
+                );
+            }
+
+            // Set inputs of the component
+            for (k, v) in self.symbolic_store.components_store[base_name]
+                .inputs
+                .iter()
+            {
+                let n = SymbolicName {
+                    name: k.name,
+                    owner: subse.cur_state.owner_name.clone(),
+                    access: k.access.clone(),
+                };
+                subse.cur_state.set_symval(n, v.clone().unwrap());
+            }
+
+            if !self.setting.off_trace {
+                trace!("{}", "===========================".cyan());
+                trace!(
+                    "📞 Call {}",
+                    subse.symbolic_library.id2name
+                        [&self.symbolic_store.components_store[base_name].template_name]
+                );
+            }
+
+            let is_lessthan = templ.is_lessthan;
+            subse.execute(&templ.body.clone(), 0);
+
+            // Handle the execution results
+            if subse.symbolic_store.final_states.len() > 1 {
+                warn!(
+                    "TODO: This tool currently cannot handle multiple branches within the callee."
+                );
+            }
+            self.cur_state
+                .trace_constraints
+                .append(&mut subse.symbolic_store.final_states[0].trace_constraints);
+            self.cur_state
+                .side_constraints
+                .append(&mut subse.symbolic_store.final_states[0].side_constraints);
+
+            if is_lessthan {
+                let cond = generate_lessthan_constraint(
+                    &subse.symbolic_library.name2id,
+                    subse.cur_state.owner_name.clone(),
+                );
+                self.cur_state.push_trace_constraint(&cond);
+            }
+
+            if !self.setting.off_trace {
+                trace!("{}", "===========================".cyan());
+            }
+        }
+    }
+}
+
+// Utility methods for If-Then-Else
+impl<'a> SymbolicExecutor<'a> {
+    fn process_branch(
+        &mut self,
+        condition: &SymbolicValue,
+        original_condition: &SymbolicValue,
+        branch_case: Option<&DebugStatement>,
+        statements: &Vec<DebugStatement>,
+        cur_bid: usize,
+        meta_elem_id: usize,
+        current_depth: usize,
+        is_then_branch: bool,
+    ) {
+        if let SymbolicValue::ConstantBool(false) = condition {
+            if !self.setting.off_trace {
+                let branch_name = if is_then_branch { "Then" } else { "Else" };
+                trace!(
+                    "{}",
+                    format!(
+                        "(elem_id={}) 🚧 Unreachable `{}` Branch",
+                        meta_elem_id, branch_name
+                    )
+                    .yellow()
+                );
+            }
+            return;
+        }
+
+        let mut branch_state = self.cur_state.clone();
+
+        if self.setting.keep_track_constraints && !is_true(condition) {
+            branch_state.push_trace_constraint(condition);
+            branch_state.push_side_constraint(original_condition);
+        }
+
+        branch_state.set_depth(current_depth + 1);
+        self.cur_state = branch_state;
+
+        if let Some(stmt) = branch_case {
+            self.execute(&vec![stmt.clone()], 0);
+        } else {
+            self.symbolic_store.block_end_states = vec![self.cur_state.clone()];
+        }
+
+        self.expand_all_stack_states(statements, cur_bid + 1, current_depth);
+    }
+}
+
+// Other utility methods
+impl<'a> SymbolicExecutor<'a> {
+    /// Traces the current state if tracing is enabled.
+    ///
+    /// This method logs the current state information if tracing is not disabled.
+    ///
+    /// # Arguments
+    ///
+    /// * `meta` - The metadata associated with the current execution point.
+    fn trace_if_enabled(&self, meta: &Meta) {
+        if !self.setting.off_trace {
+            trace!(
+                "(elem_id={}) {}",
+                meta.elem_id,
+                self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
+            );
+        }
+    }
+
+    /// Constructs symbolic names for a given base ID and access pattern.
+    ///
+    /// This function parses a sequence of accesses to create symbolic names
+    /// representing the accessed component or variable. It handles both simple
+    /// variable access and complex component access patterns.
+    ///
+    /// # Arguments
+    ///
+    /// * `base_id` - The base identifier for the variable or component.
+    /// * `access` - A vector of `DebugAccess` representing the access pattern.
+    ///
+    /// # Returns
+    ///
+    /// A tuple of two `SymbolicName`s:
+    /// * The first represents the base variable or component.
+    /// * The second represents the fully resolved name, including component access if present.
+    ///
+    /// # Examples
+    ///
+    /// Suppose the current owner_name is `[m]`.
+    /// For a simple variable access like `x[0]`:
+    /// * Returns `(SymbolicName{name: x, owner: [m], access: [0]}, SymbolicName{name: x, owner: [m], access: [0]})`
+    ///
+    /// For a component access like `x[0].y[1]`:
+    /// * Returns `(SymbolicName{name: x, owner: [m], access: [0]}, SymbolicName{name: y, owner: [m, x[0]], access: [1]})`
+    ///
+    /// # Notes
+    ///
+    /// * The function distinguishes between array accesses before and after a component access.
+    /// * If no component access is found, both returned `SymbolicName`s will be based on the `base_id`.
+    /// * The owner of the returned `SymbolicName`s is set based on the current state's owner name.
+    fn construct_symbolic_name(
+        &mut self,
+        base_id: usize,
+        access: &Vec<DebugAccess>,
+    ) -> (SymbolicName, SymbolicName) {
+        // Style of component access: owner[access].component[access]
+        // Example: bits[0].dblIn[0];
+        let mut pre_dims = Vec::new();
+        let mut component_name = None;
+        let mut post_dims = Vec::new();
+        let mut found_component = false;
+        for acc in access {
+            let evaled_access = self.evaluate_access(&acc.clone());
+            match evaled_access {
+                SymbolicAccess::ComponentAccess(tmp_name) => {
+                    found_component = true;
+                    component_name = Some(tmp_name.clone());
+                }
+                SymbolicAccess::ArrayAccess(_) => {
+                    if found_component {
+                        post_dims.push(evaled_access);
+                    } else {
+                        pre_dims.push(evaled_access);
+                    }
+                }
+            }
+        }
+
+        if component_name.is_none() {
+            (
+                SymbolicName {
+                    name: base_id,
+                    owner: self.cur_state.owner_name.clone(),
+                    access: if pre_dims.is_empty() {
+                        None
+                    } else {
+                        Some(pre_dims.clone())
+                    },
+                },
+                SymbolicName {
+                    name: base_id,
+                    owner: self.cur_state.owner_name.clone(),
+                    access: if pre_dims.is_empty() {
+                        None
+                    } else {
+                        Some(pre_dims)
+                    },
+                },
+            )
+        } else {
+            let mut owner_name = (*self.cur_state.owner_name.clone()).clone();
+            owner_name.push(OwnerName {
+                name: base_id,
+                counter: 0,
+                access: if pre_dims.is_empty() {
+                    None
+                } else {
+                    Some(pre_dims.clone())
+                },
+            });
+            (
+                SymbolicName {
+                    name: base_id,
+                    owner: self.cur_state.owner_name.clone(),
+                    access: if pre_dims.is_empty() {
+                        None
+                    } else {
+                        Some(pre_dims)
+                    },
+                },
+                SymbolicName {
+                    name: component_name.unwrap(),
+                    owner: Rc::new(owner_name),
+                    access: if post_dims.is_empty() {
+                        None
+                    } else {
+                        Some(post_dims)
+                    },
+                },
+            )
         }
     }
 }
