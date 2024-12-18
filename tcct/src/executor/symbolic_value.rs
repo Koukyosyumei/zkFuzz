@@ -543,6 +543,18 @@ pub fn register_array_elements<T>(
     }
 }
 
+/// Recursively enumerates elements of a nested `SymbolicValue::Array`, returning a vector of tuples
+/// containing the index path and a reference to each non-array element.
+///
+/// # Arguments
+///
+/// * `value` - A reference to the `SymbolicValue` to enumerate.
+///
+/// # Returns
+///
+/// A `Vec<(Vec<usize>, &SymbolicValue)>` where each tuple contains:
+/// - A `Vec<usize>` representing the index path to the element.
+/// - A reference to the non-array `SymbolicValue`.
 pub fn enumerate_array(value: &SymbolicValue) -> Vec<(Vec<usize>, &SymbolicValue)> {
     let mut result = Vec::new();
     let mut queue = VecDeque::new();
