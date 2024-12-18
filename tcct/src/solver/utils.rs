@@ -4,9 +4,6 @@ use std::rc::Rc;
 
 use colored::Colorize;
 use num_bigint_dig::BigInt;
-use num_traits::cast::ToPrimitive;
-use num_traits::Signed;
-use num_traits::Zero;
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use program_structure::ast::Expression;
@@ -17,7 +14,6 @@ use crate::executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSett
 use crate::executor::symbolic_value::{
     evaluate_binary_op, OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
-use crate::executor::utils::{extended_euclidean, modpow};
 
 pub enum UnderConstrainedType {
     UnusedOutput,

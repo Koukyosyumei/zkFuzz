@@ -2,12 +2,12 @@ use std::cmp::max;
 use std::rc::Rc;
 
 use colored::Colorize;
-use log::{error, trace, warn};
+use log::{trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::FromPrimitive;
 use num_traits::One;
-use num_traits::{Signed, Zero};
+use num_traits::Zero;
 use rustc_hash::FxHashMap;
 
 use program_structure::ast::{
@@ -24,7 +24,7 @@ use crate::executor::symbolic_value::{
     register_array_elements, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
     SymbolicName, SymbolicValue, SymbolicValueRef,
 };
-use crate::executor::utils::{extended_euclidean, italic, modpow};
+use crate::executor::utils::italic;
 
 /// Represents the state of symbolic execution, holding symbolic values,
 /// trace constraints, side constraints, and depth information.

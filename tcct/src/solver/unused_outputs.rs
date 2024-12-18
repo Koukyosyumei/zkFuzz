@@ -1,27 +1,16 @@
 use std::collections::HashSet;
-use std::io;
-use std::io::Write;
-use std::rc::Rc;
 
 use num_bigint_dig::BigInt;
-use num_bigint_dig::RandBigInt;
-use num_traits::One;
 use num_traits::Zero;
-use rand::rngs::ThreadRng;
-use rand::seq::IteratorRandom;
-use rand::seq::SliceRandom;
-use rand::Rng;
 use rustc_hash::FxHashMap;
-use std::str::FromStr;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{
-    register_array_elements, OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef,
+    register_array_elements, SymbolicName,
 };
 
 use crate::solver::utils::{
-    count_satisfied_constraints, emulate_symbolic_values, evaluate_constraints, extract_variables,
-    is_vulnerable, verify_assignment, CounterExample, UnderConstrainedType, VerificationResult,
+    extract_variables, CounterExample, UnderConstrainedType, VerificationResult,
     VerificationSetting,
 };
 

@@ -1,7 +1,4 @@
-use num_bigint_dig::BigInt;
-use program_structure::abstract_syntax_tree::ast::{AssignOp, Expression, Statement};
-use program_structure::ast::Meta;
-use std::collections::HashMap;
+use program_structure::abstract_syntax_tree::ast::{AssignOp, Statement};
 
 #[derive(Default)]
 pub struct ASTStats {
@@ -24,7 +21,7 @@ impl ASTStats {
         self.num_statements += 1;
 
         match statement {
-            Statement::Declaration { name, .. } => {
+            Statement::Declaration {  .. } => {
                 self.num_variables += 1;
             }
             Statement::InitializationBlock {

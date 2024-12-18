@@ -6,7 +6,6 @@ use colored::Colorize;
 use log::warn;
 use num_bigint_dig::BigInt;
 use num_traits::FromPrimitive;
-use num_traits::One;
 use num_traits::ToPrimitive;
 use num_traits::{Signed, Zero};
 use rustc_hash::{FxHashMap, FxHashSet};
@@ -16,7 +15,7 @@ use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, Varia
 use crate::executor::debug_ast::{
     DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement,
 };
-use crate::executor::utils::{extended_euclidean, italic, modpow};
+use crate::executor::utils::{extended_euclidean, modpow};
 
 /// Represents the access type within a symbolic expression, such as component or array access.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]

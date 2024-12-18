@@ -6,7 +6,6 @@ use std::rc::Rc;
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
 use num_traits::One;
-use num_traits::Zero;
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
@@ -16,7 +15,7 @@ use std::str::FromStr;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{
-    register_array_elements, OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef,
+    SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 
 use crate::solver::utils::{
