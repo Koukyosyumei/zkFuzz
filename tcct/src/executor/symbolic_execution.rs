@@ -20,9 +20,9 @@ use crate::executor::debug_ast::{
     DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
 };
 use crate::executor::symbolic_value::{
-    access_multidimensional_array, enumerate_array, is_true, register_array_elements, OwnerName,
-    SymbolicAccess, SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicValue,
-    SymbolicValueRef,
+    access_multidimensional_array, enumerate_array, evaluate_binary_op, is_true,
+    register_array_elements, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
+    SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::{extended_euclidean, italic, modpow};
 
@@ -1383,96 +1383,7 @@ impl<'a> SymbolicExecutor<'a> {
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
                 let lhs = self.simplify_variables(lv, only_constatant_folding);
                 let rhs = self.simplify_variables(rv, only_constatant_folding);
-                match (&lhs, &rhs) {
-                    (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
-                        match &infix_op.0 {
-                            ExpressionInfixOpcode::Add => {
-                                SymbolicValue::ConstantInt((lv + rv) % &self.setting.prime)
-                            }
-                            ExpressionInfixOpcode::Sub => {
-                                SymbolicValue::ConstantInt((lv - rv) % &self.setting.prime)
-                            }
-                            ExpressionInfixOpcode::Mul => {
-                                SymbolicValue::ConstantInt((lv * rv) % &self.setting.prime)
-                            }
-                            ExpressionInfixOpcode::Pow => {
-                                SymbolicValue::ConstantInt(modpow(lv, rv, &self.setting.prime))
-                            }
-                            ExpressionInfixOpcode::Div => {
-                                if rv.is_zero() {
-                                    SymbolicValue::ConstantInt(BigInt::zero())
-                                } else {
-                                    let mut r = self.setting.prime.clone();
-                                    let mut new_r = rv.clone();
-                                    if r.is_negative() {
-                                        r += &self.setting.prime;
-                                    }
-                                    if new_r.is_negative() {
-                                        new_r += &self.setting.prime;
-                                    }
-
-                                    let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
-                                    rv_inv %= self.setting.prime.clone();
-                                    if rv_inv.is_negative() {
-                                        rv_inv += &self.setting.prime;
-                                    }
-
-                                    SymbolicValue::ConstantInt((lv * rv_inv) % &self.setting.prime)
-                                }
-                            }
-                            ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
-                            ExpressionInfixOpcode::Mod => SymbolicValue::ConstantInt(lv % rv),
-                            ExpressionInfixOpcode::BitOr => SymbolicValue::ConstantInt(lv | rv),
-                            ExpressionInfixOpcode::BitAnd => SymbolicValue::ConstantInt(lv & rv),
-                            ExpressionInfixOpcode::BitXor => SymbolicValue::ConstantInt(lv ^ rv),
-                            ExpressionInfixOpcode::ShiftL => {
-                                SymbolicValue::ConstantInt(lv << rv.to_usize().unwrap())
-                            }
-                            ExpressionInfixOpcode::ShiftR => {
-                                SymbolicValue::ConstantInt(lv >> rv.to_usize().unwrap())
-                            }
-                            ExpressionInfixOpcode::Lesser => SymbolicValue::ConstantBool(
-                                lv % &self.setting.prime < rv % &self.setting.prime,
-                            ),
-                            ExpressionInfixOpcode::Greater => SymbolicValue::ConstantBool(
-                                lv % &self.setting.prime > rv % &self.setting.prime,
-                            ),
-                            ExpressionInfixOpcode::LesserEq => SymbolicValue::ConstantBool(
-                                lv % &self.setting.prime <= rv % &self.setting.prime,
-                            ),
-                            ExpressionInfixOpcode::GreaterEq => SymbolicValue::ConstantBool(
-                                lv % &self.setting.prime >= rv % &self.setting.prime,
-                            ),
-                            ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(
-                                lv % &self.setting.prime == rv % &self.setting.prime,
-                            ),
-                            ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(
-                                lv % &self.setting.prime != rv % &self.setting.prime,
-                            ),
-                            _ => SymbolicValue::BinaryOp(
-                                Rc::new(lhs),
-                                infix_op.clone(),
-                                Rc::new(rhs),
-                            ),
-                        }
-                    }
-                    (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => {
-                        match &infix_op.0 {
-                            ExpressionInfixOpcode::BoolAnd => {
-                                SymbolicValue::ConstantBool(*lv && *rv)
-                            }
-                            ExpressionInfixOpcode::BoolOr => {
-                                SymbolicValue::ConstantBool(*lv || *rv)
-                            }
-                            _ => SymbolicValue::BinaryOp(
-                                Rc::new(lhs),
-                                infix_op.clone(),
-                                Rc::new(rhs),
-                            ),
-                        }
-                    }
-                    _ => SymbolicValue::BinaryOp(Rc::new(lhs), infix_op.clone(), Rc::new(rhs)),
-                }
+                evaluate_binary_op(&lhs, &rhs, &self.setting.prime, infix_op)
             }
             SymbolicValue::Conditional(cond, then_val, else_val) => {
                 let simplified_cond = self.simplify_variables(cond, only_constatant_folding);

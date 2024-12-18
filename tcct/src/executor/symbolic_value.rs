@@ -6,7 +6,9 @@ use colored::Colorize;
 use log::warn;
 use num_bigint_dig::BigInt;
 use num_traits::FromPrimitive;
+use num_traits::One;
 use num_traits::ToPrimitive;
+use num_traits::{Signed, Zero};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, VariableType};
@@ -14,6 +16,7 @@ use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, Varia
 use crate::executor::debug_ast::{
     DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement,
 };
+use crate::executor::utils::{extended_euclidean, italic, modpow};
 
 /// Represents the access type within a symbolic expression, such as component or array access.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -569,5 +572,71 @@ pub fn is_true(val: &SymbolicValue) -> bool {
         true
     } else {
         false
+    }
+}
+
+pub fn evaluate_binary_op(
+    lhs: &SymbolicValue,
+    rhs: &SymbolicValue,
+    prime: &BigInt,
+    op: &DebugExpressionInfixOpcode,
+) -> SymbolicValue {
+    match (&lhs, &rhs) {
+        (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match &op.0 {
+            ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt((lv + rv) % prime),
+            ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt((lv - rv) % prime),
+            ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt((lv * rv) % prime),
+            ExpressionInfixOpcode::Pow => SymbolicValue::ConstantInt(modpow(lv, rv, prime)),
+            ExpressionInfixOpcode::Div => {
+                if rv.is_zero() {
+                    SymbolicValue::ConstantInt(BigInt::zero())
+                } else {
+                    let mut r = prime.clone();
+                    let mut new_r = rv.clone();
+                    if r.is_negative() {
+                        r += prime;
+                    }
+                    if new_r.is_negative() {
+                        new_r += prime;
+                    }
+
+                    let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
+                    rv_inv %= prime;
+                    if rv_inv.is_negative() {
+                        rv_inv += prime;
+                    }
+
+                    SymbolicValue::ConstantInt((lv * rv_inv) % prime)
+                }
+            }
+            ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(lv / rv),
+            ExpressionInfixOpcode::Mod => SymbolicValue::ConstantInt(lv % rv),
+            ExpressionInfixOpcode::BitOr => SymbolicValue::ConstantInt(lv | rv),
+            ExpressionInfixOpcode::BitAnd => SymbolicValue::ConstantInt(lv & rv),
+            ExpressionInfixOpcode::BitXor => SymbolicValue::ConstantInt(lv ^ rv),
+            ExpressionInfixOpcode::ShiftL => {
+                SymbolicValue::ConstantInt(lv << rv.to_usize().unwrap())
+            }
+            ExpressionInfixOpcode::ShiftR => {
+                SymbolicValue::ConstantInt(lv >> rv.to_usize().unwrap())
+            }
+            ExpressionInfixOpcode::Lesser => SymbolicValue::ConstantBool(lv % prime < rv % prime),
+            ExpressionInfixOpcode::Greater => SymbolicValue::ConstantBool(lv % prime > rv % prime),
+            ExpressionInfixOpcode::LesserEq => {
+                SymbolicValue::ConstantBool(lv % prime <= rv % prime)
+            }
+            ExpressionInfixOpcode::GreaterEq => {
+                SymbolicValue::ConstantBool(lv % prime >= rv % prime)
+            }
+            ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(lv % prime == rv % prime),
+            ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(lv % prime != rv % prime),
+            _ => todo!("{:?} is currently not supported", op),
+        },
+        (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => match &op.0 {
+            ExpressionInfixOpcode::BoolAnd => SymbolicValue::ConstantBool(*lv && *rv),
+            ExpressionInfixOpcode::BoolOr => SymbolicValue::ConstantBool(*lv || *rv),
+            _ => todo!("{:?} is currently not supported", op),
+        },
+        _ => SymbolicValue::BinaryOp(Rc::new(lhs.clone()), op.clone(), Rc::new(rhs.clone())),
     }
 }
