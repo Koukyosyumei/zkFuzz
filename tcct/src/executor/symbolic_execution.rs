@@ -372,29 +372,6 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    /// Expands all stack states by executing each statement block recursively.
-    ///
-    /// This method updates depth and manages branching paths in execution flow.
-    ///
-    /// # Arguments
-    ///
-    /// * `statements` - A vector of extended statements to execute symbolically.
-    /// * `cur_bid` - Current block index being executed.
-    /// * `depth` - Current depth level in execution flow for tracking purposes.
-    fn expand_all_stack_states(
-        &mut self,
-        statements: &Vec<DebugStatement>,
-        cur_bid: usize,
-        depth: usize,
-    ) {
-        let drained_states: Vec<_> = self.symbolic_store.block_end_states.drain(..).collect();
-        for state in drained_states {
-            self.cur_state = state;
-            self.cur_state.set_depth(depth);
-            self.execute(statements, cur_bid);
-        }
-    }
-
     /// Executes a sequence of statements symbolically.
     ///
     /// This method starts execution from a specified block index, updating internal states
@@ -497,6 +474,32 @@ impl<'a> SymbolicExecutor<'a> {
                 .clone(),
             0,
         );
+    }
+}
+
+// State Expansion
+impl<'a> SymbolicExecutor<'a> {
+    /// Expands all stack states by executing each statement block recursively.
+    ///
+    /// This method updates depth and manages branching paths in execution flow.
+    ///
+    /// # Arguments
+    ///
+    /// * `statements` - A vector of extended statements to execute symbolically.
+    /// * `cur_bid` - Current block index being executed.
+    /// * `depth` - Current depth level in execution flow for tracking purposes.
+    fn expand_all_stack_states(
+        &mut self,
+        statements: &Vec<DebugStatement>,
+        cur_bid: usize,
+        depth: usize,
+    ) {
+        let drained_states: Vec<_> = self.symbolic_store.block_end_states.drain(..).collect();
+        for state in drained_states {
+            self.cur_state = state;
+            self.cur_state.set_depth(depth);
+            self.execute(statements, cur_bid);
+        }
     }
 }
 
