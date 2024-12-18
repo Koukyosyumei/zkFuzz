@@ -10,7 +10,9 @@ use num_traits::ToPrimitive;
 use num_traits::{One, Signed, Zero};
 use rustc_hash::{FxHashMap, FxHashSet};
 
-use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, VariableType};
+use program_structure::ast::{
+    ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType, Statement, VariableType,
+};
 
 use crate::executor::debug_ast::{
     DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement,
@@ -706,4 +708,14 @@ pub fn generate_lessthan_constraint(
         DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolOr),
         Rc::new(cond_0),
     )
+}
+
+pub fn negate_condition(condition: &SymbolicValue) -> SymbolicValue {
+    match condition {
+        SymbolicValue::ConstantBool(v) => SymbolicValue::ConstantBool(!v),
+        _ => SymbolicValue::UnaryOp(
+            DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
+            Rc::new(condition.clone()),
+        ),
+    }
 }
