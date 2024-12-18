@@ -1019,18 +1019,6 @@ impl<'a> SymbolicExecutor<'a> {
                                     );
                                 }
 
-                                let n_bits = if templ.is_lessthan {
-                                    if let SymbolicValue::ConstantInt(n) =
-                                        &(*self.symbolic_store.components_store[&base_name].args[0])
-                                    {
-                                        n.to_u32().unwrap()
-                                    } else {
-                                        panic!("Undetermined upper bound for bound check")
-                                    }
-                                } else {
-                                    0_u32
-                                };
-
                                 // Set the inputs to the component
                                 for (k, v) in self.symbolic_store.components_store[&base_name]
                                     .inputs
