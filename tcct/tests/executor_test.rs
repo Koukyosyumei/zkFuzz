@@ -586,6 +586,193 @@ fn test_1darray_component() {
 }
 
 #[test]
+fn test_initialize_array_with_var() {
+    let path = "./tests/sample/initialize_array_with_var.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = SymbolicExecutorSetting {
+        prime: prime.clone(),
+        propagate_substitution: false,
+        skip_initialization_blocks: false,
+        only_initialization_blocks: false,
+        off_trace: false,
+        keep_track_constraints: true,
+        substitute_output: false,
+    };
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    let ground_truth_trace_constraints = vec![
+        SymbolicValue::AssignEq(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["in"],
+                owner: Rc::new(vec![
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    },
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["c"],
+                        access: None,
+                        counter: 0,
+                    },
+                ]),
+                access: Some(vec![SymbolicAccess::ArrayAccess(
+                    SymbolicValue::ConstantInt(BigInt::zero()),
+                )]),
+            })),
+            Rc::new(SymbolicValue::BinaryOp(
+                Rc::new(SymbolicValue::Variable(SymbolicName {
+                    name: sexe.symbolic_library.name2id["in"],
+                    owner: Rc::new(vec![OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    }]),
+                    access: None,
+                })),
+                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                Rc::new(SymbolicValue::ConstantInt(BigInt::from(1))),
+            )),
+        ),
+        SymbolicValue::AssignEq(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["in"],
+                owner: Rc::new(vec![
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    },
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["c"],
+                        access: None,
+                        counter: 0,
+                    },
+                ]),
+                access: Some(vec![SymbolicAccess::ArrayAccess(
+                    SymbolicValue::ConstantInt(BigInt::one()),
+                )]),
+            })),
+            Rc::new(SymbolicValue::BinaryOp(
+                Rc::new(SymbolicValue::Variable(SymbolicName {
+                    name: sexe.symbolic_library.name2id["in"],
+                    owner: Rc::new(vec![OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    }]),
+                    access: None,
+                })),
+                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                Rc::new(SymbolicValue::ConstantInt(BigInt::from(2))),
+            )),
+        ),
+        SymbolicValue::AssignEq(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["out"],
+                owner: Rc::new(vec![
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    },
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["c"],
+                        access: None,
+                        counter: 0,
+                    },
+                ]),
+                access: None,
+            })),
+            Rc::new(SymbolicValue::BinaryOp(
+                Rc::new(SymbolicValue::BinaryOp(
+                    Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                    Rc::new(SymbolicValue::Variable(SymbolicName {
+                        name: sexe.symbolic_library.name2id["in"],
+                        owner: Rc::new(vec![
+                            OwnerName {
+                                name: sexe.symbolic_library.name2id["main"],
+                                access: None,
+                                counter: 0,
+                            },
+                            OwnerName {
+                                name: sexe.symbolic_library.name2id["c"],
+                                access: None,
+                                counter: 0,
+                            },
+                        ]),
+                        access: Some(vec![SymbolicAccess::ArrayAccess(
+                            SymbolicValue::ConstantInt(BigInt::zero()),
+                        )]),
+                    })),
+                )),
+                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                Rc::new(SymbolicValue::Variable(SymbolicName {
+                    name: sexe.symbolic_library.name2id["in"],
+                    owner: Rc::new(vec![
+                        OwnerName {
+                            name: sexe.symbolic_library.name2id["main"],
+                            access: None,
+                            counter: 0,
+                        },
+                        OwnerName {
+                            name: sexe.symbolic_library.name2id["c"],
+                            access: None,
+                            counter: 0,
+                        },
+                    ]),
+                    access: Some(vec![SymbolicAccess::ArrayAccess(
+                        SymbolicValue::ConstantInt(BigInt::one()),
+                    )]),
+                })),
+            )),
+        ),
+        SymbolicValue::AssignEq(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["out"],
+                owner: Rc::new(vec![OwnerName {
+                    name: sexe.symbolic_library.name2id["main"],
+                    access: None,
+                    counter: 0,
+                }]),
+                access: None,
+            })),
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["out"],
+                owner: Rc::new(vec![
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    },
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["c"],
+                        access: None,
+                        counter: 0,
+                    },
+                ]),
+                access: None,
+            })),
+        ),
+    ];
+
+    for i in 0..ground_truth_trace_constraints.len() {
+        assert_eq!(
+            ground_truth_trace_constraints[i],
+            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+        );
+    }
+}
+
+#[test]
 fn test_2darray_var() {
     let path = "./tests/sample/2darray_var.circom".to_string();
     let prime = BigInt::from_str(
