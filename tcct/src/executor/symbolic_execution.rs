@@ -996,6 +996,7 @@ impl<'a> SymbolicExecutor<'a> {
             let mut is_bulk_assignment = false;
             let mut left_var_names = Vec::new();
             let mut right_values = Vec::new();
+            let mut symbolic_positions = Vec::new();
 
             match &simplified_rhe {
                 SymbolicValue::Array(_) => {
@@ -1017,6 +1018,7 @@ impl<'a> SymbolicExecutor<'a> {
                             &simplified_rhe,
                             &mut left_var_names,
                             &mut right_values,
+                            &mut symbolic_positions,
                         )
                     } else {
                         left_var_names.push(left_var_name.clone());
@@ -1046,7 +1048,17 @@ impl<'a> SymbolicExecutor<'a> {
             }
 
             if !access.is_empty() {
-                self.handle_component_access(*var, access, &left_base_name, &simplified_rhe);
+                if is_bulk_assignment {
+                    self.handle_component_bulk_access(
+                        *var,
+                        access,
+                        &left_base_name,
+                        &right_values,
+                        &mut symbolic_positions,
+                    );
+                } else {
+                    self.handle_component_access(*var, access, &left_base_name, &simplified_rhe);
+                }
             }
 
             self.execute(statements, cur_bid + 1);
@@ -1369,6 +1381,41 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    fn handle_component_bulk_access(
+        &mut self,
+        var: usize,
+        access: &Vec<DebugAccess>,
+        base_name: &SymbolicName,
+        symbolic_values: &Vec<SymbolicValue>,
+        symbolic_positions: &mut Vec<Vec<SymbolicAccess>>,
+    ) {
+        let (component_name, pre_dims, post_dims) = self.parse_component_access(access);
+
+        if let Some(component) = self.symbolic_store.components_store.get_mut(base_name) {
+            for (sym_pos, sym_val) in symbolic_positions.iter().zip(symbolic_values.iter()) {
+                let mut inp_name = SymbolicName {
+                    name: component_name,
+                    owner: Rc::new(Vec::new()),
+                    access: if post_dims.is_empty() {
+                        None
+                    } else {
+                        Some(post_dims.clone())
+                    },
+                };
+                if let Some(local_access) = inp_name.access.as_mut() {
+                    local_access.append(&mut sym_pos.clone());
+                } else {
+                    inp_name.access = Some(sym_pos.clone());
+                }
+                component.inputs.insert(inp_name, Some(sym_val.clone()));
+            }
+        }
+
+        if self.is_ready(base_name) {
+            self.execute_ready_component(var, base_name, &pre_dims);
+        }
+    }
+
     fn handle_bulk_assignment(
         &mut self,
         op: &DebugAssignOp,
@@ -1379,6 +1426,7 @@ impl<'a> SymbolicExecutor<'a> {
         rhe: &SymbolicValue,
         left_var_names: &mut Vec<SymbolicName>,
         right_values: &mut Vec<SymbolicValue>,
+        symbolic_positions: &mut Vec<Vec<SymbolicAccess>>,
     ) {
         if let SymbolicValue::Variable(ref right_var_name) = rhe {
             let omitted_dims = self.recover_omitted_dims(
@@ -1399,6 +1447,7 @@ impl<'a> SymbolicExecutor<'a> {
                         ))
                     })
                     .collect::<Vec<_>>();
+                symbolic_positions.push(symbolic_p.clone());
                 if let Some(local_access) = left_var_name_p.access.as_mut() {
                     local_access.append(&mut symbolic_p);
                 } else {
