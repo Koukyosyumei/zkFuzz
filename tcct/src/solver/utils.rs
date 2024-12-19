@@ -214,7 +214,7 @@ pub fn get_dependency_graph(
                     panic!("Left hand of the assignment is not a variable");
                 }
             }
-            SymbolicValue::BinaryOp(lhs, op, rhs) => {
+            SymbolicValue::BinaryOp(lhs, _op, rhs) => {
                 let mut variables = FxHashSet::default();
                 extract_variables_from_symbolic_value(&lhs, &mut variables);
                 extract_variables_from_symbolic_value(&rhs, &mut variables);
@@ -228,7 +228,7 @@ pub fn get_dependency_graph(
                     }
                 }
             }
-            SymbolicValue::UnaryOp(op, expr) => {
+            SymbolicValue::UnaryOp(_op, expr) => {
                 let mut variables = FxHashSet::default();
                 extract_variables_from_symbolic_value(&expr, &mut variables);
                 for v1 in &variables {

@@ -14,9 +14,7 @@ use rustc_hash::FxHashMap;
 use std::str::FromStr;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_value::{
-    SymbolicName, SymbolicValue, SymbolicValueRef,
-};
+use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::utils::{
     count_satisfied_constraints, emulate_symbolic_values, evaluate_constraints, extract_variables,
@@ -137,7 +135,7 @@ pub fn mutation_test_search(
         if best_score.1 >= 1.0 {
             let mut mutated_trace_constraints = trace_constraints.clone();
             for (k, v) in best_mutated_trace {
-                if let SymbolicValue::Assign(lv, rv) =
+                if let SymbolicValue::Assign(lv, _rv) =
                     mutated_trace_constraints[*k].as_ref().clone()
                 {
                     mutated_trace_constraints[*k] =

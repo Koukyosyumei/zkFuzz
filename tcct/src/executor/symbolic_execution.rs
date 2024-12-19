@@ -14,7 +14,8 @@ use program_structure::ast::{
 };
 
 use crate::executor::debug_ast::{
-    DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode, DebugStatement, DebugVariableType,
+    DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode, DebugStatement,
+    DebugVariableType,
 };
 use crate::executor::symbolic_value::{
     access_multidimensional_array, enumerate_array, evaluate_binary_op,
@@ -397,7 +398,7 @@ impl<'a> SymbolicExecutor<'a> {
                 DebugStatement::InitializationBlock { .. } => {
                     self.handle_initialization_block(statements, cur_bid);
                 }
-                DebugStatement::Block {   .. } => {
+                DebugStatement::Block { .. } => {
                     self.handle_block(statements, cur_bid);
                 }
                 DebugStatement::IfThenElse { .. } => {
@@ -998,7 +999,6 @@ impl<'a> SymbolicExecutor<'a> {
                     is_bulk_assignment = full_dim_of_left_var > dim_of_left_var;
                     if full_dim_of_left_var > dim_of_left_var {
                         self.handle_bulk_assignment(
-                            op,
                             &left_var_name,
                             dim_of_left_var,
                             full_dim_of_left_var,
@@ -1019,7 +1019,7 @@ impl<'a> SymbolicExecutor<'a> {
             }
 
             if let SymbolicValue::Call(callee_name, args) = &simplified_rhe {
-                self.handle_call_substitution(callee_name, args, &left_var_name, &left_base_name);
+                self.handle_call_substitution(callee_name, args, &left_var_name);
             } else {
                 if is_bulk_assignment {
                     for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
@@ -1269,14 +1269,13 @@ impl<'a> SymbolicExecutor<'a> {
         callee_name: &usize,
         args: &Vec<Rc<SymbolicValue>>,
         var_name: &SymbolicName,
-        base_name: &SymbolicName,
     ) {
         if self
             .symbolic_library
             .template_library
             .contains_key(callee_name)
         {
-            self.initialize_template_component(callee_name, args, var_name, base_name);
+            self.initialize_template_component(callee_name, args, var_name);
         }
     }
 
@@ -1285,7 +1284,6 @@ impl<'a> SymbolicExecutor<'a> {
         callee_name: &usize,
         args: &Vec<Rc<SymbolicValue>>,
         var_name: &SymbolicName,
-        base_name: &SymbolicName,
     ) {
         let mut subse_setting = self.setting.clone();
         subse_setting.only_initialization_blocks = true;
@@ -1390,7 +1388,6 @@ impl<'a> SymbolicExecutor<'a> {
 
     fn handle_bulk_assignment(
         &mut self,
-        op: &DebugAssignOp,
         left_var_name: &SymbolicName,
         dim_of_left_var: usize,
         full_dim_of_left_var: usize,

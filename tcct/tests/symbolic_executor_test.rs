@@ -9,7 +9,6 @@ use num_traits::One;
 use rustc_hash::FxHashMap;
 
 use program_structure::ast::{Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode};
-use program_structure::constants::UsefulConstants;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 
@@ -20,7 +19,6 @@ use tcct::executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetti
 use tcct::executor::symbolic_value::{
     OwnerName, SymbolicAccess, SymbolicLibrary, SymbolicName, SymbolicValue,
 };
-use tcct::input_user::Input;
 use tcct::solver::unused_outputs::check_unused_outputs;
 use tcct::solver::utils::VerificationSetting;
 use tcct::type_analysis_user::analyse_project;
