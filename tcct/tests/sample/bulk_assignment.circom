@@ -13,11 +13,11 @@ template Callee(N) {
 }
 
 template Caller(N) {
-    signal input in[3][2][N];
+    signal input in[1][2][N];
     signal output out;
     component c = Callee(N);
     c.in <== in[1];
     out <== c.out;
 }
 
-component main = Caller(2);
+component main = Caller(3);
