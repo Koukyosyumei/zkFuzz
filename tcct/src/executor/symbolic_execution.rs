@@ -6,8 +6,6 @@ use log::{trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::FromPrimitive;
-use num_traits::One;
-use num_traits::Zero;
 use rustc_hash::FxHashMap;
 
 use program_structure::ast::{
@@ -16,8 +14,7 @@ use program_structure::ast::{
 };
 
 use crate::executor::debug_ast::{
-    DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode,
-    DebugExpressionPrefixOpcode, DebugStatement, DebugVariableType,
+    DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode, DebugStatement, DebugVariableType,
 };
 use crate::executor::symbolic_value::{
     access_multidimensional_array, enumerate_array, evaluate_binary_op,
@@ -400,7 +397,7 @@ impl<'a> SymbolicExecutor<'a> {
                 DebugStatement::InitializationBlock { .. } => {
                     self.handle_initialization_block(statements, cur_bid);
                 }
-                DebugStatement::Block { meta, stmts, .. } => {
+                DebugStatement::Block {   .. } => {
                     self.handle_block(statements, cur_bid);
                 }
                 DebugStatement::IfThenElse { .. } => {

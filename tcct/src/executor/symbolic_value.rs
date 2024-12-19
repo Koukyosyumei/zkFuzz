@@ -3,7 +3,6 @@ use std::hash::Hash;
 use std::rc::Rc;
 
 use colored::Colorize;
-use log::warn;
 use num_bigint_dig::BigInt;
 use num_traits::FromPrimitive;
 use num_traits::ToPrimitive;
