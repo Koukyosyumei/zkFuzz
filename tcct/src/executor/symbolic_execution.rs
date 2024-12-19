@@ -997,6 +997,34 @@ impl<'a> SymbolicExecutor<'a> {
                     self.handle_array_substitution(&left_var_name, &simplified_rhe);
                 }
                 _ => {
+                    /*
+                    let dim_of_left_var = if let Some(ref access) = left_var_name.access {
+                        0
+                    } else {
+                        access.len()
+                    };
+                    let full_dim_of_left_var = self.symbolic_library.template_library
+                        [&self.cur_state.template_id]
+                        .id2dimensions[&left_var_name.name]
+                        .len();
+                    if full_dim_of_left_var > dim_of_left_var {
+                        let mut omitted_dims = Vec::new();
+                        for i in dim_of_left_var..full_dim_of_left_var {
+                            let dim_clone = self.symbolic_library.template_library
+                                [&self.cur_state.template_id]
+                                .id2dimensions[&left_var_name.name][i]
+                                .clone();
+                            let evaled_dim = self.evaluate_expression(&dim_clone);
+                            let simplified_dim = self.simplify_variables(&evaled_dim, false);
+                            if let SymbolicValue::ConstantInt(ref num) = simplified_dim {
+                                omitted_dims.push(num.to_usize().unwrap());
+                            }
+                            println!(
+                                "sd: {}",
+                                simplified_dim.lookup_fmt(&self.symbolic_library.id2name)
+                            );
+                        }
+                    }*/
                     self.cur_state
                         .set_symval(left_var_name.clone(), simplified_rhe.clone());
                 }
