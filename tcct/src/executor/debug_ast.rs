@@ -856,6 +856,45 @@ impl DebugExpression {
 }
 
 impl DebugStatement {
+    pub fn apply_iterative<F>(&mut self, mut func: F)
+    where
+        F: FnMut(&mut DebugStatement),
+    {
+        let mut stack = vec![self]; // Stack to store DebugStatements for traversal
+
+        while let Some(current) = stack.pop() {
+            func(current); // Apply the function to the current statement
+
+            // Push child nodes onto the stack for further processing
+            match current {
+                DebugStatement::IfThenElse {
+                    if_case, else_case, ..
+                } => {
+                    stack.push(if_case);
+                    if let Some(else_case) = else_case {
+                        stack.push(else_case);
+                    }
+                }
+                DebugStatement::While { stmt, .. } => {
+                    stack.push(stmt);
+                }
+                DebugStatement::InitializationBlock {
+                    initializations, ..
+                } => {
+                    for init in initializations.iter_mut() {
+                        stack.push(init);
+                    }
+                }
+                DebugStatement::Block { stmts, .. } => {
+                    for stmt in stmts.iter_mut() {
+                        stack.push(stmt);
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+
     fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
         let indentation = "  ".repeat(indent);
         match &self {
