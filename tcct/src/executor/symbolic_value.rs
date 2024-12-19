@@ -17,7 +17,7 @@ use program_structure::ast::{
 use crate::executor::debug_ast::{
     DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement,
 };
-use crate::executor::utils::{extended_euclidean, modpow};
+use crate::executor::utils::{extended_euclidean, generate_cartesian_product_indices, modpow};
 
 /// Represents the access type within a symbolic expression, such as component or array access.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
@@ -70,6 +70,20 @@ pub struct SymbolicName {
 }
 
 impl SymbolicName {
+    pub fn get_the_final_component_id(&self) -> Option<usize> {
+        let mut fti = None;
+        for o in self.owner.iter() {
+            if o.access.is_some() {
+                for a in o.access.clone().unwrap() {
+                    if let SymbolicAccess::ComponentAccess(i) = a {
+                        fti = Some(i);
+                    }
+                }
+            }
+        }
+        fti
+    }
+
     pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         format!(
             "{}.{}{}",
@@ -262,6 +276,7 @@ pub struct SymbolicTemplate {
 #[derive(Default, Clone)]
 pub struct SymbolicFunction {
     pub function_argument_names: Vec<usize>,
+    pub id2dimensions: FxHashMap<usize, Vec<DebugExpression>>,
     pub body: Vec<DebugStatement>,
 }
 
@@ -282,6 +297,48 @@ pub struct SymbolicLibrary {
     pub name2id: FxHashMap<String, usize>,
     pub id2name: FxHashMap<usize, String>,
     pub function_counter: FxHashMap<usize, usize>,
+}
+
+fn gather_variables_for_template(
+    dbody: &DebugStatement,
+    inputs: &mut FxHashSet<usize>,
+    outputs: &mut FxHashSet<usize>,
+    id2type: &mut FxHashMap<usize, VariableType>,
+    id2dimensions: &mut FxHashMap<usize, Vec<DebugExpression>>,
+) {
+    if let DebugStatement::Declaration {
+        name,
+        xtype,
+        dimensions,
+        ..
+    } = dbody
+    {
+        id2type.insert(name.clone(), xtype.clone());
+        id2dimensions.insert(name.clone(), dimensions.clone());
+        if let VariableType::Signal(typ, _taglist) = &xtype {
+            match typ {
+                SignalType::Input => {
+                    inputs.insert(*name);
+                }
+                SignalType::Output => {
+                    outputs.insert(*name);
+                }
+                SignalType::Intermediate => {}
+            }
+        }
+    }
+}
+
+fn gather_variables_for_function(
+    dbody: &DebugStatement,
+    id2dimensions: &mut FxHashMap<usize, Vec<DebugExpression>>,
+) {
+    if let DebugStatement::Declaration {
+        name, dimensions, ..
+    } = dbody
+    {
+        id2dimensions.insert(name.clone(), dimensions.clone());
+    }
 }
 
 impl SymbolicLibrary {
@@ -320,44 +377,16 @@ impl SymbolicLibrary {
             self.name2id.len() - 1
         };
 
-        let dbody = DebugStatement::from(body.clone(), &mut self.name2id, &mut self.id2name);
-        match dbody {
-            DebugStatement::Block { ref stmts, .. } => {
-                for s in stmts {
-                    if let DebugStatement::InitializationBlock {
-                        initializations, ..
-                    } = &s
-                    {
-                        for init in initializations {
-                            if let DebugStatement::Declaration {
-                                name,
-                                xtype,
-                                dimensions,
-                                ..
-                            } = &init
-                            {
-                                id2type.insert(name.clone(), xtype.clone());
-                                id2dimensions.insert(name.clone(), dimensions.clone());
-                                if let VariableType::Signal(typ, _taglist) = &xtype {
-                                    match typ {
-                                        SignalType::Input => {
-                                            inputs.insert(*name);
-                                        }
-                                        SignalType::Output => {
-                                            outputs.insert(*name);
-                                        }
-                                        SignalType::Intermediate => {}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            _ => {
-                warn!("Cannot Find Block Statement");
-            }
-        }
+        let mut dbody = DebugStatement::from(body.clone(), &mut self.name2id, &mut self.id2name);
+        dbody.apply_iterative(|stmt| {
+            gather_variables_for_template(
+                stmt,
+                &mut inputs,
+                &mut outputs,
+                &mut id2type,
+                &mut id2dimensions,
+            );
+        });
 
         self.template_library.insert(
             i,
@@ -397,6 +426,7 @@ impl SymbolicLibrary {
         body: Statement,
         function_argument_names: &Vec<String>,
     ) {
+        let mut id2dimensions = FxHashMap::default();
         let i = if let Some(i) = self.name2id.get(&name) {
             *i
         } else {
@@ -405,7 +435,11 @@ impl SymbolicLibrary {
             self.name2id.len() - 1
         };
 
-        let dbody = DebugStatement::from(body, &mut self.name2id, &mut self.id2name);
+        let mut dbody = DebugStatement::from(body, &mut self.name2id, &mut self.id2name);
+        dbody.apply_iterative(|stmt| {
+            gather_variables_for_function(stmt, &mut id2dimensions);
+        });
+
         self.function_library.insert(
             i,
             Box::new(SymbolicFunction {
@@ -413,6 +447,7 @@ impl SymbolicLibrary {
                     .iter()
                     .map(|p: &String| self.name2id[p])
                     .collect::<Vec<_>>(),
+                id2dimensions: id2dimensions,
                 body: vec![dbody, DebugStatement::Ret],
             }),
         );
@@ -474,18 +509,7 @@ pub fn register_array_elements<T>(
     owner: Option<Rc<Vec<OwnerName>>>,
     elements_of_component: &mut FxHashMap<SymbolicName, Option<T>>,
 ) {
-    let mut positions = vec![vec![]];
-    for size in dims {
-        let mut new_positions = vec![];
-        for combination in &positions {
-            for i in 0..*size {
-                let mut new_combination = combination.clone();
-                new_combination.push(i);
-                new_positions.push(new_combination);
-            }
-        }
-        positions = new_positions;
-    }
+    let positions = generate_cartesian_product_indices(dims);
 
     if positions.is_empty() {
         elements_of_component.insert(
