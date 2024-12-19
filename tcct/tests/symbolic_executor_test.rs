@@ -78,6 +78,8 @@ pub fn execute(sexe: &mut SymbolicExecutor, program_archive: &ProgramArchive) {
             sexe.symbolic_library
                 .id2name
                 .insert(sexe.symbolic_library.name2id["main"], "main".to_string());
+            sexe.cur_state
+                .set_template_id(sexe.symbolic_library.name2id[id]);
 
             sexe.cur_state.add_owner(&OwnerName {
                 name: sexe.symbolic_library.name2id["main"],
