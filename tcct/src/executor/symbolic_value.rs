@@ -84,6 +84,14 @@ impl SymbolicName {
         fti
     }
 
+    pub fn get_dim(&self) -> usize {
+        if let Some(ref local_access) = self.access {
+            local_access.len()
+        } else {
+            0
+        }
+    }
+
     pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>) -> String {
         format!(
             "{}.{}{}",
