@@ -1035,13 +1035,16 @@ impl<'a> SymbolicExecutor<'a> {
         return omitted_dims;
     }
 
-    fn set_bulk_symvals(
+    fn handle_bulk_assignment(
         &mut self,
+        op: &DebugAssignOp,
         left_var_name: &SymbolicName,
         dim_of_left_var: usize,
         full_dim_of_left_var: usize,
         id_of_direct_owner: usize,
         rhe: &SymbolicValue,
+        left_var_names: &mut Vec<SymbolicName>,
+        right_values: &mut Vec<SymbolicValue>,
     ) {
         if let SymbolicValue::Variable(ref right_var_name) = rhe {
             let omitted_dims = self.recover_omitted_dims(
@@ -1072,12 +1075,12 @@ impl<'a> SymbolicExecutor<'a> {
                 } else {
                     right_var_name_p.access = Some(symbolic_p);
                 }
-                self.cur_state
-                    .set_symval(left_var_name_p, SymbolicValue::Variable(right_var_name_p));
+                left_var_names.push(left_var_name_p.clone());
+                right_values.push(SymbolicValue::Variable(right_var_name_p));
             }
         } else {
-            self.cur_state
-                .set_symval(left_var_name.clone(), rhe.clone());
+            left_var_names.push(left_var_name.clone());
+            right_values.push(rhe.clone());
         }
     }
 
@@ -1098,32 +1101,37 @@ impl<'a> SymbolicExecutor<'a> {
                 self.simplify_variables(&evaled_rhe, !self.setting.propagate_substitution);
             let (left_base_name, left_var_name) = self.construct_symbolic_name(*var, access);
 
-            let mut dim_of_left_var = 0;
-            let mut id_of_direct_owner = 0;
-            let mut full_dim_of_left_var = 0;
             let mut is_bulk_assignment = false;
+            let mut left_var_names = Vec::new();
+            let mut right_values = Vec::new();
 
             match &simplified_rhe {
                 SymbolicValue::Array(_) => {
                     self.handle_array_substitution(&left_var_name, &simplified_rhe);
                 }
                 _ => {
-                    dim_of_left_var = left_var_name.get_dim();
-                    id_of_direct_owner = self.get_id_of_direct_owner(&left_base_name);
-                    full_dim_of_left_var =
+                    let dim_of_left_var = left_var_name.get_dim();
+                    let id_of_direct_owner = self.get_id_of_direct_owner(&left_base_name);
+                    let full_dim_of_left_var =
                         self.get_full_dimension_of_var(&left_var_name, id_of_direct_owner);
                     is_bulk_assignment = full_dim_of_left_var > dim_of_left_var;
                     if full_dim_of_left_var > dim_of_left_var {
-                        self.set_bulk_symvals(
+                        self.handle_bulk_assignment(
+                            op,
                             &left_var_name,
                             dim_of_left_var,
                             full_dim_of_left_var,
                             id_of_direct_owner,
                             &simplified_rhe,
+                            &mut left_var_names,
+                            &mut right_values,
                         )
                     } else {
-                        self.cur_state
-                            .set_symval(left_var_name.clone(), simplified_rhe.clone());
+                        left_var_names.push(left_var_name.clone());
+                        right_values.push(simplified_rhe.clone());
+                    }
+                    for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
+                        self.cur_state.set_symval(lvn.clone(), rv.clone());
                     }
                 }
             }
@@ -1131,12 +1139,18 @@ impl<'a> SymbolicExecutor<'a> {
             if let SymbolicValue::Call(callee_name, args) = &simplified_rhe {
                 self.handle_call_substitution(callee_name, args, &left_var_name, &left_base_name);
             } else {
-                self.handle_non_call_substitution(
-                    op,
-                    &left_var_name,
-                    &simplified_rhe,
-                    &original_simplified_rhe,
-                );
+                if is_bulk_assignment {
+                    for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
+                        self.handle_non_call_substitution(op, &lvn, &rv, &rv);
+                    }
+                } else {
+                    self.handle_non_call_substitution(
+                        op,
+                        &left_var_name,
+                        &simplified_rhe,
+                        &original_simplified_rhe,
+                    );
+                }
             }
 
             if !access.is_empty() {
