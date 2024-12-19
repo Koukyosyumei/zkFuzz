@@ -105,7 +105,6 @@ pub fn execute(sexe: &mut SymbolicExecutor, program_archive: &ProgramArchive) {
 pub fn get_setting(prime: &BigInt) -> SymbolicExecutorSetting {
     SymbolicExecutorSetting {
         prime: prime.clone(),
-        propagate_substitution: false,
         skip_initialization_blocks: false,
         only_initialization_blocks: false,
         off_trace: false,
@@ -824,7 +823,6 @@ fn test_multidimensional_array_function() {
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
     let setting = SymbolicExecutorSetting {
         prime: prime.clone(),
-        propagate_substitution: false,
         skip_initialization_blocks: false,
         only_initialization_blocks: false,
         off_trace: false,

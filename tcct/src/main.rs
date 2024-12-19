@@ -134,7 +134,6 @@ fn start() -> Result<(), ()> {
 
     let setting = SymbolicExecutorSetting {
         prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
-        propagate_substitution: user_input.flag_propagate_substitution,
         skip_initialization_blocks: false,
         only_initialization_blocks: false,
         off_trace: false,
@@ -237,7 +236,6 @@ fn start() -> Result<(), ()> {
                 } else {
                     let sub_setting = SymbolicExecutorSetting {
                         prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                        propagate_substitution: user_input.flag_propagate_substitution,
                         skip_initialization_blocks: true,
                         only_initialization_blocks: false,
                         off_trace: true,

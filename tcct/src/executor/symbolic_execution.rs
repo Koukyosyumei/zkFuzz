@@ -269,7 +269,6 @@ impl SymbolicStore {
 #[derive(Clone)]
 pub struct SymbolicExecutorSetting {
     pub prime: BigInt,
-    pub propagate_substitution: bool,
     pub only_initialization_blocks: bool,
     pub skip_initialization_blocks: bool,
     pub off_trace: bool,
@@ -359,8 +358,7 @@ impl<'a> SymbolicExecutor<'a> {
                 &mut name2id,
                 &mut id2name,
             ));
-            let simplified_a =
-                self.simplify_variables(&evaled_a, !self.setting.propagate_substitution);
+            let simplified_a = self.simplify_variables(&evaled_a, true);
             self.cur_state.set_symval(
                 SymbolicName {
                     name: name2id[n],
@@ -929,9 +927,7 @@ impl<'a> SymbolicExecutor<'a> {
             self.trace_if_enabled(meta);
 
             let evaled_cond = self.evaluate_expression(cond);
-            let original_condition = self.simplify_variables(&evaled_cond, true);
-            let simplified_condition =
-                self.simplify_variables(&evaled_cond, !self.setting.propagate_substitution);
+            let simplified_condition = self.simplify_variables(&evaled_cond, true);
 
             // Save the current state
             let saved_state = self.cur_state.clone();
@@ -941,7 +937,6 @@ impl<'a> SymbolicExecutor<'a> {
             // Handle the 'then' branch
             self.process_branch(
                 &simplified_condition,
-                &original_condition,
                 Some(if_case),
                 statements,
                 cur_bid,
@@ -956,11 +951,9 @@ impl<'a> SymbolicExecutor<'a> {
 
             // Handle the 'else' branch
             let negated_condition = negate_condition(&simplified_condition);
-            let original_negated_condition = negate_condition(&original_condition);
 
             self.process_branch(
                 &negated_condition,
-                &original_negated_condition,
                 else_case.as_ref().map(|boxed| boxed.as_ref()),
                 statements,
                 cur_bid,
@@ -988,9 +981,7 @@ impl<'a> SymbolicExecutor<'a> {
             self.trace_if_enabled(meta);
 
             let evaled_rhe = self.evaluate_expression(rhe);
-            let original_simplified_rhe = self.simplify_variables(&evaled_rhe, true);
-            let simplified_rhe =
-                self.simplify_variables(&evaled_rhe, !self.setting.propagate_substitution);
+            let simplified_rhe = self.simplify_variables(&evaled_rhe, true);
             let (left_base_name, left_var_name) = self.construct_symbolic_name(*var, access);
 
             let mut is_bulk_assignment = false;
@@ -1035,15 +1026,10 @@ impl<'a> SymbolicExecutor<'a> {
             } else {
                 if is_bulk_assignment {
                     for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
-                        self.handle_non_call_substitution(op, &lvn, &rv, &rv);
+                        self.handle_non_call_substitution(op, &lvn, &rv);
                     }
                 } else {
-                    self.handle_non_call_substitution(
-                        op,
-                        &left_var_name,
-                        &simplified_rhe,
-                        &original_simplified_rhe,
-                    );
+                    self.handle_non_call_substitution(op, &left_var_name, &simplified_rhe);
                 }
             }
 
@@ -1074,26 +1060,24 @@ impl<'a> SymbolicExecutor<'a> {
 
             let lhe_val = self.evaluate_expression(lhe);
             let rhe_val = self.evaluate_expression(rhe);
-            let simple_lhs = self.simplify_variables(&lhe_val, true);
-            let lhs = self.simplify_variables(&lhe_val, !self.setting.propagate_substitution);
-            let simple_rhs = self.simplify_variables(&rhe_val, true);
-            let rhs = self.simplify_variables(&rhe_val, !self.setting.propagate_substitution);
+            let simplified_lhe_val = self.simplify_variables(&lhe_val, true);
+            let simplified_rhe_val = self.simplify_variables(&rhe_val, true);
 
             if self.setting.keep_track_constraints {
                 match op {
                     DebugAssignOp(AssignOp::AssignConstraintSignal) => {
-                        let cont = SymbolicValue::AssignEq(Rc::new(lhs), Rc::new(rhs));
-                        self.cur_state.push_trace_constraint(&cont);
-
-                        let simple_cont = SymbolicValue::BinaryOp(
-                            Rc::new(simple_lhs),
-                            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                            Rc::new(simple_rhs),
+                        let cont = SymbolicValue::AssignEq(
+                            Rc::new(simplified_lhe_val),
+                            Rc::new(simplified_rhe_val),
                         );
-                        self.cur_state.push_side_constraint(&simple_cont);
+                        self.cur_state.push_trace_constraint(&cont);
+                        self.cur_state.push_side_constraint(&cont);
                     }
                     DebugAssignOp(AssignOp::AssignSignal) => {
-                        let cont = SymbolicValue::Assign(Rc::new(lhs), Rc::new(rhs));
+                        let cont = SymbolicValue::AssignEq(
+                            Rc::new(simplified_lhe_val),
+                            Rc::new(simplified_rhe_val),
+                        );
                         self.cur_state.push_trace_constraint(&cont);
                     }
                     _ => {}
@@ -1112,8 +1096,7 @@ impl<'a> SymbolicExecutor<'a> {
             self.trace_if_enabled(&meta);
             // Symbolic execution of loops is complex. This is a simplified approach.
             let tmp_cond = self.evaluate_expression(cond);
-            let evaled_condition =
-                self.simplify_variables(&tmp_cond, !self.setting.propagate_substitution);
+            let evaled_condition = self.simplify_variables(&tmp_cond, true);
 
             if let SymbolicValue::ConstantBool(flag) = evaled_condition {
                 if flag {
@@ -1150,8 +1133,7 @@ impl<'a> SymbolicExecutor<'a> {
         if let DebugStatement::Return { meta, value, .. } = &statements[cur_bid] {
             self.trace_if_enabled(&meta);
             let tmp_val = self.evaluate_expression(value);
-            let return_value =
-                self.simplify_variables(&tmp_val, !self.setting.propagate_substitution);
+            let return_value = self.simplify_variables(&tmp_val, true);
 
             // Handle return value (e.g., store in a special "return" variable)
             if !self.symbolic_library.id2name.contains_key(&usize::MAX) {
@@ -1197,25 +1179,18 @@ impl<'a> SymbolicExecutor<'a> {
 
             let lhe_val = self.evaluate_expression(lhe);
             let rhe_val = self.evaluate_expression(rhe);
-            let original_lhs = self.simplify_variables(&lhe_val, true);
-            let lhs = self.simplify_variables(&lhe_val, !self.setting.propagate_substitution);
-            let original_rhs = self.simplify_variables(&rhe_val, true);
-            let rhs = self.simplify_variables(&rhe_val, !self.setting.propagate_substitution);
+            let simplified_lhe_val = self.simplify_variables(&lhe_val, true);
+            let simplified_rhe_val = self.simplify_variables(&rhe_val, true);
 
-            let original_cond = SymbolicValue::BinaryOp(
-                Rc::new(original_lhs),
-                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                Rc::new(original_rhs),
-            );
             let cond = SymbolicValue::BinaryOp(
-                Rc::new(lhs),
+                Rc::new(simplified_lhe_val),
                 DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                Rc::new(rhs),
+                Rc::new(simplified_rhe_val),
             );
 
             if self.setting.keep_track_constraints {
                 self.cur_state.push_trace_constraint(&cond);
-                self.cur_state.push_side_constraint(&original_cond);
+                self.cur_state.push_side_constraint(&cond);
             }
             self.execute(statements, cur_bid + 1);
         }
@@ -1225,7 +1200,7 @@ impl<'a> SymbolicExecutor<'a> {
         if let DebugStatement::Assert { meta, arg, .. } = &statements[cur_bid] {
             self.trace_if_enabled(&meta);
             let expr = self.evaluate_expression(&arg);
-            let condition = self.simplify_variables(&expr, !self.setting.propagate_substitution);
+            let condition = self.simplify_variables(&expr, true);
             if self.setting.keep_track_constraints {
                 self.cur_state.push_trace_constraint(&condition);
             }
@@ -1477,7 +1452,6 @@ impl<'a> SymbolicExecutor<'a> {
     /// * `op` - The assignment operator.
     /// * `var_name` - The symbolic name of the variable being assigned.
     /// * `value` - The symbolic value being assigned.
-    /// * `original_value` - The original (non-simplified) value being assigned.
     ///
     /// # Side Effects
     ///
@@ -1487,7 +1461,6 @@ impl<'a> SymbolicExecutor<'a> {
         op: &DebugAssignOp,
         var_name: &SymbolicName,
         value: &SymbolicValue,
-        original_value: &SymbolicValue,
     ) {
         if self.setting.keep_track_constraints {
             match op {
@@ -1497,12 +1470,7 @@ impl<'a> SymbolicExecutor<'a> {
                         Rc::new(value.clone()),
                     );
                     self.cur_state.push_trace_constraint(&cont);
-                    let original_cont = SymbolicValue::BinaryOp(
-                        Rc::new(SymbolicValue::Variable(var_name.clone())),
-                        DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                        Rc::new(original_value.clone()),
-                    );
-                    self.cur_state.push_side_constraint(&original_cont);
+                    self.cur_state.push_side_constraint(&cont);
                 }
                 DebugAssignOp(AssignOp::AssignSignal) => {
                     let cont = SymbolicValue::Assign(
@@ -1701,7 +1669,6 @@ impl<'a> SymbolicExecutor<'a> {
     fn process_branch(
         &mut self,
         condition: &SymbolicValue,
-        original_condition: &SymbolicValue,
         branch_case: Option<&DebugStatement>,
         statements: &Vec<DebugStatement>,
         cur_bid: usize,
@@ -1728,7 +1695,7 @@ impl<'a> SymbolicExecutor<'a> {
 
         if self.setting.keep_track_constraints && !is_true(condition) {
             branch_state.push_trace_constraint(condition);
-            branch_state.push_side_constraint(original_condition);
+            branch_state.push_side_constraint(condition);
         }
 
         branch_state.set_depth(current_depth + 1);

@@ -439,7 +439,6 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::Call(id, args) => {
             let setting = SymbolicExecutorSetting {
                 prime: prime.clone(),
-                propagate_substitution: false,
                 skip_initialization_blocks: false,
                 only_initialization_blocks: false,
                 off_trace: true,
