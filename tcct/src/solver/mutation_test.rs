@@ -315,7 +315,7 @@ fn trace_fitness(
     }
 
     let mut max_idx = 0_usize;
-    let mut max_score = BigInt::zero();
+    let mut max_score = -setting.prime.clone();
     for (i, inp) in inputs.iter().enumerate() {
         let mut assignment = inp.clone();
         let is_success = emulate_symbolic_values(
