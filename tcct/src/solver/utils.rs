@@ -11,6 +11,7 @@ use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
 
+use crate::executor::debug_ast::{DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode};
 use crate::executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
 use crate::executor::symbolic_value::{
     evaluate_binary_op, OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
@@ -484,6 +485,51 @@ pub fn evaluate_symbolic_value(
     }
 }
 
+pub fn flip_op(value: &SymbolicValue) -> SymbolicValue {
+    match value {
+        SymbolicValue::UnaryOp(
+            DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
+            expr,
+        ) => match (*expr.clone()).clone() {
+            SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
+                ExpressionInfixOpcode::Lesser => SymbolicValue::BinaryOp(
+                    lhs.clone(),
+                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Greater),
+                    rhs.clone(),
+                ),
+                ExpressionInfixOpcode::Greater => SymbolicValue::BinaryOp(
+                    lhs.clone(),
+                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
+                    rhs.clone(),
+                ),
+                ExpressionInfixOpcode::LesserEq => SymbolicValue::BinaryOp(
+                    lhs.clone(),
+                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq),
+                    rhs.clone(),
+                ),
+                ExpressionInfixOpcode::GreaterEq => SymbolicValue::BinaryOp(
+                    lhs.clone(),
+                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::LesserEq),
+                    rhs.clone(),
+                ),
+                ExpressionInfixOpcode::Eq => SymbolicValue::BinaryOp(
+                    lhs.clone(),
+                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::NotEq),
+                    rhs.clone(),
+                ),
+                ExpressionInfixOpcode::NotEq => SymbolicValue::BinaryOp(
+                    lhs.clone(),
+                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                    rhs.clone(),
+                ),
+                _ => value.clone(),
+            },
+            _ => value.clone(),
+        },
+        _ => value.clone(),
+    }
+}
+
 pub fn evaluate_error_of_symbolic_value(
     prime: &BigInt,
     value: &SymbolicValue,
@@ -511,48 +557,48 @@ pub fn evaluate_error_of_symbolic_value(
         SymbolicValue::BinaryOp(lhs, op, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
-            match ((*lhs.clone()).clone(), (*rhs.clone()).clone()) {
+            match (&lhs_val, &rhs_val) {
                 (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match &op.0 {
-                    ExpressionInfixOpcode::Lesser => {
-                        (lv % prime + BigInt::one() - rv % prime).max(BigInt::zero())
-                    }
-                    ExpressionInfixOpcode::Greater => {
-                        (rv % prime + BigInt::one() - lv % prime).max(BigInt::zero())
-                    }
-                    ExpressionInfixOpcode::LesserEq => {
-                        (lv % prime - rv % prime).max(BigInt::zero())
-                    }
-                    ExpressionInfixOpcode::GreaterEq => {
-                        (rv % prime - lv % prime).max(BigInt::zero())
-                    }
+                    ExpressionInfixOpcode::Lesser => lv % prime + BigInt::one() - rv % prime,
+                    ExpressionInfixOpcode::Greater => rv % prime + BigInt::one() - lv % prime,
+                    ExpressionInfixOpcode::LesserEq => lv % prime - rv % prime,
+                    ExpressionInfixOpcode::GreaterEq => rv % prime - lv % prime,
                     ExpressionInfixOpcode::Eq => (lv % prime - rv % prime).abs(),
-                    ExpressionInfixOpcode::NotEq => {
-                        if lv % prime == rv % prime {
-                            BigInt::one()
-                        } else {
-                            BigInt::zero()
-                        }
-                    }
+                    ExpressionInfixOpcode::NotEq => -(lv % prime - rv % prime).abs(),
                     _ => panic!("Only support comparison operators"),
                 },
-                _ => panic!("Unassigned variables exist"),
+                _ => panic!(
+                    "Unassigned variables exist: {:?}, {:?}",
+                    lhs_val.lookup_fmt(&symbolic_library.id2name),
+                    rhs_val.lookup_fmt(&symbolic_library.id2name),
+                ),
             }
         }
         SymbolicValue::UnaryOp(op, expr) => {
             let error = evaluate_error_of_symbolic_value(prime, expr, assignment, symbolic_library);
             match op.0 {
-                ExpressionPrefixOpcode::BoolNot => {
-                    if error.is_zero() {
-                        BigInt::one()
-                    } else {
-                        BigInt::zero()
-                    }
-                }
+                ExpressionPrefixOpcode::BoolNot => -error,
                 _ => panic!("Only support BoolNot"),
             }
         }
         _ => todo!("{:?}", value),
     }
+}
+
+pub fn accumulate_error_of_constraints(
+    prime: &BigInt,
+    constraints: &[SymbolicValueRef],
+    assignment: &FxHashMap<SymbolicName, BigInt>,
+    symbolic_library: &mut SymbolicLibrary,
+) -> BigInt {
+    constraints
+        .iter()
+        .map(|constraint| {
+            let e =
+                evaluate_error_of_symbolic_value(prime, constraint, assignment, symbolic_library);
+            e.max(BigInt::zero())
+        })
+        .sum()
 }
 
 pub fn verify_assignment(

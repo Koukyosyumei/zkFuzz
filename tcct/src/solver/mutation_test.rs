@@ -5,7 +5,7 @@ use std::rc::Rc;
 
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
-use num_traits::One;
+use num_traits::{One, Zero};
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
@@ -17,9 +17,10 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::utils::{
-    count_satisfied_constraints, emulate_symbolic_values, evaluate_constraints,
-    evaluate_error_of_symbolic_value, extract_variables, is_vulnerable, verify_assignment,
-    CounterExample, UnderConstrainedType, VerificationResult, VerificationSetting,
+    accumulate_error_of_constraints, count_satisfied_constraints, emulate_symbolic_values,
+    evaluate_constraints, evaluate_error_of_symbolic_value, extract_variables, is_vulnerable,
+    verify_assignment, CounterExample, UnderConstrainedType, VerificationResult,
+    VerificationSetting,
 };
 
 pub fn mutation_test_search(
@@ -132,7 +133,7 @@ pub fn mutation_test_search(
             &input_population,
         );
 
-        if best_score.1 >= 1.0 {
+        if best_score.1 >= BigInt::zero() {
             let mut mutated_trace_constraints = trace_constraints.clone();
             for (k, v) in best_mutated_trace {
                 if let SymbolicValue::Assign(lv, _rv) =
@@ -302,7 +303,7 @@ fn trace_fitness(
     side_constraints: &Vec<SymbolicValueRef>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
     inputs: &Vec<FxHashMap<SymbolicName, BigInt>>,
-) -> (usize, f64) {
+) -> (usize, BigInt) {
     let mut mutated_trace_constraints = trace_constraints.clone();
     for (k, v) in trace_mutation {
         if let SymbolicValue::Assign(lv, rv) = mutated_trace_constraints[*k].as_ref().clone() {
@@ -314,7 +315,7 @@ fn trace_fitness(
     }
 
     let mut max_idx = 0_usize;
-    let mut max_score = 0 as f64;
+    let mut max_score = BigInt::zero();
     for (i, inp) in inputs.iter().enumerate() {
         let mut assignment = inp.clone();
         let is_success = emulate_symbolic_values(
@@ -324,19 +325,29 @@ fn trace_fitness(
             &mut sexe.symbolic_library,
         );
         {
+            /*
             let satisfied_side = count_satisfied_constraints(
                 &setting.prime,
                 side_constraints,
                 &assignment,
                 &mut sexe.symbolic_library,
+            );*/
+            let error = accumulate_error_of_constraints(
+                &setting.prime,
+                side_constraints,
+                &assignment,
+                &mut sexe.symbolic_library,
             );
+            let mut score = -error;
+
+            /*
             let mut side_ratio = if side_constraints.is_empty() {
                 1.0 as f64
             } else {
                 satisfied_side as f64 / side_constraints.len() as f64
-            };
+            };*/
 
-            if side_ratio == 1.0 as f64 {
+            if score.is_zero() {
                 if is_success {
                     let flag = verify_assignment(
                         sexe,
@@ -346,16 +357,16 @@ fn trace_fitness(
                         setting,
                     );
                     if !is_vulnerable(&flag) {
-                        side_ratio = 0.9;
+                        score = -BigInt::one();
                     } else {
-                        side_ratio = 1.1;
+                        score = BigInt::one();
                     }
                 }
             }
 
-            if side_ratio > max_score {
+            if score > max_score {
                 max_idx = i;
-                max_score = side_ratio;
+                max_score = score;
             }
         }
     }
