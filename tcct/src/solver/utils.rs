@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use colored::Colorize;
 use num_bigint_dig::BigInt;
+use num_traits::{One, Signed, Zero};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use program_structure::ast::Expression;
@@ -477,6 +478,77 @@ pub fn evaluate_symbolic_value(
                 return_value
             } else {
                 panic!("Empty Final State");
+            }
+        }
+        _ => todo!("{:?}", value),
+    }
+}
+
+pub fn evaluate_error_of_symbolic_value(
+    prime: &BigInt,
+    value: &SymbolicValue,
+    assignment: &FxHashMap<SymbolicName, BigInt>,
+    symbolic_library: &mut SymbolicLibrary,
+) -> BigInt {
+    match value {
+        SymbolicValue::ConstantBool(b) => {
+            if *b {
+                BigInt::zero()
+            } else {
+                BigInt::one()
+            }
+        }
+        SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
+            let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
+            let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
+            match (&lhs_val, &rhs_val) {
+                (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
+                    (lv % prime - rv % prime).abs()
+                }
+                _ => panic!("Unassigned variables exist"),
+            }
+        }
+        SymbolicValue::BinaryOp(lhs, op, rhs) => {
+            let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
+            let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
+            match ((*lhs.clone()).clone(), (*rhs.clone()).clone()) {
+                (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match &op.0 {
+                    ExpressionInfixOpcode::Lesser => {
+                        (lv % prime + BigInt::one() - rv % prime).max(BigInt::zero())
+                    }
+                    ExpressionInfixOpcode::Greater => {
+                        (rv % prime + BigInt::one() - lv % prime).max(BigInt::zero())
+                    }
+                    ExpressionInfixOpcode::LesserEq => {
+                        (lv % prime - rv % prime).max(BigInt::zero())
+                    }
+                    ExpressionInfixOpcode::GreaterEq => {
+                        (rv % prime - lv % prime).max(BigInt::zero())
+                    }
+                    ExpressionInfixOpcode::Eq => (lv % prime - rv % prime).abs(),
+                    ExpressionInfixOpcode::NotEq => {
+                        if lv % prime == rv % prime {
+                            BigInt::one()
+                        } else {
+                            BigInt::zero()
+                        }
+                    }
+                    _ => panic!("Only support comparison operators"),
+                },
+                _ => panic!("Unassigned variables exist"),
+            }
+        }
+        SymbolicValue::UnaryOp(op, expr) => {
+            let error = evaluate_error_of_symbolic_value(prime, expr, assignment, symbolic_library);
+            match op.0 {
+                ExpressionPrefixOpcode::BoolNot => {
+                    if error.is_zero() {
+                        BigInt::one()
+                    } else {
+                        BigInt::zero()
+                    }
+                }
+                _ => panic!("Only support BoolNot"),
             }
         }
         _ => todo!("{:?}", value),
