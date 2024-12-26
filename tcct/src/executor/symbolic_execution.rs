@@ -1069,7 +1069,7 @@ impl<'a> SymbolicExecutor<'a> {
                         self.cur_state.push_side_constraint(&cont);
                     }
                     DebugAssignOp(AssignOp::AssignSignal) => {
-                        let cont = SymbolicValue::AssignEq(
+                        let cont = SymbolicValue::Assign(
                             Rc::new(simplified_lhe_val),
                             Rc::new(simplified_rhe_val),
                         );
@@ -1854,9 +1854,16 @@ impl<'a> SymbolicExecutor<'a> {
             .template_library
             .contains_key(&id_of_direct_owner)
         {
-            self.symbolic_library.template_library[&id_of_direct_owner].id2dimensions
-                [&var_name.name]
-                .len()
+            if self.symbolic_library.template_library[&id_of_direct_owner]
+                .id2dimensions
+                .contains_key(&var_name.name)
+            {
+                self.symbolic_library.template_library[&id_of_direct_owner].id2dimensions
+                    [&var_name.name]
+                    .len()
+            } else {
+                0
+            }
         } else {
             self.symbolic_library.function_library[&id_of_direct_owner].id2dimensions
                 [&var_name.name]

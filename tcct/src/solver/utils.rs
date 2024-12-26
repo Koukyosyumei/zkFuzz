@@ -416,6 +416,10 @@ pub fn evaluate_symbolic_value(
                 (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                     SymbolicValue::ConstantBool(lv % prime == rv % prime)
                 }
+                (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantBool(rv)) => {
+                    let rv_to_int = if *rv { BigInt::one() } else { BigInt::zero() };
+                    SymbolicValue::ConstantBool(lv % prime == rv_to_int)
+                }
                 _ => panic!("Unassigned variables exist"),
             }
         }

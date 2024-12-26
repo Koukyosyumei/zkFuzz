@@ -668,6 +668,9 @@ pub fn evaluate_binary_op(
             }
             ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(lv % prime == rv % prime),
             ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(lv % prime != rv % prime),
+            ExpressionInfixOpcode::BoolOr => {
+                SymbolicValue::ConstantBool(!(lv % prime).is_zero() || !(rv % prime).is_zero())
+            }
             _ => todo!("{:?} is currently not supported", op),
         },
         (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => match &op.0 {
