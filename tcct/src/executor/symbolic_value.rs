@@ -104,7 +104,7 @@ impl SymbolicName {
                             .collect::<Vec<_>>()
                             .join("")
                     } else {
-                        "default".to_string()
+                        "".to_string()
                     };
                     lookup[&e.name].clone() + &access_str
                 })

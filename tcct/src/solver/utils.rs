@@ -394,6 +394,12 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::ConstantBool(_b) => value.clone(),
         SymbolicValue::ConstantInt(_v) => value.clone(),
         SymbolicValue::Variable(name) => {
+            if !assignment.contains_key(name) {
+                panic!(
+                    "name={} is not available in the assignment",
+                    name.lookup_fmt(&symbolic_library.id2name)
+                );
+            }
             SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
         }
         SymbolicValue::Array(elements) => SymbolicValue::Array(
