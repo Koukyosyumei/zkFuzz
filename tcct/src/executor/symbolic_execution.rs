@@ -32,6 +32,7 @@ pub struct SymbolicState {
     pub owner_name: Rc<Vec<OwnerName>>,
     pub template_id: usize,
     pub is_within_initialization_block: bool,
+    pub contains_symbolic_loop: bool,
     depth: usize,
     pub values: FxHashMap<SymbolicName, SymbolicValueRef>,
     pub trace_constraints: Vec<SymbolicValueRef>,
@@ -49,6 +50,7 @@ impl SymbolicState {
             owner_name: Rc::new(Vec::new()),
             template_id: usize::MAX,
             is_within_initialization_block: false,
+            contains_symbolic_loop: false,
             depth: 0_usize,
             values: FxHashMap::default(),
             trace_constraints: Vec::new(),
@@ -239,6 +241,11 @@ impl SymbolicState {
             .replace("\n", "")
             .replace("  ", " ")
             .replace("  ", " ")
+        );
+        s += &format!(
+            " {} {}\n",
+            format!("{}", "➰ contains_symbolic_loop"),
+            self.contains_symbolic_loop
         );
         s += &format!("{}\n", format!("{}", "]").cyan());
         s
@@ -1116,10 +1123,9 @@ impl<'a> SymbolicExecutor<'a> {
                     );
                 }
             } else {
-                panic!(
-                    "This tool currently cannot handle the symbolic condition of While Loop: {}",
-                    evaled_condition.lookup_fmt(&self.symbolic_library.id2name)
-                );
+                self.cur_state.contains_symbolic_loop = true;
+                // symbolic loop can occur only within functions that always do not produce any constraints.
+                self.execute(statements, cur_bid + 1);
             }
         }
     }
