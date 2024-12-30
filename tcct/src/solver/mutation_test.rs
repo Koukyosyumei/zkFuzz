@@ -188,13 +188,11 @@ pub fn mutation_test_search(
             }
         }
 
-        if generation % 10 == 0 {
-            print!(
-                "\rGeneration: {}/{} ({:.3})",
-                generation, max_generations, best_score.1
-            );
-            io::stdout().flush().unwrap();
-        }
+        print!(
+            "\rGeneration: {}/{} ({:.3})",
+            generation, max_generations, best_score.1
+        );
+        io::stdout().flush().unwrap();
     }
 
     println!(
