@@ -139,6 +139,7 @@ fn start() -> Result<(), ()> {
         off_trace: false,
         keep_track_constraints: true,
         substitute_output: false,
+        propagate_assignments: false,
     };
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
 
@@ -241,6 +242,7 @@ fn start() -> Result<(), ()> {
                         off_trace: true,
                         keep_track_constraints: false,
                         substitute_output: true,
+                        propagate_assignments: true,
                     };
                     let mut sub_sexe =
                         SymbolicExecutor::new(&mut sexe.symbolic_library, &sub_setting);

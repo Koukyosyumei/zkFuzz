@@ -456,6 +456,7 @@ pub fn evaluate_symbolic_value(
                 off_trace: true,
                 keep_track_constraints: false,
                 substitute_output: false,
+                propagate_assignments: true,
             };
             let mut subse = SymbolicExecutor::new(symbolic_library, &setting);
 

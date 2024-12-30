@@ -108,6 +108,7 @@ pub fn get_setting(prime: &BigInt) -> SymbolicExecutorSetting {
         off_trace: false,
         keep_track_constraints: true,
         substitute_output: false,
+        propagate_assignments: false,
     }
 }
 
@@ -826,6 +827,7 @@ fn test_multidimensional_array_function() {
         off_trace: false,
         keep_track_constraints: true,
         substitute_output: false,
+        propagate_assignments: false,
     };
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);

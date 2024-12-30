@@ -277,6 +277,7 @@ pub struct SymbolicExecutorSetting {
     pub off_trace: bool,
     pub keep_track_constraints: bool,
     pub substitute_output: bool,
+    pub propagate_assignments: bool,
 }
 
 /// A symbolic execution engine for analyzing and executing statements symbolically.
@@ -1647,12 +1648,18 @@ impl<'a> SymbolicExecutor<'a> {
                     "TODO: This tool currently cannot handle multiple branches within the callee."
                 );
             }
+
             self.cur_state
                 .trace_constraints
                 .append(&mut subse.symbolic_store.final_states[0].trace_constraints);
             self.cur_state
                 .side_constraints
                 .append(&mut subse.symbolic_store.final_states[0].side_constraints);
+            if self.setting.propagate_assignments {
+                for (k, v) in subse.symbolic_store.final_states[0].values.iter() {
+                    self.cur_state.set_rc_symval(k.clone(), v.clone());
+                }
+            }
 
             if is_lessthan {
                 let cond = generate_lessthan_constraint(
