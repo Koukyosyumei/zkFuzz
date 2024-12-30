@@ -93,7 +93,7 @@ impl SymbolicState {
                         .collect::<Vec<_>>()
                         .join("")
                 } else {
-                    "some default".to_string()
+                    "".to_string()
                 };
                 name_lookup_map[&e.name].clone() + &access_str
             })
@@ -1024,7 +1024,7 @@ impl<'a> SymbolicExecutor<'a> {
             }
 
             if let SymbolicValue::Call(callee_name, args) = &simplified_rhe {
-                self.handle_call_substitution(callee_name, args, &left_var_name);
+                self.handle_call_substitution(callee_name, args, &left_var_name, &simplified_rhe);
             } else {
                 if is_bulk_assignment {
                     for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
@@ -1273,6 +1273,7 @@ impl<'a> SymbolicExecutor<'a> {
         callee_name: &usize,
         args: &Vec<Rc<SymbolicValue>>,
         var_name: &SymbolicName,
+        right_call: &SymbolicValue,
     ) {
         if self
             .symbolic_library
@@ -1280,6 +1281,12 @@ impl<'a> SymbolicExecutor<'a> {
             .contains_key(callee_name)
         {
             self.initialize_template_component(callee_name, args, var_name);
+        } else {
+            let cont = SymbolicValue::Assign(
+                Rc::new(SymbolicValue::Variable(var_name.clone())),
+                Rc::new(right_call.clone()),
+            );
+            self.cur_state.push_trace_constraint(&cont);
         }
     }
 
@@ -1855,26 +1862,32 @@ impl<'a> SymbolicExecutor<'a> {
         var_name: &SymbolicName,
         id_of_direct_owner: usize,
     ) -> usize {
-        if self
+        if let Some(template) = self
             .symbolic_library
             .template_library
-            .contains_key(&id_of_direct_owner)
+            .get(&id_of_direct_owner)
         {
-            if self.symbolic_library.template_library[&id_of_direct_owner]
+            return template
                 .id2dimensions
-                .contains_key(&var_name.name)
-            {
-                self.symbolic_library.template_library[&id_of_direct_owner].id2dimensions
-                    [&var_name.name]
-                    .len()
-            } else {
-                0
-            }
-        } else {
-            self.symbolic_library.function_library[&id_of_direct_owner].id2dimensions
-                [&var_name.name]
-                .len()
+                .get(&var_name.name)
+                .map_or(0, |dimensions| dimensions.len());
+        } else if let Some(function) = self
+            .symbolic_library
+            .function_library
+            .get(&id_of_direct_owner)
+        {
+            return function
+                .id2dimensions
+                .get(&var_name.name)
+                .map_or(0, |dimensions| dimensions.len());
+        } else if id_of_direct_owner == std::usize::MAX {
+            return 0;
         }
+
+        panic!(
+            "Cannot find the owner template/function: {}",
+            self.symbolic_library.id2name[&id_of_direct_owner]
+        );
     }
 
     fn recover_omitted_dims(
