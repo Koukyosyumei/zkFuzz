@@ -833,11 +833,7 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!("{}", format!("{}", "===========================").cyan());
                     }
 
-                    if subse.symbolic_store.final_states.len() > 1 {
-                        warn!("TODO: This tool currently cannot handle multiple branches within the callee.");
-                    }
-
-                    if !subse.symbolic_store.final_states.is_empty() {
+                    if subse.symbolic_store.final_states.len() == 1 {
                         // NOTE: a function does not produce any constraint
                         self.cur_state
                             .trace_constraints
@@ -857,6 +853,8 @@ impl<'a> SymbolicExecutor<'a> {
                             }
                             _ => SymbolicValue::Call(id.clone(), simplified_args),
                         }
+                    } else if subse.symbolic_store.final_states.len() > 1 {
+                        SymbolicValue::Call(id.clone(), simplified_args)
                     } else {
                         panic!(
                             "{} did not return any final state",
