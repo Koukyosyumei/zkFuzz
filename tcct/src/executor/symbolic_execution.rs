@@ -1086,6 +1086,8 @@ impl<'a> SymbolicExecutor<'a> {
                         let cont = SymbolicValue::Assign(
                             Rc::new(simplified_lhe_val),
                             Rc::new(simplified_rhe_val),
+                            self.symbolic_library.template_library[&self.cur_state.template_id]
+                                .is_safe,
                         );
                         self.cur_state.push_trace_constraint(&cont);
                     }
@@ -1292,6 +1294,7 @@ impl<'a> SymbolicExecutor<'a> {
             let cont = SymbolicValue::Assign(
                 Rc::new(SymbolicValue::Variable(var_name.clone())),
                 Rc::new(right_call.clone()),
+                false,
             );
             self.cur_state.push_trace_constraint(&cont);
         }
@@ -1488,6 +1491,7 @@ impl<'a> SymbolicExecutor<'a> {
                     let cont = SymbolicValue::Assign(
                         Rc::new(SymbolicValue::Variable(var_name.clone())),
                         Rc::new(value.clone()),
+                        self.symbolic_library.template_library[&self.cur_state.template_id].is_safe,
                     );
                     self.cur_state.push_trace_constraint(&cont);
                 }

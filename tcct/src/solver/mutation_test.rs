@@ -41,7 +41,7 @@ pub fn mutation_test_search(
     let mut assign_pos = Vec::new();
     for (i, sv) in trace_constraints.iter().enumerate() {
         match *sv.clone() {
-            SymbolicValue::Assign(_, _) => {
+            SymbolicValue::Assign(_, _, false) => {
                 assign_pos.push(i);
             }
             _ => {}
@@ -63,6 +63,7 @@ pub fn mutation_test_search(
             input_variables.push(v.clone());
         }
     }
+    println!("#Input Variables: {}", input_variables.len());
 
     if assign_pos.is_empty() {
         return None;
@@ -136,17 +137,21 @@ pub fn mutation_test_search(
         if best_score.1 >= BigInt::zero() {
             let mut mutated_trace_constraints = trace_constraints.clone();
             for (k, v) in best_mutated_trace {
-                if let SymbolicValue::Assign(lv, _rv) =
+                if let SymbolicValue::Assign(lv, _rv, is_safe) =
                     mutated_trace_constraints[*k].as_ref().clone()
                 {
-                    mutated_trace_constraints[*k] =
-                        Rc::new(SymbolicValue::Assign(lv.clone(), Rc::new(v.clone())));
+                    mutated_trace_constraints[*k] = Rc::new(SymbolicValue::Assign(
+                        lv.clone(),
+                        Rc::new(v.clone()),
+                        is_safe,
+                    ));
                 } else {
                     panic!("We can only mutate SymbolicValue::Assign");
                 }
             }
 
             let mut assignment = input_population[best_score.0].clone();
+
             if emulate_symbolic_values(
                 &setting.prime,
                 &mutated_trace_constraints,
@@ -205,8 +210,8 @@ pub fn mutation_test_search(
 fn draw_random_constant(setting: &VerificationSetting, rng: &mut ThreadRng) -> BigInt {
     if rng.gen::<bool>() {
         rng.gen_bigint_range(
-            &(BigInt::from_str("2").unwrap() * -BigInt::one()),
-            &(BigInt::from_str("2").unwrap()),
+            &(BigInt::from_str("10").unwrap() * -BigInt::one()),
+            &(BigInt::from_str("10").unwrap()),
         )
     } else {
         rng.gen_bigint_range(
@@ -304,9 +309,14 @@ fn trace_fitness(
 ) -> (usize, BigInt) {
     let mut mutated_trace_constraints = trace_constraints.clone();
     for (k, v) in trace_mutation {
-        if let SymbolicValue::Assign(lv, rv) = mutated_trace_constraints[*k].as_ref().clone() {
-            mutated_trace_constraints[*k] =
-                Rc::new(SymbolicValue::Assign(lv.clone(), Rc::new(v.clone())));
+        if let SymbolicValue::Assign(lv, rv, is_safe) =
+            mutated_trace_constraints[*k].as_ref().clone()
+        {
+            mutated_trace_constraints[*k] = Rc::new(SymbolicValue::Assign(
+                lv.clone(),
+                Rc::new(v.clone()),
+                is_safe,
+            ));
         } else {
             panic!("We can only mutate SymbolicValue::Assign");
         }

@@ -170,7 +170,7 @@ pub fn extract_variables_from_symbolic_value(
         SymbolicValue::Variable(name) => {
             variables.insert(name.clone());
         }
-        SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
+        SymbolicValue::Assign(lhs, rhs, _) | SymbolicValue::AssignEq(lhs, rhs) => {
             extract_variables_from_symbolic_value(&lhs, variables);
             extract_variables_from_symbolic_value(&rhs, variables);
         }
@@ -208,7 +208,7 @@ pub fn get_dependency_graph(
 ) {
     for value in values {
         match value.as_ref() {
-            SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
+            SymbolicValue::Assign(lhs, rhs, _) | SymbolicValue::AssignEq(lhs, rhs) => {
                 if let SymbolicValue::Variable(name) = lhs.as_ref() {
                     graph.entry(name.clone()).or_default();
                     extract_variables_from_symbolic_value(&rhs, graph.get_mut(&name).unwrap());
@@ -316,7 +316,7 @@ pub fn emulate_symbolic_values(
                     success = false;
                 }
             }
-            SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
+            SymbolicValue::Assign(lhs, rhs, _) | SymbolicValue::AssignEq(lhs, rhs) => {
                 if let SymbolicValue::Variable(name) = lhs.as_ref() {
                     let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
                     if let SymbolicValue::ConstantInt(num) = &rhs_val {
@@ -415,7 +415,7 @@ pub fn evaluate_symbolic_value(
                 })
                 .collect(),
         ),
-        SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
+        SymbolicValue::Assign(lhs, rhs, _) | SymbolicValue::AssignEq(lhs, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
             match (&lhs_val, &rhs_val) {
@@ -555,7 +555,7 @@ pub fn evaluate_error_of_symbolic_value(
                 BigInt::one()
             }
         }
-        SymbolicValue::Assign(lhs, rhs) | SymbolicValue::AssignEq(lhs, rhs) => {
+        SymbolicValue::Assign(lhs, rhs, _) | SymbolicValue::AssignEq(lhs, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
             match (&lhs_val, &rhs_val) {
