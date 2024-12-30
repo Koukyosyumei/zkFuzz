@@ -812,7 +812,14 @@ impl<'a> SymbolicExecutor<'a> {
                         };
                         subse
                             .cur_state
-                            .set_rc_symval(sname, simplified_args[i].clone());
+                            .set_rc_symval(sname.clone(), simplified_args[i].clone());
+
+                        let arg_cond = SymbolicValue::AssignEq(
+                            Rc::new(SymbolicValue::Variable(sname)),
+                            simplified_args[i].clone(),
+                        );
+                        self.cur_state.push_trace_constraint(&arg_cond);
+                        // self.cur_state.push_side_constraint(&arg_cond);
                     }
 
                     if !subse.setting.off_trace {
@@ -1611,10 +1618,16 @@ impl<'a> SymbolicExecutor<'a> {
                     owner: subse.cur_state.owner_name.clone(),
                     access: None,
                 };
-                subse.cur_state.set_rc_symval(
-                    tp_name,
-                    self.symbolic_store.components_store[base_name].args[i].clone(),
-                );
+                let tp_val = self.symbolic_store.components_store[base_name].args[i].clone();
+                subse
+                    .cur_state
+                    .set_rc_symval(tp_name.clone(), tp_val.clone());
+
+                /*
+                let tp_cond =
+                    SymbolicValue::AssignEq(Rc::new(SymbolicValue::Variable(tp_name)), tp_val);
+                self.cur_state.push_trace_constraint(&tp_cond);
+                */
             }
 
             // Set inputs of the component
