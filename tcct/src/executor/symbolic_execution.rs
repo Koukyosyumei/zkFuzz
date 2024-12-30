@@ -814,12 +814,13 @@ impl<'a> SymbolicExecutor<'a> {
                             .cur_state
                             .set_rc_symval(sname.clone(), simplified_args[i].clone());
 
+                        /*
                         let arg_cond = SymbolicValue::AssignEq(
                             Rc::new(SymbolicValue::Variable(sname)),
                             simplified_args[i].clone(),
                         );
                         self.cur_state.push_trace_constraint(&arg_cond);
-                        // self.cur_state.push_side_constraint(&arg_cond);
+                        */
                     }
 
                     if !subse.setting.off_trace {

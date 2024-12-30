@@ -676,6 +676,8 @@ pub fn evaluate_binary_op(
         (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => match &op.0 {
             ExpressionInfixOpcode::BoolAnd => SymbolicValue::ConstantBool(*lv && *rv),
             ExpressionInfixOpcode::BoolOr => SymbolicValue::ConstantBool(*lv || *rv),
+            ExpressionInfixOpcode::BitAnd => SymbolicValue::ConstantBool(*lv && *rv),
+            ExpressionInfixOpcode::BitOr => SymbolicValue::ConstantBool(*lv | *rv),
             _ => todo!("{:?} is currently not supported", op),
         },
         _ => SymbolicValue::BinaryOp(Rc::new(lhs.clone()), op.clone(), Rc::new(rhs.clone())),

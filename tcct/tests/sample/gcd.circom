@@ -86,19 +86,19 @@ template Spawn() {
     gcdGreater.out === 1;
 
     //and must not be a prime number.
-    component prime = Prime();
-    gcd.out ==> prime.in;
+    //component prime = Prime();
+    //gcd.out ==> prime.in;
 
-    prime.out === 0;
+    //prime.out === 0;
 
     //generate hash output
-    component mimc = MiMCSponge(2, 220, 1);
+    //component mimc = MiMCSponge(2, 220, 1);
 
-    mimc.ins[0] <== x;
-    mimc.ins[1] <== y;
-    mimc.k <== 0;
+    //mimc.ins[0] <== x;
+    //mimc.ins[1] <== y;
+    //mimc.k <== 0;
 
-    pub <== mimc.outs[0];
+    pub <== 1; //mimc.outs[0];
 }
 
 component main = Spawn();
