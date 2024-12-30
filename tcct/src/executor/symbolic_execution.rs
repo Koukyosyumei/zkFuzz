@@ -243,8 +243,8 @@ impl SymbolicState {
             .replace("  ", " ")
         );
         s += &format!(
-            " {} {}\n",
-            format!("{}", "➰ contains_symbolic_loop"),
+            "  {} {}\n",
+            format!("{}", "➰ contains_symbolic_loop:").cyan(),
             self.contains_symbolic_loop
         );
         s += &format!("{}\n", format!("{}", "]").cyan());
