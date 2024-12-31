@@ -609,48 +609,21 @@ impl fmt::Debug for DebugVariableType {
     }
 }
 
-impl fmt::Debug for DebugAccess {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.pretty_fmt(f, 0)
-    }
-}
-
-impl fmt::Display for DebugAccess {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.compact_fmt(f)
-    }
-}
-
 impl DebugAccess {
-    fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>, indent: usize) -> String {
+        let mut s = "".to_string();
         let indentation = "  ".repeat(indent);
         match &self {
             DebugAccess::ComponentAccess(name) => {
-                writeln!(f, "{}ComponentAccess", indentation)?;
-                writeln!(f, "{}  name: {}", indentation, name)
+                s += &format!("{}ComponentAccess\n", indentation);
+                s += &format!("{}  name: {}\n", indentation, lookup[name]);
             }
             DebugAccess::ArrayAccess(expr) => {
-                writeln!(f, "{}ArrayAccess:", indentation)?;
-                expr.pretty_fmt(f, indent + 2)
+                s += &format!("{}ArrayAccess:\n", indentation);
+                s += &expr.lookup_fmt(lookup, indent + 2);
             }
         }
-    }
-}
-
-impl DebugAccess {
-    fn compact_fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match &self {
-            DebugAccess::ComponentAccess(name) => {
-                write!(f, ".{}", name)
-            }
-            DebugAccess::ArrayAccess(expr) => {
-                write!(
-                    f,
-                    "[{}]",
-                    format!("{:?}", expr).replace("\n", "").replace("  ", " ")
-                )
-            }
-        }
+        s
     }
 }
 
@@ -701,78 +674,64 @@ impl fmt::Debug for DebugExpressionPrefixOpcode {
     }
 }
 
-impl fmt::Debug for DebugExpression {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.pretty_fmt(f, 0)
-    }
-}
-
-impl fmt::Debug for DebugStatement {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.pretty_fmt(f, 0)
-    }
-}
-
 impl DebugExpression {
-    fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>, indent: usize) -> String {
+        let mut s = "".to_string();
         let indentation = "  ".repeat(indent);
         match &self {
             DebugExpression::Number(value) => {
-                writeln!(f, "{}{}Number:{} {}", indentation, BLUE, RESET, value)
+                format!("{}{}Number:{} {}\n", indentation, BLUE, RESET, value)
             }
             DebugExpression::InfixOp {
                 lhe, infix_op, rhe, ..
             } => {
-                writeln!(f, "{}{}InfixOp:{}", indentation, GREEN, RESET)?;
-                writeln!(
-                    f,
-                    "{}  {}Operator:{} {:?}",
+                s += &format!("{}{}InfixOp:{}\n", indentation, GREEN, RESET);
+                s += &format!(
+                    "{}  {}Operator:{} {:?}\n",
                     indentation, CYAN, RESET, infix_op
-                )?;
-                writeln!(
-                    f,
-                    "{}  {}Left-Hand Expression:{}",
+                );
+                s += &format!(
+                    "{}  {}Left-Hand Expression:{}\n",
                     indentation, YELLOW, RESET
-                )?;
-                (*lhe.clone()).pretty_fmt(f, indent + 2)?;
-                writeln!(
-                    f,
-                    "{}  {}Right-Hand Expression:{}",
+                );
+                s += &(*lhe.clone()).lookup_fmt(lookup, indent + 2);
+                s += &format!(
+                    "{}  {}Right-Hand Expression:{}\n",
                     indentation, YELLOW, RESET
-                )?;
-                (*rhe.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &(*rhe.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugExpression::PrefixOp { prefix_op, rhe, .. } => {
-                writeln!(f, "{}{}PrefixOp:{}", indentation, GREEN, RESET)?;
-                writeln!(
-                    f,
-                    "{}  {}Operator:{} {:?}",
+                s += &format!("{}{}PrefixOp:{}\n", indentation, GREEN, RESET);
+                s += &format!(
+                    "{}  {}Operator:{} {:?}\n",
                     indentation, CYAN, RESET, prefix_op
-                )?;
-                writeln!(
-                    f,
-                    "{}  {}Right-Hand Expression:{}",
+                );
+                s += &format!(
+                    "{}  {}Right-Hand Expression:{}\n",
                     indentation, YELLOW, RESET
-                )?;
-                (*rhe.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &(*rhe.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugExpression::ParallelOp { rhe, .. } => {
-                writeln!(f, "{}ParallelOp", indentation)?;
-                writeln!(
-                    f,
-                    "{}  {}Right-Hand Expression:{}",
+                s += &format!("{}ParallelOp\n", indentation);
+                s += &format!(
+                    "{}  {}Right-Hand Expression:{}\n",
                     indentation, YELLOW, RESET
-                )?;
-                (*rhe.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &(*rhe.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugExpression::Variable { name, access, .. } => {
-                writeln!(f, "{}{}Variable:{}", indentation, BLUE, RESET)?;
-                writeln!(f, "{}  Name: {}", indentation, name)?;
-                writeln!(f, "{}  Access:", indentation)?;
+                s += &format!("{}{}Variable:{}\n", indentation, BLUE, RESET);
+                s += &format!("{}  Name: {}\n", indentation, lookup[name]);
+                s += &format!("{}  Access:\n", indentation);
                 for arg0 in access {
-                    arg0.pretty_fmt(f, indent + 2)?;
+                    s += &arg0.lookup_fmt(lookup, indent + 2);
                 }
-                Ok(())
+                s
             }
             DebugExpression::InlineSwitchOp {
                 cond: _,
@@ -780,54 +739,56 @@ impl DebugExpression {
                 if_false,
                 ..
             } => {
-                writeln!(f, "{}InlineSwitchOp:", indentation)?;
-                writeln!(f, "{}  if_true:", indentation)?;
-                (*if_true.clone()).pretty_fmt(f, indent + 2)?;
-                writeln!(f, "{}  if_false:", indentation)?;
-                (*if_false.clone()).pretty_fmt(f, indent + 2)
+                s += &format!("{}InlineSwitchOp:\n", indentation);
+                s += &format!("{}  if_true:\n", indentation);
+                s += &(*if_true.clone()).lookup_fmt(lookup, indent + 2);
+                s += &format!("{}  if_false:\n", indentation);
+                s += &(*if_false.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugExpression::Call { id, args, .. } => {
-                writeln!(f, "{}Call", indentation)?;
-                writeln!(f, "{}  id: {}", indentation, id)?;
-                writeln!(f, "{}  args:", indentation)?;
+                s += &format!("{}Call\n", indentation);
+                s += &format!("{}  id: {}\n", indentation, id);
+                s += &format!("{}  args:\n", indentation);
                 for arg0 in args {
-                    (arg0.clone()).pretty_fmt(f, indent + 2)?;
+                    s += &(arg0.clone()).lookup_fmt(lookup, indent + 2);
                 }
-                Ok(())
+                s
             }
             DebugExpression::ArrayInLine { values, .. } => {
-                writeln!(f, "{}ArrayInLine", indentation)?;
-                writeln!(f, "{}  values:", indentation)?;
+                s += &format!("{}ArrayInLine\n", indentation);
+                s += &format!("{}  values:\n", indentation);
                 for v in values {
-                    (v.clone()).pretty_fmt(f, indent + 2)?;
+                    s += &(v.clone()).lookup_fmt(lookup, indent + 2);
                 }
-                Ok(())
+                s
             }
             DebugExpression::Tuple { values, .. } => {
-                writeln!(f, "{}Tuple", indentation)?;
-                writeln!(f, "{}  values:", indentation)?;
+                s += &format!("{}Tuple\n", indentation);
+                s += &format!("{}  values:\n", indentation);
                 for v in values {
-                    (v.clone()).pretty_fmt(f, indent + 2)?;
+                    s += &(v.clone()).lookup_fmt(lookup, indent + 2);
                 }
-                Ok(())
+                s
             }
             DebugExpression::UniformArray {
                 value, dimension, ..
             } => {
-                writeln!(f, "{}UniformArray", indentation)?;
-                writeln!(f, "{}  value:", indentation)?;
-                (*value.clone()).pretty_fmt(f, indent + 2)?;
-                writeln!(f, "{}  dimension:", indentation)?;
-                (*dimension.clone()).pretty_fmt(f, indent + 2)
+                s += &format!("{}UniformArray\n", indentation);
+                s += &format!("{}  value:\n", indentation);
+                s += &(*value.clone()).lookup_fmt(lookup, indent + 2);
+                s += &format!("{}  dimension:\n", indentation);
+                s += &(*dimension.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugExpression::BusCall { id, args, .. } => {
-                writeln!(f, "{}BusCall", indentation)?;
-                writeln!(f, "{}  id:", id)?;
-                writeln!(f, "{}  args:", indentation)?;
+                s += &format!("{}BusCall\n", indentation);
+                s += &format!("{}  id:\n", id);
+                s += &format!("{}  args:\n", indentation);
                 for a in args {
-                    (a.clone()).pretty_fmt(f, indent + 2)?;
+                    s += &(a.clone()).lookup_fmt(lookup, indent + 2);
                 }
-                Ok(())
+                s
             }
             DebugExpression::AnonymousComp {
                 id,
@@ -837,19 +798,19 @@ impl DebugExpression {
                 names: _,
                 ..
             } => {
-                writeln!(f, "{}AnonymousComp", indentation)?;
-                writeln!(f, "{}  id: {}", indentation, id)?;
-                //writeln!(f, "{}  name: {}", indentation, names)?;
-                writeln!(f, "{}  is_parallel: {}", indentation, is_parallel)?;
-                writeln!(f, "{}  params:", indentation)?;
+                s += &format!("{}AnonymousComp\n", indentation);
+                s += &format!("{}  id: {}\n", indentation, id);
+                //format!("{}  name: {}", indentation, names);
+                s += &format!("{}  is_parallel: {}\n", indentation, is_parallel);
+                s += &format!("{}  params:\n", indentation);
                 for p in params {
-                    (p.clone()).pretty_fmt(f, indent + 2)?;
+                    s += &(p.clone()).lookup_fmt(lookup, indent + 2);
                 }
-                writeln!(f, "{}  signals:", indentation)?;
-                for s in signals {
-                    (s.clone()).pretty_fmt(f, indent + 2)?;
+                s += &format!("{}  signals:\n", indentation);
+                for sig in signals {
+                    s += &(sig.clone()).lookup_fmt(lookup, indent + 2);
                 }
-                Ok(())
+                s
             }
         }
     }
@@ -895,7 +856,8 @@ impl DebugStatement {
         }
     }
 
-    fn pretty_fmt(&self, f: &mut fmt::Formatter<'_>, indent: usize) -> fmt::Result {
+    pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>, indent: usize) -> String {
+        let mut s = "".to_string();
         let indentation = "  ".repeat(indent);
         match &self {
             DebugStatement::IfThenElse {
@@ -905,40 +867,39 @@ impl DebugStatement {
                 meta,
                 ..
             } => {
-                writeln!(
-                    f,
-                    "{}{}IfThenElse{} (elem_id={}):",
+                s += &format!(
+                    "{}{}IfThenElse{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(f, "{}  {}Condition:{}:", indentation, CYAN, RESET)?;
-                (cond.clone()).pretty_fmt(f, indent + 2)?;
-                writeln!(f, "{}  {}If Case:{}:", indentation, CYAN, RESET)?;
-                (*if_case.clone()).pretty_fmt(f, indent + 2)?;
+                );
+                s += &format!("{}  {}Condition:{}:\n", indentation, CYAN, RESET);
+                (cond.clone()).lookup_fmt(lookup, indent + 2);
+                s += &format!("{}  {}If Case:{}:\n", indentation, CYAN, RESET);
+                (*if_case.clone()).lookup_fmt(lookup, indent + 2);
                 if let Some(else_case) = else_case {
-                    writeln!(f, "{}  {}Else Case:{}:", indentation, CYAN, RESET)?;
-                    (*else_case.clone()).pretty_fmt(f, indent + 2)?;
+                    s += &format!("{}  {}Else Case:{}:\n", indentation, CYAN, RESET);
+                    s += &(*else_case.clone()).lookup_fmt(lookup, indent + 2);
                 }
-                Ok(())
+                s
             }
             DebugStatement::While { cond, stmt, meta } => {
-                writeln!(
-                    f,
-                    "{}{}While{} (elem_id={}):",
+                s += &format!(
+                    "{}{}While{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(f, "{}  {}Condition:{}:", indentation, CYAN, RESET)?;
-                (cond.clone()).pretty_fmt(f, indent + 2)?;
-                writeln!(f, "{}  {}Statement:{}:", indentation, CYAN, RESET)?;
-                (*stmt.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &format!("{}  {}Condition:{}:\n", indentation, CYAN, RESET);
+                (cond.clone()).lookup_fmt(lookup, indent + 2);
+                s += &format!("{}  {}Statement:{}:\n", indentation, CYAN, RESET);
+                s += &(*stmt.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugStatement::Return { value, meta, .. } => {
-                writeln!(
-                    f,
-                    "{}{}Return{} (elem_id={}):",
+                s += &format!(
+                    "{}{}Return{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(f, "{}  {}Value:{}:", indentation, MAGENTA, RESET)?;
-                (value.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &format!("{}  {}Value:{}:\n", indentation, MAGENTA, RESET);
+                s += &(value.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugStatement::Substitution {
                 var,
@@ -948,77 +909,74 @@ impl DebugStatement {
                 meta,
                 ..
             } => {
-                writeln!(
-                    f,
-                    "{}{}Substitution{} (elem_id={}):",
+                s += &format!(
+                    "{}{}Substitution{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(f, "{}  {}Variable:{} {}", indentation, BLUE, RESET, var)?;
-                writeln!(f, "{}  {}Access:{}", indentation, MAGENTA, RESET)?;
+                );
+                s += &format!(
+                    "{}  {}Variable:{} {}\n",
+                    indentation, BLUE, RESET, lookup[var]
+                );
+                s += &format!("{}  {}Access:{}\n", indentation, MAGENTA, RESET);
                 for arg0 in access {
-                    arg0.pretty_fmt(f, indent + 2)?;
+                    s += &arg0.lookup_fmt(lookup, indent + 2);
                 }
-                writeln!(f, "{}  {}Operation:{} {:?}", indentation, CYAN, RESET, op)?;
-                writeln!(
-                    f,
-                    "{}  {}Right-Hand Expression:{}:",
+                s += &format!("{}  {}Operation:{} {:?}\n", indentation, CYAN, RESET, op);
+                s += &format!(
+                    "{}  {}Right-Hand Expression:{}:\n",
                     indentation, YELLOW, RESET
-                )?;
-                (rhe.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &(rhe.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugStatement::Block { stmts, meta, .. } => {
-                writeln!(
-                    f,
-                    "{}{}Block{} (elem_id={}):",
+                s += &format!(
+                    "{}{}Block{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(
-                    f,
-                    "{}    {}-------------------------------{}",
+                );
+                s += &format!(
+                    "{}    {}-------------------------------{}\n",
                     indentation, RED, RESET
-                )?;
+                );
                 for stmt in stmts {
-                    (stmt.clone()).pretty_fmt(f, indent + 2)?;
-                    writeln!(
-                        f,
-                        "{}    {}-------------------------------{}",
+                    s += &(stmt.clone()).lookup_fmt(lookup, indent + 2);
+                    s += &format!(
+                        "{}    {}-------------------------------{}\n",
                         indentation, RED, RESET
-                    )?;
+                    );
                 }
-                Ok(())
+                s
             }
             DebugStatement::Assert { arg, meta, .. } => {
-                writeln!(
-                    f,
-                    "{}{}Assert{} (elem_id={}):",
+                s += &format!(
+                    "{}{}Assert{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(f, "{}  {}Argument:{}:", indentation, YELLOW, RESET)?;
-                (arg.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &format!("{}  {}Argument:{}:\n", indentation, YELLOW, RESET);
+                s += &(arg.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugStatement::InitializationBlock {
                 meta,
                 xtype,
                 initializations,
             } => {
-                writeln!(
-                    f,
-                    "{}{}InitializationBlock{} (elem_id={}):",
+                s += &format!(
+                    "{}{}InitializationBlock{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(
-                    f,
-                    "{}  {}Type:{} {:?}",
+                );
+                s += &format!(
+                    "{}  {}Type:{} {:?}\n",
                     indentation,
                     CYAN,
                     RESET,
                     &DebugVariableType(xtype.clone())
-                )?;
-                writeln!(f, "{}  {}Initializations:{}", indentation, YELLOW, RESET)?;
+                );
+                s += &format!("{}  {}Initializations:{}\n", indentation, YELLOW, RESET);
                 for i in initializations {
-                    (i.clone()).pretty_fmt(f, indent + 2)?;
+                    s += &(i.clone()).lookup_fmt(lookup, indent + 2);
                 }
-                Ok(())
+                s
             }
             DebugStatement::Declaration {
                 meta,
@@ -1027,89 +985,85 @@ impl DebugStatement {
                 dimensions,
                 is_constant,
             } => {
-                writeln!(
-                    f,
-                    "{}{}Declaration{} (elem_id={}):",
+                s += &format!(
+                    "{}{}Declaration{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(
-                    f,
-                    "{}  {}Type:{} {:?}",
+                );
+                s += &format!(
+                    "{}  {}Type:{} {:?}\n",
                     indentation,
                     CYAN,
                     RESET,
                     &DebugVariableType(xtype.clone())
-                )?;
-                writeln!(f, "{}  {}Name:{} {}", indentation, MAGENTA, RESET, name)?;
-                writeln!(f, "{}  {}Dimensions:{}:", indentation, YELLOW, RESET)?;
+                );
+                s += &format!(
+                    "{}  {}Name:{} {}\n",
+                    indentation, MAGENTA, RESET, lookup[name]
+                );
+                s += &format!("{}  {}Dimensions:{}:\n", indentation, YELLOW, RESET);
                 for dim in dimensions {
-                    (dim.clone()).pretty_fmt(f, indent + 2)?;
+                    s += &(dim.clone()).lookup_fmt(lookup, indent + 2);
                 }
-                writeln!(
-                    f,
-                    "{}  {}Is Constant:{} {}",
+                s += &format!(
+                    "{}  {}Is Constant:{} {}\n",
                     indentation, CYAN, RESET, is_constant
-                )
+                );
+                s
             }
             DebugStatement::MultSubstitution {
                 lhe, op, rhe, meta, ..
             } => {
-                writeln!(
-                    f,
-                    "{}{}MultSubstitution{} (elem_id={}):",
+                s += &format!(
+                    "{}{}MultSubstitution{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(f, "{}  {}Op:{} {:?}", indentation, CYAN, RESET, op)?;
-                writeln!(
-                    f,
-                    "{}  {}Left-Hand Expression:{}:",
+                );
+                s += &format!("{}  {}Op:{} {:?}\n", indentation, CYAN, RESET, op);
+                s += &format!(
+                    "{}  {}Left-Hand Expression:{}:\n",
                     indentation, YELLOW, RESET
-                )?;
-                (lhe.clone()).pretty_fmt(f, indent + 2)?;
-                writeln!(
-                    f,
-                    "{}  {}Right-Hand Expression:{}:",
+                );
+                s += &(lhe.clone()).lookup_fmt(lookup, indent + 2);
+                s += &format!(
+                    "{}  {}Right-Hand Expression:{}:\n",
                     indentation, YELLOW, RESET
-                )?;
-                (rhe.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &(rhe.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugStatement::UnderscoreSubstitution { op, rhe, meta, .. } => {
-                writeln!(
-                    f,
-                    "{}{}UnderscoreSubstitution{} (elem_id={}):",
+                s += &format!(
+                    "{}{}UnderscoreSubstitution{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(f, "{}  {}Op:{} {:?}", indentation, CYAN, RESET, op)?;
-                writeln!(
-                    f,
-                    "{}  {}Right-Hand Expression:{}:",
+                );
+                s += &format!("{}  {}Op:{} {:?}\n", indentation, CYAN, RESET, op);
+                s += &format!(
+                    "{}  {}Right-Hand Expression:{}:\n",
                     indentation, YELLOW, RESET
-                )?;
-                (rhe.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &(rhe.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugStatement::ConstraintEquality { lhe, rhe, meta, .. } => {
-                writeln!(
-                    f,
-                    "{}{}ConstraintEquality{} (elem_id={}):",
+                s += &format!(
+                    "{}{}ConstraintEquality{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
-                )?;
-                writeln!(
-                    f,
-                    "{}  {}Left-Hand Expression:{}:",
+                );
+                s += &format!(
+                    "{}  {}Left-Hand Expression:{}:\n",
                     indentation, YELLOW, RESET
-                )?;
-                (lhe.clone()).pretty_fmt(f, indent + 2)?;
-                writeln!(
-                    f,
-                    "{}  {}Right-Hand Expression:{}:",
+                );
+                (lhe.clone()).lookup_fmt(lookup, indent + 2);
+                s += &format!(
+                    "{}  {}Right-Hand Expression:{}:\n",
                     indentation, YELLOW, RESET
-                )?;
-                (rhe.clone()).pretty_fmt(f, indent + 2)
+                );
+                s += &(rhe.clone()).lookup_fmt(lookup, indent + 2);
+                s
             }
             DebugStatement::LogCall { args: _, .. } => {
-                writeln!(f, "{}{}LogCall{}", indentation, GREEN, RESET)
+                format!("{}{}LogCall{}\n", indentation, GREEN, RESET)
             }
-            DebugStatement::Ret => writeln!(f, "{}{}Ret{}", indentation, BLUE, RESET),
+            DebugStatement::Ret => format!("{}{}Ret{}\n", indentation, BLUE, RESET),
         }
     }
 }

@@ -109,8 +109,13 @@ fn start() -> Result<(), ()> {
                 BACK_GRAY_SCRIPT_BLACK, "🌳 AST Tree for", k, RESET
             );
             println!(
-                "{:?}",
-                symbolic_library.template_library[&symbolic_library.name2id[&k]].body
+                "{}",
+                symbolic_library.template_library[&symbolic_library.name2id[&k]]
+                    .body
+                    .iter()
+                    .map(|b| b.lookup_fmt(&symbolic_library.id2name, 0))
+                    .collect::<Vec<_>>()
+                    .join("")
             );
         }
     }
@@ -126,8 +131,13 @@ fn start() -> Result<(), ()> {
                 BACK_GRAY_SCRIPT_BLACK, "🌴 AST Tree for", k, RESET
             );
             println!(
-                "{:?}",
-                symbolic_library.function_library[&symbolic_library.name2id[&k]].body
+                "{}",
+                symbolic_library.function_library[&symbolic_library.name2id[&k]]
+                    .body
+                    .iter()
+                    .map(|b| b.lookup_fmt(&symbolic_library.id2name, 0))
+                    .collect::<Vec<_>>()
+                    .join("")
             );
         }
     }

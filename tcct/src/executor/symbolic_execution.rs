@@ -567,7 +567,10 @@ impl<'a> SymbolicExecutor<'a> {
                         .template_library
                         .get(&self.cur_state.template_id)
                     {
-                        if let Some(VariableType::Var) = template.id2type.get(&sname.name) {
+                        if let Some(VariableType::Signal(_, _)) = template.id2type.get(&sname.name)
+                        {
+                            return symval.clone();
+                        } else {
                             return (*self
                                 .cur_state
                                 .get_symval(&sname)
@@ -949,7 +952,10 @@ impl<'a> SymbolicExecutor<'a> {
             }*/
             // Handle other expression types
             _ => {
-                panic!("Unhandled expression type: {:?}", expr);
+                panic!(
+                    "Unhandled expression type: {}",
+                    expr.lookup_fmt(&self.symbolic_library.id2name, 0)
+                );
                 //SymbolicValue::Variable(format!("Unhandled({:?})", expr), "".to_string())
             }
         }
