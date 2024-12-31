@@ -2,7 +2,7 @@ use std::cmp::max;
 use std::rc::Rc;
 
 use colored::Colorize;
-use log::{trace, warn};
+use log::trace;
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::FromPrimitive;
@@ -1751,13 +1751,6 @@ impl<'a> SymbolicExecutor<'a> {
 
             let is_lessthan = templ.is_lessthan;
             subse.execute(&templ.body.clone(), 0);
-
-            // Handle the execution results
-            if subse.symbolic_store.final_states.len() > 1 {
-                warn!(
-                    "TODO: This tool currently cannot handle multiple branches within the callee."
-                );
-            }
 
             for fs in &mut subse.symbolic_store.final_states {
                 let mut state = self.cur_state.clone();
