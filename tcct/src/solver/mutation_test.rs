@@ -17,10 +17,9 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::utils::{
-    accumulate_error_of_constraints, emulate_symbolic_values,
-    evaluate_constraints, extract_variables, is_vulnerable,
-    verify_assignment, CounterExample, UnderConstrainedType, VerificationResult,
-    VerificationSetting,
+    accumulate_error_of_constraints, emulate_symbolic_values, evaluate_constraints,
+    extract_variables, is_vulnerable, verify_assignment, CounterExample, UnderConstrainedType,
+    VerificationResult, VerificationSetting,
 };
 
 pub fn mutation_test_search(

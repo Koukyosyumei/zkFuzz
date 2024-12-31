@@ -109,3 +109,6 @@
 [submodule "audit/circomlib"]
 	path = audit/circomlib
 	url = https://github.com/iden3/circomlib.git
+[submodule "benchmark/circom-walkthrough"]
+	path = benchmark/circom-walkthrough
+	url = https://github.com/ZKDL-Camp/circom-walkthrough.git

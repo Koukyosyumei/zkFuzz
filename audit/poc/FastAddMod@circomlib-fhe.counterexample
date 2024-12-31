@@ -1,0 +1,16 @@
+╔══════════════════════════════════════════════════════════════╗
+║🚨 Counter Example:                                           ║
+║    🔥 UnderConstrained (Non-Deterministic) 🔥
+║    🔍 Assignment Details:
+║           ➡️ main.LtConstant_57_1127.bit.bits[2] = 0
+║           ➡️ main.LtConstant_57_1127.bit.out = 0
+║           ➡️ main.in[0] = 1
+║           ➡️ main.LtConstant_57_1127.bit.bits[0] = 0
+║           ➡️ main.in[1] = 1
+║           ➡️ main.LtConstant_57_1127.in = -1
+║           ➡️ main.out = -1
+║           ➡️ main.sum = 2
+║           ➡️ main.LtConstant_57_1127.bit.bits[1] = 0
+║           ➡️ main.quotient = 1
+║           ➡️ main.LtConstant_57_1127.bit.in = 0
+╚══════════════════════════════════════════════════════════════╝
