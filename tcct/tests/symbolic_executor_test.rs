@@ -162,6 +162,7 @@ fn test_if_else() {
                 access: None,
             })),
             Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+            false,
         ),
         SymbolicValue::AssignEq(
             Rc::new(SymbolicValue::Variable(SymbolicName {
@@ -528,6 +529,7 @@ fn test_1d_array_component() {
                     )]),
                 })),
             )),
+            false,
         ),
     ];
 
@@ -801,6 +803,7 @@ fn test_2d_array_var() {
             DebugExpressionInfixOpcode(ExpressionInfixOpcode::Add),
             Rc::new(SymbolicValue::ConstantInt(BigInt::from(4))),
         )),
+        false,
     )];
 
     for i in 0..ground_truth_trace_constraints.len() {
@@ -1091,6 +1094,7 @@ fn test_2d_array_component() {
                     ]),
                 })),
             )),
+            false,
         ),
     ];
 
