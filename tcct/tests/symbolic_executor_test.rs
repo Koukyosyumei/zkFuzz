@@ -189,7 +189,15 @@ fn test_if_else() {
                         })),
                     )),
                     DebugExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+                    Rc::new(SymbolicValue::Variable(SymbolicName {
+                        name: sexe.symbolic_library.name2id["inv"],
+                        owner: Rc::new(vec![OwnerName {
+                            name: sexe.symbolic_library.name2id["main"],
+                            access: None,
+                            counter: 0,
+                        }]),
+                        access: None,
+                    })),
                 )),
                 DebugExpressionInfixOpcode(ExpressionInfixOpcode::Add),
                 Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
