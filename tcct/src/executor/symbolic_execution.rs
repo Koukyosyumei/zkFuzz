@@ -1113,6 +1113,7 @@ impl<'a> SymbolicExecutor<'a> {
                 }
             }
 
+            let mut returned_states = Vec::new();
             if !access.is_empty() {
                 if is_bulk_assignment {
                     self.handle_component_bulk_access(
@@ -1121,13 +1122,39 @@ impl<'a> SymbolicExecutor<'a> {
                         &left_base_name,
                         &right_values,
                         &mut symbolic_positions,
+                        &mut returned_states,
                     );
                 } else {
-                    self.handle_component_access(*var, access, &left_base_name, &simplified_rhe);
+                    self.handle_component_access(
+                        *var,
+                        access,
+                        &left_base_name,
+                        &simplified_rhe,
+                        &mut returned_states,
+                    );
                 }
             }
+            if returned_states.is_empty() {
+                self.execute(statements, cur_bid + 1);
+            } else {
+                let saved_states = self.symbolic_store.block_end_states.clone();
+                let mut new_block_end_states = Vec::new();
 
-            self.execute(statements, cur_bid + 1);
+                for rs in returned_states {
+                    self.symbolic_store.block_end_states = saved_states.clone();
+                    self.cur_state = rs;
+                    self.execute(statements, cur_bid + 1);
+                    /*
+                    self.expand_all_stack_states(
+                        statements,
+                        cur_bid + 1,
+                        self.cur_state.get_depth(),
+                    );*/
+                    new_block_end_states.append(&mut self.symbolic_store.block_end_states);
+                }
+
+                self.symbolic_store.block_end_states = new_block_end_states;
+            }
         }
     }
 
@@ -1449,6 +1476,7 @@ impl<'a> SymbolicExecutor<'a> {
         base_name: &SymbolicName,
         symbolic_values: &Vec<SymbolicValue>,
         symbolic_positions: &mut Vec<Vec<SymbolicAccess>>,
+        returned_states: &mut Vec<SymbolicState>,
     ) {
         let (component_name, pre_dims, post_dims) = self.parse_component_access(access);
 
@@ -1473,7 +1501,7 @@ impl<'a> SymbolicExecutor<'a> {
         }
 
         if self.is_ready(base_name) {
-            self.execute_ready_component(var, base_name, &pre_dims);
+            self.execute_ready_component(var, base_name, &pre_dims, returned_states);
         }
     }
 
@@ -1591,6 +1619,7 @@ impl<'a> SymbolicExecutor<'a> {
         access: &Vec<DebugAccess>,
         base_name: &SymbolicName,
         value: &SymbolicValue,
+        returned_states: &mut Vec<SymbolicState>,
     ) {
         let (component_name, pre_dims, post_dims) = self.parse_component_access(access);
 
@@ -1608,7 +1637,7 @@ impl<'a> SymbolicExecutor<'a> {
         }
 
         if self.is_ready(base_name) {
-            self.execute_ready_component(var, base_name, &pre_dims);
+            self.execute_ready_component(var, base_name, &pre_dims, returned_states);
         }
     }
 
@@ -1663,6 +1692,7 @@ impl<'a> SymbolicExecutor<'a> {
         var: usize,
         base_name: &SymbolicName,
         pre_dims: &Vec<SymbolicAccess>,
+        returned_states: &mut Vec<SymbolicState>,
     ) {
         if !self.symbolic_store.components_store[base_name].is_done {
             let mut subse = SymbolicExecutor::new(&mut self.symbolic_library, self.setting);
@@ -1735,24 +1765,25 @@ impl<'a> SymbolicExecutor<'a> {
                 );
             }
 
-            self.cur_state
-                .trace_constraints
-                .append(&mut subse.symbolic_store.final_states[0].trace_constraints);
-            self.cur_state
-                .side_constraints
-                .append(&mut subse.symbolic_store.final_states[0].side_constraints);
-            if self.setting.propagate_assignments {
-                for (k, v) in subse.symbolic_store.final_states[0].values.iter() {
-                    self.cur_state.set_rc_symval(k.clone(), v.clone());
+            for fs in &mut subse.symbolic_store.final_states {
+                let mut state = self.cur_state.clone();
+                state.trace_constraints.append(&mut fs.trace_constraints);
+                state.side_constraints.append(&mut fs.side_constraints);
+                if self.setting.propagate_assignments {
+                    for (k, v) in fs.values.iter() {
+                        state.set_rc_symval(k.clone(), v.clone());
+                    }
                 }
-            }
 
-            if is_lessthan {
-                let cond = generate_lessthan_constraint(
-                    &subse.symbolic_library.name2id,
-                    subse.cur_state.owner_name.clone(),
-                );
-                self.cur_state.push_trace_constraint(&cond);
+                if is_lessthan {
+                    let cond = generate_lessthan_constraint(
+                        &subse.symbolic_library.name2id,
+                        subse.cur_state.owner_name.clone(),
+                    );
+                    state.push_trace_constraint(&cond);
+                }
+
+                returned_states.push(state);
             }
 
             if !self.setting.off_trace {
