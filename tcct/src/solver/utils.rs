@@ -20,7 +20,7 @@ use crate::executor::symbolic_value::{
 pub enum UnderConstrainedType {
     UnusedOutput,
     Deterministic,
-    NonDeterministic,
+    NonDeterministic(String, BigInt),
 }
 
 /// Represents the result of a constraint verification process.
@@ -44,9 +44,12 @@ impl fmt::Display for VerificationResult {
                 UnderConstrainedType::Deterministic => {
                     "🧟 UnderConstrained (Deterministic) 🧟".red().bold()
                 }
-                UnderConstrainedType::NonDeterministic => {
-                    "🔥 UnderConstrained (Non-Deterministic) 🔥".red().bold()
-                }
+                UnderConstrainedType::NonDeterministic(name, value) => format!(
+                    "🔥 UnderConstrained (Non-Deterministic) 🔥\n║           ➡️ `{}` is expected to be `{}`",
+                    name, value
+                )
+                .red()
+                .bold(),
             },
             VerificationResult::OverConstrained => "💣 OverConstrained 💣".yellow().bold(),
             VerificationResult::WellConstrained => "✅ WellConstrained ✅".green().bold(),
@@ -643,7 +646,7 @@ pub fn verify_assignment(
     );
 
     if is_satisfy_tc && !is_satisfy_sc {
-        return VerificationResult::OverConstrained;
+        VerificationResult::OverConstrained
     } else if !is_satisfy_tc && is_satisfy_sc {
         sexe.clear();
         sexe.cur_state.add_owner(&OwnerName {
@@ -657,7 +660,7 @@ pub fn verify_assignment(
         );
         sexe.concrete_execute(&setting.id, assignment);
 
-        let mut flag = false;
+        let mut result = VerificationResult::WellConstrained;
         if sexe.symbolic_store.final_states.len() > 0 {
             for (k, v) in assignment {
                 if sexe.symbolic_library.template_library
@@ -665,16 +668,21 @@ pub fn verify_assignment(
                     .outputs
                     .contains(&k.name)
                 {
-                    let unboxed_value = &sexe.symbolic_store.final_states[0].values[&k];
-                    if let SymbolicValue::ConstantInt(num) = &(*unboxed_value.clone()) {
+                    let original_value = &sexe.symbolic_store.final_states[0].values[&k];
+                    if let SymbolicValue::ConstantInt(num) = &(*original_value.clone()) {
                         if *num != *v {
-                            flag = true;
+                            result = VerificationResult::UnderConstrained(
+                                UnderConstrainedType::NonDeterministic(
+                                    k.lookup_fmt(&sexe.symbolic_library.id2name),
+                                    num.clone(),
+                                ),
+                            );
                             break;
                         }
                     } else {
                         panic!(
                             "Undetermined Output: {}",
-                            unboxed_value
+                            original_value
                                 .clone()
                                 .lookup_fmt(&sexe.symbolic_library.id2name)
                         );
@@ -683,12 +691,8 @@ pub fn verify_assignment(
             }
         }
 
-        if flag {
-            return VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic);
-        } else {
-            return VerificationResult::WellConstrained;
-        }
+        result
     } else {
-        return VerificationResult::WellConstrained;
+        VerificationResult::WellConstrained
     }
 }
