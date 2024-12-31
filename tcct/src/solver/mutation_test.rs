@@ -65,9 +65,9 @@ pub fn mutation_test_search(
     }
     println!("#Input Variables: {}", input_variables.len());
 
-    if assign_pos.is_empty() {
-        return None;
-    }
+    //if assign_pos.is_empty() {
+    //    return None;
+    //}
 
     let mut trace_population =
         initialize_trace_mutation(&assign_pos, program_population_size, setting, &mut rng);
@@ -81,21 +81,23 @@ pub fn mutation_test_search(
         );
 
         let mut new_trace_population = vec![FxHashMap::default()];
-        for _ in 0..program_population_size {
-            let parent1 = trace_selection(&trace_population, &mut rng);
-            let parent2 = trace_selection(&trace_population, &mut rng);
+        if !trace_population.is_empty() {
+            for _ in 0..program_population_size {
+                let parent1 = trace_selection(&trace_population, &mut rng);
+                let parent2 = trace_selection(&trace_population, &mut rng);
 
-            let mut child = if rng.gen::<f64>() < crossover_rate {
-                trace_crossover(parent1, parent2, &mut rng)
-            } else {
-                parent1.clone()
-            };
+                let mut child = if rng.gen::<f64>() < crossover_rate {
+                    trace_crossover(parent1, parent2, &mut rng)
+                } else {
+                    parent1.clone()
+                };
 
-            if rng.gen::<f64>() < mutation_rate {
-                trace_mutate(&mut child, setting, &mut rng);
+                if rng.gen::<f64>() < mutation_rate {
+                    trace_mutate(&mut child, setting, &mut rng);
+                }
+
+                new_trace_population.push(child);
             }
-
-            new_trace_population.push(child);
         }
         trace_population = new_trace_population;
 
