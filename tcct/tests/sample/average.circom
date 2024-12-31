@@ -22,9 +22,9 @@ template Average(n) {
 
     denominator_inv <-- invert(n);
 
-    //component eq = IsEqual();
-    //eq.in[0] <== 1;
-    //eq.in[1] <== denominator_inv * n;
+    component eq = IsEqual();
+    eq.in[0] <== 1;
+    eq.in[1] <== denominator_inv * n;
 
     out <== sum * denominator_inv;
 

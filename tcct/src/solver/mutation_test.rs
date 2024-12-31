@@ -63,7 +63,8 @@ pub fn mutation_test_search(
             input_variables.push(v.clone());
         }
     }
-    println!("#Input Variables: {}", input_variables.len());
+    println!("#Input Variables   : {}", input_variables.len());
+    println!("#Mutation Candidate: {}", assign_pos.len());
 
     //if assign_pos.is_empty() {
     //    return None;
