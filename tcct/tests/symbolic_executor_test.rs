@@ -1616,6 +1616,23 @@ fn test_anonymous_component() {
 }
 
 #[test]
+fn test_branch_within_callee() {
+    let path = "./tests/sample/test_branch_within_callee.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = get_setting(&prime);
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    assert_eq!(sexe.symbolic_store.final_states.len(), 4);
+}
+
+#[test]
 fn test_unused_outputs() {
     let path = "./tests/sample/test_unused_output.circom".to_string();
     let prime = BigInt::from_str(

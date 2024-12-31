@@ -1144,12 +1144,6 @@ impl<'a> SymbolicExecutor<'a> {
                     self.symbolic_store.block_end_states = saved_states.clone();
                     self.cur_state = rs;
                     self.execute(statements, cur_bid + 1);
-                    /*
-                    self.expand_all_stack_states(
-                        statements,
-                        cur_bid + 1,
-                        self.cur_state.get_depth(),
-                    );*/
                     new_block_end_states.append(&mut self.symbolic_store.block_end_states);
                 }
 
