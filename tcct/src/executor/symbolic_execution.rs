@@ -1362,10 +1362,9 @@ impl<'a> SymbolicExecutor<'a> {
         {
             self.initialize_template_component(callee_name, args, var_name);
         } else {
-            let cont = SymbolicValue::Assign(
+            let cont = SymbolicValue::AssignCall(
                 Rc::new(SymbolicValue::Variable(var_name.clone())),
                 Rc::new(right_call.clone()),
-                false,
             );
             self.cur_state.push_trace_constraint(&cont);
         }
