@@ -256,7 +256,7 @@ impl SymbolicValue {
             }
             SymbolicValue::Array(elems) => {
                 format!(
-                    "🧬 {}",
+                    "[🧬 {}]",
                     elems
                         .into_iter()
                         .map(|a| a.lookup_fmt(lookup))
@@ -266,7 +266,7 @@ impl SymbolicValue {
             }
             SymbolicValue::UniformArray(elem, counts) => {
                 format!(
-                    "🧬 ({}, {})",
+                    "(🧬 {}, {})",
                     elem.lookup_fmt(lookup),
                     counts.lookup_fmt(lookup)
                 )

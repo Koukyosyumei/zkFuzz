@@ -2,7 +2,7 @@ use std::cmp::max;
 use std::rc::Rc;
 
 use colored::Colorize;
-use log::trace;
+use log::{trace, warn};
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::FromPrimitive;
@@ -1340,17 +1340,48 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// Updates the current symbolic state with individual array element assignments.
     fn handle_array_substitution(&mut self, left_var_name: &SymbolicName, arr: &SymbolicValue) {
+        let mut base_vec = Vec::new();
+        if self.cur_state.values.contains_key(left_var_name) {
+            base_vec = match (*self.cur_state.values[left_var_name]).clone() {
+                SymbolicValue::Array(elems) => elems,
+                SymbolicValue::UniformArray(elem, counts) => {
+                    //let simplified_elem = self.simplify_variables(elem, false, false);
+                    let simplified_counts = self.simplify_variables(&counts, false, false);
+                    if let SymbolicValue::ConstantInt(c) = simplified_counts {
+                        vec![elem; c.to_usize().unwrap()]
+                    } else {
+                        Vec::new()
+                    }
+                }
+                _ => Vec::new(),
+            };
+        }
+
         let enumerated_elements = enumerate_array(arr);
         for (pos, elem) in enumerated_elements {
             let mut new_left_var_name = left_var_name.clone();
             let mut access = new_left_var_name.access.unwrap_or_default();
-            for p in pos {
+            for p in &pos {
                 access.push(SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(
-                    BigInt::from_usize(p).unwrap(),
+                    BigInt::from_usize(*p).unwrap(),
                 )));
             }
             new_left_var_name.access = Some(access);
             self.cur_state.set_symval(new_left_var_name, elem.clone());
+
+            if !base_vec.is_empty() {
+                if pos.len() == 1 {
+                    base_vec[pos[0]] = Rc::new(elem.clone());
+                } else {
+                    // warn!("`tcct` currently may not be able to properly handle multi-dim template parameters.");
+                    base_vec = Vec::new();
+                }
+            }
+        }
+
+        if !base_vec.is_empty() {
+            self.cur_state
+                .set_symval(left_var_name.clone(), SymbolicValue::Array(base_vec));
         }
     }
 
@@ -1418,8 +1449,10 @@ impl<'a> SymbolicExecutor<'a> {
                 access: None,
             };
             if let Some(val) = self.cur_state.get_symval(&tp_name) {
+                // Save variables with the same name separately
                 escaped_vars.push((tp_name.clone(), val.clone()));
             }
+
             self.cur_state
                 .set_rc_symval(tp_name.clone(), args[i].clone());
             se_for_initialization

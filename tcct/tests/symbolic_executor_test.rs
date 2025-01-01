@@ -1307,6 +1307,69 @@ fn test_bulk_assignment() {
 }
 
 #[test]
+fn test_multi_dim_template_argument() {
+    let path = "./tests/sample/test_multi_dim_template_argument.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = get_setting(&prime);
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    let thrid_cond = SymbolicValue::AssignEq(
+        Rc::new(SymbolicValue::Variable(SymbolicName {
+            name: sexe.symbolic_library.name2id["out"],
+            owner: Rc::new(vec![
+                OwnerName {
+                    name: sexe.symbolic_library.name2id["main"],
+                    access: None,
+                    counter: 0,
+                },
+                OwnerName {
+                    name: sexe.symbolic_library.name2id["A"],
+                    access: None,
+                    counter: 0,
+                },
+            ]),
+            access: Some(vec![SymbolicAccess::ArrayAccess(
+                SymbolicValue::ConstantInt(BigInt::zero()),
+            )]),
+        })),
+        Rc::new(SymbolicValue::BinaryOp(
+            Rc::new(SymbolicValue::Variable(SymbolicName {
+                name: sexe.symbolic_library.name2id["in"],
+                owner: Rc::new(vec![
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["main"],
+                        access: None,
+                        counter: 0,
+                    },
+                    OwnerName {
+                        name: sexe.symbolic_library.name2id["A"],
+                        access: None,
+                        counter: 0,
+                    },
+                ]),
+                access: Some(vec![SymbolicAccess::ArrayAccess(
+                    SymbolicValue::ConstantInt(BigInt::zero()),
+                )]),
+            })),
+            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+            Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
+        )),
+    );
+
+    assert_eq!(
+        thrid_cond,
+        *sexe.symbolic_store.final_states[0].trace_constraints[2].clone()
+    );
+}
+
+#[test]
 fn test_anonymous_component() {
     let path = "./tests/sample/test_anonymous_component.circom".to_string();
     let prime = BigInt::from_str(
