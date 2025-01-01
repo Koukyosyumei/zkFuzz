@@ -18,10 +18,10 @@ use crate::executor::debug_ast::{
     DebugVariableType,
 };
 use crate::executor::symbolic_value::{
-    access_multidimensional_array, enumerate_array, evaluate_binary_op,
-    generate_lessthan_constraint, is_true, negate_condition, register_array_elements, OwnerName,
-    SymbolicAccess, SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicTemplate,
-    SymbolicValue, SymbolicValueRef,
+    access_multidimensional_array, create_nested_array, decompose_uniform_array, enumerate_array,
+    evaluate_binary_op, generate_lessthan_constraint, is_concrete_array, is_true, negate_condition,
+    register_array_elements, update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent,
+    SymbolicLibrary, SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::{generate_cartesian_product_indices, italic};
 
@@ -919,7 +919,13 @@ impl<'a> SymbolicExecutor<'a> {
                             SymbolicValue::ConstantBool(_) | SymbolicValue::ConstantInt(_) => {
                                 return_value
                             }
-                            _ => SymbolicValue::Call(id.clone(), simplified_args),
+                            _ => {
+                                if is_concrete_array(&return_value) {
+                                    return_value
+                                } else {
+                                    SymbolicValue::Call(id.clone(), simplified_args)
+                                }
+                            }
                         }
                     } else if subse.symbolic_store.final_states.len() > 1 {
                         SymbolicValue::Call(id.clone(), simplified_args)
@@ -1340,20 +1346,31 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// Updates the current symbolic state with individual array element assignments.
     fn handle_array_substitution(&mut self, left_var_name: &SymbolicName, arr: &SymbolicValue) {
-        let mut base_vec = Vec::new();
+        let mut base_array = SymbolicValue::Array(Vec::new());
         if self.cur_state.values.contains_key(left_var_name) {
-            base_vec = match (*self.cur_state.values[left_var_name]).clone() {
-                SymbolicValue::Array(elems) => elems,
-                SymbolicValue::UniformArray(elem, counts) => {
-                    //let simplified_elem = self.simplify_variables(elem, false, false);
-                    let simplified_counts = self.simplify_variables(&counts, false, false);
-                    if let SymbolicValue::ConstantInt(c) = simplified_counts {
-                        vec![elem; c.to_usize().unwrap()]
+            base_array = match (*self.cur_state.values[left_var_name]).clone() {
+                SymbolicValue::Array(elems) => SymbolicValue::Array(elems),
+                SymbolicValue::UniformArray(_, _) => {
+                    let (elem, counts) =
+                        decompose_uniform_array(self.cur_state.values[left_var_name].clone());
+                    let mut concrete_counts = Vec::new();
+                    let mut is_success = true;
+                    for c in counts.iter() {
+                        let s = self.simplify_variables(&c, false, false);
+                        if let SymbolicValue::ConstantInt(v) = (**c).clone() {
+                            concrete_counts.push(v.to_usize().unwrap())
+                        } else {
+                            is_success = false;
+                            break;
+                        }
+                    }
+                    if is_success {
+                        SymbolicValue::Array(create_nested_array(&concrete_counts, elem))
                     } else {
-                        Vec::new()
+                        SymbolicValue::Array(Vec::new())
                     }
                 }
-                _ => Vec::new(),
+                _ => SymbolicValue::Array(Vec::new()),
             };
         }
 
@@ -1369,19 +1386,19 @@ impl<'a> SymbolicExecutor<'a> {
             new_left_var_name.access = Some(access);
             self.cur_state.set_symval(new_left_var_name, elem.clone());
 
-            if !base_vec.is_empty() {
-                if pos.len() == 1 {
-                    base_vec[pos[0]] = Rc::new(elem.clone());
-                } else {
-                    // warn!("`tcct` currently may not be able to properly handle multi-dim template parameters.");
-                    base_vec = Vec::new();
+            if let SymbolicValue::Array(ref arr) = base_array {
+                if !arr.is_empty() {
+                    base_array =
+                        (*update_nested_array(&pos, Rc::new(base_array), Rc::new(elem.clone())))
+                            .clone();
                 }
             }
         }
 
-        if !base_vec.is_empty() {
-            self.cur_state
-                .set_symval(left_var_name.clone(), SymbolicValue::Array(base_vec));
+        if let SymbolicValue::Array(ref arr) = base_array {
+            if !arr.is_empty() {
+                self.cur_state.set_symval(left_var_name.clone(), base_array);
+            }
         }
     }
 

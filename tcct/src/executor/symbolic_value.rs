@@ -149,6 +149,57 @@ pub enum SymbolicValue {
     Call(usize, Vec<SymbolicValueRef>),
 }
 
+pub fn decompose_uniform_array(
+    symval: SymbolicValueRef,
+) -> (SymbolicValueRef, Vec<SymbolicValueRef>) {
+    let mut current = symval.clone();
+    let mut dims = Vec::new();
+    while let SymbolicValue::UniformArray(elem, count) = (*current).clone() {
+        dims.push(count); // Append count to the dimensions vector
+        current = elem.clone();
+    }
+    (current, dims)
+}
+
+pub fn create_nested_array(
+    dims: &[usize],
+    initial_value: SymbolicValueRef,
+) -> Vec<SymbolicValueRef> {
+    if dims.is_empty() {
+        panic!("empty dimensions");
+    }
+
+    if dims.len() == 1 {
+        vec![initial_value; dims[0]]
+    } else {
+        vec![
+            Rc::new(SymbolicValue::Array(create_nested_array(
+                &dims[1..],
+                initial_value.clone()
+            )));
+            dims[0]
+        ]
+    }
+}
+
+pub fn update_nested_array(
+    dims: &[usize],
+    array: SymbolicValueRef,
+    value: SymbolicValueRef,
+) -> SymbolicValueRef {
+    if let SymbolicValue::Array(arr) = (*array).clone() {
+        let mut new_arr = arr.clone();
+        if dims.len() == 1 {
+            new_arr[dims[0]] = value;
+        } else {
+            new_arr[dims[0]] = update_nested_array(&dims[1..], arr[dims[0]].clone(), value);
+        }
+        Rc::new(SymbolicValue::Array(new_arr))
+    } else {
+        array
+    }
+}
+
 impl SymbolicValue {
     /// Formats the symbolic value for lookup and debugging purposes.
     ///
@@ -763,5 +814,30 @@ pub fn negate_condition(condition: &SymbolicValue) -> SymbolicValue {
             DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
             Rc::new(condition.clone()),
         ),
+    }
+}
+
+fn check_array_concrete(array: &Vec<SymbolicValueRef>) -> bool {
+    for value_ref in array {
+        match &**value_ref {
+            SymbolicValue::Array(inner_array) => {
+                if !check_array_concrete(inner_array) {
+                    return false;
+                }
+            }
+            value => match value {
+                SymbolicValue::ConstantBool(_) => {}
+                SymbolicValue::ConstantInt(_) => {}
+                _ => return false,
+            },
+        }
+    }
+    true
+}
+
+pub fn is_concrete_array(value: &SymbolicValue) -> bool {
+    match value {
+        SymbolicValue::Array(array) => check_array_concrete(array),
+        _ => false,
     }
 }
