@@ -42,12 +42,13 @@ template HitShip (n) {
     signal input attack_j;
     signal output hitShip;
 
+    // Comment out the expensive hash calculation
     // 1. match hash of board to boardID
-    component boardToHash = BoardToHash(n);
-    boardToHash.board <== board;
-    boardToHash.salt <== salt;
+    // component boardToHash = BoardToHash(n);
+    // boardToHash.board <== board;
+    // boardToHash.salt <== salt;
 
-    boardID === boardToHash.hash;
+    // boardID === boardToHash.hash;
 
     // 2. did verifier hit a ship
     signal hit <-- board[attack_i][attack_j];
