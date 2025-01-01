@@ -1307,8 +1307,8 @@ fn test_bulk_assignment() {
 }
 
 #[test]
-fn test_multi_dim_template_argument() {
-    let path = "./tests/sample/test_multi_dim_template_argument.circom".to_string();
+fn test_array_template_argument() {
+    let path = "./tests/sample/test_array_template_argument.circom".to_string();
     let prime = BigInt::from_str(
         "21888242871839275222246405745257275088548364400416034343698204186575808495617",
     )
