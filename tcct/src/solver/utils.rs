@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use colored::Colorize;
 use num_bigint_dig::BigInt;
+use num_traits::ToPrimitive;
 use num_traits::{One, Signed, Zero};
 use rustc_hash::{FxHashMap, FxHashSet};
 
@@ -424,6 +425,16 @@ pub fn evaluate_symbolic_value(
                 })
                 .collect(),
         ),
+        SymbolicValue::UniformArray(elem, counts) => {
+            let evaled_elem = evaluate_symbolic_value(prime, elem, assignment, symbolic_library);
+            let evaled_counts =
+                evaluate_symbolic_value(prime, counts, assignment, symbolic_library);
+            if let SymbolicValue::ConstantInt(c) = evaled_counts {
+                SymbolicValue::Array(vec![Rc::new(evaled_elem); c.to_usize().unwrap()])
+            } else {
+                SymbolicValue::UniformArray(Rc::new(evaled_elem), Rc::new(evaled_counts))
+            }
+        }
         SymbolicValue::Assign(lhs, rhs, _)
         | SymbolicValue::AssignEq(lhs, rhs)
         | SymbolicValue::AssignCall(lhs, rhs) => {

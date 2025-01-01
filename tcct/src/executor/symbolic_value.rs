@@ -687,6 +687,26 @@ pub fn evaluate_binary_op(
     op: &DebugExpressionInfixOpcode,
 ) -> SymbolicValue {
     match (&lhs, &rhs) {
+        (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantBool(rv)) => {
+            return evaluate_binary_op(
+                lhs,
+                &SymbolicValue::ConstantInt(if *rv { BigInt::one() } else { BigInt::zero() }),
+                prime,
+                op,
+            );
+        }
+        (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantInt(rv)) => {
+            return evaluate_binary_op(
+                &SymbolicValue::ConstantInt(if *lv { BigInt::one() } else { BigInt::zero() }),
+                rhs,
+                prime,
+                op,
+            );
+        }
+        _ => {}
+    }
+
+    match (&lhs, &rhs) {
         (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match &op.0 {
             ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt((lv + rv) % prime),
             ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt((lv - rv) % prime),
