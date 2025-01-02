@@ -4,7 +4,7 @@ use std::io::Write;
 
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
-use num_traits::{One, Zero};
+use num_traits::{One, Signed, Zero};
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
@@ -16,9 +16,7 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::eval::evaluate_trace_fitness;
-use crate::solver::utils::{
-    extract_variables, CounterExample, VerificationSetting,
-};
+use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
 
 pub fn mutation_test_search(
     sexe: &mut SymbolicExecutor,
@@ -65,6 +63,7 @@ pub fn mutation_test_search(
 
     let mut trace_population =
         initialize_trace_mutation(&assign_pos, program_population_size, setting, &mut rng);
+    let mut fitness_scores = vec![-setting.prime.clone(); input_population_size];
 
     for generation in 0..max_generations {
         // Generate input population for this generation
@@ -79,6 +78,7 @@ pub fn mutation_test_search(
         trace_population = if !trace_population.is_empty() {
             evolve_trace_population(
                 &trace_population,
+                &fitness_scores,
                 program_population_size,
                 mutation_rate,
                 crossover_rate,
@@ -108,6 +108,7 @@ pub fn mutation_test_search(
             .max_by_key(|&(_, value)| value.1.clone())
             .map(|(index, _)| index)
             .unwrap();
+        fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
 
         if evaluations[best_idx].1.is_zero() {
             print!(
@@ -184,9 +185,28 @@ fn initialize_trace_mutation(
 
 fn trace_selection<'a>(
     population: &'a [FxHashMap<usize, SymbolicValue>],
+    fitness_scores: &[BigInt],
     rng: &mut ThreadRng,
 ) -> &'a FxHashMap<usize, SymbolicValue> {
-    population.choose(rng).unwrap()
+    let min_score = fitness_scores.iter().min().unwrap();
+    let weights: Vec<_> = fitness_scores
+        .iter()
+        .map(|score| score - min_score)
+        .collect();
+    let mut total_weight: BigInt = weights.iter().sum();
+    total_weight = if total_weight.is_positive() {
+        total_weight
+    } else {
+        BigInt::one()
+    };
+    let mut target = rng.gen_bigint_range(&BigInt::zero(), &total_weight);
+    for (individual, weight) in population.iter().zip(weights.iter()) {
+        if &target < weight {
+            return individual;
+        }
+        target -= weight;
+    }
+    &population[0]
 }
 
 fn trace_crossover(
@@ -226,6 +246,7 @@ fn trace_mutate(
 
 fn evolve_trace_population(
     current_population: &[FxHashMap<usize, SymbolicValue>],
+    evaluations: &[BigInt],
     population_size: usize,
     mutation_rate: f64,
     crossover_rate: f64,
@@ -234,8 +255,8 @@ fn evolve_trace_population(
 ) -> Vec<FxHashMap<usize, SymbolicValue>> {
     (0..population_size)
         .map(|_| {
-            let parent1 = trace_selection(current_population, rng);
-            let parent2 = trace_selection(current_population, rng);
+            let parent1 = trace_selection(current_population, evaluations, rng);
+            let parent2 = trace_selection(current_population, evaluations, rng);
 
             let mut child = if rng.gen::<f64>() < crossover_rate {
                 trace_crossover(parent1, parent2, rng)
