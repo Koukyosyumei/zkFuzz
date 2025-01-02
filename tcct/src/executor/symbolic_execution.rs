@@ -615,12 +615,13 @@ impl<'a> SymbolicExecutor<'a> {
                             }
                         }
                     }
-                    if let Some(SymbolicValue::ConstantInt(v)) =
-                        self.cur_state.get_symval(&sname).map(|v| &**v)
-                    {
-                        return SymbolicValue::ConstantInt(v.clone());
+                    match self.cur_state.get_symval(&sname).map(|v| &**v) {
+                        Some(SymbolicValue::ConstantInt(v)) => {
+                            SymbolicValue::ConstantInt(v.clone())
+                        }
+                        Some(SymbolicValue::ConstantBool(b)) => SymbolicValue::ConstantBool(*b),
+                        _ => symval.clone(),
                     }
-                    symval.clone()
                 } else {
                     (*self
                         .cur_state

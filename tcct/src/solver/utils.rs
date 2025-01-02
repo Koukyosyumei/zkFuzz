@@ -688,24 +688,33 @@ pub fn verify_assignment(
                     .outputs
                     .contains(&k.name)
                 {
-                    let original_value = &sexe.symbolic_store.final_states[0].values[&k];
-                    if let SymbolicValue::ConstantInt(num) = &(*original_value.clone()) {
-                        if *num != *v {
-                            result = VerificationResult::UnderConstrained(
-                                UnderConstrainedType::NonDeterministic(
-                                    k.lookup_fmt(&sexe.symbolic_library.id2name),
-                                    num.clone(),
-                                ),
-                            );
-                            break;
+                    let original_sym_value = &sexe.symbolic_store.final_states[0].values[&k];
+                    let original_int_value = match &(*original_sym_value.clone()) {
+                        SymbolicValue::ConstantInt(num) => num.clone(),
+                        SymbolicValue::ConstantBool(b) => {
+                            if *b {
+                                BigInt::one()
+                            } else {
+                                BigInt::zero()
+                            }
                         }
-                    } else {
-                        panic!(
-                            "Undetermined Output: {}",
-                            original_value
-                                .clone()
-                                .lookup_fmt(&sexe.symbolic_library.id2name)
+                        _ => {
+                            panic!(
+                                "Undetermined Output: {}",
+                                original_sym_value
+                                    .clone()
+                                    .lookup_fmt(&sexe.symbolic_library.id2name)
+                            );
+                        }
+                    };
+                    if original_int_value != *v {
+                        result = VerificationResult::UnderConstrained(
+                            UnderConstrainedType::NonDeterministic(
+                                k.lookup_fmt(&sexe.symbolic_library.id2name),
+                                original_int_value.clone(),
+                            ),
                         );
+                        break;
                     }
                 }
             }
