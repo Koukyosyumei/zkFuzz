@@ -142,7 +142,7 @@ fn draw_random_constant(setting: &VerificationSetting, rng: &mut ThreadRng) -> B
         )
     } else {
         rng.gen_bigint_range(
-            &(setting.prime.clone() - BigInt::from_str("2").unwrap()),
+            &(setting.prime.clone() - BigInt::from_str("100").unwrap()),
             &(setting.prime),
         )
     }
