@@ -686,27 +686,34 @@ pub fn evaluate_binary_op(
     prime: &BigInt,
     op: &DebugExpressionInfixOpcode,
 ) -> SymbolicValue {
-    match (&lhs, &rhs) {
-        (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantBool(rv)) => {
-            return evaluate_binary_op(
-                lhs,
-                &SymbolicValue::ConstantInt(if *rv { BigInt::one() } else { BigInt::zero() }),
-                prime,
-                op,
-            );
+    let (normalized_lhs, normalized_rhs) = match &op.0 {
+        // Convert booleans to integers for arithmetic or bitwise operators
+        ExpressionInfixOpcode::Add
+        | ExpressionInfixOpcode::Sub
+        | ExpressionInfixOpcode::Mul
+        | ExpressionInfixOpcode::Pow
+        | ExpressionInfixOpcode::Div
+        | ExpressionInfixOpcode::IntDiv
+        | ExpressionInfixOpcode::Mod
+        | ExpressionInfixOpcode::BitOr
+        | ExpressionInfixOpcode::BitAnd
+        | ExpressionInfixOpcode::BitXor
+        | ExpressionInfixOpcode::ShiftL
+        | ExpressionInfixOpcode::ShiftR
+        | ExpressionInfixOpcode::Lesser
+        | ExpressionInfixOpcode::Greater
+        | ExpressionInfixOpcode::LesserEq
+        | ExpressionInfixOpcode::GreaterEq
+        | ExpressionInfixOpcode::Eq
+        | ExpressionInfixOpcode::NotEq => (normalize_to_int(lhs), normalize_to_int(rhs)),
+        // Keep booleans as they are for logical operators
+        ExpressionInfixOpcode::BoolAnd | ExpressionInfixOpcode::BoolOr => {
+            (normalize_to_bool(lhs, prime), normalize_to_bool(rhs, prime))
         }
-        (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantInt(rv)) => {
-            return evaluate_binary_op(
-                &SymbolicValue::ConstantInt(if *lv { BigInt::one() } else { BigInt::zero() }),
-                rhs,
-                prime,
-                op,
-            );
-        }
-        _ => {}
-    }
+        _ => (lhs.clone(), rhs.clone()), // Default case
+    };
 
-    match (&lhs, &rhs) {
+    match (&normalized_lhs, &normalized_rhs) {
         (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match &op.0 {
             ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt((lv + rv) % prime),
             ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt((lv - rv) % prime),
@@ -716,21 +723,7 @@ pub fn evaluate_binary_op(
                 if rv.is_zero() {
                     SymbolicValue::ConstantInt(BigInt::zero())
                 } else {
-                    let mut r = prime.clone();
-                    let mut new_r = rv.clone();
-                    if r.is_negative() {
-                        r += prime;
-                    }
-                    if new_r.is_negative() {
-                        new_r += prime;
-                    }
-
-                    let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
-                    rv_inv %= prime;
-                    if rv_inv.is_negative() {
-                        rv_inv += prime;
-                    }
-
+                    let rv_inv = modular_inverse(rv, prime);
                     SymbolicValue::ConstantInt((lv * rv_inv) % prime)
                 }
             }
@@ -755,20 +748,40 @@ pub fn evaluate_binary_op(
             }
             ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(lv % prime == rv % prime),
             ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(lv % prime != rv % prime),
-            ExpressionInfixOpcode::BoolOr => {
-                SymbolicValue::ConstantBool(!(lv % prime).is_zero() || !(rv % prime).is_zero())
-            }
             _ => todo!("{:?} is currently not supported", op),
         },
         (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => match &op.0 {
             ExpressionInfixOpcode::BoolAnd => SymbolicValue::ConstantBool(*lv && *rv),
             ExpressionInfixOpcode::BoolOr => SymbolicValue::ConstantBool(*lv || *rv),
-            ExpressionInfixOpcode::BitAnd => SymbolicValue::ConstantBool(*lv && *rv),
-            ExpressionInfixOpcode::BitOr => SymbolicValue::ConstantBool(*lv | *rv),
             _ => todo!("{:?} is currently not supported", op),
         },
-        _ => SymbolicValue::BinaryOp(Rc::new(lhs.clone()), op.clone(), Rc::new(rhs.clone())),
+        _ => SymbolicValue::BinaryOp(Rc::new(normalized_lhs), op.clone(), Rc::new(normalized_rhs)),
     }
+}
+
+fn normalize_to_int(val: &SymbolicValue) -> SymbolicValue {
+    match val {
+        SymbolicValue::ConstantBool(b) => {
+            SymbolicValue::ConstantInt(if *b { BigInt::one() } else { BigInt::zero() })
+        }
+        _ => val.clone(),
+    }
+}
+
+fn normalize_to_bool(val: &SymbolicValue, prime: &BigInt) -> SymbolicValue {
+    match val {
+        SymbolicValue::ConstantInt(v) => SymbolicValue::ConstantBool(!(v % prime).is_zero()),
+        _ => val.clone(),
+    }
+}
+
+fn modular_inverse(value: &BigInt, prime: &BigInt) -> BigInt {
+    let (_, _, mut inv) = extended_euclidean(prime.clone(), value.clone());
+    inv %= prime;
+    if inv.is_negative() {
+        inv += prime;
+    }
+    inv
 }
 
 pub fn generate_lessthan_constraint(

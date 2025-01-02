@@ -329,10 +329,19 @@ pub fn emulate_symbolic_values(
             | SymbolicValue::AssignCall(lhs, rhs) => {
                 if let SymbolicValue::Variable(name) = lhs.as_ref() {
                     let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
-                    if let SymbolicValue::ConstantInt(num) = &rhs_val {
-                        assignment.insert(name.clone(), num.clone());
-                    } else {
-                        success = false;
+                    match &rhs_val {
+                        SymbolicValue::ConstantInt(num) => {
+                            assignment.insert(name.clone(), num.clone());
+                        }
+                        SymbolicValue::ConstantBool(b) => {
+                            assignment.insert(
+                                name.clone(),
+                                if *b { BigInt::one() } else { BigInt::zero() },
+                            );
+                        }
+                        _ => {
+                            success = false;
+                        }
                     }
                 } else {
                     panic!("Left hand of the assignment is not a variable");
