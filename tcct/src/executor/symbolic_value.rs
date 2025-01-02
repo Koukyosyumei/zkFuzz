@@ -723,7 +723,21 @@ pub fn evaluate_binary_op(
                 if rv.is_zero() {
                     SymbolicValue::ConstantInt(BigInt::zero())
                 } else {
-                    let rv_inv = modular_inverse(rv, prime);
+                    let mut r = prime.clone();
+                    let mut new_r = rv.clone();
+                    if r.is_negative() {
+                        r += prime;
+                    }
+                    if new_r.is_negative() {
+                        new_r += prime;
+                    }
+
+                    let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
+                    rv_inv %= prime;
+                    if rv_inv.is_negative() {
+                        rv_inv += prime;
+                    }
+
                     SymbolicValue::ConstantInt((lv * rv_inv) % prime)
                 }
             }
@@ -773,15 +787,6 @@ fn normalize_to_bool(val: &SymbolicValue, prime: &BigInt) -> SymbolicValue {
         SymbolicValue::ConstantInt(v) => SymbolicValue::ConstantBool(!(v % prime).is_zero()),
         _ => val.clone(),
     }
-}
-
-fn modular_inverse(value: &BigInt, prime: &BigInt) -> BigInt {
-    let (_, _, mut inv) = extended_euclidean(prime.clone(), value.clone());
-    inv %= prime;
-    if inv.is_negative() {
-        inv += prime;
-    }
-    inv
 }
 
 pub fn generate_lessthan_constraint(
