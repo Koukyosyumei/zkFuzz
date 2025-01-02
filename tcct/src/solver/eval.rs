@@ -1,24 +1,14 @@
-use std::collections::HashSet;
-use std::io;
-use std::io::Write;
 use std::rc::Rc;
 
 use num_bigint_dig::BigInt;
-use num_bigint_dig::RandBigInt;
-use num_traits::{One, Zero};
-use rand::rngs::ThreadRng;
-use rand::seq::IteratorRandom;
-use rand::seq::SliceRandom;
-use rand::Rng;
+use num_traits::Zero;
 use rustc_hash::FxHashMap;
-use std::str::FromStr;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::utils::{
-    accumulate_error_of_constraints, emulate_symbolic_values, evaluate_constraints,
-    extract_variables, is_vulnerable, verify_assignment, CounterExample, UnderConstrainedType,
+    accumulate_error_of_constraints, emulate_symbolic_values, is_vulnerable, verify_assignment, CounterExample, UnderConstrainedType,
     VerificationResult, VerificationSetting,
 };
 
@@ -50,7 +40,7 @@ pub fn evaluate_trace_fitness(
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
     inputs: &Vec<FxHashMap<SymbolicName, BigInt>>,
 ) -> (usize, BigInt, Option<CounterExample>) {
-    let mut mutated_trace_constraints = apply_trace_mutation(trace_constraints, trace_mutation);
+    let mutated_trace_constraints = apply_trace_mutation(trace_constraints, trace_mutation);
 
     let mut max_idx = 0_usize;
     let mut max_score = -setting.prime.clone();
