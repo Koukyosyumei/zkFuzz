@@ -18,6 +18,7 @@ use crate::executor::symbolic_value::{
     evaluate_binary_op, OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 
+#[derive(Clone)]
 pub enum UnderConstrainedType {
     UnusedOutput,
     Deterministic,
@@ -25,6 +26,7 @@ pub enum UnderConstrainedType {
 }
 
 /// Represents the result of a constraint verification process.
+#[derive(Clone)]
 pub enum VerificationResult {
     UnderConstrained(UnderConstrainedType),
     OverConstrained,
@@ -60,6 +62,7 @@ impl fmt::Display for VerificationResult {
 }
 
 /// Represents a counterexample when constraints are found to be invalid.
+#[derive(Clone)]
 pub struct CounterExample {
     pub flag: VerificationResult,
     pub assignment: FxHashMap<SymbolicName, BigInt>,
