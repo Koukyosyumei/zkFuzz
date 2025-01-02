@@ -112,7 +112,7 @@ pub fn mutation_test_search(
 
         if evaluations[best_idx].1.is_zero() {
             print!(
-                "\rGeneration: {}/{} ({:.3})",
+                "\r\x1b[2KGeneration: {}/{} ({:.3})",
                 generation, max_generations, 0
             );
             println!("\n └─ Solution found in generation {}", generation);
@@ -120,7 +120,7 @@ pub fn mutation_test_search(
         }
 
         print!(
-            "\rGeneration: {}/{} ({:.3})",
+            "\r\x1b[2KGeneration: {}/{} ({:.3})",
             generation, max_generations, evaluations[best_idx].1
         );
         io::stdout().flush().unwrap();
