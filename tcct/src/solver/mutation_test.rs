@@ -313,9 +313,7 @@ fn evaluate_trace_fitness(
                     &assignment,
                     setting,
                 );
-                if !is_vulnerable(&flag) {
-                    score = -setting.prime.clone();
-                } else {
+                if is_vulnerable(&flag) {
                     max_idx = i;
                     max_score = BigInt::zero();
                     counter_example = Some(CounterExample {
@@ -323,7 +321,17 @@ fn evaluate_trace_fitness(
                         assignment: assignment.clone(),
                     });
                     break;
+                } else {
+                    score = -setting.prime.clone();
                 }
+            } else {
+                max_idx = i;
+                max_score = BigInt::zero();
+                counter_example = Some(CounterExample {
+                    flag: VerificationResult::UnderConstrained(UnderConstrainedType::Deterministic),
+                    assignment: assignment.clone(),
+                });
+                break;
             }
         }
 
