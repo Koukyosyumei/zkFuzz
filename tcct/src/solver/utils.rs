@@ -207,6 +207,11 @@ pub fn extract_variables_from_symbolic_value(
                 extract_variables_from_symbolic_value(&arg, variables);
             }
         }
+        SymbolicValue::Conditional(cond, then_val, else_val) => {
+            extract_variables_from_symbolic_value(&cond, variables);
+            extract_variables_from_symbolic_value(&then_val, variables);
+            extract_variables_from_symbolic_value(&else_val, variables);
+        }
         _ => {}
     }
 }
@@ -347,7 +352,10 @@ pub fn emulate_symbolic_values(
                         }
                     }
                 } else {
-                    panic!("Left hand of the assignment is not a variable");
+                    panic!(
+                        "Left hand of the assignment is not a variable: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    );
                 }
             }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
@@ -362,7 +370,10 @@ pub fn emulate_symbolic_values(
                             ExpressionInfixOpcode::GreaterEq => lv % prime >= rv % prime,
                             ExpressionInfixOpcode::Eq => lv % prime == rv % prime,
                             ExpressionInfixOpcode::NotEq => lv % prime != rv % prime,
-                            _ => panic!("Non-Boolean Operation"),
+                            _ => panic!(
+                                "Non-Boolean Operation: {}",
+                                value.lookup_fmt(&symbolic_library.id2name)
+                            ),
                         }
                     }
                     (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => {
@@ -372,7 +383,10 @@ pub fn emulate_symbolic_values(
                             _ => todo!(),
                         }
                     }
-                    _ => panic!("Unassigned variables exist"),
+                    _ => panic!(
+                        "Unassigned variables exist: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
                 };
                 if !flag {
                     success = false;
@@ -383,15 +397,24 @@ pub fn emulate_symbolic_values(
                 let flag = match &expr_val {
                     SymbolicValue::ConstantBool(rv) => match op.0 {
                         ExpressionPrefixOpcode::BoolNot => !rv,
-                        _ => panic!("Unassigned variables exist"),
+                        _ => panic!(
+                            "Unassigned variables exist: {}",
+                            value.lookup_fmt(&symbolic_library.id2name)
+                        ),
                     },
-                    _ => panic!("Non-Boolean Operation"),
+                    _ => panic!(
+                        "Non-Boolean Operation: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
                 };
                 if !flag {
                     success = false;
                 }
             }
-            _ => panic!("Non-Supported SymbolicValue"),
+            _ => panic!(
+                "A constraint should be one of `ConstantBool`, `Assign`, `AssignEq`, `AssignCall`, `BinaryOp` and `UnaryOp`. Found: {}",
+                value.lookup_fmt(&symbolic_library.id2name)
+            ),
         }
     }
     return success;
@@ -460,7 +483,10 @@ pub fn evaluate_symbolic_value(
                     let rv_to_int = if *rv { BigInt::one() } else { BigInt::zero() };
                     SymbolicValue::ConstantBool(lv % prime == rv_to_int)
                 }
-                _ => panic!("Unassigned variables exist"),
+                _ => panic!(
+                    "Unassigned variables exist: {}",
+                    value.lookup_fmt(&symbolic_library.id2name)
+                ),
             }
         }
         SymbolicValue::BinaryOp(lhs, op, rhs) => {
@@ -473,13 +499,34 @@ pub fn evaluate_symbolic_value(
             match &expr_val {
                 SymbolicValue::ConstantInt(rv) => match op.0 {
                     ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
-                    _ => panic!("Unassigned variables exist"),
+                    _ => panic!(
+                        "Unassigned variables exist: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
                 },
                 SymbolicValue::ConstantBool(rv) => match op.0 {
                     ExpressionPrefixOpcode::BoolNot => SymbolicValue::ConstantBool(!rv),
-                    _ => panic!("Unassigned variables exist"),
+                    _ => panic!(
+                        "Unassigned variables exist: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
                 },
                 _ => todo!("{:?}", value),
+            }
+        }
+        SymbolicValue::Conditional(cond, then_branch, else_branch) => {
+            let cond_val = evaluate_symbolic_value(prime, cond, assignment, symbolic_library);
+            let then_val =
+                evaluate_symbolic_value(prime, then_branch, assignment, symbolic_library);
+            let else_val =
+                evaluate_symbolic_value(prime, else_branch, assignment, symbolic_library);
+            match &cond_val {
+                SymbolicValue::ConstantBool(true) => then_val,
+                SymbolicValue::ConstantBool(false) => else_val,
+                _ => panic!(
+                    "Unassigned variables exist: {}",
+                    cond_val.lookup_fmt(&symbolic_library.id2name)
+                ),
             }
         }
         SymbolicValue::Call(id, args) => {

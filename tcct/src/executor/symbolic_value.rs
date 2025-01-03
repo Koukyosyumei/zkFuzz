@@ -149,57 +149,6 @@ pub enum SymbolicValue {
     Call(usize, Vec<SymbolicValueRef>),
 }
 
-pub fn decompose_uniform_array(
-    symval: SymbolicValueRef,
-) -> (SymbolicValueRef, Vec<SymbolicValueRef>) {
-    let mut current = symval.clone();
-    let mut dims = Vec::new();
-    while let SymbolicValue::UniformArray(elem, count) = (*current).clone() {
-        dims.push(count); // Append count to the dimensions vector
-        current = elem.clone();
-    }
-    (current, dims)
-}
-
-pub fn create_nested_array(
-    dims: &[usize],
-    initial_value: SymbolicValueRef,
-) -> Vec<SymbolicValueRef> {
-    if dims.is_empty() {
-        panic!("empty dimensions");
-    }
-
-    if dims.len() == 1 {
-        vec![initial_value; dims[0]]
-    } else {
-        vec![
-            Rc::new(SymbolicValue::Array(create_nested_array(
-                &dims[1..],
-                initial_value.clone()
-            )));
-            dims[0]
-        ]
-    }
-}
-
-pub fn update_nested_array(
-    dims: &[usize],
-    array: SymbolicValueRef,
-    value: SymbolicValueRef,
-) -> SymbolicValueRef {
-    if let SymbolicValue::Array(arr) = (*array).clone() {
-        let mut new_arr = arr.clone();
-        if dims.len() == 1 {
-            new_arr[dims[0]] = value;
-        } else {
-            new_arr[dims[0]] = update_nested_array(&dims[1..], arr[dims[0]].clone(), value);
-        }
-        Rc::new(SymbolicValue::Array(new_arr))
-    } else {
-        array
-    }
-}
-
 impl SymbolicValue {
     /// Formats the symbolic value for lookup and debugging purposes.
     ///
@@ -214,7 +163,14 @@ impl SymbolicValue {
         match self {
             SymbolicValue::ConstantInt(value) => format!("{}", value),
             SymbolicValue::ConstantBool(flag) => {
-                format!("{} {}", if *flag { "✅" } else { "❌" }, flag)
+                format!(
+                    "{}",
+                    if *flag {
+                        "true".on_bright_green().white()
+                    } else {
+                        "false".on_bright_red().white()
+                    }
+                )
             }
             SymbolicValue::Variable(sname) => sname.lookup_fmt(lookup),
             SymbolicValue::Assign(lhs, rhs, is_safe) => {
@@ -282,7 +238,7 @@ impl SymbolicValue {
             },
             SymbolicValue::Conditional(cond, if_branch, else_branch) => {
                 format!(
-                    "(🤔 {} ? {} : {})",
+                    "<🤔 {} ? {} : {}>",
                     cond.lookup_fmt(lookup),
                     if_branch.lookup_fmt(lookup),
                     else_branch.lookup_fmt(lookup)
@@ -877,5 +833,56 @@ pub fn is_concrete_array(value: &SymbolicValue) -> bool {
     match value {
         SymbolicValue::Array(array) => check_array_concrete(array),
         _ => false,
+    }
+}
+
+pub fn decompose_uniform_array(
+    symval: SymbolicValueRef,
+) -> (SymbolicValueRef, Vec<SymbolicValueRef>) {
+    let mut current = symval.clone();
+    let mut dims = Vec::new();
+    while let SymbolicValue::UniformArray(elem, count) = (*current).clone() {
+        dims.push(count); // Append count to the dimensions vector
+        current = elem.clone();
+    }
+    (current, dims)
+}
+
+pub fn create_nested_array(
+    dims: &[usize],
+    initial_value: SymbolicValueRef,
+) -> Vec<SymbolicValueRef> {
+    if dims.is_empty() {
+        panic!("empty dimensions");
+    }
+
+    if dims.len() == 1 {
+        vec![initial_value; dims[0]]
+    } else {
+        vec![
+            Rc::new(SymbolicValue::Array(create_nested_array(
+                &dims[1..],
+                initial_value.clone()
+            )));
+            dims[0]
+        ]
+    }
+}
+
+pub fn update_nested_array(
+    dims: &[usize],
+    array: SymbolicValueRef,
+    value: SymbolicValueRef,
+) -> SymbolicValueRef {
+    if let SymbolicValue::Array(arr) = (*array).clone() {
+        let mut new_arr = arr.clone();
+        if dims.len() == 1 {
+            new_arr[dims[0]] = value;
+        } else {
+            new_arr[dims[0]] = update_nested_array(&dims[1..], arr[dims[0]].clone(), value);
+        }
+        Rc::new(SymbolicValue::Array(new_arr))
+    } else {
+        array
     }
 }

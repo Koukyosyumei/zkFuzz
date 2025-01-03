@@ -1358,7 +1358,7 @@ impl<'a> SymbolicExecutor<'a> {
                     let mut is_success = true;
                     for c in counts.iter() {
                         let s = self.simplify_variables(&c, false, false);
-                        if let SymbolicValue::ConstantInt(v) = (**c).clone() {
+                        if let SymbolicValue::ConstantInt(v) = s {
                             concrete_counts.push(v.to_usize().unwrap())
                         } else {
                             is_success = false;
