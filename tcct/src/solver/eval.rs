@@ -25,6 +25,14 @@ pub fn apply_trace_mutation(
                 Rc::new(value.clone()),
                 is_safe,
             ));
+        } else if let SymbolicValue::AssignCall(lv, _, is_mutable) =
+            mutated_constraints[*index].as_ref().clone()
+        {
+            mutated_constraints[*index] = Rc::new(SymbolicValue::Assign(
+                lv.clone(),
+                Rc::new(value.clone()),
+                !is_mutable,
+            ));
         } else {
             panic!("We can only mutate SymbolicValue::Assign");
         }

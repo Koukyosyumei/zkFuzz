@@ -1108,7 +1108,13 @@ impl<'a> SymbolicExecutor<'a> {
             }
 
             if let SymbolicValue::Call(callee_name, args) = &simplified_rhe {
-                self.handle_call_substitution(callee_name, args, &left_var_name, &simplified_rhe);
+                self.handle_call_substitution(
+                    op,
+                    callee_name,
+                    args,
+                    &left_var_name,
+                    &simplified_rhe,
+                );
             } else {
                 if is_bulk_assignment {
                     for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
@@ -1420,11 +1426,16 @@ impl<'a> SymbolicExecutor<'a> {
     /// May initialize a new component in the symbolic store or update
     fn handle_call_substitution(
         &mut self,
+        op: &DebugAssignOp,
         callee_name: &usize,
         args: &Vec<Rc<SymbolicValue>>,
         var_name: &SymbolicName,
         right_call: &SymbolicValue,
     ) {
+        let is_mutable = match op {
+            DebugAssignOp(AssignOp::AssignSignal) => true,
+            _ => false,
+        };
         if self
             .symbolic_library
             .template_library
@@ -1435,6 +1446,7 @@ impl<'a> SymbolicExecutor<'a> {
             let cont = SymbolicValue::AssignCall(
                 Rc::new(SymbolicValue::Variable(var_name.clone())),
                 Rc::new(right_call.clone()),
+                is_mutable,
             );
             self.cur_state.push_trace_constraint(&cont);
         }

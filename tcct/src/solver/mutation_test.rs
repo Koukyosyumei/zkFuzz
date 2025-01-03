@@ -36,7 +36,7 @@ pub fn mutation_test_search(
     let mut assign_pos = Vec::new();
     for (i, sv) in trace_constraints.iter().enumerate() {
         match *sv.clone() {
-            SymbolicValue::Assign(_, _, false) => {
+            SymbolicValue::Assign(_, _, false) | SymbolicValue::AssignCall(_, _, true) => {
                 assign_pos.push(i);
             }
             _ => {}
