@@ -1,4 +1,4 @@
-include "../circomlib/circuits/comparators.circom";
+include "../include/circomlib/circuits/comparators.circom";
 // https://github.com/FactomProject/ptnet-ZKP/blob/master/vass/circuit.circom
 
 /*

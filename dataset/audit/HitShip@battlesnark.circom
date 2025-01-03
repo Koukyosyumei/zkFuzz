@@ -1,7 +1,7 @@
 pragma circom 2.1.4;
 // https://github.com/alex-lindenbaum/battlesnark/blob/main/circuits/utils.circom
 
-include "../../circomlib/circuits/mimcsponge.circom";
+include "../include/circomlib/circuits/mimcsponge.circom";
 
 template BoardSerialization (n) {
     signal input board[n][n];
