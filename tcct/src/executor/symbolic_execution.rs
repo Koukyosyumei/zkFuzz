@@ -1300,13 +1300,13 @@ impl<'a> SymbolicExecutor<'a> {
 
             let lhe_val = self.evaluate_expression(lhe);
             let rhe_val = self.evaluate_expression(rhe);
-            //let simplified_lhe_val = self.simplify_variables(&lhe_val, true, false);
-            //let simplified_rhe_val = self.simplify_variables(&rhe_val, true, true);
+            let simplified_lhe_val = self.simplify_variables(&lhe_val, false, true);
+            let simplified_rhe_val = self.simplify_variables(&rhe_val, false, true);
 
             let cond = SymbolicValue::BinaryOp(
-                Rc::new(lhe_val),
+                Rc::new(simplified_lhe_val),
                 DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                Rc::new(rhe_val),
+                Rc::new(simplified_rhe_val),
             );
 
             if self.setting.keep_track_constraints {
