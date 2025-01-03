@@ -25,9 +25,9 @@ pub fn mutation_test_search(
     setting: &VerificationSetting,
 ) -> Option<CounterExample> {
     // Parameters
-    let program_population_size = 100;
+    let program_population_size = 30;
     let input_population_size = 30;
-    let max_generations = 100;
+    let max_generations = 300;
     let mutation_rate = 0.3;
     let crossover_rate = 0.5;
     let mut rng = rand::thread_rng();
