@@ -707,6 +707,18 @@ pub fn accumulate_error_of_constraints(
         .sum()
 }
 
+fn is_equal_mod(a: &BigInt, b: &BigInt, p: &BigInt) -> bool {
+    let mut a_mod_p = a % p;
+    let mut b_mod_p = b % p;
+    if a_mod_p.is_negative() {
+        a_mod_p += p;
+    }
+    if b_mod_p.is_negative() {
+        b_mod_p += p;
+    }
+    a_mod_p == b_mod_p
+}
+
 pub fn verify_assignment(
     sexe: &mut SymbolicExecutor,
     trace_constraints: &[SymbolicValueRef],
@@ -769,7 +781,7 @@ pub fn verify_assignment(
                             );
                         }
                     };
-                    if original_int_value != *v {
+                    if !is_equal_mod(&original_int_value, v, &setting.prime) {
                         result = VerificationResult::UnderConstrained(
                             UnderConstrainedType::NonDeterministic(
                                 k.lookup_fmt(&sexe.symbolic_library.id2name),
