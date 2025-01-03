@@ -1,7 +1,7 @@
 pragma circom 2.0.0;
 // https://github.com/tea2x/zksnark-poc/blob/c76aa5ffcd821d7ef65ade96edf434be992d5b00/circuit/gt18.circom
 
-include "../../circomlib/circuits/comparators.circom";
+include "../../include/circomlib/circuits/comparators.circom";
 // this circuit verification succeeds only if input in is greater than 18
 template gt() {
     signal input in;
