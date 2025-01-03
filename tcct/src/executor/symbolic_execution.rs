@@ -363,14 +363,20 @@ impl<'a> SymbolicExecutor<'a> {
                 &mut id2name,
             ));
             let simplified_a = self.simplify_variables(&evaled_a, true, false);
-            self.cur_state.set_symval(
-                SymbolicName {
-                    name: name2id[n],
-                    owner: self.cur_state.owner_name.clone(),
-                    access: None,
-                },
-                simplified_a,
+            let symname = SymbolicName {
+                name: name2id[n],
+                owner: self.cur_state.owner_name.clone(),
+                access: None,
+            };
+            let cond = SymbolicValue::AssignEq(
+                Rc::new(SymbolicValue::Variable(symname.clone())),
+                Rc::new(simplified_a.clone()),
             );
+            self.cur_state.set_symval(symname, simplified_a);
+            if self.setting.keep_track_constraints {
+                self.cur_state.push_trace_constraint(&cond);
+                self.cur_state.push_side_constraint(&cond);
+            }
         }
     }
 
@@ -1294,13 +1300,13 @@ impl<'a> SymbolicExecutor<'a> {
 
             let lhe_val = self.evaluate_expression(lhe);
             let rhe_val = self.evaluate_expression(rhe);
-            let simplified_lhe_val = self.simplify_variables(&lhe_val, true, false);
-            let simplified_rhe_val = self.simplify_variables(&rhe_val, true, true);
+            //let simplified_lhe_val = self.simplify_variables(&lhe_val, true, false);
+            //let simplified_rhe_val = self.simplify_variables(&rhe_val, true, true);
 
             let cond = SymbolicValue::BinaryOp(
-                Rc::new(simplified_lhe_val),
+                Rc::new(lhe_val),
                 DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                Rc::new(simplified_rhe_val),
+                Rc::new(rhe_val),
             );
 
             if self.setting.keep_track_constraints {

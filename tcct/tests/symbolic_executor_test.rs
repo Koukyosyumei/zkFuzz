@@ -554,7 +554,7 @@ fn test_1d_array_component() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+            *sexe.symbolic_store.final_states[0].trace_constraints[i + 1].clone()
         );
     }
 
@@ -1308,11 +1308,11 @@ fn test_bulk_assignment() {
 
     assert_eq!(
         ground_truth_trace_constraint_1,
-        *sexe.symbolic_store.final_states[0].trace_constraints[0].clone()
+        *sexe.symbolic_store.final_states[0].trace_constraints[1].clone()
     );
     assert_eq!(
         ground_truth_trace_constraint_2,
-        *sexe.symbolic_store.final_states[0].trace_constraints[6].clone()
+        *sexe.symbolic_store.final_states[0].trace_constraints[7].clone()
     );
 }
 
@@ -1683,7 +1683,7 @@ fn test_anonymous_component() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+            *sexe.symbolic_store.final_states[0].trace_constraints[i + 1].clone()
         );
     }
 }
