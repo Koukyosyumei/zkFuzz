@@ -106,9 +106,9 @@
 [submodule "benchmark/abdk-libraries-circom"]
 	path = benchmark/abdk-libraries-circom
 	url = git@github.com:abdk-consulting/abdk-libraries-circom.git
-[submodule "dataset/circomlib"]
-	path = dataset/circomlib
-	url = https://github.com/iden3/circomlib.git
 [submodule "benchmark/circom-walkthrough"]
 	path = benchmark/circom-walkthrough
 	url = https://github.com/ZKDL-Camp/circom-walkthrough.git
+[submodule "dataset/include/circomlib"]
+	path = dataset/include/circomlib
+	url = https://github.com/iden3/circomlib.git
