@@ -1310,7 +1310,7 @@ impl<'a> SymbolicExecutor<'a> {
             );
 
             if self.setting.keep_track_constraints {
-                self.cur_state.push_trace_constraint(&cond);
+                // self.cur_state.push_trace_constraint(&cond);
                 self.cur_state.push_side_constraint(&cond);
             }
             self.execute(statements, cur_bid + 1);
