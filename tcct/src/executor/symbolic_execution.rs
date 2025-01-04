@@ -2,7 +2,7 @@ use std::cmp::max;
 use std::rc::Rc;
 
 use colored::Colorize;
-use log::{trace, warn};
+use log::trace;
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::FromPrimitive;
@@ -363,14 +363,20 @@ impl<'a> SymbolicExecutor<'a> {
                 &mut id2name,
             ));
             let simplified_a = self.simplify_variables(&evaled_a, true, false);
-            self.cur_state.set_symval(
-                SymbolicName {
-                    name: name2id[n],
-                    owner: self.cur_state.owner_name.clone(),
-                    access: None,
-                },
-                simplified_a,
+            let symname = SymbolicName {
+                name: name2id[n],
+                owner: self.cur_state.owner_name.clone(),
+                access: None,
+            };
+            let cond = SymbolicValue::AssignEq(
+                Rc::new(SymbolicValue::Variable(symname.clone())),
+                Rc::new(simplified_a.clone()),
             );
+            self.cur_state.set_symval(symname, simplified_a);
+            if self.setting.keep_track_constraints {
+                self.cur_state.push_trace_constraint(&cond);
+                self.cur_state.push_side_constraint(&cond);
+            }
         }
     }
 
@@ -1108,7 +1114,13 @@ impl<'a> SymbolicExecutor<'a> {
             }
 
             if let SymbolicValue::Call(callee_name, args) = &simplified_rhe {
-                self.handle_call_substitution(callee_name, args, &left_var_name, &simplified_rhe);
+                self.handle_call_substitution(
+                    op,
+                    callee_name,
+                    args,
+                    &left_var_name,
+                    &simplified_rhe,
+                );
             } else {
                 if is_bulk_assignment {
                     for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
@@ -1288,8 +1300,8 @@ impl<'a> SymbolicExecutor<'a> {
 
             let lhe_val = self.evaluate_expression(lhe);
             let rhe_val = self.evaluate_expression(rhe);
-            let simplified_lhe_val = self.simplify_variables(&lhe_val, true, false);
-            let simplified_rhe_val = self.simplify_variables(&rhe_val, true, true);
+            let simplified_lhe_val = self.simplify_variables(&lhe_val, false, true);
+            let simplified_rhe_val = self.simplify_variables(&rhe_val, false, true);
 
             let cond = SymbolicValue::BinaryOp(
                 Rc::new(simplified_lhe_val),
@@ -1358,7 +1370,7 @@ impl<'a> SymbolicExecutor<'a> {
                     let mut is_success = true;
                     for c in counts.iter() {
                         let s = self.simplify_variables(&c, false, false);
-                        if let SymbolicValue::ConstantInt(v) = (**c).clone() {
+                        if let SymbolicValue::ConstantInt(v) = s {
                             concrete_counts.push(v.to_usize().unwrap())
                         } else {
                             is_success = false;
@@ -1420,11 +1432,16 @@ impl<'a> SymbolicExecutor<'a> {
     /// May initialize a new component in the symbolic store or update
     fn handle_call_substitution(
         &mut self,
+        op: &DebugAssignOp,
         callee_name: &usize,
         args: &Vec<Rc<SymbolicValue>>,
         var_name: &SymbolicName,
         right_call: &SymbolicValue,
     ) {
+        let is_mutable = match op {
+            DebugAssignOp(AssignOp::AssignSignal) => true,
+            _ => false,
+        };
         if self
             .symbolic_library
             .template_library
@@ -1435,6 +1452,7 @@ impl<'a> SymbolicExecutor<'a> {
             let cont = SymbolicValue::AssignCall(
                 Rc::new(SymbolicValue::Variable(var_name.clone())),
                 Rc::new(right_call.clone()),
+                is_mutable,
             );
             self.cur_state.push_trace_constraint(&cont);
         }

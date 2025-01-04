@@ -135,7 +135,7 @@ pub enum SymbolicValue {
     Variable(SymbolicName),
     Assign(SymbolicValueRef, SymbolicValueRef, bool),
     AssignEq(SymbolicValueRef, SymbolicValueRef),
-    AssignCall(SymbolicValueRef, SymbolicValueRef),
+    AssignCall(SymbolicValueRef, SymbolicValueRef, bool),
     BinaryOp(
         SymbolicValueRef,
         DebugExpressionInfixOpcode,
@@ -147,57 +147,6 @@ pub enum SymbolicValue {
     Tuple(Vec<SymbolicValueRef>),
     UniformArray(SymbolicValueRef, SymbolicValueRef),
     Call(usize, Vec<SymbolicValueRef>),
-}
-
-pub fn decompose_uniform_array(
-    symval: SymbolicValueRef,
-) -> (SymbolicValueRef, Vec<SymbolicValueRef>) {
-    let mut current = symval.clone();
-    let mut dims = Vec::new();
-    while let SymbolicValue::UniformArray(elem, count) = (*current).clone() {
-        dims.push(count); // Append count to the dimensions vector
-        current = elem.clone();
-    }
-    (current, dims)
-}
-
-pub fn create_nested_array(
-    dims: &[usize],
-    initial_value: SymbolicValueRef,
-) -> Vec<SymbolicValueRef> {
-    if dims.is_empty() {
-        panic!("empty dimensions");
-    }
-
-    if dims.len() == 1 {
-        vec![initial_value; dims[0]]
-    } else {
-        vec![
-            Rc::new(SymbolicValue::Array(create_nested_array(
-                &dims[1..],
-                initial_value.clone()
-            )));
-            dims[0]
-        ]
-    }
-}
-
-pub fn update_nested_array(
-    dims: &[usize],
-    array: SymbolicValueRef,
-    value: SymbolicValueRef,
-) -> SymbolicValueRef {
-    if let SymbolicValue::Array(arr) = (*array).clone() {
-        let mut new_arr = arr.clone();
-        if dims.len() == 1 {
-            new_arr[dims[0]] = value;
-        } else {
-            new_arr[dims[0]] = update_nested_array(&dims[1..], arr[dims[0]].clone(), value);
-        }
-        Rc::new(SymbolicValue::Array(new_arr))
-    } else {
-        array
-    }
 }
 
 impl SymbolicValue {
@@ -214,7 +163,14 @@ impl SymbolicValue {
         match self {
             SymbolicValue::ConstantInt(value) => format!("{}", value),
             SymbolicValue::ConstantBool(flag) => {
-                format!("{} {}", if *flag { "✅" } else { "❌" }, flag)
+                format!(
+                    "{}",
+                    if *flag {
+                        "true".on_bright_green().white()
+                    } else {
+                        "false".on_bright_red().white()
+                    }
+                )
             }
             SymbolicValue::Variable(sname) => sname.lookup_fmt(lookup),
             SymbolicValue::Assign(lhs, rhs, is_safe) => {
@@ -237,7 +193,7 @@ impl SymbolicValue {
                     rhs.lookup_fmt(lookup)
                 )
             }
-            SymbolicValue::AssignCall(lhs, rhs) => {
+            SymbolicValue::AssignCall(lhs, rhs, _is_mutable) => {
                 format!(
                     "({} {} {})",
                     "AssignCall".green(),
@@ -282,7 +238,7 @@ impl SymbolicValue {
             },
             SymbolicValue::Conditional(cond, if_branch, else_branch) => {
                 format!(
-                    "(🤔 {} ? {} : {})",
+                    "<🤔 {} ? {} : {}>",
                     cond.lookup_fmt(lookup),
                     if_branch.lookup_fmt(lookup),
                     else_branch.lookup_fmt(lookup)
@@ -723,7 +679,21 @@ pub fn evaluate_binary_op(
                 if rv.is_zero() {
                     SymbolicValue::ConstantInt(BigInt::zero())
                 } else {
-                    let rv_inv = modular_inverse(rv, prime);
+                    let mut r = prime.clone();
+                    let mut new_r = rv.clone();
+                    if r.is_negative() {
+                        r += prime;
+                    }
+                    if new_r.is_negative() {
+                        new_r += prime;
+                    }
+
+                    let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
+                    rv_inv %= prime;
+                    if rv_inv.is_negative() {
+                        rv_inv += prime;
+                    }
+
                     SymbolicValue::ConstantInt((lv * rv_inv) % prime)
                 }
             }
@@ -773,15 +743,6 @@ fn normalize_to_bool(val: &SymbolicValue, prime: &BigInt) -> SymbolicValue {
         SymbolicValue::ConstantInt(v) => SymbolicValue::ConstantBool(!(v % prime).is_zero()),
         _ => val.clone(),
     }
-}
-
-fn modular_inverse(value: &BigInt, prime: &BigInt) -> BigInt {
-    let (_, _, mut inv) = extended_euclidean(prime.clone(), value.clone());
-    inv %= prime;
-    if inv.is_negative() {
-        inv += prime;
-    }
-    inv
 }
 
 pub fn generate_lessthan_constraint(
@@ -872,5 +833,56 @@ pub fn is_concrete_array(value: &SymbolicValue) -> bool {
     match value {
         SymbolicValue::Array(array) => check_array_concrete(array),
         _ => false,
+    }
+}
+
+pub fn decompose_uniform_array(
+    symval: SymbolicValueRef,
+) -> (SymbolicValueRef, Vec<SymbolicValueRef>) {
+    let mut current = symval.clone();
+    let mut dims = Vec::new();
+    while let SymbolicValue::UniformArray(elem, count) = (*current).clone() {
+        dims.push(count); // Append count to the dimensions vector
+        current = elem.clone();
+    }
+    (current, dims)
+}
+
+pub fn create_nested_array(
+    dims: &[usize],
+    initial_value: SymbolicValueRef,
+) -> Vec<SymbolicValueRef> {
+    if dims.is_empty() {
+        panic!("empty dimensions");
+    }
+
+    if dims.len() == 1 {
+        vec![initial_value; dims[0]]
+    } else {
+        vec![
+            Rc::new(SymbolicValue::Array(create_nested_array(
+                &dims[1..],
+                initial_value.clone()
+            )));
+            dims[0]
+        ]
+    }
+}
+
+pub fn update_nested_array(
+    dims: &[usize],
+    array: SymbolicValueRef,
+    value: SymbolicValueRef,
+) -> SymbolicValueRef {
+    if let SymbolicValue::Array(arr) = (*array).clone() {
+        let mut new_arr = arr.clone();
+        if dims.len() == 1 {
+            new_arr[dims[0]] = value;
+        } else {
+            new_arr[dims[0]] = update_nested_array(&dims[1..], arr[dims[0]].clone(), value);
+        }
+        Rc::new(SymbolicValue::Array(new_arr))
+    } else {
+        array
     }
 }

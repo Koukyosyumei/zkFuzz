@@ -60,7 +60,7 @@ impl ConstraintStatistics {
                 self.update_from_symbolic_value(lhs, depth + 1);
                 self.update_from_symbolic_value(rhs, depth + 1);
             }
-            SymbolicValue::AssignCall(lhs, rhs) => {
+            SymbolicValue::AssignCall(lhs, rhs, _) => {
                 *self
                     .operator_counts
                     .entry("AssignCall".to_string())

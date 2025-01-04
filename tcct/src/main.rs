@@ -20,7 +20,6 @@ use rustc_hash::FxHashMap;
 use program_structure::ast::Expression;
 use program_structure::program_archive::ProgramArchive;
 
-use executor::debug_ast::simplify_statement;
 use executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 use solver::{
@@ -100,7 +99,7 @@ fn start() -> Result<(), ()> {
 
     println!("{}", "🧩 Parsing Templates...".green());
     for (k, v) in program_archive.templates.clone().into_iter() {
-        let body = simplify_statement(&v.get_body().clone());
+        let body = v.get_body().clone();
         symbolic_library.register_template(k.clone(), &body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
@@ -122,7 +121,7 @@ fn start() -> Result<(), ()> {
 
     println!("{}", "⚙️ Parsing Function...".green());
     for (k, v) in program_archive.functions.clone().into_iter() {
-        let body = simplify_statement(&v.get_body().clone());
+        let body = v.get_body().clone();
         symbolic_library.register_function(k.clone(), body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {

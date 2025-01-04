@@ -1,11 +1,10 @@
 use std::collections::HashSet;
 use std::io;
 use std::io::Write;
-use std::rc::Rc;
 
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
-use num_traits::{One, Zero};
+use num_traits::{One, Signed, Zero};
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
@@ -16,11 +15,8 @@ use std::str::FromStr;
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
-use crate::solver::utils::{
-    accumulate_error_of_constraints, emulate_symbolic_values, evaluate_constraints,
-    extract_variables, is_vulnerable, verify_assignment, CounterExample, UnderConstrainedType,
-    VerificationResult, VerificationSetting,
-};
+use crate::solver::eval::evaluate_trace_fitness;
+use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
 
 pub fn mutation_test_search(
     sexe: &mut SymbolicExecutor,
@@ -29,9 +25,9 @@ pub fn mutation_test_search(
     setting: &VerificationSetting,
 ) -> Option<CounterExample> {
     // Parameters
-    let program_population_size = 100;
+    let program_population_size = 30;
     let input_population_size = 30;
-    let max_generations = 100;
+    let max_generations = 300;
     let mutation_rate = 0.3;
     let crossover_rate = 0.5;
     let mut rng = rand::thread_rng();
@@ -40,7 +36,7 @@ pub fn mutation_test_search(
     let mut assign_pos = Vec::new();
     for (i, sv) in trace_constraints.iter().enumerate() {
         match *sv.clone() {
-            SymbolicValue::Assign(_, _, false) => {
+            SymbolicValue::Assign(_, _, false) | SymbolicValue::AssignCall(_, _, true) => {
                 assign_pos.push(i);
             }
             _ => {}
@@ -51,7 +47,6 @@ pub fn mutation_test_search(
     let mut variables = extract_variables(trace_constraints);
     variables.append(&mut extract_variables(side_constraints));
     let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
-    //variables = variables_set.into_iter().collect();
     let mut input_variables = Vec::new();
     for v in variables_set.iter() {
         if v.owner.len() == 1
@@ -62,17 +57,16 @@ pub fn mutation_test_search(
             input_variables.push(v.clone());
         }
     }
+
     println!("#Input Variables   : {}", input_variables.len());
     println!("#Mutation Candidate: {}", assign_pos.len());
 
-    //if assign_pos.is_empty() {
-    //    return None;
-    //}
-
     let mut trace_population =
         initialize_trace_mutation(&assign_pos, program_population_size, setting, &mut rng);
+    let mut fitness_scores = vec![-setting.prime.clone(); input_population_size];
 
     for generation in 0..max_generations {
+        // Generate input population for this generation
         let input_population = initialize_input_population(
             &input_variables,
             input_population_size,
@@ -80,124 +74,54 @@ pub fn mutation_test_search(
             &mut rng,
         );
 
-        let mut new_trace_population = vec![FxHashMap::default()];
-        if !trace_population.is_empty() {
-            for _ in 0..program_population_size {
-                let parent1 = trace_selection(&trace_population, &mut rng);
-                let parent2 = trace_selection(&trace_population, &mut rng);
+        // Evolve the trace population
+        trace_population = if !trace_population.is_empty() {
+            evolve_trace_population(
+                &trace_population,
+                &fitness_scores,
+                program_population_size,
+                mutation_rate,
+                crossover_rate,
+                setting,
+                &mut rng,
+            )
+        } else {
+            vec![FxHashMap::default()]
+        };
 
-                let mut child = if rng.gen::<f64>() < crossover_rate {
-                    trace_crossover(parent1, parent2, &mut rng)
-                } else {
-                    parent1.clone()
-                };
-
-                if rng.gen::<f64>() < mutation_rate {
-                    trace_mutate(&mut child, setting, &mut rng);
-                }
-
-                new_trace_population.push(child);
-            }
-        }
-        trace_population = new_trace_population;
-
-        let best_mutated_trace = trace_population
+        let evaluations: Vec<_> = trace_population
             .iter()
-            .max_by(|a, b| {
-                let fitness_a = trace_fitness(
+            .map(|a| {
+                evaluate_trace_fitness(
                     sexe,
                     &setting,
                     trace_constraints,
                     side_constraints,
                     a,
                     &input_population,
-                );
-                let fitness_b = trace_fitness(
-                    sexe,
-                    &setting,
-                    trace_constraints,
-                    side_constraints,
-                    b,
-                    &input_population,
-                );
-                fitness_a
-                    .1
-                    .partial_cmp(&fitness_b.1)
-                    .unwrap_or(std::cmp::Ordering::Equal)
+                )
             })
+            .collect();
+        let best_idx = evaluations
+            .iter()
+            .enumerate()
+            .max_by_key(|&(_, value)| value.1.clone())
+            .map(|(index, _)| index)
             .unwrap();
+        fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
 
-        let best_score = trace_fitness(
-            sexe,
-            &setting,
-            trace_constraints,
-            side_constraints,
-            best_mutated_trace,
-            &input_population,
-        );
-
-        if best_score.1 >= BigInt::zero() {
-            let mut mutated_trace_constraints = trace_constraints.clone();
-            for (k, v) in best_mutated_trace {
-                if let SymbolicValue::Assign(lv, _rv, is_safe) =
-                    mutated_trace_constraints[*k].as_ref().clone()
-                {
-                    mutated_trace_constraints[*k] = Rc::new(SymbolicValue::Assign(
-                        lv.clone(),
-                        Rc::new(v.clone()),
-                        is_safe,
-                    ));
-                } else {
-                    panic!("We can only mutate SymbolicValue::Assign");
-                }
-            }
-
-            let mut assignment = input_population[best_score.0].clone();
-
-            if emulate_symbolic_values(
-                &setting.prime,
-                &mutated_trace_constraints,
-                &mut assignment,
-                &mut sexe.symbolic_library,
-            ) {
-                let flag = verify_assignment(
-                    sexe,
-                    trace_constraints,
-                    side_constraints,
-                    &assignment,
-                    setting,
-                );
-                if is_vulnerable(&flag) {
-                    print!(
-                        "\rGeneration: {}/{} ({:.3})",
-                        generation, max_generations, best_score.1
-                    );
-                    println!("\n └─ Solution found in generation {}", generation);
-                    return Some(CounterExample {
-                        flag: flag,
-                        assignment: assignment.clone(),
-                    });
-                }
-            } else {
-                if evaluate_constraints(
-                    &setting.prime,
-                    side_constraints,
-                    &assignment,
-                    &mut sexe.symbolic_library,
-                ) {
-                    return Some(CounterExample {
-                        flag: VerificationResult::UnderConstrained(
-                            UnderConstrainedType::Deterministic,
-                        ),
-                        assignment: assignment.clone(),
-                    });
-                }
-            }
+        if evaluations[best_idx].1.is_zero() {
+            print!(
+                "\r\x1b[2KGeneration: {}/{} ({:.3})",
+                generation, max_generations, 0
+            );
+            println!("\n └─ Solution found in generation {}", generation);
+            return evaluations[best_idx].2.clone();
         }
 
         print!(
-            "\rGeneration: {}/{} ({:.3})",
-            generation, max_generations, best_score.1
+            "\r\x1b[2KGeneration: {}/{} ({:.3})",
+            generation, max_generations, evaluations[best_idx].1
         );
         io::stdout().flush().unwrap();
     }
@@ -217,7 +141,7 @@ fn draw_random_constant(setting: &VerificationSetting, rng: &mut ThreadRng) -> B
         )
     } else {
         rng.gen_bigint_range(
-            &(setting.prime.clone() - BigInt::from_str("2").unwrap()),
+            &(setting.prime.clone() - BigInt::from_str("100").unwrap()),
             &(setting.prime),
         )
     }
@@ -261,9 +185,28 @@ fn initialize_trace_mutation(
 
 fn trace_selection<'a>(
     population: &'a [FxHashMap<usize, SymbolicValue>],
+    fitness_scores: &[BigInt],
     rng: &mut ThreadRng,
 ) -> &'a FxHashMap<usize, SymbolicValue> {
-    population.choose(rng).unwrap()
+    let min_score = fitness_scores.iter().min().unwrap();
+    let weights: Vec<_> = fitness_scores
+        .iter()
+        .map(|score| score - min_score)
+        .collect();
+    let mut total_weight: BigInt = weights.iter().sum();
+    total_weight = if total_weight.is_positive() {
+        total_weight
+    } else {
+        BigInt::one()
+    };
+    let mut target = rng.gen_bigint_range(&BigInt::zero(), &total_weight);
+    for (individual, weight) in population.iter().zip(weights.iter()) {
+        if &target < weight {
+            return individual;
+        }
+        target -= weight;
+    }
+    &population[0]
 }
 
 fn trace_crossover(
@@ -301,85 +244,31 @@ fn trace_mutate(
     }
 }
 
-fn trace_fitness(
-    sexe: &mut SymbolicExecutor,
+fn evolve_trace_population(
+    current_population: &[FxHashMap<usize, SymbolicValue>],
+    evaluations: &[BigInt],
+    population_size: usize,
+    mutation_rate: f64,
+    crossover_rate: f64,
     setting: &VerificationSetting,
-    trace_constraints: &Vec<SymbolicValueRef>,
-    side_constraints: &Vec<SymbolicValueRef>,
-    trace_mutation: &FxHashMap<usize, SymbolicValue>,
-    inputs: &Vec<FxHashMap<SymbolicName, BigInt>>,
-) -> (usize, BigInt) {
-    let mut mutated_trace_constraints = trace_constraints.clone();
-    for (k, v) in trace_mutation {
-        if let SymbolicValue::Assign(lv, rv, is_safe) =
-            mutated_trace_constraints[*k].as_ref().clone()
-        {
-            mutated_trace_constraints[*k] = Rc::new(SymbolicValue::Assign(
-                lv.clone(),
-                Rc::new(v.clone()),
-                is_safe,
-            ));
-        } else {
-            panic!("We can only mutate SymbolicValue::Assign");
-        }
-    }
+    rng: &mut ThreadRng,
+) -> Vec<FxHashMap<usize, SymbolicValue>> {
+    (0..population_size)
+        .map(|_| {
+            let parent1 = trace_selection(current_population, evaluations, rng);
+            let parent2 = trace_selection(current_population, evaluations, rng);
 
-    let mut max_idx = 0_usize;
-    let mut max_score = -setting.prime.clone();
-    for (i, inp) in inputs.iter().enumerate() {
-        let mut assignment = inp.clone();
-        let is_success = emulate_symbolic_values(
-            &setting.prime,
-            &mutated_trace_constraints,
-            &mut assignment,
-            &mut sexe.symbolic_library,
-        );
-        {
-            /*
-            let satisfied_side = count_satisfied_constraints(
-                &setting.prime,
-                side_constraints,
-                &assignment,
-                &mut sexe.symbolic_library,
-            );*/
-            let error = accumulate_error_of_constraints(
-                &setting.prime,
-                side_constraints,
-                &assignment,
-                &mut sexe.symbolic_library,
-            );
-            let mut score = -error;
-
-            /*
-            let mut side_ratio = if side_constraints.is_empty() {
-                1.0 as f64
+            let mut child = if rng.gen::<f64>() < crossover_rate {
+                trace_crossover(parent1, parent2, rng)
             } else {
-                satisfied_side as f64 / side_constraints.len() as f64
-            };*/
+                parent1.clone()
+            };
 
-            if score.is_zero() {
-                if is_success {
-                    let flag = verify_assignment(
-                        sexe,
-                        trace_constraints,
-                        side_constraints,
-                        &assignment,
-                        setting,
-                    );
-                    if !is_vulnerable(&flag) {
-                        score = -BigInt::one();
-                    } else {
-                        score = BigInt::one();
-                    }
-                }
+            if rng.gen::<f64>() < mutation_rate {
+                trace_mutate(&mut child, setting, rng);
             }
 
-            if score > max_score {
-                max_idx = i;
-                max_score = score;
-            }
-        }
-    }
-
-    (max_idx, max_score)
+            child
+        })
+        .collect()
 }

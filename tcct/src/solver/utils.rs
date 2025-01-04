@@ -18,6 +18,7 @@ use crate::executor::symbolic_value::{
     evaluate_binary_op, OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 
+#[derive(Clone)]
 pub enum UnderConstrainedType {
     UnusedOutput,
     Deterministic,
@@ -25,6 +26,7 @@ pub enum UnderConstrainedType {
 }
 
 /// Represents the result of a constraint verification process.
+#[derive(Clone)]
 pub enum VerificationResult {
     UnderConstrained(UnderConstrainedType),
     OverConstrained,
@@ -60,6 +62,7 @@ impl fmt::Display for VerificationResult {
 }
 
 /// Represents a counterexample when constraints are found to be invalid.
+#[derive(Clone)]
 pub struct CounterExample {
     pub flag: VerificationResult,
     pub assignment: FxHashMap<SymbolicName, BigInt>,
@@ -176,7 +179,7 @@ pub fn extract_variables_from_symbolic_value(
         }
         SymbolicValue::Assign(lhs, rhs, _)
         | SymbolicValue::AssignEq(lhs, rhs)
-        | SymbolicValue::AssignCall(lhs, rhs) => {
+        | SymbolicValue::AssignCall(lhs, rhs, _) => {
             extract_variables_from_symbolic_value(&lhs, variables);
             extract_variables_from_symbolic_value(&rhs, variables);
         }
@@ -204,6 +207,11 @@ pub fn extract_variables_from_symbolic_value(
                 extract_variables_from_symbolic_value(&arg, variables);
             }
         }
+        SymbolicValue::Conditional(cond, then_val, else_val) => {
+            extract_variables_from_symbolic_value(&cond, variables);
+            extract_variables_from_symbolic_value(&then_val, variables);
+            extract_variables_from_symbolic_value(&else_val, variables);
+        }
         _ => {}
     }
 }
@@ -216,7 +224,7 @@ pub fn get_dependency_graph(
         match value.as_ref() {
             SymbolicValue::Assign(lhs, rhs, _)
             | SymbolicValue::AssignEq(lhs, rhs)
-            | SymbolicValue::AssignCall(lhs, rhs) => {
+            | SymbolicValue::AssignCall(lhs, rhs, _) => {
                 if let SymbolicValue::Variable(name) = lhs.as_ref() {
                     graph.entry(name.clone()).or_default();
                     extract_variables_from_symbolic_value(&rhs, graph.get_mut(&name).unwrap());
@@ -326,7 +334,7 @@ pub fn emulate_symbolic_values(
             }
             SymbolicValue::Assign(lhs, rhs, _)
             | SymbolicValue::AssignEq(lhs, rhs)
-            | SymbolicValue::AssignCall(lhs, rhs) => {
+            | SymbolicValue::AssignCall(lhs, rhs, _) => {
                 if let SymbolicValue::Variable(name) = lhs.as_ref() {
                     let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
                     match &rhs_val {
@@ -344,7 +352,10 @@ pub fn emulate_symbolic_values(
                         }
                     }
                 } else {
-                    panic!("Left hand of the assignment is not a variable");
+                    panic!(
+                        "Left hand of the assignment is not a variable: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    );
                 }
             }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
@@ -359,7 +370,10 @@ pub fn emulate_symbolic_values(
                             ExpressionInfixOpcode::GreaterEq => lv % prime >= rv % prime,
                             ExpressionInfixOpcode::Eq => lv % prime == rv % prime,
                             ExpressionInfixOpcode::NotEq => lv % prime != rv % prime,
-                            _ => panic!("Non-Boolean Operation"),
+                            _ => panic!(
+                                "Non-Boolean Operation: {}",
+                                value.lookup_fmt(&symbolic_library.id2name)
+                            ),
                         }
                     }
                     (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => {
@@ -369,7 +383,10 @@ pub fn emulate_symbolic_values(
                             _ => todo!(),
                         }
                     }
-                    _ => panic!("Unassigned variables exist"),
+                    _ => panic!(
+                        "Unassigned variables exist: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
                 };
                 if !flag {
                     success = false;
@@ -380,15 +397,24 @@ pub fn emulate_symbolic_values(
                 let flag = match &expr_val {
                     SymbolicValue::ConstantBool(rv) => match op.0 {
                         ExpressionPrefixOpcode::BoolNot => !rv,
-                        _ => panic!("Unassigned variables exist"),
+                        _ => panic!(
+                            "Unassigned variables exist: {}",
+                            value.lookup_fmt(&symbolic_library.id2name)
+                        ),
                     },
-                    _ => panic!("Non-Boolean Operation"),
+                    _ => panic!(
+                        "Non-Boolean Operation: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
                 };
                 if !flag {
                     success = false;
                 }
             }
-            _ => panic!("Non-Supported SymbolicValue"),
+            _ => panic!(
+                "A constraint should be one of `ConstantBool`, `Assign`, `AssignEq`, `AssignCall`, `BinaryOp` and `UnaryOp`. Found: {}",
+                value.lookup_fmt(&symbolic_library.id2name)
+            ),
         }
     }
     return success;
@@ -446,7 +472,7 @@ pub fn evaluate_symbolic_value(
         }
         SymbolicValue::Assign(lhs, rhs, _)
         | SymbolicValue::AssignEq(lhs, rhs)
-        | SymbolicValue::AssignCall(lhs, rhs) => {
+        | SymbolicValue::AssignCall(lhs, rhs, _) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
             match (&lhs_val, &rhs_val) {
@@ -457,7 +483,10 @@ pub fn evaluate_symbolic_value(
                     let rv_to_int = if *rv { BigInt::one() } else { BigInt::zero() };
                     SymbolicValue::ConstantBool(lv % prime == rv_to_int)
                 }
-                _ => panic!("Unassigned variables exist"),
+                _ => panic!(
+                    "Unassigned variables exist: {}",
+                    value.lookup_fmt(&symbolic_library.id2name)
+                ),
             }
         }
         SymbolicValue::BinaryOp(lhs, op, rhs) => {
@@ -470,13 +499,34 @@ pub fn evaluate_symbolic_value(
             match &expr_val {
                 SymbolicValue::ConstantInt(rv) => match op.0 {
                     ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
-                    _ => panic!("Unassigned variables exist"),
+                    _ => panic!(
+                        "Unassigned variables exist: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
                 },
                 SymbolicValue::ConstantBool(rv) => match op.0 {
                     ExpressionPrefixOpcode::BoolNot => SymbolicValue::ConstantBool(!rv),
-                    _ => panic!("Unassigned variables exist"),
+                    _ => panic!(
+                        "Unassigned variables exist: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
                 },
                 _ => todo!("{:?}", value),
+            }
+        }
+        SymbolicValue::Conditional(cond, then_branch, else_branch) => {
+            let cond_val = evaluate_symbolic_value(prime, cond, assignment, symbolic_library);
+            let then_val =
+                evaluate_symbolic_value(prime, then_branch, assignment, symbolic_library);
+            let else_val =
+                evaluate_symbolic_value(prime, else_branch, assignment, symbolic_library);
+            match &cond_val {
+                SymbolicValue::ConstantBool(true) => then_val,
+                SymbolicValue::ConstantBool(false) => else_val,
+                _ => panic!(
+                    "Unassigned variables exist: {}",
+                    cond_val.lookup_fmt(&symbolic_library.id2name)
+                ),
             }
         }
         SymbolicValue::Call(id, args) => {
@@ -588,7 +638,7 @@ pub fn evaluate_error_of_symbolic_value(
         }
         SymbolicValue::Assign(lhs, rhs, _)
         | SymbolicValue::AssignEq(lhs, rhs)
-        | SymbolicValue::AssignCall(lhs, rhs) => {
+        | SymbolicValue::AssignCall(lhs, rhs, _) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
             match (&lhs_val, &rhs_val) {
@@ -608,7 +658,13 @@ pub fn evaluate_error_of_symbolic_value(
                     ExpressionInfixOpcode::LesserEq => lv % prime - rv % prime,
                     ExpressionInfixOpcode::GreaterEq => rv % prime - lv % prime,
                     ExpressionInfixOpcode::Eq => (lv % prime - rv % prime).abs(),
-                    ExpressionInfixOpcode::NotEq => -(lv % prime - rv % prime).abs(),
+                    ExpressionInfixOpcode::NotEq => {
+                        if lv % prime == rv % prime {
+                            BigInt::one()
+                        } else {
+                            BigInt::zero()
+                        }
+                    }
                     _ => panic!("Only support comparison operators"),
                 },
                 _ => panic!(
@@ -621,7 +677,13 @@ pub fn evaluate_error_of_symbolic_value(
         SymbolicValue::UnaryOp(op, expr) => {
             let error = evaluate_error_of_symbolic_value(prime, expr, assignment, symbolic_library);
             match op.0 {
-                ExpressionPrefixOpcode::BoolNot => -error,
+                ExpressionPrefixOpcode::BoolNot => {
+                    if error.is_zero() {
+                        BigInt::one()
+                    } else {
+                        -error
+                    }
+                }
                 _ => panic!("Only support BoolNot"),
             }
         }
@@ -643,6 +705,18 @@ pub fn accumulate_error_of_constraints(
             e.max(BigInt::zero())
         })
         .sum()
+}
+
+fn is_equal_mod(a: &BigInt, b: &BigInt, p: &BigInt) -> bool {
+    let mut a_mod_p = a % p;
+    let mut b_mod_p = b % p;
+    if a_mod_p.is_negative() {
+        a_mod_p += p;
+    }
+    if b_mod_p.is_negative() {
+        b_mod_p += p;
+    }
+    a_mod_p == b_mod_p
 }
 
 pub fn verify_assignment(
@@ -707,7 +781,7 @@ pub fn verify_assignment(
                             );
                         }
                     };
-                    if original_int_value != *v {
+                    if !is_equal_mod(&original_int_value, v, &setting.prime) {
                         result = VerificationResult::UnderConstrained(
                             UnderConstrainedType::NonDeterministic(
                                 k.lookup_fmt(&sexe.symbolic_library.id2name),
