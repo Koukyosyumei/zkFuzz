@@ -58,6 +58,8 @@ pub fn mutation_test_search(
         }
     }
 
+    println!("#Trace Constraints : {}", trace_constraints.len());
+    println!("#Side Constraints  : {}", side_constraints.len());
     println!("#Input Variables   : {}", input_variables.len());
     println!("#Mutation Candidate: {}", assign_pos.len());
 
