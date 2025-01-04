@@ -163,6 +163,14 @@ impl SymbolicState {
         self.values.get(name)
     }
 
+    pub fn get_symval_or_make_symvar(&self, name: &SymbolicName) -> SymbolicValue {
+        if let Some(symval) = self.values.get(name) {
+            (**symval).clone()
+        } else {
+            SymbolicValue::Variable(name.clone())
+        }
+    }
+
     /// Adds a trace constraint to the current state.
     ///
     /// # Arguments
@@ -579,13 +587,7 @@ impl<'a> SymbolicExecutor<'a> {
                         {
                             return symval.clone();
                         } else {
-                            return (*self
-                                .cur_state
-                                .get_symval(&sname)
-                                .cloned()
-                                .unwrap_or_else(|| Rc::new(SymbolicValue::Variable(sname.clone())))
-                                .clone())
-                            .clone();
+                            return self.cur_state.get_symval_or_make_symvar(&sname);
                         }
                     }
                     symval.clone()
@@ -598,28 +600,12 @@ impl<'a> SymbolicExecutor<'a> {
                         if let Some(typ) = template.id2type.get(&sname.name) {
                             if let VariableType::Signal(SignalType::Output, _) = typ {
                                 if self.setting.substitute_output {
-                                    return (*self
-                                        .cur_state
-                                        .get_symval(&sname)
-                                        .cloned()
-                                        .unwrap_or_else(|| {
-                                            Rc::new(SymbolicValue::Variable(sname.clone()))
-                                        })
-                                        .clone())
-                                    .clone();
+                                    return self.cur_state.get_symval_or_make_symvar(&sname);
                                 } else {
                                     return symval.clone();
                                 }
                             } else if let VariableType::Var = typ {
-                                return (*self
-                                    .cur_state
-                                    .get_symval(&sname)
-                                    .cloned()
-                                    .unwrap_or_else(|| {
-                                        Rc::new(SymbolicValue::Variable(sname.clone()))
-                                    })
-                                    .clone())
-                                .clone();
+                                return self.cur_state.get_symval_or_make_symvar(&sname);
                             }
                         }
                     }
@@ -631,13 +617,7 @@ impl<'a> SymbolicExecutor<'a> {
                         _ => symval.clone(),
                     }
                 } else {
-                    (*self
-                        .cur_state
-                        .get_symval(&sname)
-                        .cloned()
-                        .unwrap_or_else(|| Rc::new(SymbolicValue::Variable(sname.clone())))
-                        .clone())
-                    .clone()
+                    self.cur_state.get_symval_or_make_symvar(&sname)
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
