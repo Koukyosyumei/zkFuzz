@@ -213,7 +213,6 @@ fn test_if_else() {
                 Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
             )),
         ),
-        /*
         SymbolicValue::BinaryOp(
             Rc::new(SymbolicValue::BinaryOp(
                 Rc::new(SymbolicValue::Variable(SymbolicName {
@@ -238,14 +237,14 @@ fn test_if_else() {
             )),
             DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
             Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-        ),*/
+        ),
     ];
 
     assert_eq!(
         sexe.symbolic_store.final_states[0].trace_constraints.len(),
-        2
+        3
     );
-    for i in 0..2 {
+    for i in 0..3 {
         assert_eq!(
             ground_truth_trace_constraints_if_branch[i],
             *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
