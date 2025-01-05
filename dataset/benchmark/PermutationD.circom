@@ -457,3 +457,5 @@ template Theta() {
         out[24*64+i] <== r24.out[i];
     }
 }
+
+component main = Theta();
