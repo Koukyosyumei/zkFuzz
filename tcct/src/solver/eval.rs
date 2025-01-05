@@ -56,6 +56,7 @@ pub fn evaluate_trace_fitness(
 
     for (i, inp) in inputs.iter().enumerate() {
         let mut assignment = inp.clone();
+
         let is_success = emulate_symbolic_values(
             &setting.prime,
             &mutated_trace_constraints,

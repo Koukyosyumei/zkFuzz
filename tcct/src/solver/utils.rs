@@ -746,6 +746,10 @@ pub fn verify_assignment(
         );
         sexe.concrete_execute(&setting.id, assignment);
 
+        if sexe.cur_state.is_failed {
+            return VerificationResult::UnderConstrained(UnderConstrainedType::Deterministic);
+        }
+
         let mut result = VerificationResult::WellConstrained;
         for (k, v) in assignment {
             if sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[&setting.id]]

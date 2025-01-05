@@ -19,9 +19,9 @@ use crate::executor::debug_ast::{
 };
 use crate::executor::symbolic_value::{
     access_multidimensional_array, create_nested_array, decompose_uniform_array, enumerate_array,
-    evaluate_binary_op, generate_lessthan_constraint, is_concrete_array,
-    register_array_elements, update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent,
-    SymbolicLibrary, SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
+    evaluate_binary_op, generate_lessthan_constraint, is_concrete_array, register_array_elements,
+    update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
+    SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::{generate_cartesian_product_indices, italic};
 
@@ -33,10 +33,11 @@ pub struct SymbolicState {
     pub template_id: usize,
     pub is_within_initialization_block: bool,
     pub contains_symbolic_loop: bool,
-    depth: usize,
+    pub depth: usize,
     pub values: FxHashMap<SymbolicName, SymbolicValueRef>,
     pub trace_constraints: Vec<SymbolicValueRef>,
     pub side_constraints: Vec<SymbolicValueRef>,
+    pub is_failed: bool,
 }
 
 impl SymbolicState {
@@ -55,6 +56,7 @@ impl SymbolicState {
             values: FxHashMap::default(),
             trace_constraints: Vec::new(),
             side_constraints: Vec::new(),
+            is_failed: false,
         }
     }
 
@@ -1147,6 +1149,10 @@ impl<'a> SymbolicExecutor<'a> {
             let rhe_val = self.evaluate_expression(rhe);
             let simplified_lhe_val = self.simplify_variables(&lhe_val, false, true);
             let simplified_rhe_val = self.simplify_variables(&rhe_val, false, true);
+
+            if &simplified_lhe_val != &simplified_rhe_val {
+                self.cur_state.is_failed = true;
+            }
 
             let cond = SymbolicValue::BinaryOp(
                 Rc::new(simplified_lhe_val),
