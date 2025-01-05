@@ -364,11 +364,7 @@ impl<'a> SymbolicExecutor<'a> {
                 &mut id2name,
             ));
             let simplified_a = self.simplify_variables(&evaled_a, true, false);
-            let symname = SymbolicName {
-                name: name2id[n],
-                owner: self.cur_state.owner_name.clone(),
-                access: None,
-            };
+            let symname = SymbolicName::new(name2id[n], self.cur_state.owner_name.clone(), None);
             let cond = SymbolicValue::AssignEq(
                 Rc::new(SymbolicValue::Variable(symname.clone())),
                 Rc::new(simplified_a.clone()),
@@ -705,17 +701,10 @@ impl<'a> SymbolicExecutor<'a> {
             DebugExpression::Number(value) => SymbolicValue::ConstantInt(value.clone()),
             DebugExpression::Variable { name, access } => {
                 let resolved_name = if access.is_empty() {
-                    SymbolicName {
-                        name: *name,
-                        owner: self.cur_state.owner_name.clone(),
-                        access: None,
-                    }
+                    SymbolicName::new(*name, self.cur_state.owner_name.clone(), None)
                 } else {
-                    let tmp_name = SymbolicName {
-                        name: *name,
-                        owner: self.cur_state.owner_name.clone(),
-                        access: None,
-                    };
+                    let tmp_name =
+                        SymbolicName::new(*name, self.cur_state.owner_name.clone(), None);
                     let sv = self.cur_state.get_symval(&tmp_name).cloned();
 
                     let mut component_name = None;
@@ -822,11 +811,11 @@ impl<'a> SymbolicExecutor<'a> {
 
                     let func = &subse.symbolic_library.function_library[id];
                     for i in 0..(func.function_argument_names.len()) {
-                        let sname = SymbolicName {
-                            name: func.function_argument_names[i],
-                            owner: subse.cur_state.owner_name.clone(),
-                            access: None,
-                        };
+                        let sname = SymbolicName::new(
+                            func.function_argument_names[i],
+                            subse.cur_state.owner_name.clone(),
+                            None,
+                        );
                         subse
                             .cur_state
                             .set_rc_symval(sname.clone(), simplified_args[i].clone());
@@ -849,11 +838,8 @@ impl<'a> SymbolicExecutor<'a> {
                             .trace_constraints
                             .append(&mut subse.cur_state.trace_constraints);
 
-                        let return_name = SymbolicName {
-                            name: usize::MAX,
-                            owner: subse.cur_state.owner_name.clone(),
-                            access: None,
-                        };
+                        let return_name =
+                            SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
                         let return_value = (*subse.cur_state.values[&return_name].clone()).clone();
                         match return_value {
                             SymbolicValue::ConstantBool(_) | SymbolicValue::ConstantInt(_) => {
@@ -1134,11 +1120,7 @@ impl<'a> SymbolicExecutor<'a> {
             }
 
             self.cur_state.set_symval(
-                SymbolicName {
-                    name: usize::MAX,
-                    owner: self.cur_state.owner_name.clone(),
-                    access: None,
-                },
+                SymbolicName::new(usize::MAX, self.cur_state.owner_name.clone(), None),
                 return_value,
             );
             self.execute(statements, cur_bid + 1);
@@ -1147,11 +1129,7 @@ impl<'a> SymbolicExecutor<'a> {
 
     fn handle_declaration(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
         if let DebugStatement::Declaration { name, xtype, .. } = &statements[cur_bid] {
-            let var_name = SymbolicName {
-                name: *name,
-                owner: self.cur_state.owner_name.clone(),
-                access: None,
-            };
+            let var_name = SymbolicName::new(*name, self.cur_state.owner_name.clone(), None);
             self.symbolic_store
                 .variable_types
                 .insert(*name, DebugVariableType(xtype.clone()));
@@ -1261,6 +1239,7 @@ impl<'a> SymbolicExecutor<'a> {
                 )));
             }
             new_left_var_name.access = Some(access);
+            new_left_var_name.update_hash();
             self.cur_state.set_symval(new_left_var_name, elem.clone());
 
             if let SymbolicValue::Array(ref arr) = base_array {
@@ -1343,11 +1322,11 @@ impl<'a> SymbolicExecutor<'a> {
 
         // Set template parameters
         for i in 0..template.template_parameter_names.len() {
-            let tp_name = SymbolicName {
-                name: template.template_parameter_names[i],
-                owner: self.cur_state.owner_name.clone(),
-                access: None,
-            };
+            let tp_name = SymbolicName::new(
+                template.template_parameter_names[i],
+                self.cur_state.owner_name.clone(),
+                None,
+            );
             if let Some(val) = self.cur_state.get_symval(&tp_name) {
                 // Save variables with the same name separately
                 escaped_vars.push((tp_name.clone(), val.clone()));
@@ -1408,20 +1387,21 @@ impl<'a> SymbolicExecutor<'a> {
 
         if let Some(component) = self.symbolic_store.components_store.get_mut(base_name) {
             for (sym_pos, sym_val) in symbolic_positions.iter().zip(symbolic_values.iter()) {
-                let mut inp_name = SymbolicName {
-                    name: component_name,
-                    owner: Rc::new(Vec::new()),
-                    access: if post_dims.is_empty() {
+                let mut inp_name = SymbolicName::new(
+                    component_name,
+                    Rc::new(Vec::new()),
+                    if post_dims.is_empty() {
                         None
                     } else {
                         Some(post_dims.clone())
                     },
-                };
+                );
                 if let Some(local_access) = inp_name.access.as_mut() {
                     local_access.append(&mut sym_pos.clone());
                 } else {
                     inp_name.access = Some(sym_pos.clone());
                 }
+                inp_name.update_hash();
                 component.inputs.insert(inp_name, Some(sym_val.clone()));
             }
         }
@@ -1467,11 +1447,13 @@ impl<'a> SymbolicExecutor<'a> {
                 } else {
                     left_var_name_p.access = Some(symbolic_p.clone());
                 }
+                left_var_name_p.update_hash();
                 if let Some(local_access) = right_var_name_p.access.as_mut() {
                     local_access.append(&mut symbolic_p);
                 } else {
                     right_var_name_p.access = Some(symbolic_p);
                 }
+                right_var_name_p.update_hash();
                 left_var_names.push(left_var_name_p.clone());
                 right_values.push(SymbolicValue::Variable(right_var_name_p));
             }
@@ -1549,15 +1531,15 @@ impl<'a> SymbolicExecutor<'a> {
         let (component_name, pre_dims, post_dims) = self.parse_component_access(access);
 
         if let Some(component) = self.symbolic_store.components_store.get_mut(base_name) {
-            let inp_name = SymbolicName {
-                name: component_name,
-                owner: Rc::new(Vec::new()),
-                access: if post_dims.is_empty() {
+            let inp_name = SymbolicName::new(
+                component_name,
+                Rc::new(Vec::new()),
+                if post_dims.is_empty() {
                     None
                 } else {
                     Some(post_dims)
                 },
-            };
+            );
             component.inputs.insert(inp_name, Some(value.clone()));
         }
 
@@ -1640,11 +1622,11 @@ impl<'a> SymbolicExecutor<'a> {
 
             // Set template-parameters of the component
             for i in 0..templ.template_parameter_names.len() {
-                let tp_name = SymbolicName {
-                    name: templ.template_parameter_names[i],
-                    owner: subse.cur_state.owner_name.clone(),
-                    access: None,
-                };
+                let tp_name = SymbolicName::new(
+                    templ.template_parameter_names[i],
+                    subse.cur_state.owner_name.clone(),
+                    None,
+                );
                 let tp_val = self.symbolic_store.components_store[base_name].args[i].clone();
                 subse
                     .cur_state
@@ -1662,11 +1644,8 @@ impl<'a> SymbolicExecutor<'a> {
                 .inputs
                 .iter()
             {
-                let n = SymbolicName {
-                    name: k.name,
-                    owner: subse.cur_state.owner_name.clone(),
-                    access: k.access.clone(),
-                };
+                let n =
+                    SymbolicName::new(k.name, subse.cur_state.owner_name.clone(), k.access.clone());
                 subse.cur_state.set_symval(n, v.clone().unwrap());
             }
 
@@ -1789,24 +1768,24 @@ impl<'a> SymbolicExecutor<'a> {
 
         if component_name.is_none() {
             (
-                SymbolicName {
-                    name: base_id,
-                    owner: self.cur_state.owner_name.clone(),
-                    access: if pre_dims.is_empty() {
+                SymbolicName::new(
+                    base_id,
+                    self.cur_state.owner_name.clone(),
+                    if pre_dims.is_empty() {
                         None
                     } else {
                         Some(pre_dims.clone())
                     },
-                },
-                SymbolicName {
-                    name: base_id,
-                    owner: self.cur_state.owner_name.clone(),
-                    access: if pre_dims.is_empty() {
+                ),
+                SymbolicName::new(
+                    base_id,
+                    self.cur_state.owner_name.clone(),
+                    if pre_dims.is_empty() {
                         None
                     } else {
                         Some(pre_dims)
                     },
-                },
+                ),
             )
         } else {
             let mut owner_name = (*self.cur_state.owner_name.clone()).clone();
@@ -1820,24 +1799,24 @@ impl<'a> SymbolicExecutor<'a> {
                 },
             });
             (
-                SymbolicName {
-                    name: base_id,
-                    owner: self.cur_state.owner_name.clone(),
-                    access: if pre_dims.is_empty() {
+                SymbolicName::new(
+                    base_id,
+                    self.cur_state.owner_name.clone(),
+                    if pre_dims.is_empty() {
                         None
                     } else {
                         Some(pre_dims)
                     },
-                },
-                SymbolicName {
-                    name: component_name.unwrap(),
-                    owner: Rc::new(owner_name),
-                    access: if post_dims.is_empty() {
+                ),
+                SymbolicName::new(
+                    component_name.unwrap(),
+                    Rc::new(owner_name),
+                    if post_dims.is_empty() {
                         None
                     } else {
                         Some(post_dims)
                     },
-                },
+                ),
             )
         }
     }

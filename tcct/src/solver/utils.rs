@@ -543,11 +543,11 @@ pub fn evaluate_symbolic_value(
 
             let func = subse.symbolic_library.function_library[id].clone();
             for i in 0..(func.function_argument_names.len()) {
-                let sname = SymbolicName {
-                    name: func.function_argument_names[i],
-                    owner: subse.cur_state.owner_name.clone(),
-                    access: None,
-                };
+                let sname = SymbolicName::new(
+                    func.function_argument_names[i],
+                    subse.cur_state.owner_name.clone(),
+                    None,
+                );
                 subse.cur_state.set_rc_symval(
                     sname,
                     Rc::new(evaluate_symbolic_value(
@@ -560,11 +560,8 @@ pub fn evaluate_symbolic_value(
             }
             subse.execute(&func.body.clone(), 0);
 
-            let return_name = SymbolicName {
-                name: usize::MAX,
-                owner: subse.cur_state.owner_name.clone(),
-                access: None,
-            };
+            let return_name =
+                SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
             let return_value = (*subse.cur_state.values[&return_name].clone()).clone();
             return_value
         }
