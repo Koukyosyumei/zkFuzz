@@ -1,5 +1,5 @@
-include "../circomlib/circuits/comparators.circom";
-include "../circomlib/circuits/gates.circom";
+include "../include/circomlib/circuits/comparators.circom";
+include "../include/circomlib/circuits/gates.circom";
 // https://github.com/kevinz917/zksnarks-library/blob/fe2a3b265d89e0a3a28e461547707f37eaf07f68/src/circuits/arrayContains/arrayContains.circom#L17
 
 // searches whether a grid can be traversed from point A to point B
