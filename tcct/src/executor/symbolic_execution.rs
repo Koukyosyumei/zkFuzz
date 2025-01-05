@@ -1150,10 +1150,6 @@ impl<'a> SymbolicExecutor<'a> {
             let simplified_lhe_val = self.simplify_variables(&lhe_val, false, true);
             let simplified_rhe_val = self.simplify_variables(&rhe_val, false, true);
 
-            if &simplified_lhe_val != &simplified_rhe_val {
-                self.cur_state.is_failed = true;
-            }
-
             let cond = SymbolicValue::BinaryOp(
                 Rc::new(simplified_lhe_val),
                 DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
@@ -1163,7 +1159,13 @@ impl<'a> SymbolicExecutor<'a> {
             if self.setting.keep_track_constraints {
                 self.cur_state.push_trace_constraint(&cond);
                 self.cur_state.push_side_constraint(&cond);
+            } else {
+                let simplified_cond = self.simplify_variables(&cond, false, false);
+                if let SymbolicValue::ConstantBool(false) = simplified_cond {
+                    self.cur_state.is_failed = true;
+                }
             }
+
             self.execute(statements, cur_bid + 1);
         }
     }
