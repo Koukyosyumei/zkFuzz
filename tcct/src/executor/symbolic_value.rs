@@ -153,6 +153,15 @@ impl SymbolicName {
 
 impl PartialEq for SymbolicName {
     fn eq(&self, other: &Self) -> bool {
+        // Check if precomputed hashes are available for both instances
+        let self_hash = *self.precomputed_hash.borrow();
+        let other_hash = *other.precomputed_hash.borrow();
+
+        // If both hashes are available and not `None`, compare the hashes
+        if let (Some(self_hash), Some(other_hash)) = (self_hash, other_hash) {
+            return self_hash == other_hash;
+        }
+
         self.name == other.name && *self.owner == *other.owner && self.access == other.access
     }
 }
