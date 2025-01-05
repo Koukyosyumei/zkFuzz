@@ -78,7 +78,7 @@ pub fn mutation_test_search(
 
         // Evolve the trace population
         trace_population = if !trace_population.is_empty() {
-            evolve_trace_population(
+            evolve_population(
                 &trace_population,
                 &fitness_scores,
                 program_population_size,
@@ -86,6 +86,8 @@ pub fn mutation_test_search(
                 crossover_rate,
                 setting,
                 &mut rng,
+                |individual, setting, rng| trace_mutate(individual, setting, rng),
+                |parent1, parent2, rng| trace_crossover(parent1, parent2, rng),
             )
         } else {
             vec![FxHashMap::default()]
@@ -185,11 +187,39 @@ fn initialize_trace_mutation(
         .collect()
 }
 
-fn trace_selection<'a>(
-    population: &'a [FxHashMap<usize, SymbolicValue>],
+fn evolve_population<T: Clone>(
+    current_population: &[T],
+    evaluations: &[BigInt],
+    population_size: usize,
+    mutation_rate: f64,
+    crossover_rate: f64,
+    setting: &VerificationSetting,
+    rng: &mut ThreadRng,
+    mutate_fn: impl Fn(&mut T, &VerificationSetting, &mut ThreadRng),
+    crossover_fn: impl Fn(&T, &T, &mut ThreadRng) -> T,
+) -> Vec<T> {
+    (0..population_size)
+        .map(|_| {
+            let parent1 = selection(current_population, evaluations, rng);
+            let parent2 = selection(current_population, evaluations, rng);
+            let mut child = if rng.gen::<f64>() < crossover_rate {
+                crossover_fn(&parent1, &parent2, rng)
+            } else {
+                parent1.clone()
+            };
+            if rng.gen::<f64>() < mutation_rate {
+                mutate_fn(&mut child, setting, rng);
+            }
+            child
+        })
+        .collect()
+}
+
+fn selection<'a, T: Clone>(
+    population: &'a [T],
     fitness_scores: &[BigInt],
     rng: &mut ThreadRng,
-) -> &'a FxHashMap<usize, SymbolicValue> {
+) -> &'a T {
     let min_score = fitness_scores.iter().min().unwrap();
     let weights: Vec<_> = fitness_scores
         .iter()
@@ -239,38 +269,22 @@ fn trace_mutate(
 ) {
     if !individual.is_empty() {
         let var = individual.keys().choose(rng).unwrap();
+        /*
+        if let SymbolicValue::ConstantInt(val) = &individual[var] {
+            individual.insert(
+                var.clone(),
+                SymbolicValue::ConstantInt(
+                    val + rng.gen_bigint_range(
+                        &(BigInt::from_str("2").unwrap() * -BigInt::one()),
+                        &(BigInt::from_str("2").unwrap()),
+                    ),
+                ),
+            );
+        }*/
+
         individual.insert(
             var.clone(),
             SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
         );
     }
-}
-
-fn evolve_trace_population(
-    current_population: &[FxHashMap<usize, SymbolicValue>],
-    evaluations: &[BigInt],
-    population_size: usize,
-    mutation_rate: f64,
-    crossover_rate: f64,
-    setting: &VerificationSetting,
-    rng: &mut ThreadRng,
-) -> Vec<FxHashMap<usize, SymbolicValue>> {
-    (0..population_size)
-        .map(|_| {
-            let parent1 = trace_selection(current_population, evaluations, rng);
-            let parent2 = trace_selection(current_population, evaluations, rng);
-
-            let mut child = if rng.gen::<f64>() < crossover_rate {
-                trace_crossover(parent1, parent2, rng)
-            } else {
-                parent1.clone()
-            };
-
-            if rng.gen::<f64>() < mutation_rate {
-                trace_mutate(&mut child, setting, rng);
-            }
-
-            child
-        })
-        .collect()
 }
