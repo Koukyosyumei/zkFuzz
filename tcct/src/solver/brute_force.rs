@@ -95,6 +95,50 @@ pub fn brute_force_search(
                 }
                 assignment.remove(var);
             }
+        } else if setting.heuristics_mode {
+            let mut value = -&setting.range;
+            while value <= setting.range {
+                assignment.insert(var.clone(), value.clone());
+
+                let result = search(
+                    sexe,
+                    trace_constraints,
+                    side_constraints,
+                    setting,
+                    index + 1,
+                    variables,
+                    assignment,
+                    current_iteration,
+                );
+
+                if is_vulnerable(&result) {
+                    return result;
+                }
+                assignment.remove(&var);
+                value += BigInt::one();
+            }
+            let mut value = &setting.prime - &setting.range;
+
+            while value < setting.prime {
+                assignment.insert(var.clone(), value.clone());
+
+                let result = search(
+                    sexe,
+                    trace_constraints,
+                    side_constraints,
+                    setting,
+                    index + 1,
+                    variables,
+                    assignment,
+                    current_iteration,
+                );
+
+                if is_vulnerable(&result) {
+                    return result;
+                }
+                assignment.remove(&var);
+                value += BigInt::one();
+            }
         } else {
             let mut value = BigInt::zero();
             while value < setting.prime {

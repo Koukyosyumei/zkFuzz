@@ -143,7 +143,9 @@ pub fn is_vulnerable(vr: &VerificationResult) -> bool {
 pub struct VerificationSetting {
     pub id: String,
     pub prime: BigInt,
+    pub range: BigInt,
     pub quick_mode: bool,
+    pub heuristics_mode: bool,
     pub progress_interval: usize,
     pub template_param_names: Vec<String>,
     pub template_param_values: Vec<Expression>,

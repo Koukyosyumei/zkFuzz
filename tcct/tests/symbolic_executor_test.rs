@@ -1712,6 +1712,7 @@ fn test_unused_outputs() {
         "21888242871839275222246405745257275088548364400416034343698204186575808495617",
     )
     .unwrap();
+    let range = BigInt::from(100);
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
     let setting = get_setting(&prime);
@@ -1735,7 +1736,9 @@ fn test_unused_outputs() {
     let verification_setting = VerificationSetting {
         id: main_template_id.to_string(),
         prime: prime.clone(),
+        range: range.clone(),
         quick_mode: false,
+        heuristics_mode: false,
         progress_interval: 10000,
         template_param_names: template_param_names,
         template_param_values: template_param_values,

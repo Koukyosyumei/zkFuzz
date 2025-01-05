@@ -228,7 +228,9 @@ fn start() -> Result<(), ()> {
                 let verification_setting = VerificationSetting {
                     id: main_template_id.to_string(),
                     prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                    range: BigInt::from_str(&user_input.heuristics_range()).unwrap(),
                     quick_mode: &*user_input.search_mode == "quick",
+                    heuristics_mode: &*user_input.search_mode == "heuristics",
                     progress_interval: 10000,
                     template_param_names: template_param_names,
                     template_param_values: template_param_values,
@@ -269,6 +271,12 @@ fn start() -> Result<(), ()> {
                                 &verification_setting,
                             ),
                             "full" => brute_force_search(
+                                &mut sub_sexe,
+                                &s.trace_constraints.clone(),
+                                &s.side_constraints.clone(),
+                                &verification_setting,
+                            ),
+                            "heuristics" => brute_force_search(
                                 &mut sub_sexe,
                                 &s.trace_constraints.clone(),
                                 &s.side_constraints.clone(),

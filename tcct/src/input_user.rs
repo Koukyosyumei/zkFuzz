@@ -40,6 +40,7 @@ pub struct Input {
     pub show_stats_of_ast: bool,
     pub prime: String,
     pub debug_prime: String,
+    pub heuristics_range: String,
     pub search_mode: String,
     pub link_libraries : Vec<PathBuf>
 }
@@ -122,6 +123,7 @@ impl Input {
             show_stats_of_ast: input_processing::get_show_stats_of_ast(&matches),
             prime: input_processing::get_prime(&matches)?,
             debug_prime: input_processing::get_debug_prime(&matches)?,
+            heuristics_range: input_processing::get_heuristics_range(&matches)?,
             search_mode: input_processing::get_search_mode(&matches)?,
             link_libraries
         })
@@ -243,6 +245,9 @@ impl Input {
     }
     pub fn debug_prime(&self) -> String{
         self.debug_prime.clone()
+    }
+    pub fn heuristics_range(&self) -> String{
+        self.heuristics_range.clone()
     }
     pub fn search_mode(&self) -> String{
         self.search_mode.clone()
@@ -400,6 +405,13 @@ mod input_processing {
         match matches.is_present("debug_prime") {
             true => Ok(String::from(matches.value_of("debug_prime").unwrap())),
             false => Ok(String::from("21888242871839275222246405745257275088548364400416034343698204186575808495617"))
+        }
+    }
+
+    pub fn get_heuristics_range(matches: &ArgMatches) -> Result<String, ()> {
+        match matches.is_present("heuristics_range") {
+            true => Ok(String::from(matches.value_of("heuristics_range").unwrap())),
+            false => Ok(String::from("100"))
         }
     }
 
@@ -626,6 +638,14 @@ mod input_processing {
                     .default_value("21888242871839275222246405745257275088548364400416034343698204186575808495617")
                     .display_order(1050)
                     .help("(TCCT) Prime number for TCCT debugging"),
+            )
+            .arg (
+                Arg::with_name("heuristics_range")
+                    .long("heuristics_range")
+                    .takes_value(true)
+                    .default_value("100")
+                    .display_order(1060)
+                    .help("(TCCT) Heuristics range for TCCT debugging"),
             )
             .get_matches()
     }
