@@ -13,7 +13,7 @@ use std::time;
 use colored::Colorize;
 use env_logger;
 use input_user::Input;
-use log::{info, warn};
+use log::{debug, warn};
 use num_bigint_dig::BigInt;
 use rustc_hash::FxHashMap;
 
@@ -195,7 +195,7 @@ fn start() -> Result<(), ()> {
             for c in &sexe.cur_state.side_constraints {
                 ss.update(c);
             }
-            info!(
+            debug!(
                 "Final State: {}",
                 sexe.cur_state.lookup_fmt(&sexe.symbolic_library.id2name)
             );

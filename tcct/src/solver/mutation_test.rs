@@ -2,6 +2,8 @@ use std::collections::HashSet;
 use std::io;
 use std::io::Write;
 
+use colored::Colorize;
+use log::info;
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
 use num_traits::{One, Signed, Zero};
@@ -58,10 +60,22 @@ pub fn mutation_test_search(
         }
     }
 
-    println!("#Trace Constraints : {}", trace_constraints.len());
-    println!("#Side Constraints  : {}", side_constraints.len());
-    println!("#Input Variables   : {}", input_variables.len());
-    println!("#Mutation Candidate: {}", assign_pos.len());
+    info!(
+        "{}: {}",
+        "#Trace Constraints ".cyan(),
+        trace_constraints.len()
+    );
+    info!(
+        "{}: {}",
+        "#Side Constraints  ".cyan(),
+        side_constraints.len()
+    );
+    info!(
+        "{}: {}",
+        "#Input Variables   ".cyan(),
+        input_variables.len()
+    );
+    info!("{}: {}", "#Mutation Candidate".cyan(), assign_pos.len());
 
     let mut trace_population =
         initialize_trace_mutation(&assign_pos, program_population_size, setting, &mut rng);
