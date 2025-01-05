@@ -19,7 +19,7 @@ use crate::executor::debug_ast::{
 };
 use crate::executor::symbolic_value::{
     access_multidimensional_array, create_nested_array, decompose_uniform_array, enumerate_array,
-    evaluate_binary_op, generate_lessthan_constraint, is_concrete_array, is_true, negate_condition,
+    evaluate_binary_op, generate_lessthan_constraint, is_concrete_array,
     register_array_elements, update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent,
     SymbolicLibrary, SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
 };
@@ -66,7 +66,7 @@ impl SymbolicState {
     ///
     /// * `oname` - The `OwnerName` to be added.
     pub fn add_owner(&mut self, oname: &OwnerName) {
-        let mut updated_owner_list = Rc::make_mut(&mut self.owner_name);
+        let updated_owner_list = Rc::make_mut(&mut self.owner_name);
         updated_owner_list.push(oname.clone());
     }
 
