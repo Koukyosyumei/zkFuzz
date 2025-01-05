@@ -262,16 +262,12 @@ impl SymbolicState {
 pub struct SymbolicStore {
     pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,
     pub variable_types: FxHashMap<usize, DebugVariableType>,
-    pub block_end_states: Vec<SymbolicState>,
-    pub final_states: Vec<SymbolicState>,
     pub max_depth: usize,
 }
 
 impl SymbolicStore {
     pub fn clear(&mut self) {
         self.components_store.clear();
-        self.block_end_states.clear();
-        self.final_states.clear();
         self.max_depth = 0;
     }
 }
@@ -332,8 +328,6 @@ impl<'a> SymbolicExecutor<'a> {
             symbolic_store: SymbolicStore {
                 components_store: FxHashMap::default(),
                 variable_types: FxHashMap::default(),
-                block_end_states: Vec::new(),
-                final_states: Vec::new(),
                 max_depth: 0,
             },
             cur_state: SymbolicState::new(),
@@ -459,10 +453,6 @@ impl<'a> SymbolicExecutor<'a> {
                     self.handle_ret();
                 }
             }
-        } else {
-            self.symbolic_store
-                .block_end_states
-                .push(self.cur_state.clone());
         }
     }
 
@@ -489,32 +479,6 @@ impl<'a> SymbolicExecutor<'a> {
                 .clone(),
             0,
         );
-    }
-}
-
-// State Expansion
-impl<'a> SymbolicExecutor<'a> {
-    /// Expands all stack states by executing each statement block recursively.
-    ///
-    /// This method updates depth and manages branching paths in execution flow.
-    ///
-    /// # Arguments
-    ///
-    /// * `statements` - A vector of extended statements to execute symbolically.
-    /// * `cur_bid` - Current block index being executed.
-    /// * `depth` - Current depth level in execution flow for tracking purposes.
-    fn expand_all_stack_states(
-        &mut self,
-        statements: &Vec<DebugStatement>,
-        cur_bid: usize,
-        depth: usize,
-    ) {
-        let drained_states: Vec<_> = self.symbolic_store.block_end_states.drain(..).collect();
-        for state in drained_states {
-            self.cur_state = state;
-            self.cur_state.set_depth(depth);
-            self.execute(statements, cur_bid);
-        }
     }
 }
 
@@ -866,14 +830,6 @@ impl<'a> SymbolicExecutor<'a> {
                         subse
                             .cur_state
                             .set_rc_symval(sname.clone(), simplified_args[i].clone());
-
-                        /*
-                        let arg_cond = SymbolicValue::AssignEq(
-                            Rc::new(SymbolicValue::Variable(sname)),
-                            simplified_args[i].clone(),
-                        );
-                        self.cur_state.push_trace_constraint(&arg_cond);
-                        */
                     }
 
                     if !subse.setting.off_trace {
@@ -887,20 +843,18 @@ impl<'a> SymbolicExecutor<'a> {
                         trace!("{}", format!("{}", "===========================").cyan());
                     }
 
-                    if subse.symbolic_store.final_states.len() == 1 {
+                    if !subse.cur_state.contains_symbolic_loop {
                         // NOTE: a function does not produce any constraint
                         self.cur_state
                             .trace_constraints
-                            .append(&mut subse.symbolic_store.final_states[0].trace_constraints);
+                            .append(&mut subse.cur_state.trace_constraints);
 
                         let return_name = SymbolicName {
                             name: usize::MAX,
-                            owner: subse.symbolic_store.final_states[0].owner_name.clone(),
+                            owner: subse.cur_state.owner_name.clone(),
                             access: None,
                         };
-                        let return_value =
-                            (*subse.symbolic_store.final_states[0].values[&return_name].clone())
-                                .clone();
+                        let return_value = (*subse.cur_state.values[&return_name].clone()).clone();
                         match return_value {
                             SymbolicValue::ConstantBool(_) | SymbolicValue::ConstantInt(_) => {
                                 return_value
@@ -913,13 +867,8 @@ impl<'a> SymbolicExecutor<'a> {
                                 }
                             }
                         }
-                    } else if subse.symbolic_store.final_states.len() > 1 {
-                        SymbolicValue::Call(id.clone(), simplified_args)
                     } else {
-                        panic!(
-                            "{} did not return any final state",
-                            subse.symbolic_library.id2name[id]
-                        );
+                        SymbolicValue::Call(id.clone(), simplified_args)
                     }
                 } else {
                     panic!("Unknown Callee: {}", self.symbolic_library.id2name[id]);
@@ -974,8 +923,7 @@ impl<'a> SymbolicExecutor<'a> {
             }
 
             self.cur_state.is_within_initialization_block = false;
-            self.symbolic_store.block_end_states = vec![self.cur_state.clone()];
-            self.expand_all_stack_states(statements, cur_bid + 1, self.cur_state.get_depth());
+            self.execute(statements, cur_bid + 1);
         }
     }
 
@@ -983,7 +931,7 @@ impl<'a> SymbolicExecutor<'a> {
         if let DebugStatement::Block { meta, stmts, .. } = &statements[cur_bid] {
             self.trace_if_enabled(&meta);
             self.execute(&stmts, 0);
-            self.expand_all_stack_states(statements, cur_bid + 1, self.cur_state.get_depth());
+            self.execute(statements, cur_bid + 1);
         }
     }
 
@@ -1001,43 +949,20 @@ impl<'a> SymbolicExecutor<'a> {
             let evaled_cond = self.evaluate_expression(cond);
             let simplified_condition = self.simplify_variables(&evaled_cond, true, false);
 
-            // Save the current state
-            let saved_state = self.cur_state.clone();
-            let current_depth = self.cur_state.get_depth();
-            let saved_block_end_states = self.symbolic_store.block_end_states.clone();
-
-            // Handle the 'then' branch
-            self.process_branch(
-                &simplified_condition,
-                Some(if_case),
-                statements,
-                cur_bid,
-                meta.elem_id,
-                current_depth,
-                true,
-            );
-
-            let mut then_branch_states = self.symbolic_store.block_end_states.clone();
-            self.cur_state = saved_state;
-            self.symbolic_store.block_end_states = saved_block_end_states;
-
-            // Handle the 'else' branch
-            let negated_condition = negate_condition(&simplified_condition);
-
-            self.process_branch(
-                &negated_condition,
-                else_case.as_ref().map(|boxed| boxed.as_ref()),
-                statements,
-                cur_bid,
-                meta.elem_id,
-                current_depth,
-                false,
-            );
-
-            // Merge the states from both branches
-            self.symbolic_store
-                .block_end_states
-                .append(&mut then_branch_states);
+            match simplified_condition {
+                SymbolicValue::ConstantBool(true) => {
+                    self.execute(&vec![*if_case.clone()], 0);
+                }
+                SymbolicValue::ConstantBool(false) => {
+                    if let Some(stmt) = else_case {
+                        self.execute(&vec![*stmt.clone()], 0);
+                    }
+                }
+                _ => {
+                    self.cur_state.contains_symbolic_loop = true;
+                }
+            }
+            self.execute(statements, cur_bid + 1);
         }
     }
 
@@ -1111,7 +1036,6 @@ impl<'a> SymbolicExecutor<'a> {
                 }
             }
 
-            let mut returned_states = Vec::new();
             if !access.is_empty() {
                 if is_bulk_assignment {
                     self.handle_component_bulk_access(
@@ -1120,33 +1044,12 @@ impl<'a> SymbolicExecutor<'a> {
                         &left_base_name,
                         &right_values,
                         &mut symbolic_positions,
-                        &mut returned_states,
                     );
                 } else {
-                    self.handle_component_access(
-                        *var,
-                        access,
-                        &left_base_name,
-                        &simplified_rhe,
-                        &mut returned_states,
-                    );
+                    self.handle_component_access(*var, access, &left_base_name, &simplified_rhe);
                 }
             }
-            if returned_states.is_empty() {
-                self.execute(statements, cur_bid + 1);
-            } else {
-                let saved_states = self.symbolic_store.block_end_states.clone();
-                let mut new_block_end_states = Vec::new();
-
-                for rs in returned_states {
-                    self.symbolic_store.block_end_states = saved_states.clone();
-                    self.cur_state = rs;
-                    self.execute(statements, cur_bid + 1);
-                    new_block_end_states.append(&mut self.symbolic_store.block_end_states);
-                }
-
-                self.symbolic_store.block_end_states = new_block_end_states;
-            }
+            self.execute(statements, cur_bid + 1);
         }
     }
 
@@ -1201,25 +1104,10 @@ impl<'a> SymbolicExecutor<'a> {
 
             if let SymbolicValue::ConstantBool(flag) = evaled_condition {
                 if flag {
-                    let mut stack_states = self.symbolic_store.block_end_states.clone();
-                    self.symbolic_store.block_end_states.clear();
                     self.execute(&vec![*stmt.clone()], 0);
-
-                    self.expand_all_stack_states(statements, cur_bid, self.cur_state.get_depth());
-
-                    self.symbolic_store
-                        .block_end_states
-                        .append(&mut stack_states);
+                    self.execute(statements, cur_bid);
                 } else {
-                    self.symbolic_store
-                        .block_end_states
-                        .push(self.cur_state.clone());
-
-                    self.expand_all_stack_states(
-                        statements,
-                        cur_bid + 1,
-                        self.cur_state.get_depth(),
-                    );
+                    self.execute(statements, cur_bid + 1);
                 }
             } else {
                 self.cur_state.contains_symbolic_loop = true;
@@ -1316,9 +1204,6 @@ impl<'a> SymbolicExecutor<'a> {
                 self.cur_state.lookup_fmt(&self.symbolic_library.id2name)
             );
         }
-        self.symbolic_store
-            .final_states
-            .push(self.cur_state.clone());
     }
 }
 
@@ -1518,7 +1403,6 @@ impl<'a> SymbolicExecutor<'a> {
         base_name: &SymbolicName,
         symbolic_values: &Vec<SymbolicValue>,
         symbolic_positions: &mut Vec<Vec<SymbolicAccess>>,
-        returned_states: &mut Vec<SymbolicState>,
     ) {
         let (component_name, pre_dims, post_dims) = self.parse_component_access(access);
 
@@ -1543,7 +1427,7 @@ impl<'a> SymbolicExecutor<'a> {
         }
 
         if self.is_ready(base_name) {
-            self.execute_ready_component(var, base_name, &pre_dims, returned_states);
+            self.execute_ready_component(var, base_name, &pre_dims);
         }
     }
 
@@ -1661,7 +1545,6 @@ impl<'a> SymbolicExecutor<'a> {
         access: &Vec<DebugAccess>,
         base_name: &SymbolicName,
         value: &SymbolicValue,
-        returned_states: &mut Vec<SymbolicState>,
     ) {
         let (component_name, pre_dims, post_dims) = self.parse_component_access(access);
 
@@ -1679,7 +1562,7 @@ impl<'a> SymbolicExecutor<'a> {
         }
 
         if self.is_ready(base_name) {
-            self.execute_ready_component(var, base_name, &pre_dims, returned_states);
+            self.execute_ready_component(var, base_name, &pre_dims);
         }
     }
 
@@ -1734,7 +1617,6 @@ impl<'a> SymbolicExecutor<'a> {
         var: usize,
         base_name: &SymbolicName,
         pre_dims: &Vec<SymbolicAccess>,
-        returned_states: &mut Vec<SymbolicState>,
     ) {
         if !self.symbolic_store.components_store[base_name].is_done {
             let mut subse = SymbolicExecutor::new(&mut self.symbolic_library, self.setting);
@@ -1800,78 +1682,30 @@ impl<'a> SymbolicExecutor<'a> {
             let is_lessthan = templ.is_lessthan;
             subse.execute(&templ.body.clone(), 0);
 
-            for fs in &mut subse.symbolic_store.final_states {
-                let mut state = self.cur_state.clone();
-                state.trace_constraints.append(&mut fs.trace_constraints);
-                state.side_constraints.append(&mut fs.side_constraints);
-                if self.setting.propagate_assignments {
-                    for (k, v) in fs.values.iter() {
-                        state.set_rc_symval(k.clone(), v.clone());
-                    }
+            self.cur_state
+                .trace_constraints
+                .append(&mut subse.cur_state.trace_constraints);
+            self.cur_state
+                .side_constraints
+                .append(&mut subse.cur_state.side_constraints);
+            if self.setting.propagate_assignments {
+                for (k, v) in subse.cur_state.values.iter() {
+                    self.cur_state.set_rc_symval(k.clone(), v.clone());
                 }
+            }
 
-                if is_lessthan {
-                    let cond = generate_lessthan_constraint(
-                        &subse.symbolic_library.name2id,
-                        subse.cur_state.owner_name.clone(),
-                    );
-                    state.push_trace_constraint(&cond);
-                }
-
-                returned_states.push(state);
+            if is_lessthan {
+                let cond = generate_lessthan_constraint(
+                    &subse.symbolic_library.name2id,
+                    subse.cur_state.owner_name.clone(),
+                );
+                self.cur_state.push_trace_constraint(&cond);
             }
 
             if !self.setting.off_trace {
                 trace!("{}", "===========================".cyan());
             }
         }
-    }
-}
-
-// Utility methods for If-Then-Else
-impl<'a> SymbolicExecutor<'a> {
-    fn process_branch(
-        &mut self,
-        condition: &SymbolicValue,
-        branch_case: Option<&DebugStatement>,
-        statements: &Vec<DebugStatement>,
-        cur_bid: usize,
-        meta_elem_id: usize,
-        current_depth: usize,
-        is_then_branch: bool,
-    ) {
-        if let SymbolicValue::ConstantBool(false) = condition {
-            if !self.setting.off_trace {
-                let branch_name = if is_then_branch { "Then" } else { "Else" };
-                trace!(
-                    "{}",
-                    format!(
-                        "(elem_id={}) 🚧 Unreachable `{}` Branch",
-                        meta_elem_id, branch_name
-                    )
-                    .yellow()
-                );
-            }
-            return;
-        }
-
-        let mut branch_state = self.cur_state.clone();
-
-        if self.setting.keep_track_constraints && !is_true(condition) {
-            branch_state.push_trace_constraint(condition);
-            branch_state.push_side_constraint(condition);
-        }
-
-        branch_state.set_depth(current_depth + 1);
-        self.cur_state = branch_state;
-
-        if let Some(stmt) = branch_case {
-            self.execute(&vec![stmt.clone()], 0);
-        } else {
-            self.symbolic_store.block_end_states = vec![self.cur_state.clone()];
-        }
-
-        self.expand_all_stack_states(statements, cur_bid + 1, current_depth);
     }
 }
 

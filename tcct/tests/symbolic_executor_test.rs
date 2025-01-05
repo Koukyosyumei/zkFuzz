@@ -124,7 +124,6 @@ fn test_if_else() {
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
 
-    assert_eq!(sexe.symbolic_store.final_states.len(), 1);
     assert_eq!(sexe.symbolic_library.id2name.len(), 5);
     assert!(sexe.symbolic_library.name2id.contains_key("IsZero"));
     assert!(sexe.symbolic_library.name2id.contains_key("in"));
@@ -240,14 +239,11 @@ fn test_if_else() {
         ),
     ];
 
-    assert_eq!(
-        sexe.symbolic_store.final_states[0].trace_constraints.len(),
-        3
-    );
+    assert_eq!(sexe.cur_state.trace_constraints.len(), 3);
     for i in 0..3 {
         assert_eq!(
             ground_truth_trace_constraints_if_branch[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+            *sexe.cur_state.trace_constraints[i].clone()
         );
     }
 }
@@ -395,15 +391,12 @@ fn test_lessthan() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+            *sexe.cur_state.trace_constraints[i].clone()
         );
     }
 
-    let n = sexe.symbolic_store.final_states[0].trace_constraints.len();
-    assert_eq!(
-        cond,
-        *sexe.symbolic_store.final_states[0].trace_constraints[n - 2].clone()
-    );
+    let n = sexe.cur_state.trace_constraints.len();
+    assert_eq!(cond, *sexe.cur_state.trace_constraints[n - 2].clone());
 }
 
 #[test]
@@ -554,13 +547,13 @@ fn test_1d_array_component() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i + 1].clone()
+            *sexe.cur_state.trace_constraints[i + 1].clone()
         );
     }
 
     // main.c[0].x[0] = main.a;
     assert_eq!(
-        *sexe.symbolic_store.final_states[0].values[&SymbolicName {
+        *sexe.cur_state.values[&SymbolicName {
             name: sexe.symbolic_library.name2id["x"],
             owner: Rc::new(vec![
                 OwnerName {
@@ -767,7 +760,7 @@ fn test_array_signal_initialization() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+            *sexe.cur_state.trace_constraints[i].clone()
         );
     }
 }
@@ -827,7 +820,7 @@ fn test_2d_array_var() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+            *sexe.cur_state.trace_constraints[i].clone()
         );
     }
 }
@@ -882,7 +875,7 @@ fn test_multidimensional_array_function() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+            *sexe.cur_state.trace_constraints[i].clone()
         );
     }
 }
@@ -1119,7 +1112,7 @@ fn test_2d_array_component() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+            *sexe.cur_state.trace_constraints[i].clone()
         );
     }
 }
@@ -1166,7 +1159,7 @@ fn test_recursive_function() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i].clone()
+            *sexe.cur_state.trace_constraints[i].clone()
         );
     }
 }
@@ -1308,11 +1301,11 @@ fn test_bulk_assignment() {
 
     assert_eq!(
         ground_truth_trace_constraint_1,
-        *sexe.symbolic_store.final_states[0].trace_constraints[1].clone()
+        *sexe.cur_state.trace_constraints[1].clone()
     );
     assert_eq!(
         ground_truth_trace_constraint_2,
-        *sexe.symbolic_store.final_states[0].trace_constraints[7].clone()
+        *sexe.cur_state.trace_constraints[7].clone()
     );
 }
 
@@ -1373,10 +1366,7 @@ fn test_array_template_argument() {
         )),
     );
 
-    assert_eq!(
-        thrid_cond,
-        *sexe.symbolic_store.final_states[0].trace_constraints[2].clone()
-    );
+    assert_eq!(thrid_cond, *sexe.cur_state.trace_constraints[2].clone());
 }
 
 #[test]
@@ -1683,7 +1673,7 @@ fn test_anonymous_component() {
     for i in 0..ground_truth_trace_constraints.len() {
         assert_eq!(
             ground_truth_trace_constraints[i],
-            *sexe.symbolic_store.final_states[0].trace_constraints[i + 1].clone()
+            *sexe.cur_state.trace_constraints[i + 1].clone()
         );
     }
 }
@@ -1701,8 +1691,6 @@ fn test_branch_within_callee() {
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
-
-    assert_eq!(sexe.symbolic_store.final_states.len(), 1);
 }
 
 #[test]

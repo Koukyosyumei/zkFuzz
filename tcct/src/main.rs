@@ -189,18 +189,16 @@ fn start() -> Result<(), ()> {
             );
             let mut ts = ConstraintStatistics::new();
             let mut ss = ConstraintStatistics::new();
-            for s in &sexe.symbolic_store.final_states {
-                for c in &s.trace_constraints {
-                    ts.update(c);
-                }
-                for c in &s.side_constraints {
-                    ss.update(c);
-                }
-                info!(
-                    "Final State: {}",
-                    s.lookup_fmt(&sexe.symbolic_library.id2name)
-                );
+            for c in &sexe.cur_state.trace_constraints {
+                ts.update(c);
             }
+            for c in &sexe.cur_state.side_constraints {
+                ss.update(c);
+            }
+            info!(
+                "Final State: {}",
+                sexe.cur_state.lookup_fmt(&sexe.symbolic_library.id2name)
+            );
 
             let mut is_safe = true;
             if user_input.search_mode != "none" {
@@ -260,41 +258,38 @@ fn start() -> Result<(), ()> {
                         &verification_setting.template_param_values,
                     );
 
-                    for s in &sexe.symbolic_store.final_states {
-                        let counterexample = match &*user_input.search_mode {
-                            "quick" => brute_force_search(
-                                &mut sub_sexe,
-                                &s.trace_constraints.clone(),
-                                &s.side_constraints.clone(),
-                                &verification_setting,
-                            ),
-                            "full" => brute_force_search(
-                                &mut sub_sexe,
-                                &s.trace_constraints.clone(),
-                                &s.side_constraints.clone(),
-                                &verification_setting,
-                            ),
-                            "ga" => mutation_test_search(
-                                &mut sub_sexe,
-                                &s.trace_constraints.clone(),
-                                &s.side_constraints.clone(),
-                                &verification_setting,
-                            ),
-                            _ => panic!(
-                                "search_mode={} is not supported",
-                                user_input.search_mode.to_string()
-                            ),
-                        };
-                        if counterexample.is_some() {
-                            is_safe = false;
-                            println!(
-                                "{}",
-                                counterexample
-                                    .unwrap()
-                                    .lookup_fmt(&sub_sexe.symbolic_library.id2name)
-                            );
-                            break;
-                        }
+                    let counterexample = match &*user_input.search_mode {
+                        "quick" => brute_force_search(
+                            &mut sub_sexe,
+                            &sexe.cur_state.trace_constraints.clone(),
+                            &sexe.cur_state.side_constraints.clone(),
+                            &verification_setting,
+                        ),
+                        "full" => brute_force_search(
+                            &mut sub_sexe,
+                            &sexe.cur_state.trace_constraints.clone(),
+                            &sexe.cur_state.side_constraints.clone(),
+                            &verification_setting,
+                        ),
+                        "ga" => mutation_test_search(
+                            &mut sub_sexe,
+                            &sexe.cur_state.trace_constraints.clone(),
+                            &sexe.cur_state.side_constraints.clone(),
+                            &verification_setting,
+                        ),
+                        _ => panic!(
+                            "search_mode={} is not supported",
+                            user_input.search_mode.to_string()
+                        ),
+                    };
+                    if counterexample.is_some() {
+                        is_safe = false;
+                        println!(
+                            "{}",
+                            counterexample
+                                .unwrap()
+                                .lookup_fmt(&sub_sexe.symbolic_library.id2name)
+                        );
                     }
                 }
             }
@@ -313,10 +308,6 @@ fn start() -> Result<(), ()> {
             );
             println!("{}", "📊 Execution Summary:".cyan().bold());
             println!(" ├─ Prime Number      : {}", user_input.debug_prime());
-            println!(
-                " ├─ Total Paths       : {}",
-                sexe.symbolic_store.final_states.len()
-            );
             println!(
                 " ├─ Compression Rate  : {:.2}% ({}/{})",
                 (ss.total_constraints as f64 / ts.total_constraints as f64) * 100 as f64,
