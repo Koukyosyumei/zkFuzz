@@ -1,8 +1,8 @@
 pragma circom 2.0.0; 
 
-include "../../circomlib/circuits/comparators.circom";
-include "../../circomlib/circuits/bitify.circom";
-include "../../circomlib/circuits/sha256/sha256.circom";
+include "../../include/circomlib/circuits/comparators.circom";
+include "../../include/circomlib/circuits/bitify.circom";
+include "../../include/circomlib/circuits/sha256/sha256.circom";
 
 template ConcatGuesses() {
 

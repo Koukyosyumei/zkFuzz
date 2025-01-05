@@ -17,10 +17,12 @@ pub fn check_unused_outputs(
     setting: &VerificationSetting,
 ) -> Option<CounterExample> {
     let mut variables: Vec<SymbolicName> = Vec::new();
-    for s in &sexe.symbolic_store.final_states {
-        variables.append(&mut extract_variables(&s.trace_constraints.clone()));
-        variables.append(&mut extract_variables(&s.trace_constraints.clone()));
-    }
+    variables.append(&mut extract_variables(
+        &sexe.cur_state.trace_constraints.clone(),
+    ));
+    variables.append(&mut extract_variables(
+        &sexe.cur_state.trace_constraints.clone(),
+    ));
     let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
 
     let mut used_outputs: FxHashMap<SymbolicName, Option<bool>> = FxHashMap::default();

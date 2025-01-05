@@ -94,4 +94,4 @@ template GlInv() {
   check.b <== out;
 }
 
-component main = GlInv(1);
+component main = GlInv();

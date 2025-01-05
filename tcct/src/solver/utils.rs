@@ -545,11 +545,11 @@ pub fn evaluate_symbolic_value(
 
             let func = subse.symbolic_library.function_library[id].clone();
             for i in 0..(func.function_argument_names.len()) {
-                let sname = SymbolicName {
-                    name: func.function_argument_names[i],
-                    owner: subse.cur_state.owner_name.clone(),
-                    access: None,
-                };
+                let sname = SymbolicName::new(
+                    func.function_argument_names[i],
+                    subse.cur_state.owner_name.clone(),
+                    None,
+                );
                 subse.cur_state.set_rc_symval(
                     sname,
                     Rc::new(evaluate_symbolic_value(
@@ -562,18 +562,10 @@ pub fn evaluate_symbolic_value(
             }
             subse.execute(&func.body.clone(), 0);
 
-            if !subse.symbolic_store.final_states.is_empty() {
-                let return_name = SymbolicName {
-                    name: usize::MAX,
-                    owner: subse.symbolic_store.final_states[0].owner_name.clone(),
-                    access: None,
-                };
-                let return_value =
-                    (*subse.symbolic_store.final_states[0].values[&return_name].clone()).clone();
-                return_value
-            } else {
-                panic!("Empty Final State");
-            }
+            let return_name =
+                SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
+            let return_value = (*subse.cur_state.values[&return_name].clone()).clone();
+            return_value
         }
         _ => todo!("{:?}", value),
     }
@@ -756,42 +748,43 @@ pub fn verify_assignment(
         );
         sexe.concrete_execute(&setting.id, assignment);
 
+        if sexe.cur_state.is_failed {
+            return VerificationResult::UnderConstrained(UnderConstrainedType::Deterministic);
+        }
+
         let mut result = VerificationResult::WellConstrained;
-        if sexe.symbolic_store.final_states.len() > 0 {
-            for (k, v) in assignment {
-                if sexe.symbolic_library.template_library
-                    [&sexe.symbolic_library.name2id[&setting.id]]
-                    .outputs
-                    .contains(&k.name)
-                {
-                    let original_sym_value = &sexe.symbolic_store.final_states[0].values[&k];
-                    let original_int_value = match &(*original_sym_value.clone()) {
-                        SymbolicValue::ConstantInt(num) => num.clone(),
-                        SymbolicValue::ConstantBool(b) => {
-                            if *b {
-                                BigInt::one()
-                            } else {
-                                BigInt::zero()
-                            }
+        for (k, v) in assignment {
+            if sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[&setting.id]]
+                .outputs
+                .contains(&k.name)
+            {
+                let original_sym_value = &sexe.cur_state.values[&k];
+                let original_int_value = match &(*original_sym_value.clone()) {
+                    SymbolicValue::ConstantInt(num) => num.clone(),
+                    SymbolicValue::ConstantBool(b) => {
+                        if *b {
+                            BigInt::one()
+                        } else {
+                            BigInt::zero()
                         }
-                        _ => {
-                            panic!(
-                                "Undetermined Output: {}",
-                                original_sym_value
-                                    .clone()
-                                    .lookup_fmt(&sexe.symbolic_library.id2name)
-                            );
-                        }
-                    };
-                    if !is_equal_mod(&original_int_value, v, &setting.prime) {
-                        result = VerificationResult::UnderConstrained(
-                            UnderConstrainedType::NonDeterministic(
-                                k.lookup_fmt(&sexe.symbolic_library.id2name),
-                                original_int_value.clone(),
-                            ),
-                        );
-                        break;
                     }
+                    _ => {
+                        panic!(
+                            "Undetermined Output: {}",
+                            original_sym_value
+                                .clone()
+                                .lookup_fmt(&sexe.symbolic_library.id2name)
+                        );
+                    }
+                };
+                if !is_equal_mod(&original_int_value, v, &setting.prime) {
+                    result = VerificationResult::UnderConstrained(
+                        UnderConstrainedType::NonDeterministic(
+                            k.lookup_fmt(&sexe.symbolic_library.id2name),
+                            original_int_value.clone(),
+                        ),
+                    );
+                    break;
                 }
             }
         }

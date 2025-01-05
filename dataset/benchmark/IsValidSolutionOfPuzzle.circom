@@ -1,7 +1,7 @@
 pragma circom 2.0.0;
 // https://github.com/forestlv/zksnark-sudoku-master/blob/main/packages/circuit/circuits/utils.circom
 
-include "../circomlib/circuits/comparators.circom";
+include "../include/circomlib/circuits/comparators.circom";
 
 template AND() {
     signal input a;
@@ -40,13 +40,13 @@ template MultiAND(n) {
 }
 
 template IsValidSolutionOfPuzzle() {
-    signal input solution[4];
-    signal input puzzle[4];
+    signal input solution[81];
+    signal input puzzle[81];
     signal output result;
 
-    component allNumbersAreEqualCheck = MultiAND(4);
-    component equalCheck[4];
-    for (var i = 0; i < 4; i ++) {
+    component allNumbersAreEqualCheck = MultiAND(81);
+    component equalCheck[81];
+    for (var i = 0; i < 81; i ++) {
         equalCheck[i] = IsEqual();
         equalCheck[i].in[0] <== solution[i];
         equalCheck[i].in[1] <== puzzle[i];

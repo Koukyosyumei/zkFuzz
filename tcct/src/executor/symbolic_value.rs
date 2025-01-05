@@ -1,5 +1,6 @@
+use std::cell::RefCell;
 use std::collections::VecDeque;
-use std::hash::Hash;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 use colored::Colorize;
@@ -7,7 +8,7 @@ use num_bigint_dig::BigInt;
 use num_traits::FromPrimitive;
 use num_traits::ToPrimitive;
 use num_traits::{One, Signed, Zero};
-use rustc_hash::{FxHashMap, FxHashSet};
+use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 
 use program_structure::ast::{
     ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType, Statement, VariableType,
@@ -61,14 +62,28 @@ pub struct OwnerName {
     pub counter: usize,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, Debug)]
 pub struct SymbolicName {
     pub name: usize,
     pub owner: Rc<Vec<OwnerName>>,
     pub access: Option<Vec<SymbolicAccess>>,
+    precomputed_hash: RefCell<Option<u64>>,
 }
 
 impl SymbolicName {
+    pub fn new(
+        name: usize,
+        owner: Rc<Vec<OwnerName>>,
+        access: Option<Vec<SymbolicAccess>>,
+    ) -> Self {
+        SymbolicName {
+            name,
+            owner,
+            access,
+            precomputed_hash: RefCell::new(None),
+        }
+    }
+
     pub fn get_the_final_component_id(&self) -> Option<usize> {
         let mut fti = None;
         for o in self.owner.iter() {
@@ -121,6 +136,50 @@ impl SymbolicName {
                 "".to_string()
             }
         )
+    }
+
+    fn compute_hash(&self) -> u64 {
+        let mut hasher = FxHasher::default(); // Use FxHasher for consistency with FxHashMap
+        self.name.hash(&mut hasher);
+        self.owner.hash(&mut hasher);
+        self.access.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    pub fn update_hash(&self) {
+        *self.precomputed_hash.borrow_mut() = Some(self.compute_hash());
+    }
+}
+
+impl PartialEq for SymbolicName {
+    fn eq(&self, other: &Self) -> bool {
+        // Check if precomputed hashes are available for both instances
+        let self_hash = *self.precomputed_hash.borrow();
+        let other_hash = *other.precomputed_hash.borrow();
+
+        // If both hashes are available and not `None`, compare the hashes
+        if let (Some(self_hash), Some(other_hash)) = (self_hash, other_hash) {
+            return self_hash == other_hash;
+        }
+
+        self.name == other.name && *self.owner == *other.owner && self.access == other.access
+    }
+}
+
+impl Eq for SymbolicName {}
+
+impl Hash for SymbolicName {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        // Use cached hash if available
+        let cached_hash = *self.precomputed_hash.borrow();
+        if let Some(hash) = cached_hash {
+            hash.hash(state);
+        } else {
+            // Compute and cache the hash value
+            let hash = self.compute_hash();
+            *self.precomputed_hash.borrow_mut() = Some(hash);
+            hash.hash(state);
+        }
     }
 }
 
@@ -541,42 +600,42 @@ pub fn register_array_elements<T>(
 
     if positions.is_empty() {
         elements_of_component.insert(
-            SymbolicName {
-                name: name.clone(),
-                owner: if owner.is_none() {
+            SymbolicName::new(
+                name.clone(),
+                if owner.is_none() {
                     Rc::new(Vec::new())
                 } else {
                     owner.clone().unwrap()
                 },
-                access: None,
-            },
+                None,
+            ),
             None,
         );
     } else {
         for p in positions {
             if p.is_empty() {
                 elements_of_component.insert(
-                    SymbolicName {
-                        name: name.clone(),
-                        owner: if owner.is_none() {
+                    SymbolicName::new(
+                        name.clone(),
+                        if owner.is_none() {
                             Rc::new(Vec::new())
                         } else {
                             owner.clone().unwrap()
                         },
-                        access: None,
-                    },
+                        None,
+                    ),
                     None,
                 );
             } else {
                 elements_of_component.insert(
-                    SymbolicName {
-                        name: name.clone(),
-                        owner: if owner.is_none() {
+                    SymbolicName::new(
+                        name.clone(),
+                        if owner.is_none() {
                             Rc::new(Vec::new())
                         } else {
                             owner.clone().unwrap()
                         },
-                        access: Some(
+                        Some(
                             p.iter()
                                 .map(|arg0: &usize| {
                                     SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(
@@ -585,7 +644,7 @@ pub fn register_array_elements<T>(
                                 })
                                 .collect::<Vec<_>>(),
                         ),
-                    },
+                    ),
                     None,
                 );
             }
@@ -749,25 +808,25 @@ pub fn generate_lessthan_constraint(
     name2id: &FxHashMap<String, usize>,
     owner_name: Rc<Vec<OwnerName>>,
 ) -> SymbolicValue {
-    let in_0 = Rc::new(SymbolicValue::Variable(SymbolicName {
-        name: name2id["in"],
-        owner: owner_name.clone(),
-        access: Some(vec![SymbolicAccess::ArrayAccess(
+    let in_0 = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        name2id["in"],
+        owner_name.clone(),
+        Some(vec![SymbolicAccess::ArrayAccess(
             SymbolicValue::ConstantInt(BigInt::zero()),
         )]),
-    }));
-    let in_1 = Rc::new(SymbolicValue::Variable(SymbolicName {
-        name: name2id["in"],
-        owner: owner_name.clone(),
-        access: Some(vec![SymbolicAccess::ArrayAccess(
+    )));
+    let in_1 = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        name2id["in"],
+        owner_name.clone(),
+        Some(vec![SymbolicAccess::ArrayAccess(
             SymbolicValue::ConstantInt(BigInt::one()),
         )]),
-    }));
-    let lessthan_out = Rc::new(SymbolicValue::Variable(SymbolicName {
-        name: name2id["out"],
-        owner: owner_name,
-        access: None,
-    }));
+    )));
+    let lessthan_out = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        name2id["out"],
+        owner_name,
+        None,
+    )));
     let cond_1 = SymbolicValue::BinaryOp(
         Rc::new(SymbolicValue::BinaryOp(
             Rc::new(SymbolicValue::ConstantInt(BigInt::one())),

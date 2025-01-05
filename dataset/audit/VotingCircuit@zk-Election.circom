@@ -2,10 +2,10 @@ pragma circom 2.2.1;
 // https://github.com/Dyslex7c/zk-Election/blob/bddc5c24315bf3dd7aeeb6611fa9936f1e23f733/circuits/voting_circuit.circom
 
 // Correct import paths using circomlib
-include "../circomlib/circuits/comparators.circom";
-include "../circomlib/circuits/sha256/sha256.circom";
-include "../circomlib/circuits/bitify.circom";
-include "../circomlib/circuits/poseidon.circom";
+include "../include/circomlib/circuits/comparators.circom";
+include "../include/circomlib/circuits/sha256/sha256.circom";
+include "../include/circomlib/circuits/bitify.circom";
+include "../include/circomlib/circuits/poseidon.circom";
 
 // Main voting circuit
 template VotingCircuit(NUM_CANDIDATES, VOTER_SECRET_BITS) {

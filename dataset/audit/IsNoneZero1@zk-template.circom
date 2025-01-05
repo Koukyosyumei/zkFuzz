@@ -1,5 +1,5 @@
 pragma circom 2.0.3;
-include "../circomlib/circuits/comparators.circom";
+include "../include/circomlib/circuits/comparators.circom";
 
 // verify none zero using isZero template
 template IsNoneZero() {

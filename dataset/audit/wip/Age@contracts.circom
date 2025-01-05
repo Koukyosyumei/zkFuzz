@@ -1,8 +1,8 @@
 pragma circom 2.1.8;
 // https://github.com/zkKYC/contracts/blob/main/circuits/age/age.circom
 
-include "../../circomlib/circuits/comparators.circom";
-include "../../circomlib/circuits/mimcsponge.circom";
+include "../../include/circomlib/circuits/comparators.circom";
+include "../../include/circomlib/circuits/mimcsponge.circom";
 
 template Hasher() {
     signal input val;
