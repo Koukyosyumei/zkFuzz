@@ -669,7 +669,7 @@ impl<'a> SymbolicExecutor<'a> {
                 )),
             ),
             SymbolicValue::Call(func_name, args) => SymbolicValue::Call(
-                func_name.clone(),
+                *func_name,
                 args.iter()
                     .map(|arg| {
                         Rc::new(self.simplify_variables(
@@ -789,7 +789,7 @@ impl<'a> SymbolicExecutor<'a> {
                     .map(|arg| Rc::new(self.simplify_variables(&arg, false, false)))
                     .collect();
                 if self.symbolic_library.template_library.contains_key(id) {
-                    SymbolicValue::Call(id.clone(), simplified_args)
+                    SymbolicValue::Call(*id, simplified_args)
                 } else if self.symbolic_library.function_library.contains_key(id) {
                     let symbolic_library = &mut self.symbolic_library;
                     let mut subse_setting = self.setting.clone();
