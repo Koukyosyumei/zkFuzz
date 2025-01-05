@@ -275,8 +275,8 @@ fn start() -> Result<(), ()> {
                         ),
                         "heuristics" => brute_force_search(
                             &mut sub_sexe,
-                            &sexe.trace_constraints.clone(),
-                            &sexe.side_constraints.clone(),
+                            &sexe.cur_state.trace_constraints.clone(),
+                            &sexe.cur_state.side_constraints.clone(),
                             &verification_setting,
                         ),
                         "ga" => mutation_test_search(
