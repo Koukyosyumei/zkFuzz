@@ -1691,6 +1691,8 @@ fn test_branch_within_callee() {
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
+
+    assert_eq!(sexe.cur_state.trace_constraints.len(), 5)
 }
 
 #[test]
