@@ -68,9 +68,6 @@ impl SymbolicState {
     pub fn add_owner(&mut self, oname: &OwnerName) {
         let mut updated_owner_list = Rc::make_mut(&mut self.owner_name);
         updated_owner_list.push(oname.clone());
-        //let mut updated_owner_list = (*self.owner_name.clone()).clone();
-        //updated_owner_list.push(oname.clone());
-        //self.owner_name = Rc::new(updated_owner_list);
     }
 
     /// Retrieves the full owner name as a string.
