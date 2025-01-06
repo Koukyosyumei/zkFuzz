@@ -257,7 +257,7 @@ fn start() -> Result<(), ()> {
                         &verification_setting.template_param_values,
                     );
 
-                    let counterexample = match &*user_input.search_mode {
+                    let counterexample = match &*user_input.search_mode() {
                         "quick" => brute_force_search(
                             &mut conc_executor,
                             &sym_executor.cur_state.trace_constraints.clone(),
@@ -281,6 +281,7 @@ fn start() -> Result<(), ()> {
                             &sym_executor.cur_state.trace_constraints.clone(),
                             &sym_executor.cur_state.side_constraints.clone(),
                             &verification_setting,
+                            &user_input.path_to_mutation_setting(),
                         ),
                         _ => panic!(
                             "search_mode={} is not supported",

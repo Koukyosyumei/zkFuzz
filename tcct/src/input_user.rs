@@ -42,6 +42,7 @@ pub struct Input {
     pub debug_prime: String,
     pub heuristics_range: String,
     pub search_mode: String,
+    pub path_to_mutation_setting:String,
     pub link_libraries : Vec<PathBuf>
 }
 
@@ -125,6 +126,7 @@ impl Input {
             debug_prime: input_processing::get_debug_prime(&matches)?,
             heuristics_range: input_processing::get_heuristics_range(&matches)?,
             search_mode: input_processing::get_search_mode(&matches)?,
+            path_to_mutation_setting: input_processing::get_path_to_mutation_setting(&matches)?,
             link_libraries
         })
     }
@@ -251,6 +253,9 @@ impl Input {
     }
     pub fn search_mode(&self) -> String{
         self.search_mode.clone()
+    }
+    pub fn path_to_mutation_setting(&self) -> String{
+        self.path_to_mutation_setting.clone()
     }
 }
 mod input_processing {
@@ -418,6 +423,13 @@ mod input_processing {
     pub fn get_search_mode(matches: &ArgMatches) -> Result<String, ()> {
         match matches.is_present("search_mode") {
             true => Ok(String::from(matches.value_of("search_mode").unwrap())),
+            false => Ok(String::from("none"))
+        }
+    }
+
+    pub fn get_path_to_mutation_setting(matches: &ArgMatches) -> Result<String, ()> {
+        match matches.is_present("path_to_mutation_setting") {
+            true => Ok(String::from(matches.value_of("path_to_mutation_setting").unwrap())),
             false => Ok(String::from("none"))
         }
     }
@@ -630,6 +642,14 @@ mod input_processing {
                     .default_value("none")
                     .display_order(1040)
                     .help("(TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained"),
+            )
+            .arg (
+                Arg::with_name("path_to_mutation_setting")
+                    .long("path_to_mutation_setting")
+                    .takes_value(true)
+                    .default_value("none")
+                    .display_order(1045)
+                    .help("(TCCT) Path to the setting file for Mutation Testing"),
             )
             .arg (
                 Arg::with_name("debug_prime")

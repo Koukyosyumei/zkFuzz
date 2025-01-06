@@ -1,6 +1,9 @@
 use std::collections::HashSet;
+use std::fmt;
+use std::fs::File;
 use std::io;
 use std::io::Write;
+use std::path::Path;
 
 use colored::Colorize;
 use log::info;
@@ -12,6 +15,7 @@ use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;
 use rand::Rng;
 use rustc_hash::FxHashMap;
+use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
@@ -20,12 +24,67 @@ use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, Sy
 use crate::solver::eval::evaluate_trace_fitness;
 use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
 
+#[derive(Serialize, Deserialize)]
+struct MutationSettings {
+    program_population_size: usize,
+    input_population_size: usize,
+    max_generations: usize,
+    mutation_rate: f64,
+    crossover_rate: f64,
+}
+
+impl Default for MutationSettings {
+    fn default() -> Self {
+        MutationSettings {
+            program_population_size: 30,
+            input_population_size: 30,
+            max_generations: 300,
+            mutation_rate: 0.3,
+            crossover_rate: 0.5,
+        }
+    }
+}
+
+impl fmt::Display for MutationSettings {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "🧬 Mutation Settings:
+    ├─ Program Population Size: {}
+    ├─ Input Population Size: {}
+    ├─ Max Generations: {}
+    ├─ Mutation Rate: {:.2}%
+    └─ Crossover Rate: {:.2}%",
+            self.program_population_size,
+            self.input_population_size,
+            self.max_generations,
+            self.mutation_rate * 100.0,
+            self.crossover_rate * 100.0
+        )
+    }
+}
+
+fn load_settings_from_json(file_path: &str) -> Result<MutationSettings, serde_json::Error> {
+    let file = File::open(file_path);
+    if file.is_ok() {
+        let settings: MutationSettings = serde_json::from_reader(file.unwrap())?;
+        Ok(settings)
+    } else {
+        info!("Use the default setting for mutation testing");
+        Ok(MutationSettings::default())
+    }
+}
+
 pub fn mutation_test_search(
     sexe: &mut SymbolicExecutor,
     trace_constraints: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
     setting: &VerificationSetting,
+    path_to_mutation_setting: &String,
 ) -> Option<CounterExample> {
+    let mutation_setting = load_settings_from_json(path_to_mutation_setting).unwrap();
+    info!("\n{}", mutation_setting);
+
     // Parameters
     let program_population_size = 30;
     let input_population_size = 30;
@@ -62,21 +121,16 @@ pub fn mutation_test_search(
     }
 
     info!(
-        "{}: {}",
-        "#Trace Constraints ".cyan(),
-        trace_constraints.len()
+        "\n⚖️ Constraints Summary:
+    ├─ #Trace Constraints : {}
+    ├─ #Side Constraints  : {}
+    ├─ #Input Variables   : {}
+    └─ #Mutation Candidate: {}",
+        trace_constraints.len(),
+        side_constraints.len(),
+        input_variables.len(),
+        assign_pos.len()
     );
-    info!(
-        "{}: {}",
-        "#Side Constraints  ".cyan(),
-        side_constraints.len()
-    );
-    info!(
-        "{}: {}",
-        "#Input Variables   ".cyan(),
-        input_variables.len()
-    );
-    info!("{}: {}", "#Mutation Candidate".cyan(), assign_pos.len());
 
     let mut trace_population =
         initialize_trace_mutation(&assign_pos, program_population_size, setting, &mut rng);
