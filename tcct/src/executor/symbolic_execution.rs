@@ -295,6 +295,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// # Arguments
     ///
     /// * `access` - The `Access` to evaluate.
+    /// * `elem_id` - Unique element id
     ///
     /// # Returns
     ///
@@ -337,6 +338,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// # Arguments
     ///
     /// * `sym_val` - The symbolic expression to simplify.
+    /// * `elem_id` - Unique element id
     /// * `only_constatant_simplification`
     /// * `only_variable_simplification`
     ///
@@ -536,6 +538,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// # Arguments
     ///
     /// * `expr` - The `DebugExpression` to evaluate.
+    /// * `elem_id` - Unique element id
     ///
     /// # Returns
     ///
@@ -1042,6 +1045,7 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// * `left_var_name` - The symbolic name of the array variable being assigned.
     /// * `elements` - A vector of reference-counted symbolic values representing the array elements.
+    /// * `elem_id` - Unique element id
     ///
     /// # Side Effects
     ///
@@ -1126,6 +1130,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// * `args` - The arguments passed to the call.
     /// * `var_name` - The symbolic name where the call result is being assigned.
     /// * `base_name` - The base symbolic name for component initialization.
+    /// * `elem_id` - Unique element id
     ///
     /// # Side Effects
     ///
@@ -1386,6 +1391,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// * `access` - A vector of accesses (e.g., array indices, component accesses).
     /// * `base_name` - The base symbolic name for the accessed component.
     /// * `value` - The symbolic value being assigned.
+    /// * `elem_id` - Unique element id
     ///
     /// # Side Effects
     ///
@@ -1590,6 +1596,7 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// * `base_id` - The base identifier for the variable or component.
     /// * `access` - A vector of `DebugAccess` representing the access pattern.
+    /// * `elem_id` - Unique element id
     ///
     /// # Returns
     ///
