@@ -110,7 +110,8 @@ pub struct SymbolicExecutor<'a> {
     pub setting: &'a SymbolicExecutorSetting,
     pub symbolic_store: SymbolicStore,
     pub cur_state: SymbolicState,
-    pub coverage_tracker: CoverageTracker,
+    coverage_tracker: CoverageTracker,
+    enable_coverage_tracking: bool,
 }
 
 impl<'a> SymbolicExecutor<'a> {
@@ -140,7 +141,24 @@ impl<'a> SymbolicExecutor<'a> {
             cur_state: SymbolicState::new(),
             coverage_tracker: CoverageTracker::new(),
             setting: setting,
+            enable_coverage_tracking: false,
         }
+    }
+
+    pub fn turn_on_coverage_tracking(&mut self) {
+        self.enable_coverage_tracking = true;
+    }
+
+    pub fn turn_off_coverage_tracking(&mut self) {
+        self.enable_coverage_tracking = false;
+    }
+
+    pub fn record_path(&mut self) {
+        self.coverage_tracker.record_path();
+    }
+
+    pub fn coverage_count(&self) -> usize {
+        self.coverage_tracker.coverage_count()
     }
 
     /// Clears the current state and resets the symbolic executor.
@@ -346,7 +364,7 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// A new `SymbolicValue` representing the simplified expression.
     fn simplify_variables(
-        &self,
+        &mut self,
         sym_val: &SymbolicValue,
         elem_id: usize,
         only_constatant_simplification: bool,
@@ -420,18 +438,28 @@ impl<'a> SymbolicExecutor<'a> {
                     only_variable_simplification,
                 );
                 match simplified_cond {
-                    SymbolicValue::ConstantBool(true) => self.simplify_variables(
-                        then_val,
-                        elem_id,
-                        only_constatant_simplification,
-                        only_variable_simplification,
-                    ),
-                    SymbolicValue::ConstantBool(false) => self.simplify_variables(
-                        else_val,
-                        elem_id,
-                        only_constatant_simplification,
-                        only_variable_simplification,
-                    ),
+                    SymbolicValue::ConstantBool(true) => {
+                        if self.enable_coverage_tracking {
+                            self.coverage_tracker.record_branch(elem_id, true);
+                        }
+                        self.simplify_variables(
+                            then_val,
+                            elem_id,
+                            only_constatant_simplification,
+                            only_variable_simplification,
+                        )
+                    }
+                    SymbolicValue::ConstantBool(false) => {
+                        if self.enable_coverage_tracking {
+                            self.coverage_tracker.record_branch(elem_id, false);
+                        }
+                        self.simplify_variables(
+                            else_val,
+                            elem_id,
+                            only_constatant_simplification,
+                            only_variable_simplification,
+                        )
+                    }
                     _ => SymbolicValue::Conditional(
                         Rc::new(self.simplify_variables(
                             cond,
@@ -767,12 +795,16 @@ impl<'a> SymbolicExecutor<'a> {
 
             match simplified_condition {
                 SymbolicValue::ConstantBool(true) => {
-                    self.coverage_tracker.record_branch(meta.elem_id, true);
+                    if self.enable_coverage_tracking {
+                        self.coverage_tracker.record_branch(meta.elem_id, true);
+                    }
                     self.execute(&vec![*if_case.clone()], 0);
                 }
                 SymbolicValue::ConstantBool(false) => {
                     if let Some(stmt) = else_case {
-                        self.coverage_tracker.record_branch(meta.elem_id, false);
+                        if self.enable_coverage_tracking {
+                            self.coverage_tracker.record_branch(meta.elem_id, false);
+                        }
                         self.execute(&vec![*stmt.clone()], 0);
                     }
                 }
