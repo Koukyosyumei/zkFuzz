@@ -314,7 +314,7 @@ fn mutate_input_population_with_coverage_maximization(
             }
 
             // Evaluate the new input
-            let new_coverage = evaluate_cooverage(sexe, &input, setting);
+            let new_coverage = evaluate_cooverage(sexe, &new_input, setting);
             if new_coverage > total_coverage {
                 new_inputs_population.push(new_input);
                 total_coverage = new_coverage;
