@@ -1,4 +1,5 @@
 use std::cmp::max;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 use colored::Colorize;
@@ -6,7 +7,7 @@ use log::trace;
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::FromPrimitive;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 
 use program_structure::ast::{
     AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType,
@@ -288,6 +289,49 @@ pub struct SymbolicExecutorSetting {
     pub propagate_assignments: bool,
 }
 
+#[derive(Clone)]
+pub struct CoverageTracker {
+    paths: FxHashSet<u64>,
+    current_path: Vec<(usize, bool)>,
+}
+
+impl CoverageTracker {
+    pub fn new() -> Self {
+        CoverageTracker {
+            paths: FxHashSet::default(),
+            current_path: Vec::new(),
+        }
+    }
+
+    pub fn record_branch(&mut self, meta_elem_id: usize, branch_cond: bool) {
+        self.current_path.push((meta_elem_id, branch_cond));
+    }
+
+    pub fn record_path(&mut self) {
+        let path_hash = self.hash_current_path();
+        self.paths.insert(path_hash);
+    }
+
+    fn hash_current_path(&self) -> u64 {
+        let mut hasher = FxHasher::default();
+        self.current_path.hash(&mut hasher);
+        hasher.finish()
+    }
+
+    pub fn clear(&mut self) {
+        self.paths.clear();
+        self.current_path.clear();
+    }
+
+    pub fn clear_current_path(&mut self) {
+        self.current_path.clear();
+    }
+
+    pub fn coverage_count(&self) -> usize {
+        self.paths.len()
+    }
+}
+
 /// A symbolic execution engine for analyzing and executing statements symbolically.
 ///
 /// The `SymbolicExecutor` maintains multiple execution states, handles branching logic,
@@ -309,6 +353,7 @@ pub struct SymbolicExecutor<'a> {
     pub setting: &'a SymbolicExecutorSetting,
     pub symbolic_store: SymbolicStore,
     pub cur_state: SymbolicState,
+    pub coverage_tracker: CoverageTracker,
 }
 
 impl<'a> SymbolicExecutor<'a> {
@@ -336,6 +381,7 @@ impl<'a> SymbolicExecutor<'a> {
                 max_depth: 0,
             },
             cur_state: SymbolicState::new(),
+            coverage_tracker: CoverageTracker::new(),
             setting: setting,
         }
     }
@@ -348,6 +394,7 @@ impl<'a> SymbolicExecutor<'a> {
         self.cur_state = SymbolicState::new();
         self.symbolic_store.clear();
         self.symbolic_library.clear_function_counter();
+        self.coverage_tracker.clear_current_path();
     }
 
     /// Feeds arguments into current state variables.
@@ -959,10 +1006,12 @@ impl<'a> SymbolicExecutor<'a> {
 
             match simplified_condition {
                 SymbolicValue::ConstantBool(true) => {
+                    self.coverage_tracker.record_branch(meta.elem_id, true);
                     self.execute(&vec![*if_case.clone()], 0);
                 }
                 SymbolicValue::ConstantBool(false) => {
                     if let Some(stmt) = else_case {
+                        self.coverage_tracker.record_branch(meta.elem_id, false);
                         self.execute(&vec![*stmt.clone()], 0);
                     }
                 }
