@@ -161,6 +161,10 @@ impl<'a> SymbolicExecutor<'a> {
         self.coverage_tracker.coverage_count()
     }
 
+    pub fn clear_coverage_tracker(&mut self) {
+        self.coverage_tracker.clear();
+    }
+
     /// Clears the current state and resets the symbolic executor.
     ///
     /// This method resets the current state, clears the symbolic store,

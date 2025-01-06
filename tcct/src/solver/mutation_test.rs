@@ -29,6 +29,7 @@ struct MutationSettings {
     program_population_size: usize,
     input_population_size: usize,
     max_generations: usize,
+    input_initialization_method: String,
     mutation_rate: f64,
     crossover_rate: f64,
 }
@@ -39,6 +40,7 @@ impl Default for MutationSettings {
             program_population_size: 30,
             input_population_size: 30,
             max_generations: 300,
+            input_initialization_method: "random".to_string(),
             mutation_rate: 0.3,
             crossover_rate: 0.5,
         }
@@ -53,11 +55,13 @@ impl fmt::Display for MutationSettings {
     ├─ Program Population Size: {}
     ├─ Input Population Size: {}
     ├─ Max Generations: {}
+    ├─ Input Initialization Method: {}: 
     ├─ Mutation Rate: {:.2}%
     └─ Crossover Rate: {:.2}%",
             self.program_population_size,
             self.input_population_size,
             self.max_generations,
+            self.input_initialization_method,
             self.mutation_rate * 100.0,
             self.crossover_rate * 100.0
         )
@@ -136,14 +140,34 @@ pub fn mutation_test_search(
         initialize_trace_mutation(&assign_pos, program_population_size, setting, &mut rng);
     let mut fitness_scores = vec![-setting.prime.clone(); input_population_size];
 
+    let mut input_population =
+        initialize_input_population(&input_variables, input_population_size, &setting, &mut rng);
+
     for generation in 0..max_generations {
         // Generate input population for this generation
-        let input_population = initialize_input_population(
-            &input_variables,
-            input_population_size,
-            &setting,
-            &mut rng,
-        );
+        if mutation_setting.input_initialization_method == "coverage" && generation % 4 == 3 {
+            input_population = initialize_input_population(
+                &input_variables,
+                input_population_size / 2 as usize,
+                &setting,
+                &mut rng,
+            );
+            mutate_input_population_with_coverage_maximization(
+                sexe,
+                &input_variables,
+                &mut input_population,
+                input_population_size,
+                &setting,
+                &mut rng,
+            );
+        } else {
+            input_population = initialize_input_population(
+                &input_variables,
+                input_population_size,
+                &setting,
+                &mut rng,
+            );
+        }
 
         // Evolve the trace population
         trace_population = if !trace_population.is_empty() {
@@ -254,26 +278,30 @@ fn evaluate_cooverage(
     );
     sexe.concrete_execute(&setting.target_template_name, inputs);
     sexe.record_path();
+    sexe.turn_off_coverage_tracking();
     sexe.coverage_count()
 }
 
 fn mutate_input_population_with_coverage_maximization(
     sexe: &mut SymbolicExecutor,
     variables: &[SymbolicName],
-    initial_size: usize,
+    inputs_population: &mut Vec<FxHashMap<SymbolicName, BigInt>>,
     maximum_size: usize,
     setting: &VerificationSetting,
     rng: &mut ThreadRng,
 ) {
-    let mut inputs_population = initialize_input_population(variables, initial_size, setting, rng);
     let mut total_coverage = 0_usize;
+
+    for input in &mut *inputs_population {
+        total_coverage = evaluate_cooverage(sexe, &input, setting);
+    }
 
     let max_iteration = 10;
     for _ in 0..max_iteration {
         let mut new_inputs_population = Vec::new();
 
         // Iterate through the population and attempt mutations
-        for input in &inputs_population {
+        for input in &mut *inputs_population {
             let mut new_input = input.clone();
 
             // Mutate each variable with a small probability
