@@ -461,12 +461,8 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// # Arguments
     ///
-    /// * `expression` - The symbolic expression to execute.
+    /// * `name` - The template name to be executed.
     /// * `assignments` - A map of variable assignments for concrete execution.
-    ///
-    /// # Returns
-    ///
-    /// The result of the concrete execution as a `SymbolicValue`.
     pub fn concrete_execute(
         &mut self,
         name: &String,
@@ -533,8 +529,9 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// # Arguments
     ///
-    /// * `expression` - The symbolic expression to fold.
-    /// * `propagate` - A boolean flag indicating whether to propagate substitutions.
+    /// * `sym_val` - The symbolic expression to simplify.
+    /// * `only_constatant_simplification`
+    /// * `only_variable_simplification`
     ///
     /// # Returns
     ///
@@ -542,12 +539,12 @@ impl<'a> SymbolicExecutor<'a> {
     fn simplify_variables(
         &self,
         sym_val: &SymbolicValue,
-        only_constatant_folding: bool,
-        only_variable_folding: bool,
+        only_constatant_simplification: bool,
+        only_variable_simplification: bool,
     ) -> SymbolicValue {
         match &sym_val {
             SymbolicValue::Variable(sym_name) => {
-                if only_variable_folding {
+                if only_variable_simplification {
                     if let Some(template) = self
                         .symbolic_library
                         .template_library
@@ -561,7 +558,7 @@ impl<'a> SymbolicExecutor<'a> {
                         }
                     }
                     sym_val.clone()
-                } else if only_constatant_folding {
+                } else if only_constatant_simplification {
                     if let Some(template) = self
                         .symbolic_library
                         .template_library
@@ -591,48 +588,60 @@ impl<'a> SymbolicExecutor<'a> {
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
-                let lhs =
-                    self.simplify_variables(lv, only_constatant_folding, only_variable_folding);
-                let rhs =
-                    self.simplify_variables(rv, only_constatant_folding, only_variable_folding);
+                let lhs = self.simplify_variables(
+                    lv,
+                    only_constatant_simplification,
+                    only_variable_simplification,
+                );
+                let rhs = self.simplify_variables(
+                    rv,
+                    only_constatant_simplification,
+                    only_variable_simplification,
+                );
                 evaluate_binary_op(&lhs, &rhs, &self.setting.prime, infix_op)
             }
             SymbolicValue::Conditional(cond, then_val, else_val) => {
-                let simplified_cond =
-                    self.simplify_variables(cond, only_constatant_folding, only_variable_folding);
+                let simplified_cond = self.simplify_variables(
+                    cond,
+                    only_constatant_simplification,
+                    only_variable_simplification,
+                );
                 match simplified_cond {
                     SymbolicValue::ConstantBool(true) => self.simplify_variables(
                         then_val,
-                        only_constatant_folding,
-                        only_variable_folding,
+                        only_constatant_simplification,
+                        only_variable_simplification,
                     ),
                     SymbolicValue::ConstantBool(false) => self.simplify_variables(
                         else_val,
-                        only_constatant_folding,
-                        only_variable_folding,
+                        only_constatant_simplification,
+                        only_variable_simplification,
                     ),
                     _ => SymbolicValue::Conditional(
                         Rc::new(self.simplify_variables(
                             cond,
-                            only_constatant_folding,
-                            only_variable_folding,
+                            only_constatant_simplification,
+                            only_variable_simplification,
                         )),
                         Rc::new(self.simplify_variables(
                             then_val,
-                            only_constatant_folding,
-                            only_variable_folding,
+                            only_constatant_simplification,
+                            only_variable_simplification,
                         )),
                         Rc::new(self.simplify_variables(
                             else_val,
-                            only_constatant_folding,
-                            only_variable_folding,
+                            only_constatant_simplification,
+                            only_variable_simplification,
                         )),
                     ),
                 }
             }
             SymbolicValue::UnaryOp(prefix_op, value) => {
-                let simplified_sym_val =
-                    self.simplify_variables(value, only_constatant_folding, only_variable_folding);
+                let simplified_sym_val = self.simplify_variables(
+                    value,
+                    only_constatant_simplification,
+                    only_variable_simplification,
+                );
                 match &simplified_sym_val {
                     SymbolicValue::ConstantInt(rv) => match prefix_op.0 {
                         ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
@@ -651,8 +660,8 @@ impl<'a> SymbolicExecutor<'a> {
                     .map(|e| {
                         Rc::new(self.simplify_variables(
                             e,
-                            only_constatant_folding,
-                            only_variable_folding,
+                            only_constatant_simplification,
+                            only_variable_simplification,
                         ))
                     })
                     .collect(),
@@ -663,8 +672,8 @@ impl<'a> SymbolicExecutor<'a> {
                     .map(|e| {
                         Rc::new(self.simplify_variables(
                             e,
-                            only_constatant_folding,
-                            only_variable_folding,
+                            only_constatant_simplification,
+                            only_variable_simplification,
                         ))
                     })
                     .collect(),
@@ -672,13 +681,13 @@ impl<'a> SymbolicExecutor<'a> {
             SymbolicValue::UniformArray(element, count) => SymbolicValue::UniformArray(
                 Rc::new(self.simplify_variables(
                     element,
-                    only_constatant_folding,
-                    only_variable_folding,
+                    only_constatant_simplification,
+                    only_variable_simplification,
                 )),
                 Rc::new(self.simplify_variables(
                     count,
-                    only_constatant_folding,
-                    only_variable_folding,
+                    only_constatant_simplification,
+                    only_variable_simplification,
                 )),
             ),
             SymbolicValue::Call(func_id, args) => SymbolicValue::Call(
@@ -687,8 +696,8 @@ impl<'a> SymbolicExecutor<'a> {
                     .map(|arg| {
                         Rc::new(self.simplify_variables(
                             arg,
-                            only_constatant_folding,
-                            only_variable_folding,
+                            only_constatant_simplification,
+                            only_variable_simplification,
                         ))
                     })
                     .collect(),
