@@ -20,7 +20,10 @@ use rustc_hash::FxHashMap;
 use program_structure::ast::Expression;
 use program_structure::program_archive::ProgramArchive;
 
-use executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
+use executor::symbolic_execution::SymbolicExecutor;
+use executor::symbolic_setting::{
+    get_default_setting_for_concrete_execution, get_default_setting_for_symbolic_execution,
+};
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
@@ -141,16 +144,10 @@ fn start() -> Result<(), ()> {
         }
     }
 
-    let setting = SymbolicExecutorSetting {
-        prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
-        skip_initialization_blocks: false,
-        only_initialization_blocks: false,
-        off_trace: false,
-        keep_track_constraints: true,
-        substitute_output: false,
-        propagate_assignments: false,
-    };
-    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    let setting = get_default_setting_for_symbolic_execution(
+        BigInt::from_str(&user_input.debug_prime()).unwrap(),
+    );
+    let mut sym_executor = SymbolicExecutor::new(&mut symbolic_library, &setting);
 
     match &program_archive.initial_template_call {
         Expression::Call { id, args, .. } => {
@@ -159,29 +156,33 @@ fn start() -> Result<(), ()> {
 
             println!("{}", "🛒 Gathering Trace/Side Constraints...".green());
 
-            sexe.symbolic_library
-                .name2id
-                .insert("main".to_string(), sexe.symbolic_library.name2id.len());
-            sexe.symbolic_library
-                .id2name
-                .insert(sexe.symbolic_library.name2id["main"], "main".to_string());
+            sym_executor.symbolic_library.name2id.insert(
+                "main".to_string(),
+                sym_executor.symbolic_library.name2id.len(),
+            );
+            sym_executor.symbolic_library.id2name.insert(
+                sym_executor.symbolic_library.name2id["main"],
+                "main".to_string(),
+            );
 
-            sexe.cur_state.add_owner(&OwnerName {
-                id: sexe.symbolic_library.name2id["main"],
+            sym_executor.cur_state.add_owner(&OwnerName {
+                id: sym_executor.symbolic_library.name2id["main"],
                 counter: 0,
                 access: None,
             });
-            sexe.cur_state
-                .set_template_id(sexe.symbolic_library.name2id[id]);
+            sym_executor
+                .cur_state
+                .set_template_id(sym_executor.symbolic_library.name2id[id]);
 
             if !user_input.flag_symbolic_template_params {
-                sexe.feed_arguments(template.get_name_of_params(), args);
+                sym_executor.feed_arguments(template.get_name_of_params(), args);
             }
 
-            let body = sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[id]]
+            let body = sym_executor.symbolic_library.template_library
+                [&sym_executor.symbolic_library.name2id[id]]
                 .body
                 .clone();
-            sexe.execute(&body, 0);
+            sym_executor.execute(&body, 0);
 
             println!(
                 "{}",
@@ -189,15 +190,17 @@ fn start() -> Result<(), ()> {
             );
             let mut ts = ConstraintStatistics::new();
             let mut ss = ConstraintStatistics::new();
-            for c in &sexe.cur_state.trace_constraints {
+            for c in &sym_executor.cur_state.trace_constraints {
                 ts.update(c);
             }
-            for c in &sexe.cur_state.side_constraints {
+            for c in &sym_executor.cur_state.side_constraints {
                 ss.update(c);
             }
             debug!(
                 "Final State: {}",
-                sexe.cur_state.lookup_fmt(&sexe.symbolic_library.id2name)
+                sym_executor
+                    .cur_state
+                    .lookup_fmt(&sym_executor.symbolic_library.id2name)
             );
 
             let mut is_safe = true;
@@ -235,54 +238,48 @@ fn start() -> Result<(), ()> {
                 };
 
                 if let Some(counter_example_for_unused_outputs) =
-                    check_unused_outputs(&mut sexe, &verification_setting)
+                    check_unused_outputs(&mut sym_executor, &verification_setting)
                 {
                     is_safe = false;
                     println!(
                         "{}",
                         counter_example_for_unused_outputs
-                            .lookup_fmt(&sexe.symbolic_library.id2name)
+                            .lookup_fmt(&sym_executor.symbolic_library.id2name)
                     );
                 } else {
-                    let sub_setting = SymbolicExecutorSetting {
-                        prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
-                        skip_initialization_blocks: true,
-                        only_initialization_blocks: false,
-                        off_trace: true,
-                        keep_track_constraints: false,
-                        substitute_output: true,
-                        propagate_assignments: true,
-                    };
-                    let mut sub_sexe =
-                        SymbolicExecutor::new(&mut sexe.symbolic_library, &sub_setting);
-                    sub_sexe.feed_arguments(
+                    let subse_setting = get_default_setting_for_concrete_execution(
+                        BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                    );
+                    let mut conc_executor =
+                        SymbolicExecutor::new(&mut sym_executor.symbolic_library, &subse_setting);
+                    conc_executor.feed_arguments(
                         &verification_setting.template_param_names,
                         &verification_setting.template_param_values,
                     );
 
                     let counterexample = match &*user_input.search_mode {
                         "quick" => brute_force_search(
-                            &mut sub_sexe,
-                            &sexe.cur_state.trace_constraints.clone(),
-                            &sexe.cur_state.side_constraints.clone(),
+                            &mut conc_executor,
+                            &sym_executor.cur_state.trace_constraints.clone(),
+                            &sym_executor.cur_state.side_constraints.clone(),
                             &verification_setting,
                         ),
                         "full" => brute_force_search(
-                            &mut sub_sexe,
-                            &sexe.cur_state.trace_constraints.clone(),
-                            &sexe.cur_state.side_constraints.clone(),
+                            &mut conc_executor,
+                            &sym_executor.cur_state.trace_constraints.clone(),
+                            &sym_executor.cur_state.side_constraints.clone(),
                             &verification_setting,
                         ),
                         "heuristics" => brute_force_search(
-                            &mut sub_sexe,
-                            &sexe.cur_state.trace_constraints.clone(),
-                            &sexe.cur_state.side_constraints.clone(),
+                            &mut conc_executor,
+                            &sym_executor.cur_state.trace_constraints.clone(),
+                            &sym_executor.cur_state.side_constraints.clone(),
                             &verification_setting,
                         ),
                         "ga" => mutation_test_search(
-                            &mut sub_sexe,
-                            &sexe.cur_state.trace_constraints.clone(),
-                            &sexe.cur_state.side_constraints.clone(),
+                            &mut conc_executor,
+                            &sym_executor.cur_state.trace_constraints.clone(),
+                            &sym_executor.cur_state.side_constraints.clone(),
                             &verification_setting,
                         ),
                         _ => panic!(
@@ -296,7 +293,7 @@ fn start() -> Result<(), ()> {
                             "{}",
                             counterexample
                                 .unwrap()
-                                .lookup_fmt(&sub_sexe.symbolic_library.id2name)
+                                .lookup_fmt(&conc_executor.symbolic_library.id2name)
                         );
                     }
                 }

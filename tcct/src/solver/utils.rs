@@ -13,7 +13,8 @@ use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
 
 use crate::executor::debug_ast::{DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode};
-use crate::executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
+use crate::executor::symbolic_execution::SymbolicExecutor;
+use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_value::{
     evaluate_binary_op, OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
 };

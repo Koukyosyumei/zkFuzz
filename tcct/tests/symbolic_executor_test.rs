@@ -13,7 +13,8 @@ use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 
 use tcct::executor::debug_ast::{DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode};
-use tcct::executor::symbolic_execution::{SymbolicExecutor, SymbolicExecutorSetting};
+use tcct::executor::symbolic_execution::SymbolicExecutor;
+use tcct::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
 use tcct::executor::symbolic_value::{
     OwnerName, SymbolicAccess, SymbolicLibrary, SymbolicName, SymbolicValue,
 };
@@ -98,18 +99,6 @@ pub fn execute(sexe: &mut SymbolicExecutor, program_archive: &ProgramArchive) {
     }
 }
 
-pub fn get_setting(prime: &BigInt) -> SymbolicExecutorSetting {
-    SymbolicExecutorSetting {
-        prime: prime.clone(),
-        skip_initialization_blocks: false,
-        only_initialization_blocks: false,
-        off_trace: false,
-        keep_track_constraints: true,
-        substitute_output: false,
-        propagate_assignments: false,
-    }
-}
-
 #[test]
 fn test_if_else() {
     let path = "./tests/sample/test_if_else.circom".to_string();
@@ -119,7 +108,7 @@ fn test_if_else() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -257,7 +246,7 @@ fn test_lessthan() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -408,7 +397,7 @@ fn test_1d_array_component() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -595,7 +584,7 @@ fn test_array_signal_initialization() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -774,7 +763,7 @@ fn test_2d_array_var() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -834,15 +823,7 @@ fn test_multidimensional_array_function() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = SymbolicExecutorSetting {
-        prime: prime.clone(),
-        skip_initialization_blocks: false,
-        only_initialization_blocks: false,
-        off_trace: false,
-        keep_track_constraints: true,
-        substitute_output: false,
-        propagate_assignments: false,
-    };
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -889,7 +870,7 @@ fn test_2d_array_component() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -1126,7 +1107,7 @@ fn test_recursive_function() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -1173,7 +1154,7 @@ fn test_bulk_assignment() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -1318,7 +1299,7 @@ fn test_array_template_argument() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -1378,7 +1359,7 @@ fn test_anonymous_component() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -1687,7 +1668,7 @@ fn test_branch_within_callee() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime);
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
@@ -1705,7 +1686,7 @@ fn test_unused_outputs() {
     let range = BigInt::from(100);
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_setting(&prime);
+    let setting = get_default_setting_for_symbolic_execution(prime.clone());
 
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
