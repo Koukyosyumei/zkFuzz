@@ -189,11 +189,6 @@ pub fn extract_variables_from_symbolic_value(
             extract_variables_from_symbolic_value(&lhs, variables);
             extract_variables_from_symbolic_value(&rhs, variables);
         }
-        SymbolicValue::Conditional(cond, if_true, if_false) => {
-            extract_variables_from_symbolic_value(&cond, variables);
-            extract_variables_from_symbolic_value(&if_true, variables);
-            extract_variables_from_symbolic_value(&if_false, variables);
-        }
         SymbolicValue::UnaryOp(_, expr) => extract_variables_from_symbolic_value(&expr, variables),
         SymbolicValue::Array(elements) | SymbolicValue::Tuple(elements) => {
             for elem in elements {
