@@ -15,7 +15,7 @@ use rustc_hash::FxHashMap;
 use std::str::FromStr;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::eval::evaluate_trace_fitness;
 use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
@@ -180,6 +180,69 @@ fn initialize_input_population(
                 .collect()
         })
         .collect()
+}
+
+fn evaluate_cooverage(
+    sexe: &mut SymbolicExecutor,
+    inputs: &FxHashMap<SymbolicName, BigInt>,
+    setting: &VerificationSetting,
+) -> usize {
+    sexe.clear();
+    sexe.turn_on_coverage_tracking();
+    sexe.cur_state.add_owner(&OwnerName {
+        id: sexe.symbolic_library.name2id["main"],
+        counter: 0,
+        access: None,
+    });
+    sexe.feed_arguments(
+        &setting.template_param_names,
+        &setting.template_param_values,
+    );
+    sexe.concrete_execute(&setting.target_template_name, inputs);
+    sexe.record_path();
+    sexe.coverage_count()
+}
+
+fn mutate_input_population_with_coverage_maximization(
+    sexe: &mut SymbolicExecutor,
+    variables: &[SymbolicName],
+    initial_size: usize,
+    maximum_size: usize,
+    setting: &VerificationSetting,
+    rng: &mut ThreadRng,
+) {
+    let mut inputs_population = initialize_input_population(variables, initial_size, setting, rng);
+    let mut total_coverage = 0_usize;
+
+    let max_iteration = 10;
+    for _ in 0..max_iteration {
+        let mut new_inputs_population = Vec::new();
+
+        // Iterate through the population and attempt mutations
+        for input in &inputs_population {
+            let mut new_input = input.clone();
+
+            // Mutate each variable with a small probability
+            for var in variables {
+                if rng.gen::<bool>() {
+                    let mutation = draw_random_constant(setting, rng);
+                    new_input.insert(var.clone(), mutation);
+                }
+            }
+
+            // Evaluate the new input
+            let new_coverage = evaluate_cooverage(sexe, &input, setting);
+            if new_coverage > total_coverage {
+                new_inputs_population.push(new_input);
+                total_coverage = new_coverage;
+            }
+        }
+        inputs_population.append(&mut new_inputs_population);
+
+        if inputs_population.len() > maximum_size {
+            break;
+        }
+    }
 }
 
 fn initialize_trace_mutation(
