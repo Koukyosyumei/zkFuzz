@@ -35,6 +35,7 @@ pub fn check_unused_outputs(
             &sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[&setting.id]]
                 .id2dimensions[&oup_name]
                 .clone(),
+            usize::MAX,
         );
         register_array_elements(
             *oup_name,
