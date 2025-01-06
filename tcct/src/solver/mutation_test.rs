@@ -25,6 +25,7 @@ use crate::solver::eval::evaluate_trace_fitness;
 use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
 
 #[derive(Serialize, Deserialize)]
+#[serde(default)]
 struct MutationSettings {
     program_population_size: usize,
     input_population_size: usize,
