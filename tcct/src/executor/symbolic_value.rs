@@ -227,7 +227,7 @@ impl SymbolicValue {
                     }
                 )
             }
-            SymbolicValue::Variable(sname) => sname.lookup_fmt(lookup),
+            SymbolicValue::Variable(sym_name) => sym_name.lookup_fmt(lookup),
             SymbolicValue::Assign(lhs, rhs, is_safe) => {
                 format!(
                     "({} {} {})",
@@ -388,21 +388,21 @@ fn gather_variables_for_template(
     id2dimensions: &mut FxHashMap<usize, Vec<DebugExpression>>,
 ) {
     if let DebugStatement::Declaration {
-        name,
+        id,
         xtype,
         dimensions,
         ..
     } = dbody
     {
-        id2type.insert(name.clone(), xtype.clone());
-        id2dimensions.insert(name.clone(), dimensions.clone());
+        id2type.insert(id.clone(), xtype.clone());
+        id2dimensions.insert(id.clone(), dimensions.clone());
         if let VariableType::Signal(typ, _taglist) = &xtype {
             match typ {
                 SignalType::Input => {
-                    input_ids.insert(*name);
+                    input_ids.insert(*id);
                 }
                 SignalType::Output => {
-                    output_ids.insert(*name);
+                    output_ids.insert(*id);
                 }
                 SignalType::Intermediate => {}
             }
@@ -414,11 +414,8 @@ fn gather_variables_for_function(
     dbody: &DebugStatement,
     id2dimensions: &mut FxHashMap<usize, Vec<DebugExpression>>,
 ) {
-    if let DebugStatement::Declaration {
-        name, dimensions, ..
-    } = dbody
-    {
-        id2dimensions.insert(name.clone(), dimensions.clone());
+    if let DebugStatement::Declaration { id, dimensions, .. } = dbody {
+        id2dimensions.insert(id.clone(), dimensions.clone());
     }
 }
 

@@ -55,7 +55,7 @@ pub enum DebugExpression {
         rhe: Box<DebugExpression>,
     },
     Variable {
-        name: usize,
+        id: usize,
         access: Vec<DebugAccess>,
     },
     Number(BigInt),
@@ -111,7 +111,7 @@ pub enum DebugStatement {
     Declaration {
         meta: Meta,
         xtype: VariableType,
-        name: usize,
+        id: usize,
         dimensions: Vec<DebugExpression>,
         is_constant: bool,
     },
@@ -228,7 +228,7 @@ impl DebugExpression {
                     name2id.len() - 1
                 };
                 DebugExpression::Variable {
-                    name: i,
+                    id: i,
                     access: access
                         .into_iter()
                         .map(|a| DebugAccess::from(a, name2id, id2name))
@@ -378,7 +378,7 @@ impl DebugStatement {
                 DebugStatement::Declaration {
                     meta: meta,
                     xtype: xtype,
-                    name: i,
+                    id: i,
                     dimensions: dimensions
                         .into_iter()
                         .map(|dim| DebugExpression::from(dim, name2id, id2name))
@@ -629,9 +629,9 @@ impl DebugExpression {
                 s += &(*rhe.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugExpression::Variable { name, access, .. } => {
+            DebugExpression::Variable { id, access, .. } => {
                 s += &format!("{}{}Variable:{}\n", indentation, BLUE, RESET);
-                s += &format!("{}  Name: {}\n", indentation, lookup[name]);
+                s += &format!("{}  Name: {}\n", indentation, lookup[id]);
                 s += &format!("{}  Access:\n", indentation);
                 for arg0 in access {
                     s += &arg0.lookup_fmt(lookup, indent + 2);
@@ -886,7 +886,7 @@ impl DebugStatement {
             DebugStatement::Declaration {
                 meta,
                 xtype,
-                name,
+                id,
                 dimensions,
                 is_constant,
             } => {
@@ -903,7 +903,7 @@ impl DebugStatement {
                 );
                 s += &format!(
                     "{}  {}Name:{} {}\n",
-                    indentation, MAGENTA, RESET, lookup[name]
+                    indentation, MAGENTA, RESET, lookup[id]
                 );
                 s += &format!("{}  {}Dimensions:{}:\n", indentation, YELLOW, RESET);
                 for dim in dimensions {

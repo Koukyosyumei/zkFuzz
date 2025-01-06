@@ -41,8 +41,8 @@ impl ConstraintStatistics {
             SymbolicValue::ConstantBool(_) => {
                 self.constant_counts += 1;
             }
-            SymbolicValue::Variable(name) => {
-                *self.variable_counts.entry(name.clone()).or_insert(0) += 1;
+            SymbolicValue::Variable(sym_name) => {
+                *self.variable_counts.entry(sym_name.clone()).or_insert(0) += 1;
             }
             SymbolicValue::Assign(lhs, rhs, _) => {
                 *self
@@ -102,8 +102,8 @@ impl ConstraintStatistics {
                 self.update_from_symbolic_value(value, depth + 1);
                 self.update_from_symbolic_value(size, depth + 1);
             }
-            SymbolicValue::Call(name, args) => {
-                *self.function_call_counts.entry(name.clone()).or_insert(0) += 1;
+            SymbolicValue::Call(id, args) => {
+                *self.function_call_counts.entry(id.clone()).or_insert(0) += 1;
                 for arg in args {
                     self.update_from_symbolic_value(arg, depth + 1);
                 }

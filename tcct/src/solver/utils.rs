@@ -176,8 +176,8 @@ pub fn extract_variables_from_symbolic_value(
     variables: &mut FxHashSet<SymbolicName>,
 ) {
     match value {
-        SymbolicValue::Variable(name) => {
-            variables.insert(name.clone());
+        SymbolicValue::Variable(sym_name) => {
+            variables.insert(sym_name.clone());
         }
         SymbolicValue::Assign(lhs, rhs, _)
         | SymbolicValue::AssignEq(lhs, rhs)
@@ -227,9 +227,9 @@ pub fn get_dependency_graph(
             SymbolicValue::Assign(lhs, rhs, _)
             | SymbolicValue::AssignEq(lhs, rhs)
             | SymbolicValue::AssignCall(lhs, rhs, _) => {
-                if let SymbolicValue::Variable(name) = lhs.as_ref() {
-                    graph.entry(name.clone()).or_default();
-                    extract_variables_from_symbolic_value(&rhs, graph.get_mut(&name).unwrap());
+                if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
+                    graph.entry(sym_name.clone()).or_default();
+                    extract_variables_from_symbolic_value(&rhs, graph.get_mut(&sym_name).unwrap());
                 } else {
                     panic!("Left hand of the assignment is not a variable");
                 }
@@ -337,15 +337,15 @@ pub fn emulate_symbolic_values(
             SymbolicValue::Assign(lhs, rhs, _)
             | SymbolicValue::AssignEq(lhs, rhs)
             | SymbolicValue::AssignCall(lhs, rhs, _) => {
-                if let SymbolicValue::Variable(name) = lhs.as_ref() {
+                if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
                     let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
                     match &rhs_val {
                         SymbolicValue::ConstantInt(num) => {
-                            assignment.insert(name.clone(), num.clone());
+                            assignment.insert(sym_name.clone(), num.clone());
                         }
                         SymbolicValue::ConstantBool(b) => {
                             assignment.insert(
-                                name.clone(),
+                                sym_name.clone(),
                                 if *b { BigInt::one() } else { BigInt::zero() },
                             );
                         }
@@ -440,14 +440,14 @@ pub fn evaluate_symbolic_value(
     match value {
         SymbolicValue::ConstantBool(_b) => value.clone(),
         SymbolicValue::ConstantInt(_v) => value.clone(),
-        SymbolicValue::Variable(name) => {
-            if !assignment.contains_key(name) {
+        SymbolicValue::Variable(sym_name) => {
+            if !assignment.contains_key(sym_name) {
                 panic!(
                     "name={} is not available in the assignment",
-                    name.lookup_fmt(&symbolic_library.id2name)
+                    sym_name.lookup_fmt(&symbolic_library.id2name)
                 );
             }
-            SymbolicValue::ConstantInt(assignment.get(name).unwrap().clone())
+            SymbolicValue::ConstantInt(assignment.get(sym_name).unwrap().clone())
         }
         SymbolicValue::Array(elements) => SymbolicValue::Array(
             elements
@@ -545,13 +545,13 @@ pub fn evaluate_symbolic_value(
 
             let func = subse.symbolic_library.function_library[id].clone();
             for i in 0..(func.function_argument_names.len()) {
-                let sname = SymbolicName::new(
+                let sym_name = SymbolicName::new(
                     func.function_argument_names[i],
                     subse.cur_state.owner_name.clone(),
                     None,
                 );
-                subse.cur_state.set_rc_symval(
-                    sname,
+                subse.cur_state.set_rc_sym_val(
+                    sym_name,
                     Rc::new(evaluate_symbolic_value(
                         prime,
                         &args[i],
