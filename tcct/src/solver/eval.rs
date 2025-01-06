@@ -46,7 +46,7 @@ pub fn evaluate_trace_fitness(
     trace_constraints: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
-    inputs: &Vec<FxHashMap<SymbolicName, BigInt>>,
+    inputs_assignment: &Vec<FxHashMap<SymbolicName, BigInt>>,
 ) -> (usize, BigInt, Option<CounterExample>) {
     let mutated_trace_constraints = apply_trace_mutation(trace_constraints, trace_mutation);
 
@@ -54,7 +54,7 @@ pub fn evaluate_trace_fitness(
     let mut max_score = -setting.prime.clone();
     let mut counter_example = None;
 
-    for (i, inp) in inputs.iter().enumerate() {
+    for (i, inp) in inputs_assignment.iter().enumerate() {
         let mut assignment = inp.clone();
 
         let is_success = emulate_symbolic_values(

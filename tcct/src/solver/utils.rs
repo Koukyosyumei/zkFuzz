@@ -564,7 +564,7 @@ pub fn evaluate_symbolic_value(
 
             let return_name =
                 SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
-            let return_value = (*subse.cur_state.values[&return_name].clone()).clone();
+            let return_value = (*subse.cur_state.symbol_binding_map[&return_name].clone()).clone();
             return_value
         }
         _ => todo!("{:?}", value),
@@ -738,7 +738,7 @@ pub fn verify_assignment(
     } else if !is_satisfy_tc && is_satisfy_sc {
         sexe.clear();
         sexe.cur_state.add_owner(&OwnerName {
-            name: sexe.symbolic_library.name2id["main"],
+            id: sexe.symbolic_library.name2id["main"],
             counter: 0,
             access: None,
         });
@@ -755,10 +755,10 @@ pub fn verify_assignment(
         let mut result = VerificationResult::WellConstrained;
         for (k, v) in assignment {
             if sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[&setting.id]]
-                .outputs
-                .contains(&k.name)
+                .output_ids
+                .contains(&k.id)
             {
-                let original_sym_value = &sexe.cur_state.values[&k];
+                let original_sym_value = &sexe.cur_state.symbol_binding_map[&k];
                 let original_int_value = match &(*original_sym_value.clone()) {
                     SymbolicValue::ConstantInt(num) => num.clone(),
                     SymbolicValue::ConstantBool(b) => {

@@ -57,27 +57,23 @@ impl SymbolicAccess {
 /// conditional, arrays, tuples, uniform arrays, and function calls.
 #[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub struct OwnerName {
-    pub name: usize,
+    pub id: usize,
     pub access: Option<Vec<SymbolicAccess>>,
     pub counter: usize,
 }
 
 #[derive(Clone, Debug)]
 pub struct SymbolicName {
-    pub name: usize,
+    pub id: usize,
     pub owner: Rc<Vec<OwnerName>>,
     pub access: Option<Vec<SymbolicAccess>>,
     precomputed_hash: RefCell<Option<u64>>,
 }
 
 impl SymbolicName {
-    pub fn new(
-        name: usize,
-        owner: Rc<Vec<OwnerName>>,
-        access: Option<Vec<SymbolicAccess>>,
-    ) -> Self {
+    pub fn new(id: usize, owner: Rc<Vec<OwnerName>>, access: Option<Vec<SymbolicAccess>>) -> Self {
         SymbolicName {
-            name,
+            id,
             owner,
             access,
             precomputed_hash: RefCell::new(None),
@@ -121,11 +117,11 @@ impl SymbolicName {
                     } else {
                         "".to_string()
                     };
-                    lookup[&e.name].clone() + &access_str
+                    lookup[&e.id].clone() + &access_str
                 })
                 .collect::<Vec<_>>()
                 .join("."),
-            lookup[&self.name].clone(),
+            lookup[&self.id].clone(),
             if let Some(access) = &self.access {
                 access
                     .iter()
@@ -140,7 +136,7 @@ impl SymbolicName {
 
     fn compute_hash(&self) -> u64 {
         let mut hasher = FxHasher::default(); // Use FxHasher for consistency with FxHashMap
-        self.name.hash(&mut hasher);
+        self.id.hash(&mut hasher);
         self.owner.hash(&mut hasher);
         self.access.hash(&mut hasher);
         hasher.finish()
@@ -162,7 +158,7 @@ impl PartialEq for SymbolicName {
             return self_hash == other_hash;
         }
 
-        self.name == other.name && *self.owner == *other.owner && self.access == other.access
+        self.id == other.id && *self.owner == *other.owner && self.access == other.access
     }
 }
 
@@ -348,8 +344,8 @@ pub type SymbolicValueRef = Rc<SymbolicValue>;
 #[derive(Default, Clone)]
 pub struct SymbolicTemplate {
     pub template_parameter_names: Vec<usize>,
-    pub inputs: FxHashSet<usize>,
-    pub outputs: FxHashSet<usize>,
+    pub input_ids: FxHashSet<usize>,
+    pub output_ids: FxHashSet<usize>,
     pub id2type: FxHashMap<usize, VariableType>,
     pub id2dimensions: FxHashMap<usize, Vec<DebugExpression>>,
     pub body: Vec<DebugStatement>,
@@ -370,7 +366,7 @@ pub struct SymbolicFunction {
 pub struct SymbolicComponent {
     pub template_name: usize,
     pub args: Vec<SymbolicValueRef>,
-    pub inputs: FxHashMap<SymbolicName, Option<SymbolicValue>>,
+    pub symbol_optional_binding_map: FxHashMap<SymbolicName, Option<SymbolicValue>>,
     pub is_done: bool,
 }
 
@@ -386,8 +382,8 @@ pub struct SymbolicLibrary {
 
 fn gather_variables_for_template(
     dbody: &DebugStatement,
-    inputs: &mut FxHashSet<usize>,
-    outputs: &mut FxHashSet<usize>,
+    input_ids: &mut FxHashSet<usize>,
+    output_ids: &mut FxHashSet<usize>,
     id2type: &mut FxHashMap<usize, VariableType>,
     id2dimensions: &mut FxHashMap<usize, Vec<DebugExpression>>,
 ) {
@@ -403,10 +399,10 @@ fn gather_variables_for_template(
         if let VariableType::Signal(typ, _taglist) = &xtype {
             match typ {
                 SignalType::Input => {
-                    inputs.insert(*name);
+                    input_ids.insert(*name);
                 }
                 SignalType::Output => {
-                    outputs.insert(*name);
+                    output_ids.insert(*name);
                 }
                 SignalType::Intermediate => {}
             }
@@ -447,8 +443,8 @@ impl SymbolicLibrary {
         body: &Statement,
         template_parameter_names: &Vec<String>,
     ) {
-        let mut inputs = FxHashSet::default();
-        let mut outputs = FxHashSet::default();
+        let mut input_ids = FxHashSet::default();
+        let mut output_ids = FxHashSet::default();
         let mut id2type = FxHashMap::default();
         let mut id2dimensions = FxHashMap::default();
 
@@ -467,8 +463,8 @@ impl SymbolicLibrary {
         dbody.apply_iterative(|stmt| {
             gather_variables_for_template(
                 stmt,
-                &mut inputs,
-                &mut outputs,
+                &mut input_ids,
+                &mut output_ids,
                 &mut id2type,
                 &mut id2dimensions,
             );
@@ -489,8 +485,8 @@ impl SymbolicLibrary {
                         }
                     })
                     .collect::<Vec<_>>(),
-                inputs: inputs,
-                outputs: outputs,
+                input_ids: input_ids,
+                output_ids: output_ids,
                 id2type: id2type,
                 id2dimensions: id2dimensions,
                 body: vec![dbody.clone(), DebugStatement::Ret],

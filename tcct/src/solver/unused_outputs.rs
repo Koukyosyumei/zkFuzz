@@ -28,7 +28,7 @@ pub fn check_unused_outputs(
     let mut used_outputs: FxHashMap<SymbolicName, Option<bool>> = FxHashMap::default();
     for oup_name in &sexe.symbolic_library.template_library
         [&sexe.symbolic_library.name2id[&setting.id]]
-        .outputs
+        .output_ids
         .clone()
     {
         let dims = sexe.evaluate_dimension(

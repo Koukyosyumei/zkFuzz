@@ -53,8 +53,8 @@ pub fn mutation_test_search(
     for v in variables_set.iter() {
         if v.owner.len() == 1
             && sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[&setting.id]]
-                .inputs
-                .contains(&v.name)
+                .input_ids
+                .contains(&v.id)
         {
             input_variables.push(v.clone());
         }

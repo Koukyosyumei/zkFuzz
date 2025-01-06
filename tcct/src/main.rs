@@ -167,7 +167,7 @@ fn start() -> Result<(), ()> {
                 .insert(sexe.symbolic_library.name2id["main"], "main".to_string());
 
             sexe.cur_state.add_owner(&OwnerName {
-                name: sexe.symbolic_library.name2id["main"],
+                id: sexe.symbolic_library.name2id["main"],
                 counter: 0,
                 access: None,
             });

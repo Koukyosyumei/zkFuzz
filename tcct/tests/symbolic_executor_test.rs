@@ -78,7 +78,7 @@ pub fn execute(sexe: &mut SymbolicExecutor, program_archive: &ProgramArchive) {
                 .set_template_id(sexe.symbolic_library.name2id[id]);
 
             sexe.cur_state.add_owner(&OwnerName {
-                name: sexe.symbolic_library.name2id["main"],
+                id: sexe.symbolic_library.name2id["main"],
                 counter: 0,
                 access: None,
             });
@@ -136,7 +136,7 @@ fn test_if_else() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["inv"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -147,7 +147,7 @@ fn test_if_else() {
                     Rc::new(SymbolicValue::Variable(SymbolicName::new(
                         sexe.symbolic_library.name2id["in"],
                         Rc::new(vec![OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         }]),
@@ -162,7 +162,7 @@ fn test_if_else() {
                     Rc::new(SymbolicValue::Variable(SymbolicName::new(
                         sexe.symbolic_library.name2id["in"],
                         Rc::new(vec![OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         }]),
@@ -177,7 +177,7 @@ fn test_if_else() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["out"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -190,7 +190,7 @@ fn test_if_else() {
                         Rc::new(SymbolicValue::Variable(SymbolicName::new(
                             sexe.symbolic_library.name2id["in"],
                             Rc::new(vec![OwnerName {
-                                name: sexe.symbolic_library.name2id["main"],
+                                id: sexe.symbolic_library.name2id["main"],
                                 access: None,
                                 counter: 0,
                             }]),
@@ -201,7 +201,7 @@ fn test_if_else() {
                     Rc::new(SymbolicValue::Variable(SymbolicName::new(
                         sexe.symbolic_library.name2id["inv"],
                         Rc::new(vec![OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         }]),
@@ -217,7 +217,7 @@ fn test_if_else() {
                 Rc::new(SymbolicValue::Variable(SymbolicName::new(
                     sexe.symbolic_library.name2id["in"],
                     Rc::new(vec![OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     }]),
@@ -227,7 +227,7 @@ fn test_if_else() {
                 Rc::new(SymbolicValue::Variable(SymbolicName::new(
                     sexe.symbolic_library.name2id["out"],
                     Rc::new(vec![OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     }]),
@@ -268,12 +268,12 @@ fn test_lessthan() {
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["lt"],
+                        id: sexe.symbolic_library.name2id["lt"],
                         access: None,
                         counter: 0,
                     },
@@ -285,7 +285,7 @@ fn test_lessthan() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["a"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -297,12 +297,12 @@ fn test_lessthan() {
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["lt"],
+                        id: sexe.symbolic_library.name2id["lt"],
                         access: None,
                         counter: 0,
                     },
@@ -314,7 +314,7 @@ fn test_lessthan() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["b"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -325,12 +325,12 @@ fn test_lessthan() {
 
     let owner_name = Rc::new(vec![
         OwnerName {
-            name: sexe.symbolic_library.name2id["main"],
+            id: sexe.symbolic_library.name2id["main"],
             access: None,
             counter: 0,
         },
         OwnerName {
-            name: sexe.symbolic_library.name2id["lt"],
+            id: sexe.symbolic_library.name2id["lt"],
             access: None,
             counter: 0,
         },
@@ -419,12 +419,12 @@ fn test_1d_array_component() {
                 sexe.symbolic_library.name2id["x"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: Some(vec![SymbolicAccess::ArrayAccess(
                             SymbolicValue::ConstantInt(BigInt::zero()),
                         )]),
@@ -438,7 +438,7 @@ fn test_1d_array_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["a"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -450,12 +450,12 @@ fn test_1d_array_component() {
                 sexe.symbolic_library.name2id["x"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: Some(vec![SymbolicAccess::ArrayAccess(
                             SymbolicValue::ConstantInt(BigInt::zero()),
                         )]),
@@ -469,7 +469,7 @@ fn test_1d_array_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["b"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -481,12 +481,12 @@ fn test_1d_array_component() {
                 sexe.symbolic_library.name2id["y"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: Some(vec![SymbolicAccess::ArrayAccess(
                             SymbolicValue::ConstantInt(BigInt::zero()),
                         )]),
@@ -502,12 +502,12 @@ fn test_1d_array_component() {
                     sexe.symbolic_library.name2id["x"],
                     Rc::new(vec![
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         },
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["c"],
+                            id: sexe.symbolic_library.name2id["c"],
                             access: Some(vec![SymbolicAccess::ArrayAccess(
                                 SymbolicValue::ConstantInt(BigInt::zero()),
                             )]),
@@ -523,12 +523,12 @@ fn test_1d_array_component() {
                     sexe.symbolic_library.name2id["x"],
                     Rc::new(vec![
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         },
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["c"],
+                            id: sexe.symbolic_library.name2id["c"],
                             access: Some(vec![SymbolicAccess::ArrayAccess(
                                 SymbolicValue::ConstantInt(BigInt::zero()),
                             )]),
@@ -553,16 +553,16 @@ fn test_1d_array_component() {
 
     // main.c[0].x[0] = main.a;
     assert_eq!(
-        *sexe.cur_state.values[&SymbolicName::new(
+        *sexe.cur_state.symbol_binding_map[&SymbolicName::new(
             sexe.symbolic_library.name2id["x"],
             Rc::new(vec![
                 OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 },
                 OwnerName {
-                    name: sexe.symbolic_library.name2id["c"],
+                    id: sexe.symbolic_library.name2id["c"],
                     access: Some(vec![SymbolicAccess::ArrayAccess(
                         SymbolicValue::ConstantInt(BigInt::zero()),
                     )]),
@@ -577,7 +577,7 @@ fn test_1d_array_component() {
         SymbolicValue::Variable(SymbolicName::new(
             sexe.symbolic_library.name2id["a"],
             Rc::new(vec![OwnerName {
-                name: sexe.symbolic_library.name2id["main"],
+                id: sexe.symbolic_library.name2id["main"],
                 access: None,
                 counter: 0,
             }]),
@@ -606,12 +606,12 @@ fn test_array_signal_initialization() {
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -624,7 +624,7 @@ fn test_array_signal_initialization() {
                 Rc::new(SymbolicValue::Variable(SymbolicName::new(
                     sexe.symbolic_library.name2id["in"],
                     Rc::new(vec![OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     }]),
@@ -639,12 +639,12 @@ fn test_array_signal_initialization() {
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -657,7 +657,7 @@ fn test_array_signal_initialization() {
                 Rc::new(SymbolicValue::Variable(SymbolicName::new(
                     sexe.symbolic_library.name2id["in"],
                     Rc::new(vec![OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     }]),
@@ -672,12 +672,12 @@ fn test_array_signal_initialization() {
                 sexe.symbolic_library.name2id["out"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -692,12 +692,12 @@ fn test_array_signal_initialization() {
                         sexe.symbolic_library.name2id["in"],
                         Rc::new(vec![
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["main"],
+                                id: sexe.symbolic_library.name2id["main"],
                                 access: None,
                                 counter: 0,
                             },
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["c"],
+                                id: sexe.symbolic_library.name2id["c"],
                                 access: None,
                                 counter: 0,
                             },
@@ -712,12 +712,12 @@ fn test_array_signal_initialization() {
                     sexe.symbolic_library.name2id["in"],
                     Rc::new(vec![
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         },
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["c"],
+                            id: sexe.symbolic_library.name2id["c"],
                             access: None,
                             counter: 0,
                         },
@@ -732,7 +732,7 @@ fn test_array_signal_initialization() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["out"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -742,12 +742,12 @@ fn test_array_signal_initialization() {
                 sexe.symbolic_library.name2id["out"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -783,7 +783,7 @@ fn test_2d_array_var() {
         Rc::new(SymbolicValue::Variable(SymbolicName::new(
             sexe.symbolic_library.name2id["out"],
             Rc::new(vec![OwnerName {
-                name: sexe.symbolic_library.name2id["main"],
+                id: sexe.symbolic_library.name2id["main"],
                 access: None,
                 counter: 0,
             }]),
@@ -796,7 +796,7 @@ fn test_2d_array_var() {
                         Rc::new(SymbolicValue::Variable(SymbolicName::new(
                             sexe.symbolic_library.name2id["in"],
                             Rc::new(vec![OwnerName {
-                                name: sexe.symbolic_library.name2id["main"],
+                                id: sexe.symbolic_library.name2id["main"],
                                 access: None,
                                 counter: 0,
                             }]),
@@ -851,7 +851,7 @@ fn test_multidimensional_array_function() {
         Rc::new(SymbolicValue::Variable(SymbolicName::new(
             sexe.symbolic_library.name2id["out"],
             Rc::new(vec![OwnerName {
-                name: sexe.symbolic_library.name2id["main"],
+                id: sexe.symbolic_library.name2id["main"],
                 access: None,
                 counter: 0,
             }]),
@@ -861,7 +861,7 @@ fn test_multidimensional_array_function() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -900,12 +900,12 @@ fn test_2d_array_component() {
                 sexe.symbolic_library.name2id["x"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -918,7 +918,7 @@ fn test_2d_array_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -932,12 +932,12 @@ fn test_2d_array_component() {
                 sexe.symbolic_library.name2id["x"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -950,7 +950,7 @@ fn test_2d_array_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -964,12 +964,12 @@ fn test_2d_array_component() {
                 sexe.symbolic_library.name2id["x"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -982,7 +982,7 @@ fn test_2d_array_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -996,12 +996,12 @@ fn test_2d_array_component() {
                 sexe.symbolic_library.name2id["x"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -1014,7 +1014,7 @@ fn test_2d_array_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -1028,12 +1028,12 @@ fn test_2d_array_component() {
                 sexe.symbolic_library.name2id["y"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -1048,12 +1048,12 @@ fn test_2d_array_component() {
                         sexe.symbolic_library.name2id["x"],
                         Rc::new(vec![
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["main"],
+                                id: sexe.symbolic_library.name2id["main"],
                                 access: None,
                                 counter: 0,
                             },
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["c"],
+                                id: sexe.symbolic_library.name2id["c"],
                                 access: None,
                                 counter: 0,
                             },
@@ -1068,12 +1068,12 @@ fn test_2d_array_component() {
                         sexe.symbolic_library.name2id["x"],
                         Rc::new(vec![
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["main"],
+                                id: sexe.symbolic_library.name2id["main"],
                                 access: None,
                                 counter: 0,
                             },
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["c"],
+                                id: sexe.symbolic_library.name2id["c"],
                                 access: None,
                                 counter: 0,
                             },
@@ -1089,12 +1089,12 @@ fn test_2d_array_component() {
                     sexe.symbolic_library.name2id["x"],
                     Rc::new(vec![
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         },
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["c"],
+                            id: sexe.symbolic_library.name2id["c"],
                             access: None,
                             counter: 0,
                         },
@@ -1135,7 +1135,7 @@ fn test_recursive_function() {
         Rc::new(SymbolicValue::Variable(SymbolicName::new(
             sexe.symbolic_library.name2id["out"],
             Rc::new(vec![OwnerName {
-                name: sexe.symbolic_library.name2id["main"],
+                id: sexe.symbolic_library.name2id["main"],
                 access: None,
                 counter: 0,
             }]),
@@ -1145,7 +1145,7 @@ fn test_recursive_function() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -1183,12 +1183,12 @@ fn test_bulk_assignment() {
             sexe.symbolic_library.name2id["in"],
             Rc::new(vec![
                 OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 },
                 OwnerName {
-                    name: sexe.symbolic_library.name2id["c"],
+                    id: sexe.symbolic_library.name2id["c"],
                     access: None,
                     counter: 0,
                 },
@@ -1201,7 +1201,7 @@ fn test_bulk_assignment() {
         Rc::new(SymbolicValue::Variable(SymbolicName::new(
             sexe.symbolic_library.name2id["in"],
             Rc::new(vec![OwnerName {
-                name: sexe.symbolic_library.name2id["main"],
+                id: sexe.symbolic_library.name2id["main"],
                 access: None,
                 counter: 0,
             }]),
@@ -1218,12 +1218,12 @@ fn test_bulk_assignment() {
             sexe.symbolic_library.name2id["out"],
             Rc::new(vec![
                 OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 },
                 OwnerName {
-                    name: sexe.symbolic_library.name2id["c"],
+                    id: sexe.symbolic_library.name2id["c"],
                     access: None,
                     counter: 0,
                 },
@@ -1239,12 +1239,12 @@ fn test_bulk_assignment() {
                         sexe.symbolic_library.name2id["in"],
                         Rc::new(vec![
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["main"],
+                                id: sexe.symbolic_library.name2id["main"],
                                 access: None,
                                 counter: 0,
                             },
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["c"],
+                                id: sexe.symbolic_library.name2id["c"],
                                 access: None,
                                 counter: 0,
                             },
@@ -1260,12 +1260,12 @@ fn test_bulk_assignment() {
                     sexe.symbolic_library.name2id["in"],
                     Rc::new(vec![
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         },
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["c"],
+                            id: sexe.symbolic_library.name2id["c"],
                             access: None,
                             counter: 0,
                         },
@@ -1281,12 +1281,12 @@ fn test_bulk_assignment() {
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["c"],
+                        id: sexe.symbolic_library.name2id["c"],
                         access: None,
                         counter: 0,
                     },
@@ -1328,12 +1328,12 @@ fn test_array_template_argument() {
             sexe.symbolic_library.name2id["out"],
             Rc::new(vec![
                 OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 },
                 OwnerName {
-                    name: sexe.symbolic_library.name2id["A"],
+                    id: sexe.symbolic_library.name2id["A"],
                     access: None,
                     counter: 0,
                 },
@@ -1347,12 +1347,12 @@ fn test_array_template_argument() {
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["A"],
+                        id: sexe.symbolic_library.name2id["A"],
                         access: None,
                         counter: 0,
                     },
@@ -1389,12 +1389,12 @@ fn test_anonymous_component() {
                 sexe.symbolic_library.name2id["a"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["A_11_163"],
+                        id: sexe.symbolic_library.name2id["A_11_163"],
                         access: None,
                         counter: 0,
                     },
@@ -1404,7 +1404,7 @@ fn test_anonymous_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -1418,12 +1418,12 @@ fn test_anonymous_component() {
                 sexe.symbolic_library.name2id["b"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["A_11_163"],
+                        id: sexe.symbolic_library.name2id["A_11_163"],
                         access: None,
                         counter: 0,
                     },
@@ -1433,7 +1433,7 @@ fn test_anonymous_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -1447,12 +1447,12 @@ fn test_anonymous_component() {
                 sexe.symbolic_library.name2id["c"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["A_11_163"],
+                        id: sexe.symbolic_library.name2id["A_11_163"],
                         access: None,
                         counter: 0,
                     },
@@ -1467,12 +1467,12 @@ fn test_anonymous_component() {
                         sexe.symbolic_library.name2id["a"],
                         Rc::new(vec![
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["main"],
+                                id: sexe.symbolic_library.name2id["main"],
                                 access: None,
                                 counter: 0,
                             },
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["A_11_163"],
+                                id: sexe.symbolic_library.name2id["A_11_163"],
                                 access: None,
                                 counter: 0,
                             },
@@ -1485,12 +1485,12 @@ fn test_anonymous_component() {
                     sexe.symbolic_library.name2id["b"],
                     Rc::new(vec![
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         },
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["A_11_163"],
+                            id: sexe.symbolic_library.name2id["A_11_163"],
                             access: None,
                             counter: 0,
                         },
@@ -1503,7 +1503,7 @@ fn test_anonymous_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["out_1"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -1513,12 +1513,12 @@ fn test_anonymous_component() {
                 sexe.symbolic_library.name2id["c"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["A_11_163"],
+                        id: sexe.symbolic_library.name2id["A_11_163"],
                         access: None,
                         counter: 0,
                     },
@@ -1531,12 +1531,12 @@ fn test_anonymous_component() {
                 sexe.symbolic_library.name2id["a"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["A_12_210"],
+                        id: sexe.symbolic_library.name2id["A_12_210"],
                         access: None,
                         counter: 0,
                     },
@@ -1546,7 +1546,7 @@ fn test_anonymous_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -1560,12 +1560,12 @@ fn test_anonymous_component() {
                 sexe.symbolic_library.name2id["b"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["A_12_210"],
+                        id: sexe.symbolic_library.name2id["A_12_210"],
                         access: None,
                         counter: 0,
                     },
@@ -1575,7 +1575,7 @@ fn test_anonymous_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["in"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -1589,12 +1589,12 @@ fn test_anonymous_component() {
                 sexe.symbolic_library.name2id["c"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["A_12_210"],
+                        id: sexe.symbolic_library.name2id["A_12_210"],
                         access: None,
                         counter: 0,
                     },
@@ -1609,12 +1609,12 @@ fn test_anonymous_component() {
                         sexe.symbolic_library.name2id["a"],
                         Rc::new(vec![
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["main"],
+                                id: sexe.symbolic_library.name2id["main"],
                                 access: None,
                                 counter: 0,
                             },
                             OwnerName {
-                                name: sexe.symbolic_library.name2id["A_12_210"],
+                                id: sexe.symbolic_library.name2id["A_12_210"],
                                 access: None,
                                 counter: 0,
                             },
@@ -1627,12 +1627,12 @@ fn test_anonymous_component() {
                     sexe.symbolic_library.name2id["b"],
                     Rc::new(vec![
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["main"],
+                            id: sexe.symbolic_library.name2id["main"],
                             access: None,
                             counter: 0,
                         },
                         OwnerName {
-                            name: sexe.symbolic_library.name2id["A_12_210"],
+                            id: sexe.symbolic_library.name2id["A_12_210"],
                             access: None,
                             counter: 0,
                         },
@@ -1645,7 +1645,7 @@ fn test_anonymous_component() {
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
                 sexe.symbolic_library.name2id["out_2"],
                 Rc::new(vec![OwnerName {
-                    name: sexe.symbolic_library.name2id["main"],
+                    id: sexe.symbolic_library.name2id["main"],
                     access: None,
                     counter: 0,
                 }]),
@@ -1655,12 +1655,12 @@ fn test_anonymous_component() {
                 sexe.symbolic_library.name2id["c"],
                 Rc::new(vec![
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["main"],
+                        id: sexe.symbolic_library.name2id["main"],
                         access: None,
                         counter: 0,
                     },
                     OwnerName {
-                        name: sexe.symbolic_library.name2id["A_12_210"],
+                        id: sexe.symbolic_library.name2id["A_12_210"],
                         access: None,
                         counter: 0,
                     },
