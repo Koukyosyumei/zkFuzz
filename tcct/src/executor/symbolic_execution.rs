@@ -59,6 +59,10 @@ impl CoverageTracker {
 
     pub fn record_branch(&mut self, meta_elem_id: usize, branch_cond: bool) {
         *self.visit_counter.entry(meta_elem_id).or_insert(0) += 1;
+        println!(
+            "insert: {} {} {}",
+            meta_elem_id, self.visit_counter[&meta_elem_id], branch_cond
+        );
         self.current_path
             .push((meta_elem_id, self.visit_counter[&meta_elem_id], branch_cond));
     }

@@ -52,7 +52,8 @@ pub fn mutation_test_search(
     let mut input_variables = Vec::new();
     for v in variables_set.iter() {
         if v.owner.len() == 1
-            && sexe.symbolic_library.template_library[&sexe.symbolic_library.name2id[&setting.id]]
+            && sexe.symbolic_library.template_library
+                [&sexe.symbolic_library.name2id[&setting.target_template_name]]
                 .input_ids
                 .contains(&v.id)
         {

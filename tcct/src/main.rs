@@ -211,12 +211,12 @@ fn start() -> Result<(), ()> {
                 );
                 println!("{}", "🩺 Scanning TCCT Instances...".green());
 
-                let mut main_template_id = "";
+                let mut main_template_name = "";
                 let mut template_param_names = Vec::new();
                 let mut template_param_values = Vec::new();
                 match &program_archive.initial_template_call {
                     Expression::Call { id, args, .. } => {
-                        main_template_id = id;
+                        main_template_name = id;
                         let template = program_archive.templates[id].clone();
                         if !user_input.flag_symbolic_template_params {
                             template_param_names = template.get_name_of_params().clone();
@@ -227,7 +227,7 @@ fn start() -> Result<(), ()> {
                 }
 
                 let verification_setting = VerificationSetting {
-                    id: main_template_id.to_string(),
+                    target_template_name: main_template_name.to_string(),
                     prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
                     range: BigInt::from_str(&user_input.heuristics_range()).unwrap(),
                     quick_mode: &*user_input.search_mode == "quick",
