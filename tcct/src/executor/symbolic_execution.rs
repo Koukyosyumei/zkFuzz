@@ -26,7 +26,7 @@ use crate::executor::symbolic_value::{
     update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
     SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
 };
-use crate::executor::utils::{generate_cartesian_product_indices, italic};
+use crate::executor::utils::generate_cartesian_product_indices;
 
 pub struct SymbolicStore {
     pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,

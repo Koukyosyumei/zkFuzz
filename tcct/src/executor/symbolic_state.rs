@@ -1,30 +1,14 @@
-use std::cmp::max;
-use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 use colored::Colorize;
-use log::trace;
-use num_bigint_dig::BigInt;
-use num_traits::cast::ToPrimitive;
-use num_traits::FromPrimitive;
-use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
+use rustc_hash::FxHashMap;
 
-use program_structure::ast::{
-    AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType,
-    VariableType,
-};
 
-use crate::executor::debug_ast::{
-    DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode, DebugStatement,
-    DebugVariableType,
-};
 use crate::executor::symbolic_value::{
-    access_multidimensional_array, create_nested_array, decompose_uniform_array, enumerate_array,
-    evaluate_binary_op, generate_lessthan_constraint, is_concrete_array, register_array_elements,
-    update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
-    SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
+    OwnerName, SymbolicAccess,
+    SymbolicName, SymbolicValue, SymbolicValueRef,
 };
-use crate::executor::utils::{generate_cartesian_product_indices, italic};
+use crate::executor::utils::italic;
 
 pub type SymbolBindingMap = FxHashMap<SymbolicName, SymbolicValueRef>;
 pub type SymbolicConstraints = Vec<SymbolicValueRef>;

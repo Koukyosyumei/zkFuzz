@@ -3,13 +3,12 @@ use std::fmt;
 use std::fs::File;
 use std::io;
 use std::io::Write;
-use std::path::Path;
 
 use colored::Colorize;
 use log::info;
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
-use num_traits::{One, Signed, Zero};
+use num_traits::{One, Zero};
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
 use rand::seq::SliceRandom;

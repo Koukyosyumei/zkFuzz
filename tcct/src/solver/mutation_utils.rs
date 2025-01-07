@@ -4,8 +4,6 @@ use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
 use num_traits::{One, Signed, Zero};
 use rand::rngs::ThreadRng;
-use rand::seq::IteratorRandom;
-use rand::seq::SliceRandom;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
