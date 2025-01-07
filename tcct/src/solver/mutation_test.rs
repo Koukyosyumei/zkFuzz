@@ -144,18 +144,19 @@ pub fn mutation_test_search(
 
     for generation in 0..max_generations {
         // Generate input population for this generation
-        if mutation_setting.input_initialization_method == "coverage" && generation % 4 == 3 {
-            sexe.clear_coverage_tracker();
-            mutate_input_population_with_coverage_maximization(
-                sexe,
-                &input_variables,
-                &mut input_population,
-                input_population_size / 2 as usize,
-                input_population_size,
-                &setting,
-                &mut rng,
-            );
-            println!("a: {}", input_population.len());
+        if mutation_setting.input_initialization_method == "coverage" {
+            if generation % 4 == 3 {
+                sexe.clear_coverage_tracker();
+                mutate_input_population_with_coverage_maximization(
+                    sexe,
+                    &input_variables,
+                    &mut input_population,
+                    input_population_size / 2 as usize,
+                    input_population_size,
+                    &setting,
+                    &mut rng,
+                );
+            }
         } else {
             input_population = initialize_input_population(
                 &input_variables,
@@ -314,12 +315,7 @@ fn mutate_input_population_with_coverage_maximization(
                 // Crossover
                 let other = inputs_population[rng.gen_range(0, inputs_population.len())].clone();
                 new_input = random_crossover(input, &other, rng);
-            } else if p > 0.33 {
-                // Mutate only one input variable
-                let var = &input_variables[rng.gen_range(0, input_variables.len())];
-                let mutation = draw_random_constant(setting, rng);
-                new_input.insert(var.clone(), mutation);
-            } else {
+            } else if p > 0.1 {
                 // Mutate each input variable with a small probability
                 for var in input_variables {
                     // rng.gen_bool(0.2)
@@ -328,6 +324,11 @@ fn mutate_input_population_with_coverage_maximization(
                         new_input.insert(var.clone(), mutation);
                     }
                 }
+            } else {
+                // Mutate only one input variable
+                let var = &input_variables[rng.gen_range(0, input_variables.len())];
+                let mutation = draw_random_constant(setting, rng);
+                new_input.insert(var.clone(), mutation);
             }
 
             // Evaluate the new input
