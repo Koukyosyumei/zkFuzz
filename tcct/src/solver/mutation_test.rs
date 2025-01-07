@@ -168,7 +168,7 @@ pub fn mutation_test_search(
     );
     let mut fitness_scores = vec![-setting.prime.clone(); mutation_setting.input_population_size];
     let mut input_population = Vec::new();
-    let mut fitness_score_log = Vec::new();
+    let mut fitness_score_log = Vec::with_capacity(mutation_setting.max_generations);
 
     for generation in 0..mutation_setting.max_generations {
         // Generate input population for this generation
