@@ -24,7 +24,7 @@ template BabyAdd() {
     xout <-- (beta + gamma) / (1+ d*tau);
     (1+ d*tau) * xout === (beta + gamma);
 
-    // over-constrained
+    // wrong constraint
     yout <-- (delta + a*beta - gamma) / (1-d*tau);
     1 + (1-d*tau)*yout === (delta + a*beta - gamma);
 }
