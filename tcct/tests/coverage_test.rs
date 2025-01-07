@@ -8,21 +8,14 @@ use num_traits::identities::Zero;
 use num_traits::One;
 use rustc_hash::FxHashMap;
 
-use program_structure::ast::{Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode};
-use program_structure::error_definition::Report;
+use program_structure::ast::Expression;
 use program_structure::program_archive::ProgramArchive;
 
-use tcct::executor::debug_ast::{DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode};
 use tcct::executor::symbolic_execution::SymbolicExecutor;
 use tcct::executor::symbolic_setting::get_default_setting_for_concrete_execution;
-use tcct::executor::symbolic_value::{
-    OwnerName, SymbolicAccess, SymbolicLibrary, SymbolicName, SymbolicValue,
-};
-use tcct::solver::unused_outputs::check_unused_outputs;
-use tcct::solver::utils::VerificationSetting;
-use tcct::type_analysis_user::analyse_project;
+use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
 
-use crate::utils::{execute, prepare_symbolic_library};
+use crate::utils::prepare_symbolic_library;
 
 fn get_inputs(cexe: &SymbolicExecutor, inputs: &[BigInt]) -> FxHashMap<SymbolicName, BigInt> {
     let mut map = FxHashMap::default();
