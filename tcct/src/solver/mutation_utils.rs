@@ -96,7 +96,7 @@ pub fn apply_trace_mutation(
     mutated_constraints
 }
 
-pub fn evaluate_trace_fitness(
+pub fn evaluate_trace_fitness_by_error(
     sexe: &mut SymbolicExecutor,
     setting: &VerificationSetting,
     trace_constraints: &Vec<SymbolicValueRef>,

@@ -21,7 +21,9 @@ use std::str::FromStr;
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
 
-use crate::solver::mutation_utils::{evaluate_trace_fitness, random_crossover, roulette_selection};
+use crate::solver::mutation_utils::{
+    evaluate_trace_fitness_by_error, random_crossover, roulette_selection,
+};
 use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
 
 #[derive(Serialize, Deserialize)]
@@ -184,7 +186,7 @@ pub fn mutation_test_search(
         let evaluations: Vec<_> = trace_population
             .iter()
             .map(|a| {
-                evaluate_trace_fitness(
+                evaluate_trace_fitness_by_error(
                     sexe,
                     &setting,
                     trace_constraints,
