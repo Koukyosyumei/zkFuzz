@@ -73,6 +73,31 @@ impl fmt::Display for MutationSettings {
     }
 }
 
+#[derive(Serialize)]
+pub struct AuxiliaryResult {
+    find_bug: bool,
+    generation: usize,
+    fitness_score_log: Vec<BigInt>,
+}
+
+fn save_auxiliray_result(
+    path: String,
+    find_bug: bool,
+    generation: usize,
+    fitness_score_log: Vec<BigInt>,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let aux_result = AuxiliaryResult {
+        find_bug,
+        generation,
+        fitness_score_log,
+    };
+    let serialized = serde_json::to_string(&aux_result)?;
+    let mut file = File::create(path)?;
+    file.write_all(serialized.as_bytes())?;
+
+    Ok(())
+}
+
 fn load_settings_from_json(file_path: &str) -> Result<MutationSettings, serde_json::Error> {
     let file = File::open(file_path);
     if file.is_ok() {
@@ -143,6 +168,7 @@ pub fn mutation_test_search(
     );
     let mut fitness_scores = vec![-setting.prime.clone(); mutation_setting.input_population_size];
     let mut input_population = Vec::new();
+    let mut fitness_score_log = Vec::new();
 
     for generation in 0..mutation_setting.max_generations {
         // Generate input population for this generation
@@ -219,6 +245,15 @@ pub fn mutation_test_search(
                 generation, mutation_setting.max_generations, 0
             );
             println!("\n └─ Solution found in generation {}", generation);
+
+            /*
+            let _ = save_auxiliray_result(
+                "auxiliary_result.json".to_string(),
+                true,
+                generation,
+                fitness_score_log,
+            );*/
+
             return evaluations[best_idx].2.clone();
         }
 
@@ -227,12 +262,23 @@ pub fn mutation_test_search(
             generation, mutation_setting.max_generations, fitness_scores[best_idx]
         );
         io::stdout().flush().unwrap();
+
+        fitness_score_log.push(fitness_scores[best_idx].clone());
     }
 
     println!(
         "\n └─ No solution found after {} generations",
         mutation_setting.max_generations
     );
+
+    /*
+    let _ = save_auxiliray_result(
+        "auxiliary_result.json".to_string(),
+        false,
+        mutation_setting.max_generations,
+        fitness_score_log,
+    );*/
+
     None
 }
 
