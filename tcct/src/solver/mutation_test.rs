@@ -11,7 +11,6 @@ use num_bigint_dig::RandBigInt;
 use num_traits::{One, Zero};
 use rand::rngs::ThreadRng;
 use rand::seq::IteratorRandom;
-use rand::seq::SliceRandom;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
@@ -225,7 +224,7 @@ pub fn mutation_test_search(
 
         print!(
             "\r\x1b[2KGeneration: {}/{} ({:.3})",
-            generation, mutation_setting.max_generations, evaluations[best_idx].1
+            generation, mutation_setting.max_generations, fitness_scores[best_idx]
         );
         io::stdout().flush().unwrap();
     }
