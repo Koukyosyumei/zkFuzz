@@ -33,6 +33,7 @@ struct MutationSettings {
     input_population_size: usize,
     max_generations: usize,
     input_initialization_method: String,
+    fitness_function: String,
     mutation_rate: f64,
     crossover_rate: f64,
 }
@@ -44,6 +45,7 @@ impl Default for MutationSettings {
             input_population_size: 30,
             max_generations: 300,
             input_initialization_method: "random".to_string(),
+            fitness_function: "error".to_string(),
             mutation_rate: 0.3,
             crossover_rate: 0.5,
         }
@@ -55,18 +57,20 @@ impl fmt::Display for MutationSettings {
         write!(
             f,
             "🧬 Mutation Settings:
-    ├─ Program Population Size: {}
-    ├─ Input Population Size: {}
-    ├─ Max Generations: {}
-    ├─ Input Initialization Method: {}: 
-    ├─ Mutation Rate: {:.2}%
-    └─ Crossover Rate: {:.2}%",
-            self.program_population_size,
-            self.input_population_size,
-            self.max_generations,
-            self.input_initialization_method,
-            self.mutation_rate * 100.0,
-            self.crossover_rate * 100.0
+    ├─ Program Population Size    : {}
+    ├─ Input Population Size      : {}
+    ├─ Max Generations            : {}
+    ├─ Input Initialization Method: {} 
+    ├─ Fitness Function           : {} 
+    ├─ Mutation Rate              : {}
+    └─ Crossover Rate             : {}",
+            self.program_population_size.to_string().bright_yellow(),
+            self.input_population_size.to_string().bright_yellow(),
+            self.max_generations.to_string().bright_yellow(),
+            self.input_initialization_method.bright_yellow(),
+            self.fitness_function.bright_yellow(),
+            self.mutation_rate.to_string().bright_yellow(),
+            self.crossover_rate.to_string().bright_yellow()
         )
     }
 }
@@ -157,13 +161,15 @@ pub fn mutation_test_search(
                     &mut rng,
                 );
             }
-        } else {
+        } else if mutation_setting.input_initialization_method == "random" {
             input_population = initialize_input_population(
                 &input_variables,
                 mutation_setting.input_population_size,
                 &setting,
                 &mut rng,
             );
+        } else {
+            panic!("mutation_setting.input_initialization_method should be one of [`coverage`, `random`]");
         }
 
         // Evolve the trace population
@@ -202,7 +208,12 @@ pub fn mutation_test_search(
             .max_by_key(|&(_, value)| value.1.clone())
             .map(|(index, _)| index)
             .unwrap();
-        fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
+        if mutation_setting.fitness_function == "error" {
+            fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
+        } else if mutation_setting.fitness_function == "constant" {
+        } else {
+            panic!("mutation_setting.fitness_function should be one of [`error`, `constant`]");
+        }
 
         if evaluations[best_idx].1.is_zero() {
             print!(
