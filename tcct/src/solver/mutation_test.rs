@@ -140,27 +140,22 @@ pub fn mutation_test_search(
     let mut trace_population =
         initialize_trace_mutation(&assign_pos, program_population_size, setting, &mut rng);
     let mut fitness_scores = vec![-setting.prime.clone(); input_population_size];
-
-    let mut input_population =
-        initialize_input_population(&input_variables, input_population_size, &setting, &mut rng);
+    let mut input_population = Vec::new();
 
     for generation in 0..max_generations {
         // Generate input population for this generation
         if mutation_setting.input_initialization_method == "coverage" && generation % 4 == 3 {
-            input_population = initialize_input_population(
-                &input_variables,
-                input_population_size / 2 as usize,
-                &setting,
-                &mut rng,
-            );
+            sexe.clear_coverage_tracker();
             mutate_input_population_with_coverage_maximization(
                 sexe,
                 &input_variables,
                 &mut input_population,
+                input_population_size / 2 as usize,
                 input_population_size,
                 &setting,
                 &mut rng,
             );
+            println!("a: {}", input_population.len());
         } else {
             input_population = initialize_input_population(
                 &input_variables,
@@ -181,7 +176,7 @@ pub fn mutation_test_search(
                 setting,
                 &mut rng,
                 |individual, setting, rng| trace_mutate(individual, setting, rng),
-                |parent1, parent2, rng| trace_crossover(parent1, parent2, rng),
+                |parent1, parent2, rng| random_crossover(parent1, parent2, rng),
             )
         } else {
             vec![FxHashMap::default()]
@@ -285,31 +280,53 @@ fn evaluate_cooverage(
 
 fn mutate_input_population_with_coverage_maximization(
     sexe: &mut SymbolicExecutor,
-    variables: &[SymbolicName],
+    input_variables: &[SymbolicName],
     inputs_population: &mut Vec<FxHashMap<SymbolicName, BigInt>>,
+    input_population_size: usize,
     maximum_size: usize,
     setting: &VerificationSetting,
     rng: &mut ThreadRng,
 ) {
     let mut total_coverage = 0_usize;
+    inputs_population.clear();
 
-    for input in &mut *inputs_population {
-        total_coverage = evaluate_cooverage(sexe, &input, setting);
+    let initial_input_population =
+        initialize_input_population(input_variables, input_population_size, &setting, rng);
+
+    for input in &initial_input_population {
+        let new_coverage = evaluate_cooverage(sexe, &input, setting);
+        if new_coverage > total_coverage {
+            inputs_population.push(input.clone());
+            total_coverage = new_coverage;
+        }
     }
 
-    let max_iteration = 10;
+    let max_iteration = 30;
     for _ in 0..max_iteration {
         let mut new_inputs_population = Vec::new();
 
         // Iterate through the population and attempt mutations
-        for input in &mut *inputs_population {
+        for input in inputs_population.iter() {
             let mut new_input = input.clone();
 
-            // Mutate each variable with a small probability
-            for var in variables {
-                if rng.gen::<bool>() {
-                    let mutation = draw_random_constant(setting, rng);
-                    new_input.insert(var.clone(), mutation);
+            let p = rng.gen::<f64>();
+            if p > 0.66 {
+                // Crossover
+                let other = inputs_population[rng.gen_range(0, inputs_population.len())].clone();
+                new_input = random_crossover(input, &other, rng);
+            } else if p > 0.33 {
+                // Mutate only one input variable
+                let var = &input_variables[rng.gen_range(0, input_variables.len())];
+                let mutation = draw_random_constant(setting, rng);
+                new_input.insert(var.clone(), mutation);
+            } else {
+                // Mutate each input variable with a small probability
+                for var in input_variables {
+                    // rng.gen_bool(0.2)
+                    if rng.gen::<bool>() {
+                        let mutation = draw_random_constant(setting, rng);
+                        new_input.insert(var.clone(), mutation);
+                    }
                 }
             }
 
@@ -402,11 +419,15 @@ fn selection<'a, T: Clone>(
     &population[0]
 }
 
-fn trace_crossover(
-    parent1: &FxHashMap<usize, SymbolicValue>,
-    parent2: &FxHashMap<usize, SymbolicValue>,
+fn random_crossover<K, V>(
+    parent1: &FxHashMap<K, V>,
+    parent2: &FxHashMap<K, V>,
     rng: &mut ThreadRng,
-) -> FxHashMap<usize, SymbolicValue> {
+) -> FxHashMap<K, V>
+where
+    K: Clone + std::hash::Hash + std::cmp::Eq,
+    V: Clone,
+{
     parent1
         .iter()
         .map(|(var, val)| {
