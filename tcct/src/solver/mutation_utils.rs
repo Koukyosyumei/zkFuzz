@@ -1,7 +1,12 @@
 use std::rc::Rc;
 
 use num_bigint_dig::BigInt;
-use num_traits::Zero;
+use num_bigint_dig::RandBigInt;
+use num_traits::{One, Signed, Zero};
+use rand::rngs::ThreadRng;
+use rand::seq::IteratorRandom;
+use rand::seq::SliceRandom;
+use rand::Rng;
 use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
@@ -11,6 +16,57 @@ use crate::solver::utils::{
     accumulate_error_of_constraints, emulate_symbolic_values, is_vulnerable, verify_assignment,
     CounterExample, UnderConstrainedType, VerificationResult, VerificationSetting,
 };
+
+pub fn roulette_selection<'a, T: Clone>(
+    population: &'a [T],
+    fitness_scores: &[BigInt],
+    rng: &mut ThreadRng,
+) -> &'a T {
+    let min_score = fitness_scores.iter().min().unwrap();
+    let weights: Vec<_> = fitness_scores
+        .iter()
+        .map(|score| score - min_score)
+        .collect();
+    let mut total_weight: BigInt = weights.iter().sum();
+    total_weight = if total_weight.is_positive() {
+        total_weight
+    } else {
+        BigInt::one()
+    };
+    let mut target = rng.gen_bigint_range(&BigInt::zero(), &total_weight);
+    for (individual, weight) in population.iter().zip(weights.iter()) {
+        if &target < weight {
+            return individual;
+        }
+        target -= weight;
+    }
+    &population[0]
+}
+
+pub fn random_crossover<K, V>(
+    parent1: &FxHashMap<K, V>,
+    parent2: &FxHashMap<K, V>,
+    rng: &mut ThreadRng,
+) -> FxHashMap<K, V>
+where
+    K: Clone + std::hash::Hash + std::cmp::Eq,
+    V: Clone,
+{
+    parent1
+        .iter()
+        .map(|(var, val)| {
+            if rng.gen::<bool>() {
+                (var.clone(), val.clone())
+            } else {
+                if parent2.contains_key(var) {
+                    (var.clone(), parent2[var].clone())
+                } else {
+                    (var.clone(), val.clone())
+                }
+            }
+        })
+        .collect()
+}
 
 pub fn apply_trace_mutation(
     trace_constraints: &Vec<SymbolicValueRef>,

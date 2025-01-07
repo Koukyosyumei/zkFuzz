@@ -21,7 +21,7 @@ use std::str::FromStr;
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
 
-use crate::solver::eval::evaluate_trace_fitness;
+use crate::solver::mutation_utils::{evaluate_trace_fitness, random_crossover, roulette_selection};
 use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
 
 #[derive(Serialize, Deserialize)]
@@ -90,12 +90,6 @@ pub fn mutation_test_search(
     let mutation_setting = load_settings_from_json(path_to_mutation_setting).unwrap();
     info!("\n{}", mutation_setting);
 
-    // Parameters
-    let program_population_size = 30;
-    let input_population_size = 30;
-    let max_generations = 300;
-    let mutation_rate = 0.3;
-    let crossover_rate = 0.5;
     let mut rng = rand::thread_rng();
 
     // Initial Population of Mutated Programs
@@ -137,12 +131,16 @@ pub fn mutation_test_search(
         assign_pos.len()
     );
 
-    let mut trace_population =
-        initialize_trace_mutation(&assign_pos, program_population_size, setting, &mut rng);
-    let mut fitness_scores = vec![-setting.prime.clone(); input_population_size];
+    let mut trace_population = initialize_trace_mutation(
+        &assign_pos,
+        mutation_setting.program_population_size,
+        setting,
+        &mut rng,
+    );
+    let mut fitness_scores = vec![-setting.prime.clone(); mutation_setting.input_population_size];
     let mut input_population = Vec::new();
 
-    for generation in 0..max_generations {
+    for generation in 0..mutation_setting.max_generations {
         // Generate input population for this generation
         if mutation_setting.input_initialization_method == "coverage" {
             if generation % 4 == 3 {
@@ -151,8 +149,8 @@ pub fn mutation_test_search(
                     sexe,
                     &input_variables,
                     &mut input_population,
-                    input_population_size / 2 as usize,
-                    input_population_size,
+                    mutation_setting.input_population_size / 2 as usize,
+                    mutation_setting.input_population_size,
                     &setting,
                     &mut rng,
                 );
@@ -160,7 +158,7 @@ pub fn mutation_test_search(
         } else {
             input_population = initialize_input_population(
                 &input_variables,
-                input_population_size,
+                mutation_setting.input_population_size,
                 &setting,
                 &mut rng,
             );
@@ -171,9 +169,9 @@ pub fn mutation_test_search(
             evolve_population(
                 &trace_population,
                 &fitness_scores,
-                program_population_size,
-                mutation_rate,
-                crossover_rate,
+                mutation_setting.program_population_size,
+                mutation_setting.mutation_rate,
+                mutation_setting.crossover_rate,
                 setting,
                 &mut rng,
                 |individual, setting, rng| trace_mutate(individual, setting, rng),
@@ -207,7 +205,7 @@ pub fn mutation_test_search(
         if evaluations[best_idx].1.is_zero() {
             print!(
                 "\r\x1b[2KGeneration: {}/{} ({:.3})",
-                generation, max_generations, 0
+                generation, mutation_setting.max_generations, 0
             );
             println!("\n └─ Solution found in generation {}", generation);
             return evaluations[best_idx].2.clone();
@@ -215,14 +213,14 @@ pub fn mutation_test_search(
 
         print!(
             "\r\x1b[2KGeneration: {}/{} ({:.3})",
-            generation, max_generations, evaluations[best_idx].1
+            generation, mutation_setting.max_generations, evaluations[best_idx].1
         );
         io::stdout().flush().unwrap();
     }
 
     println!(
         "\n └─ No solution found after {} generations",
-        max_generations
+        mutation_setting.max_generations
     );
     None
 }
@@ -257,7 +255,7 @@ fn initialize_input_population(
         .collect()
 }
 
-fn evaluate_cooverage(
+fn evaluate_coverage(
     sexe: &mut SymbolicExecutor,
     inputs: &FxHashMap<SymbolicName, BigInt>,
     setting: &VerificationSetting,
@@ -295,7 +293,7 @@ fn mutate_input_population_with_coverage_maximization(
         initialize_input_population(input_variables, input_population_size, &setting, rng);
 
     for input in &initial_input_population {
-        let new_coverage = evaluate_cooverage(sexe, &input, setting);
+        let new_coverage = evaluate_coverage(sexe, &input, setting);
         if new_coverage > total_coverage {
             inputs_population.push(input.clone());
             total_coverage = new_coverage;
@@ -332,7 +330,7 @@ fn mutate_input_population_with_coverage_maximization(
             }
 
             // Evaluate the new input
-            let new_coverage = evaluate_cooverage(sexe, &new_input, setting);
+            let new_coverage = evaluate_coverage(sexe, &new_input, setting);
             if new_coverage > total_coverage {
                 new_inputs_population.push(new_input);
                 total_coverage = new_coverage;
@@ -379,8 +377,8 @@ fn evolve_population<T: Clone>(
 ) -> Vec<T> {
     (0..population_size)
         .map(|_| {
-            let parent1 = selection(current_population, evaluations, rng);
-            let parent2 = selection(current_population, evaluations, rng);
+            let parent1 = roulette_selection(current_population, evaluations, rng);
+            let parent2 = roulette_selection(current_population, evaluations, rng);
             let mut child = if rng.gen::<f64>() < crossover_rate {
                 crossover_fn(&parent1, &parent2, rng)
             } else {
@@ -390,57 +388,6 @@ fn evolve_population<T: Clone>(
                 mutate_fn(&mut child, setting, rng);
             }
             child
-        })
-        .collect()
-}
-
-fn selection<'a, T: Clone>(
-    population: &'a [T],
-    fitness_scores: &[BigInt],
-    rng: &mut ThreadRng,
-) -> &'a T {
-    let min_score = fitness_scores.iter().min().unwrap();
-    let weights: Vec<_> = fitness_scores
-        .iter()
-        .map(|score| score - min_score)
-        .collect();
-    let mut total_weight: BigInt = weights.iter().sum();
-    total_weight = if total_weight.is_positive() {
-        total_weight
-    } else {
-        BigInt::one()
-    };
-    let mut target = rng.gen_bigint_range(&BigInt::zero(), &total_weight);
-    for (individual, weight) in population.iter().zip(weights.iter()) {
-        if &target < weight {
-            return individual;
-        }
-        target -= weight;
-    }
-    &population[0]
-}
-
-fn random_crossover<K, V>(
-    parent1: &FxHashMap<K, V>,
-    parent2: &FxHashMap<K, V>,
-    rng: &mut ThreadRng,
-) -> FxHashMap<K, V>
-where
-    K: Clone + std::hash::Hash + std::cmp::Eq,
-    V: Clone,
-{
-    parent1
-        .iter()
-        .map(|(var, val)| {
-            if rng.gen::<bool>() {
-                (var.clone(), val.clone())
-            } else {
-                if parent2.contains_key(var) {
-                    (var.clone(), parent2[var].clone())
-                } else {
-                    (var.clone(), val.clone())
-                }
-            }
         })
         .collect()
 }
