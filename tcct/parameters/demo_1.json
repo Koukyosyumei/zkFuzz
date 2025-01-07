@@ -1,0 +1,4 @@
+{
+    "max_generations": 5000,
+    "fitness_function": "constant"
+}
