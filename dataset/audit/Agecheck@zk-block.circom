@@ -1,7 +1,7 @@
 pragma circom 2.0.0; 
 
 
-include "../../include/circomlib/circuits/comparators.circom";
+include "../include/circomlib/circuits/comparators.circom";
 
 template AgeLimit() {
     // private
