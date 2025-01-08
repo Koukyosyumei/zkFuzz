@@ -146,13 +146,17 @@ pub fn evaluate_trace_fitness_by_error(
                     score = -setting.prime.clone();
                 }
             } else {
-                max_idx = i;
-                max_score = BigInt::zero();
-                counter_example = Some(CounterExample {
-                    flag: VerificationResult::UnderConstrained(UnderConstrainedType::Deterministic),
-                    assignment: assignment.clone(),
-                });
-                break;
+                if trace_mutation.is_empty() {
+                    max_idx = i;
+                    max_score = BigInt::zero();
+                    counter_example = Some(CounterExample {
+                        flag: VerificationResult::UnderConstrained(
+                            UnderConstrainedType::Deterministic,
+                        ),
+                        assignment: assignment.clone(),
+                    });
+                    break;
+                }
             }
         }
 
