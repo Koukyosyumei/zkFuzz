@@ -24,7 +24,7 @@ use crate::executor::symbolic_value::{
 #[derive(Clone)]
 pub enum UnderConstrainedType {
     UnusedOutput,
-    Deterministic,
+    UnexpectedInput,
     NonDeterministic(String, BigInt),
 }
 
@@ -47,8 +47,8 @@ impl fmt::Display for VerificationResult {
                 UnderConstrainedType::UnusedOutput => {
                     "👻 UnderConstrained (Unused-Output) 👻".red().bold()
                 }
-                UnderConstrainedType::Deterministic => {
-                    "🧟 UnderConstrained (Deterministic) 🧟".red().bold()
+                UnderConstrainedType::UnexpectedInput => {
+                    "🧟 UnderConstrained (Unexpected-Input) 🧟".red().bold()
                 }
                 UnderConstrainedType::NonDeterministic(name, value) => format!(
                     "🔥 UnderConstrained (Non-Deterministic) 🔥\n║           ➡️ `{}` is expected to be `{}`",
@@ -747,7 +747,7 @@ pub fn verify_assignment(
         sexe.concrete_execute(&setting.target_template_name, assignment);
 
         if sexe.cur_state.is_failed {
-            return VerificationResult::UnderConstrained(UnderConstrainedType::Deterministic);
+            return VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedInput);
         }
 
         let mut result = VerificationResult::WellConstrained;
