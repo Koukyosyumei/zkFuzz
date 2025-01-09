@@ -3,7 +3,7 @@ use std::rc::Rc;
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
 use num_traits::{One, Signed, Zero};
-use rand::rngs::ThreadRng;
+use rand::rngs::StdRng;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
@@ -18,7 +18,7 @@ use crate::solver::utils::{
 pub fn roulette_selection<'a, T: Clone>(
     population: &'a [T],
     fitness_scores: &[BigInt],
-    rng: &mut ThreadRng,
+    rng: &mut StdRng,
 ) -> &'a T {
     let min_score = fitness_scores.iter().min().unwrap();
     let weights: Vec<_> = fitness_scores
@@ -44,7 +44,7 @@ pub fn roulette_selection<'a, T: Clone>(
 pub fn random_crossover<K, V>(
     parent1: &FxHashMap<K, V>,
     parent2: &FxHashMap<K, V>,
-    rng: &mut ThreadRng,
+    rng: &mut StdRng,
 ) -> FxHashMap<K, V>
 where
     K: Clone + std::hash::Hash + std::cmp::Eq,

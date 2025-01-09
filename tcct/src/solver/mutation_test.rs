@@ -9,9 +9,9 @@ use log::info;
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
 use num_traits::{One, Zero};
-use rand::rngs::ThreadRng;
+use rand::rngs::StdRng;
 use rand::seq::IteratorRandom;
-use rand::Rng;
+use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
@@ -34,6 +34,7 @@ struct MutationSettings {
     fitness_function: String,
     mutation_rate: f64,
     crossover_rate: f64,
+    seed: u64,
 }
 
 impl Default for MutationSettings {
@@ -46,6 +47,7 @@ impl Default for MutationSettings {
             fitness_function: "error".to_string(),
             mutation_rate: 0.3,
             crossover_rate: 0.5,
+            seed: 42,
         }
     }
 }
@@ -57,6 +59,7 @@ impl fmt::Display for MutationSettings {
             "🧬 Mutation Settings:
     ├─ Program Population Size    : {}
     ├─ Input Population Size      : {}
+    ├─ Random Seed                : {}
     ├─ Max Generations            : {}
     ├─ Input Initialization Method: {} 
     ├─ Fitness Function           : {} 
@@ -64,6 +67,7 @@ impl fmt::Display for MutationSettings {
     └─ Crossover Rate             : {}",
             self.program_population_size.to_string().bright_yellow(),
             self.input_population_size.to_string().bright_yellow(),
+            self.seed.to_string().bright_yellow(),
             self.max_generations.to_string().bright_yellow(),
             self.input_initialization_method.bright_yellow(),
             self.fitness_function.bright_yellow(),
@@ -119,7 +123,7 @@ pub fn mutation_test_search(
     let mutation_setting = load_settings_from_json(path_to_mutation_setting).unwrap();
     info!("\n{}", mutation_setting);
 
-    let mut rng = rand::thread_rng();
+    let mut rng = StdRng::seed_from_u64(mutation_setting.seed);
 
     // Initial Population of Mutated Programs
     let mut assign_pos = Vec::new();
@@ -282,7 +286,7 @@ pub fn mutation_test_search(
     None
 }
 
-fn draw_random_constant(setting: &VerificationSetting, rng: &mut ThreadRng) -> BigInt {
+fn draw_random_constant(setting: &VerificationSetting, rng: &mut StdRng) -> BigInt {
     if rng.gen::<bool>() {
         rng.gen_bigint_range(
             &(BigInt::from_str("10").unwrap() * -BigInt::one()),
@@ -300,7 +304,7 @@ fn initialize_input_population(
     variables: &[SymbolicName],
     size: usize,
     setting: &VerificationSetting,
-    rng: &mut ThreadRng,
+    rng: &mut StdRng,
 ) -> Vec<FxHashMap<SymbolicName, BigInt>> {
     (0..size)
         .map(|_| {
@@ -341,7 +345,7 @@ fn mutate_input_population_with_coverage_maximization(
     input_population_size: usize,
     maximum_size: usize,
     setting: &VerificationSetting,
-    rng: &mut ThreadRng,
+    rng: &mut StdRng,
 ) {
     let mut total_coverage = 0_usize;
     inputs_population.clear();
@@ -405,7 +409,7 @@ fn initialize_trace_mutation(
     pos: &[usize],
     size: usize,
     setting: &VerificationSetting,
-    rng: &mut ThreadRng,
+    rng: &mut StdRng,
 ) -> Vec<FxHashMap<usize, SymbolicValue>> {
     (0..size)
         .map(|_| {
@@ -428,9 +432,9 @@ fn evolve_population<T: Clone>(
     mutation_rate: f64,
     crossover_rate: f64,
     setting: &VerificationSetting,
-    rng: &mut ThreadRng,
-    mutate_fn: impl Fn(&mut T, &VerificationSetting, &mut ThreadRng),
-    crossover_fn: impl Fn(&T, &T, &mut ThreadRng) -> T,
+    rng: &mut StdRng,
+    mutate_fn: impl Fn(&mut T, &VerificationSetting, &mut StdRng),
+    crossover_fn: impl Fn(&T, &T, &mut StdRng) -> T,
 ) -> Vec<T> {
     (0..population_size)
         .map(|_| {
@@ -452,7 +456,7 @@ fn evolve_population<T: Clone>(
 fn trace_mutate(
     individual: &mut FxHashMap<usize, SymbolicValue>,
     setting: &VerificationSetting,
-    rng: &mut ThreadRng,
+    rng: &mut StdRng,
 ) {
     if !individual.is_empty() {
         let var = individual.keys().choose(rng).unwrap();
