@@ -7,9 +7,9 @@ template Main() {
     signal input y;
     signal output z;
 
-    component c = LessEqThan(8);
-    c.in[0] <== 4;
-    c.in[1] <== y;
+    component c = LessThan(8);
+    c.in[0] <== x;
+    c.in[1] <== 255;
 
     z <== c.out;
 }
