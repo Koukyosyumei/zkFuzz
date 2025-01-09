@@ -107,13 +107,9 @@ impl CounterExample {
                         s += &format!(
                             "           {} {}{}{} \n",
                             "➡️".cyan(),
-                            var_name
-                                .lookup_fmt(lookup)
-                                .on_bright_magenta()
-                                .white()
-                                .bold(),
-                            " = ".on_bright_magenta().white().bold(),
-                            value.to_string().on_bright_magenta().bright_yellow().bold()
+                            var_name.lookup_fmt(lookup).on_magenta().white().bold(),
+                            " = ".on_magenta().white().bold(),
+                            value.to_string().on_magenta().bright_yellow().bold()
                         );
                     }
                 }
