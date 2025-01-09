@@ -192,6 +192,7 @@ pub fn brute_force_search(
     if is_vulnerable(&flag) {
         Some(CounterExample {
             flag: flag,
+            target_output: None,
             assignment: assignment,
         })
     } else {

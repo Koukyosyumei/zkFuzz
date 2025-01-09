@@ -57,6 +57,7 @@ pub fn check_unused_outputs(
             .collect();
         Some(CounterExample {
             flag: VerificationResult::UnderConstrained(UnderConstrainedType::UnusedOutput),
+            target_output: None,
             assignment: dummy_assignment,
         })
     } else {

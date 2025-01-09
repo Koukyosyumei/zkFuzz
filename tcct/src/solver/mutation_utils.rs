@@ -137,10 +137,22 @@ pub fn evaluate_trace_fitness_by_error(
                 if is_vulnerable(&flag) {
                     max_idx = i;
                     max_score = BigInt::zero();
-                    counter_example = Some(CounterExample {
-                        flag: flag,
-                        assignment: assignment.clone(),
-                    });
+                    counter_example = if let VerificationResult::UnderConstrained(
+                        UnderConstrainedType::NonDeterministic(sym_name, _, _),
+                    ) = &flag
+                    {
+                        Some(CounterExample {
+                            flag: flag.clone(),
+                            target_output: Some(sym_name.clone()),
+                            assignment: assignment.clone(),
+                        })
+                    } else {
+                        Some(CounterExample {
+                            flag: flag,
+                            target_output: None,
+                            assignment: assignment.clone(),
+                        })
+                    };
                     break;
                 } else {
                     score = -setting.prime.clone();
@@ -156,6 +168,7 @@ pub fn evaluate_trace_fitness_by_error(
                                     .lookup_fmt(&sexe.symbolic_library.id2name),
                             ),
                         ),
+                        target_output: None,
                         assignment: assignment.clone(),
                     });
                     break;

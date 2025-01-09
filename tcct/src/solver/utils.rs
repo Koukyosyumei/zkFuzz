@@ -25,7 +25,7 @@ use crate::executor::symbolic_value::{
 pub enum UnderConstrainedType {
     UnusedOutput,
     UnexpectedTrace(String),
-    NonDeterministic(String, BigInt),
+    NonDeterministic(SymbolicName, String, BigInt),
 }
 
 /// Represents the result of a constraint verification process.
@@ -50,7 +50,7 @@ impl fmt::Display for VerificationResult {
                 UnderConstrainedType::UnexpectedTrace(violated_condition) => {
                     format!("{} {}", "🧟 UnderConstrained (Unexpected-Trace) 🧟\n║           Violated Condition:".red().bold(), violated_condition)
                 }
-                UnderConstrainedType::NonDeterministic(name, value) => format!(
+                UnderConstrainedType::NonDeterministic(_sym_name, name, value) => format!(
                     "🔥 UnderConstrained (Non-Deterministic) 🔥\n║           ➡️ `{}` is expected to be `{}`",
                     name, value
                 )
@@ -68,6 +68,7 @@ impl fmt::Display for VerificationResult {
 #[derive(Clone)]
 pub struct CounterExample {
     pub flag: VerificationResult,
+    pub target_output: Option<SymbolicName>,
     pub assignment: FxHashMap<SymbolicName, BigInt>,
 }
 
@@ -96,15 +97,36 @@ impl CounterExample {
         s += &format!("{}", "║".red());
         s += &format!("    {} \n", "🔍 Assignment Details:".blue().bold());
 
+        let mut is_target_output = false;
         for (var_name, value) in &self.assignment {
             if var_name.owner.len() == 1 {
                 s += &format!("{}", "║".red());
-                s += &format!(
-                    "           {} {} = {} \n",
-                    "➡️".cyan(),
-                    var_name.lookup_fmt(lookup).magenta().bold(),
-                    value.to_string().bright_yellow()
-                );
+                if let Some(to) = &self.target_output {
+                    if *to == *var_name {
+                        is_target_output = true;
+                        s += &format!(
+                            "           {} {}{}{} \n",
+                            "➡️".cyan(),
+                            var_name
+                                .lookup_fmt(lookup)
+                                .on_bright_magenta()
+                                .white()
+                                .bold(),
+                            " = ".on_bright_magenta().white().bold(),
+                            value.to_string().on_bright_magenta().bright_yellow().bold()
+                        );
+                    }
+                }
+                if !is_target_output {
+                    s += &format!(
+                        "           {} {} = {} \n",
+                        "➡️".cyan(),
+                        var_name.lookup_fmt(lookup).magenta().bold(),
+                        value.to_string().bright_yellow()
+                    );
+                } else {
+                    is_target_output = false;
+                }
             }
         }
         for (var_name, value) in &self.assignment {
@@ -790,6 +812,7 @@ pub fn verify_assignment(
                 if !is_equal_mod(&original_int_value, v, &setting.prime) {
                     result = VerificationResult::UnderConstrained(
                         UnderConstrainedType::NonDeterministic(
+                            k.clone(),
                             k.lookup_fmt(&sexe.symbolic_library.id2name),
                             original_int_value.clone(),
                         ),
