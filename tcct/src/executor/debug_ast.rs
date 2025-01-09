@@ -653,7 +653,7 @@ impl DebugExpression {
             }
             DebugExpression::Call { id, args, .. } => {
                 s += &format!("{}Call\n", indentation);
-                s += &format!("{}  id: {}\n", indentation, id);
+                s += &format!("{}  id: {}\n", indentation, lookup[id]);
                 s += &format!("{}  args:\n", indentation);
                 for arg0 in args {
                     s += &(arg0.clone()).lookup_fmt(lookup, indent + 2);
