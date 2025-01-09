@@ -151,7 +151,7 @@ pub fn evaluate_trace_fitness_by_error(
                     max_score = BigInt::zero();
                     counter_example = Some(CounterExample {
                         flag: VerificationResult::UnderConstrained(
-                            UnderConstrainedType::UnexpectedInput,
+                            UnderConstrainedType::UnexpectedTrace,
                         ),
                         assignment: assignment.clone(),
                     });
