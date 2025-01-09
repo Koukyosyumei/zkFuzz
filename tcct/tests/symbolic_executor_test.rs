@@ -1598,6 +1598,145 @@ fn test_branch_within_callee() {
 }
 
 #[test]
+fn test_one_line_call() {
+    let path = "./tests/sample/test_one_line_call.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = get_default_setting_for_symbolic_execution(prime);
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    let main_A_11_152_a = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        sexe.symbolic_library.name2id["a"],
+        Rc::new(vec![
+            OwnerName {
+                id: sexe.symbolic_library.name2id["main"],
+                access: None,
+                counter: 0,
+            },
+            OwnerName {
+                id: sexe.symbolic_library.name2id["A_11_152"],
+                access: None,
+                counter: 0,
+            },
+        ]),
+        None,
+    )));
+
+    let main_A_11_152_b = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        sexe.symbolic_library.name2id["b"],
+        Rc::new(vec![
+            OwnerName {
+                id: sexe.symbolic_library.name2id["main"],
+                access: None,
+                counter: 0,
+            },
+            OwnerName {
+                id: sexe.symbolic_library.name2id["A_11_152"],
+                access: None,
+                counter: 0,
+            },
+        ]),
+        None,
+    )));
+
+    let main_A_11_152_c = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        sexe.symbolic_library.name2id["c"],
+        Rc::new(vec![
+            OwnerName {
+                id: sexe.symbolic_library.name2id["main"],
+                access: None,
+                counter: 0,
+            },
+            OwnerName {
+                id: sexe.symbolic_library.name2id["A_11_152"],
+                access: None,
+                counter: 0,
+            },
+        ]),
+        None,
+    )));
+
+    let main_n = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        sexe.symbolic_library.name2id["n"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        None,
+    )));
+
+    let main_in_0 = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        sexe.symbolic_library.name2id["in"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        Some(vec![SymbolicAccess::ArrayAccess(
+            SymbolicValue::ConstantInt(BigInt::zero()),
+        )]),
+    )));
+
+    let main_in_1 = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        sexe.symbolic_library.name2id["in"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        Some(vec![SymbolicAccess::ArrayAccess(
+            SymbolicValue::ConstantInt(BigInt::one()),
+        )]),
+    )));
+
+    let main_out = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        sexe.symbolic_library.name2id["out"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        None,
+    )));
+
+    let ground_truth_constraints = vec![
+        SymbolicValue::AssignEq(
+            main_n.clone(),
+            Rc::new(SymbolicValue::ConstantInt(BigInt::from_str("2").unwrap())),
+        ),
+        SymbolicValue::AssignEq(main_A_11_152_a.clone(), main_in_0.clone()),
+        SymbolicValue::AssignEq(main_A_11_152_b.clone(), main_in_1.clone()),
+        SymbolicValue::AssignEq(
+            main_A_11_152_c.clone(),
+            Rc::new(SymbolicValue::BinaryOp(
+                main_A_11_152_a,
+                DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                main_A_11_152_b,
+            )),
+        ),
+        SymbolicValue::AssignEq(main_out, main_A_11_152_c),
+    ];
+
+    for i in 0..ground_truth_constraints.len() {
+        assert_eq!(
+            ground_truth_constraints[i],
+            *sexe.cur_state.trace_constraints[i].clone()
+        );
+        assert_eq!(
+            ground_truth_constraints[i],
+            *sexe.cur_state.side_constraints[i].clone()
+        );
+    }
+}
+
+#[test]
 fn test_one_line_call_array() {
     let path = "./tests/sample/test_one_line_call_array.circom".to_string();
     let prime = BigInt::from_str(
