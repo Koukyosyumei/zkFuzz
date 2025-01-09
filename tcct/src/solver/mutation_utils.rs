@@ -111,7 +111,7 @@ pub fn evaluate_trace_fitness_by_error(
     for (i, inp) in inputs_assignment.iter().enumerate() {
         let mut assignment = inp.clone();
 
-        let is_success = emulate_symbolic_values(
+        let (is_success, failure_pos) = emulate_symbolic_values(
             &setting.prime,
             &mutated_trace_constraints,
             &mut assignment,
@@ -151,7 +151,10 @@ pub fn evaluate_trace_fitness_by_error(
                     max_score = BigInt::zero();
                     counter_example = Some(CounterExample {
                         flag: VerificationResult::UnderConstrained(
-                            UnderConstrainedType::UnexpectedTrace,
+                            UnderConstrainedType::UnexpectedTrace(
+                                mutated_trace_constraints[failure_pos]
+                                    .lookup_fmt(&sexe.symbolic_library.id2name),
+                            ),
                         ),
                         assignment: assignment.clone(),
                     });

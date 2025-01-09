@@ -24,7 +24,7 @@ use crate::executor::symbolic_value::{
 #[derive(Clone)]
 pub enum UnderConstrainedType {
     UnusedOutput,
-    UnexpectedTrace,
+    UnexpectedTrace(String),
     NonDeterministic(String, BigInt),
 }
 
@@ -45,20 +45,20 @@ impl fmt::Display for VerificationResult {
         let output = match self {
             VerificationResult::UnderConstrained(typ) => match typ {
                 UnderConstrainedType::UnusedOutput => {
-                    "👻 UnderConstrained (Unused-Output) 👻".red().bold()
+                    "👻 UnderConstrained (Unused-Output) 👻".red().bold().to_string()
                 }
-                UnderConstrainedType::UnexpectedTrace => {
-                    "🧟 UnderConstrained (Unexpected-Trace) 🧟".red().bold()
+                UnderConstrainedType::UnexpectedTrace(violated_condition) => {
+                    format!("{} {}", "🧟 UnderConstrained (Unexpected-Trace) 🧟\n║           Violated Condition:".red().bold(), violated_condition)
                 }
                 UnderConstrainedType::NonDeterministic(name, value) => format!(
                     "🔥 UnderConstrained (Non-Deterministic) 🔥\n║           ➡️ `{}` is expected to be `{}`",
                     name, value
                 )
                 .red()
-                .bold(),
+                .bold().to_string(),
             },
-            VerificationResult::OverConstrained => "💣 OverConstrained 💣".yellow().bold(),
-            VerificationResult::WellConstrained => "✅ WellConstrained ✅".green().bold(),
+            VerificationResult::OverConstrained => "💣 OverConstrained 💣".yellow().bold().to_string(),
+            VerificationResult::WellConstrained => "✅ WellConstrained ✅".green().bold().to_string(),
         };
         write!(f, "{output}")
     }
@@ -323,13 +323,15 @@ pub fn emulate_symbolic_values(
     traces: &[SymbolicValueRef],
     assignment: &mut FxHashMap<SymbolicName, BigInt>,
     symbolic_library: &mut SymbolicLibrary,
-) -> bool {
+) -> (bool, usize) {
     let mut success = true;
-    for inst in traces {
+    let mut failure_pos = 0;
+    for (i, inst) in traces.iter().enumerate() {
         match inst.as_ref() {
             SymbolicValue::ConstantBool(b) => {
                 if !b {
                     success = false;
+                    failure_pos = i;
                 }
             }
             SymbolicValue::Assign(lhs, rhs, _)
@@ -349,6 +351,7 @@ pub fn emulate_symbolic_values(
                         }
                         _ => {
                             success = false;
+                            failure_pos = i;
                         }
                     }
                 } else {
@@ -390,6 +393,7 @@ pub fn emulate_symbolic_values(
                 };
                 if !flag {
                     success = false;
+                    failure_pos = i;
                 }
             }
             SymbolicValue::UnaryOp(op, expr) => {
@@ -409,6 +413,7 @@ pub fn emulate_symbolic_values(
                 };
                 if !flag {
                     success = false;
+                    failure_pos = i;
                 }
             }
             _ => panic!(
@@ -417,7 +422,8 @@ pub fn emulate_symbolic_values(
             ),
         }
     }
-    return success;
+
+    (success, failure_pos)
 }
 
 /// Evaluates a symbolic value given a variable assignment.
@@ -747,7 +753,12 @@ pub fn verify_assignment(
         sexe.concrete_execute(&setting.target_template_name, assignment);
 
         if sexe.cur_state.is_failed {
-            return VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedTrace);
+            return VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedTrace(
+                sexe.violated_condition
+                    .clone()
+                    .unwrap()
+                    .lookup_fmt(&sexe.symbolic_library.id2name),
+            ));
         }
 
         let mut result = VerificationResult::WellConstrained;
