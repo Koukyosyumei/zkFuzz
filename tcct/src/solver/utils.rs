@@ -320,13 +320,13 @@ pub fn count_satisfied_constraints(
 
 pub fn emulate_symbolic_values(
     prime: &BigInt,
-    values: &[SymbolicValueRef],
+    traces: &[SymbolicValueRef],
     assignment: &mut FxHashMap<SymbolicName, BigInt>,
     symbolic_library: &mut SymbolicLibrary,
 ) -> bool {
     let mut success = true;
-    for value in values {
-        match value.as_ref() {
+    for inst in traces {
+        match inst.as_ref() {
             SymbolicValue::ConstantBool(b) => {
                 if !b {
                     success = false;
@@ -354,7 +354,7 @@ pub fn emulate_symbolic_values(
                 } else {
                     panic!(
                         "Left hand of the assignment is not a variable: {}",
-                        value.lookup_fmt(&symbolic_library.id2name)
+                        inst.lookup_fmt(&symbolic_library.id2name)
                     );
                 }
             }
@@ -372,7 +372,7 @@ pub fn emulate_symbolic_values(
                             ExpressionInfixOpcode::NotEq => lv % prime != rv % prime,
                             _ => panic!(
                                 "Non-Boolean Operation: {}",
-                                value.lookup_fmt(&symbolic_library.id2name)
+                                inst.lookup_fmt(&symbolic_library.id2name)
                             ),
                         }
                     }
@@ -385,7 +385,7 @@ pub fn emulate_symbolic_values(
                     }
                     _ => panic!(
                         "Unassigned variables exist: {}",
-                        value.lookup_fmt(&symbolic_library.id2name)
+                        inst.lookup_fmt(&symbolic_library.id2name)
                     ),
                 };
                 if !flag {
@@ -399,12 +399,12 @@ pub fn emulate_symbolic_values(
                         ExpressionPrefixOpcode::BoolNot => !rv,
                         _ => panic!(
                             "Unassigned variables exist: {}",
-                            value.lookup_fmt(&symbolic_library.id2name)
+                            inst.lookup_fmt(&symbolic_library.id2name)
                         ),
                     },
                     _ => panic!(
                         "Non-Boolean Operation: {}",
-                        value.lookup_fmt(&symbolic_library.id2name)
+                        inst.lookup_fmt(&symbolic_library.id2name)
                     ),
                 };
                 if !flag {
@@ -413,7 +413,7 @@ pub fn emulate_symbolic_values(
             }
             _ => panic!(
                 "A constraint should be one of `ConstantBool`, `Assign`, `AssignEq`, `AssignCall`, `BinaryOp` and `UnaryOp`. Found: {}",
-                value.lookup_fmt(&symbolic_library.id2name)
+                inst.lookup_fmt(&symbolic_library.id2name)
             ),
         }
     }
