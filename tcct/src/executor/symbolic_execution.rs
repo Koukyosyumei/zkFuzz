@@ -836,6 +836,7 @@ impl<'a> SymbolicExecutor<'a> {
             let (left_base_name, left_var_name) =
                 self.construct_symbolic_name(*var, access, meta.elem_id);
 
+            let mut is_array_assignment = false;
             let mut is_bulk_assignment = false;
             let mut left_var_names = Vec::new();
             let mut right_values = Vec::new();
@@ -843,7 +844,13 @@ impl<'a> SymbolicExecutor<'a> {
 
             match &simplified_rhe {
                 SymbolicValue::Array(_) => {
-                    self.handle_array_substitution(&left_var_name, &simplified_rhe, meta.elem_id);
+                    is_array_assignment = true;
+                    self.handle_array_substitution(
+                        op,
+                        &left_var_name,
+                        &simplified_rhe,
+                        meta.elem_id,
+                    );
                 }
                 _ => {
                     let dim_of_left_var = left_var_name.get_dim();
@@ -887,7 +894,7 @@ impl<'a> SymbolicExecutor<'a> {
                     for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
                         self.handle_non_call_substitution(op, &lvn, &rv);
                     }
-                } else {
+                } else if !is_array_assignment {
                     let semi_simplified_rhe =
                         self.simplify_variables(&evaled_rhe, meta.elem_id, true, true);
                     self.handle_non_call_substitution(op, &left_var_name, &semi_simplified_rhe);
@@ -1088,6 +1095,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// Updates the current symbolic state with individual array element assignments.
     fn handle_array_substitution(
         &mut self,
+        op: &DebugAssignOp,
         left_var_name: &SymbolicName,
         arr: &SymbolicValue,
         elem_id: usize,
@@ -1136,6 +1144,8 @@ impl<'a> SymbolicExecutor<'a> {
             }
             new_left_var_name.access = Some(access);
             new_left_var_name.update_hash();
+
+            self.handle_non_call_substitution(op, &new_left_var_name, elem);
             self.cur_state.set_sym_val(new_left_var_name, elem.clone());
 
             if let SymbolicValue::Array(ref arr) = base_array {
@@ -1452,9 +1462,36 @@ impl<'a> SymbolicExecutor<'a> {
                     Some(post_dims)
                 },
             );
-            component
-                .symbol_optional_binding_map
-                .insert(inp_name, Some(value.clone()));
+
+            match value {
+                SymbolicValue::Array(..) => {
+                    let enumerated_elements = enumerate_array(value);
+                    for (pos, elem) in enumerated_elements {
+                        let mut new_inp_name = inp_name.clone();
+                        let mut access = new_inp_name.access.unwrap_or_default();
+                        for p in &pos {
+                            access.push(SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(
+                                BigInt::from_usize(*p).unwrap(),
+                            )));
+                        }
+                        new_inp_name.access = Some(access);
+                        new_inp_name.update_hash();
+                        component
+                            .symbol_optional_binding_map
+                            .insert(new_inp_name, Some(elem.clone()));
+                    }
+
+                    // TODO: is this line necessary?
+                    component
+                        .symbol_optional_binding_map
+                        .insert(inp_name, Some(value.clone()));
+                }
+                _ => {
+                    component
+                        .symbol_optional_binding_map
+                        .insert(inp_name, Some(value.clone()));
+                }
+            }
         }
 
         if self.is_ready(base_name) {
