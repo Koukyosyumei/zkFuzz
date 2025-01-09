@@ -47,7 +47,7 @@ impl Default for MutationSettings {
             fitness_function: "error".to_string(),
             mutation_rate: 0.3,
             crossover_rate: 0.5,
-            seed: 42,
+            seed: 0,
         }
     }
 }
@@ -59,7 +59,6 @@ impl fmt::Display for MutationSettings {
             "🧬 Mutation Settings:
     ├─ Program Population Size    : {}
     ├─ Input Population Size      : {}
-    ├─ Random Seed                : {}
     ├─ Max Generations            : {}
     ├─ Input Initialization Method: {} 
     ├─ Fitness Function           : {} 
@@ -67,7 +66,6 @@ impl fmt::Display for MutationSettings {
     └─ Crossover Rate             : {}",
             self.program_population_size.to_string().bright_yellow(),
             self.input_population_size.to_string().bright_yellow(),
-            self.seed.to_string().bright_yellow(),
             self.max_generations.to_string().bright_yellow(),
             self.input_initialization_method.bright_yellow(),
             self.fitness_function.bright_yellow(),
@@ -123,7 +121,13 @@ pub fn mutation_test_search(
     let mutation_setting = load_settings_from_json(path_to_mutation_setting).unwrap();
     info!("\n{}", mutation_setting);
 
-    let mut rng = StdRng::seed_from_u64(mutation_setting.seed);
+    let seed = if mutation_setting.seed.is_zero() {
+        let mut seed_rng = rand::thread_rng();
+        seed_rng.gen()
+    } else {
+        mutation_setting.seed
+    };
+    let mut rng = StdRng::seed_from_u64(seed);
 
     // Initial Population of Mutated Programs
     let mut assign_pos = Vec::new();
@@ -158,10 +162,10 @@ pub fn mutation_test_search(
     ├─ #Side Constraints  : {}
     ├─ #Input Variables   : {}
     └─ #Mutation Candidate: {}",
-        trace_constraints.len(),
-        side_constraints.len(),
-        input_variables.len(),
-        assign_pos.len()
+        trace_constraints.len().to_string().bright_yellow(),
+        side_constraints.len().to_string().bright_yellow(),
+        input_variables.len().to_string().bright_yellow(),
+        assign_pos.len().to_string().bright_yellow()
     );
 
     let mut trace_population = initialize_trace_mutation(
@@ -173,6 +177,12 @@ pub fn mutation_test_search(
     let mut fitness_scores = vec![-setting.prime.clone(); mutation_setting.input_population_size];
     let mut input_population = Vec::new();
     let mut fitness_score_log = Vec::with_capacity(mutation_setting.max_generations);
+
+    println!(
+        "{} {}",
+        "🎲 Random Seed:",
+        seed.to_string().bold().bright_yellow(),
+    );
 
     for generation in 0..mutation_setting.max_generations {
         // Generate input population for this generation
@@ -245,10 +255,10 @@ pub fn mutation_test_search(
 
         if evaluations[best_idx].1.is_zero() {
             print!(
-                "\r\x1b[2KGeneration: {}/{} ({:.3})",
+                "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
                 generation, mutation_setting.max_generations, 0
             );
-            println!("\n └─ Solution found in generation {}", generation);
+            println!("\n    └─ Solution found in generation {}", generation);
 
             /*
             let _ = save_auxiliray_result(
@@ -262,7 +272,7 @@ pub fn mutation_test_search(
         }
 
         print!(
-            "\r\x1b[2KGeneration: {}/{} ({:.3})",
+            "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
             generation, mutation_setting.max_generations, fitness_scores[best_idx]
         );
         io::stdout().flush().unwrap();
