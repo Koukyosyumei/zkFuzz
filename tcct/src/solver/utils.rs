@@ -48,7 +48,7 @@ impl fmt::Display for VerificationResult {
                     "👻 UnderConstrained (Unused-Output) 👻".red().bold()
                 }
                 UnderConstrainedType::UnexpectedTrace => {
-                    "🧟 UnderConstrained (Unexpected-Input) 🧟".red().bold()
+                    "🧟 UnderConstrained (Unexpected-Trace) 🧟".red().bold()
                 }
                 UnderConstrainedType::NonDeterministic(name, value) => format!(
                     "🔥 UnderConstrained (Non-Deterministic) 🔥\n║           ➡️ `{}` is expected to be `{}`",
