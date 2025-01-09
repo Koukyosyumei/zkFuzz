@@ -12,7 +12,9 @@ use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
 
-use crate::executor::debug_ast::{DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode};
+use crate::executor::debug_ast::{
+    DebuggableExpressionInfixOpcode, DebuggableExpressionPrefixOpcode,
+};
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_value::{
@@ -570,38 +572,38 @@ pub fn evaluate_symbolic_value(
 pub fn flip_op(value: &SymbolicValue) -> SymbolicValue {
     match value {
         SymbolicValue::UnaryOp(
-            DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
+            DebuggableExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
             expr,
         ) => match (*expr.clone()).clone() {
             SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
                 ExpressionInfixOpcode::Lesser => SymbolicValue::BinaryOp(
                     lhs.clone(),
-                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Greater),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Greater),
                     rhs.clone(),
                 ),
                 ExpressionInfixOpcode::Greater => SymbolicValue::BinaryOp(
                     lhs.clone(),
-                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
                     rhs.clone(),
                 ),
                 ExpressionInfixOpcode::LesserEq => SymbolicValue::BinaryOp(
                     lhs.clone(),
-                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq),
                     rhs.clone(),
                 ),
                 ExpressionInfixOpcode::GreaterEq => SymbolicValue::BinaryOp(
                     lhs.clone(),
-                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::LesserEq),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::LesserEq),
                     rhs.clone(),
                 ),
                 ExpressionInfixOpcode::Eq => SymbolicValue::BinaryOp(
                     lhs.clone(),
-                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::NotEq),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::NotEq),
                     rhs.clone(),
                 ),
                 ExpressionInfixOpcode::NotEq => SymbolicValue::BinaryOp(
                     lhs.clone(),
-                    DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                     rhs.clone(),
                 ),
                 _ => value.clone(),

@@ -15,7 +15,8 @@ use program_structure::ast::{
 };
 
 use crate::executor::debug_ast::{
-    DebugExpression, DebugExpressionInfixOpcode, DebugExpressionPrefixOpcode, DebugStatement,
+    DebuggableExpression, DebuggableExpressionInfixOpcode, DebuggableExpressionPrefixOpcode,
+    DebuggableStatement,
 };
 use crate::executor::utils::{extended_euclidean, generate_cartesian_product_indices, modpow};
 
@@ -193,11 +194,11 @@ pub enum SymbolicValue {
     AssignCall(SymbolicValueRef, SymbolicValueRef, bool),
     BinaryOp(
         SymbolicValueRef,
-        DebugExpressionInfixOpcode,
+        DebuggableExpressionInfixOpcode,
         SymbolicValueRef,
     ),
     Conditional(SymbolicValueRef, SymbolicValueRef, SymbolicValueRef),
-    UnaryOp(DebugExpressionPrefixOpcode, SymbolicValueRef),
+    UnaryOp(DebuggableExpressionPrefixOpcode, SymbolicValueRef),
     Array(Vec<SymbolicValueRef>),
     Tuple(Vec<SymbolicValueRef>),
     UniformArray(SymbolicValueRef, SymbolicValueRef),
@@ -347,8 +348,8 @@ pub struct SymbolicTemplate {
     pub input_ids: FxHashSet<usize>,
     pub output_ids: FxHashSet<usize>,
     pub id2type: FxHashMap<usize, VariableType>,
-    pub id2dimensions: FxHashMap<usize, Vec<DebugExpression>>,
-    pub body: Vec<DebugStatement>,
+    pub id2dimensions: FxHashMap<usize, Vec<DebuggableExpression>>,
+    pub body: Vec<DebuggableStatement>,
     pub is_lessthan: bool,
     pub is_safe: bool,
 }
@@ -357,8 +358,8 @@ pub struct SymbolicTemplate {
 #[derive(Default, Clone)]
 pub struct SymbolicFunction {
     pub function_argument_names: Vec<usize>,
-    pub id2dimensions: FxHashMap<usize, Vec<DebugExpression>>,
-    pub body: Vec<DebugStatement>,
+    pub id2dimensions: FxHashMap<usize, Vec<DebuggableExpression>>,
+    pub body: Vec<DebuggableStatement>,
 }
 
 /// Represents a symbolic component used in the symbolic execution process.
@@ -381,13 +382,13 @@ pub struct SymbolicLibrary {
 }
 
 fn gather_variables_for_template(
-    dbody: &DebugStatement,
+    dbody: &DebuggableStatement,
     input_ids: &mut FxHashSet<usize>,
     output_ids: &mut FxHashSet<usize>,
     id2type: &mut FxHashMap<usize, VariableType>,
-    id2dimensions: &mut FxHashMap<usize, Vec<DebugExpression>>,
+    id2dimensions: &mut FxHashMap<usize, Vec<DebuggableExpression>>,
 ) {
-    if let DebugStatement::Declaration {
+    if let DebuggableStatement::Declaration {
         id,
         xtype,
         dimensions,
@@ -411,10 +412,10 @@ fn gather_variables_for_template(
 }
 
 fn gather_variables_for_function(
-    dbody: &DebugStatement,
-    id2dimensions: &mut FxHashMap<usize, Vec<DebugExpression>>,
+    dbody: &DebuggableStatement,
+    id2dimensions: &mut FxHashMap<usize, Vec<DebuggableExpression>>,
 ) {
-    if let DebugStatement::Declaration { id, dimensions, .. } = dbody {
+    if let DebuggableStatement::Declaration { id, dimensions, .. } = dbody {
         id2dimensions.insert(id.clone(), dimensions.clone());
     }
 }
@@ -456,7 +457,8 @@ impl SymbolicLibrary {
             self.name2id.len() - 1
         };
 
-        let mut dbody = DebugStatement::from(body.clone(), &mut self.name2id, &mut self.id2name);
+        let mut dbody =
+            DebuggableStatement::from(body.clone(), &mut self.name2id, &mut self.id2name);
         dbody.apply_iterative(|stmt| {
             gather_variables_for_template(
                 stmt,
@@ -486,7 +488,7 @@ impl SymbolicLibrary {
                 output_ids: output_ids,
                 id2type: id2type,
                 id2dimensions: id2dimensions,
-                body: vec![dbody.clone(), DebugStatement::Ret],
+                body: vec![dbody.clone(), DebuggableStatement::Ret],
                 is_lessthan: is_lessthan,
                 is_safe: is_safe,
             }),
@@ -515,7 +517,7 @@ impl SymbolicLibrary {
             self.name2id.len() - 1
         };
 
-        let mut dbody = DebugStatement::from(body, &mut self.name2id, &mut self.id2name);
+        let mut dbody = DebuggableStatement::from(body, &mut self.name2id, &mut self.id2name);
         dbody.apply_iterative(|stmt| {
             gather_variables_for_function(stmt, &mut id2dimensions);
         });
@@ -528,7 +530,7 @@ impl SymbolicLibrary {
                     .map(|p: &String| self.name2id[p])
                     .collect::<Vec<_>>(),
                 id2dimensions: id2dimensions,
-                body: vec![dbody, DebugStatement::Ret],
+                body: vec![dbody, DebuggableStatement::Ret],
             }),
         );
         self.function_counter.insert(i, 0_usize);
@@ -692,7 +694,7 @@ pub fn evaluate_binary_op(
     lhs: &SymbolicValue,
     rhs: &SymbolicValue,
     prime: &BigInt,
-    op: &DebugExpressionInfixOpcode,
+    op: &DebuggableExpressionInfixOpcode,
 ) -> SymbolicValue {
     let (normalized_lhs, normalized_rhs) = match &op.0 {
         // Convert booleans to integers for arithmetic or bitwise operators
@@ -827,32 +829,32 @@ pub fn generate_lessthan_constraint(
     let cond_1 = SymbolicValue::BinaryOp(
         Rc::new(SymbolicValue::BinaryOp(
             Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
-            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+            DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
             lessthan_out.clone(),
         )),
-        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
         Rc::new(SymbolicValue::BinaryOp(
             in_0.clone(),
-            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
+            DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
             in_1.clone(),
         )),
     );
     let cond_0 = SymbolicValue::BinaryOp(
         Rc::new(SymbolicValue::BinaryOp(
             Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-            DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+            DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
             lessthan_out.clone(),
         )),
-        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
         Rc::new(SymbolicValue::BinaryOp(
             in_0,
-            DebugExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq),
+            DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq),
             in_1,
         )),
     );
     SymbolicValue::BinaryOp(
         Rc::new(cond_1),
-        DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolOr),
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BoolOr),
         Rc::new(cond_0),
     )
 }
@@ -861,7 +863,7 @@ pub fn negate_condition(condition: &SymbolicValue) -> SymbolicValue {
     match condition {
         SymbolicValue::ConstantBool(v) => SymbolicValue::ConstantBool(!v),
         _ => SymbolicValue::UnaryOp(
-            DebugExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
+            DebuggableExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
             Rc::new(condition.clone()),
         ),
     }

@@ -5,7 +5,7 @@ use num_bigint_dig::BigInt;
 
 use program_structure::ast::ExpressionInfixOpcode;
 
-use tcct::executor::debug_ast::DebugExpressionInfixOpcode;
+use tcct::executor::debug_ast::DebuggableExpressionInfixOpcode;
 use tcct::executor::symbolic_value::{enumerate_array, evaluate_binary_op, SymbolicValue};
 
 #[test]
@@ -18,7 +18,7 @@ fn test_arithmetic_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &SymbolicValue::ConstantInt(BigInt::from(7)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::Add)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add)
         ),
         SymbolicValue::ConstantInt(BigInt::from(12))
     );
@@ -29,7 +29,7 @@ fn test_arithmetic_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(10)),
             &SymbolicValue::ConstantInt(BigInt::from(7)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::Sub)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub)
         ),
         SymbolicValue::ConstantInt(BigInt::from(3))
     );
@@ -40,7 +40,7 @@ fn test_arithmetic_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &SymbolicValue::ConstantInt(BigInt::from(7)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::Mul)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul)
         ),
         SymbolicValue::ConstantInt(BigInt::from(1)) // (5 * 7) % 17 = 35 % 17 = 1
     );
@@ -51,7 +51,7 @@ fn test_arithmetic_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(8)),
             &SymbolicValue::ConstantInt(BigInt::from(2)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::Div)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div)
         ),
         SymbolicValue::ConstantInt(BigInt::from(4))
     );
@@ -67,7 +67,7 @@ fn test_comparison_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &SymbolicValue::ConstantInt(BigInt::from(7)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::Lesser)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Lesser)
         ),
         SymbolicValue::ConstantBool(true)
     );
@@ -78,7 +78,7 @@ fn test_comparison_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(7)),
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq)
         ),
         SymbolicValue::ConstantBool(true)
     );
@@ -89,7 +89,7 @@ fn test_comparison_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq)
         ),
         SymbolicValue::ConstantBool(true)
     );
@@ -105,7 +105,7 @@ fn test_bitwise_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &SymbolicValue::ConstantInt(BigInt::from(3)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::BitOr)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BitOr)
         ),
         SymbolicValue::ConstantInt(BigInt::from(7))
     );
@@ -116,7 +116,7 @@ fn test_bitwise_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &SymbolicValue::ConstantInt(BigInt::from(3)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::BitAnd)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BitAnd)
         ),
         SymbolicValue::ConstantInt(BigInt::from(1))
     );
@@ -127,7 +127,7 @@ fn test_bitwise_operations() {
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &SymbolicValue::ConstantInt(BigInt::from(3)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::BitXor)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BitXor)
         ),
         SymbolicValue::ConstantInt(BigInt::from(6))
     );
@@ -143,7 +143,7 @@ fn test_boolean_operations() {
             &SymbolicValue::ConstantBool(true),
             &SymbolicValue::ConstantBool(false),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd)
         ),
         SymbolicValue::ConstantBool(false)
     );
@@ -154,7 +154,7 @@ fn test_boolean_operations() {
             &SymbolicValue::ConstantBool(true),
             &SymbolicValue::ConstantBool(false),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::BoolOr)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BoolOr)
         ),
         SymbolicValue::ConstantBool(true)
     );
@@ -170,7 +170,7 @@ fn test_edge_cases() {
             &SymbolicValue::ConstantInt(BigInt::from(5)),
             &SymbolicValue::ConstantInt(BigInt::from(0)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::Div)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div)
         ),
         SymbolicValue::ConstantInt(BigInt::from(0))
     );
@@ -182,7 +182,7 @@ fn test_edge_cases() {
             &SymbolicValue::ConstantInt(large_num.clone()),
             &SymbolicValue::ConstantInt(BigInt::from(2)),
             &prime,
-            &DebugExpressionInfixOpcode(ExpressionInfixOpcode::Mul)
+            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul)
         ),
         SymbolicValue::ConstantInt(BigInt::from(15)) // (1000000000000000000000000 * 2) % 17 = 15
     );

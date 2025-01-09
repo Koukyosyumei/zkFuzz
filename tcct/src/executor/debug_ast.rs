@@ -19,40 +19,40 @@ const MAGENTA: &str = "\x1b[35m";
 const RED: &str = "\x1b[31m";
 
 #[derive(Clone)]
-pub struct DebugSignalType(pub SignalType);
+pub struct DebuggableSignalType(pub SignalType);
 #[derive(Clone)]
-pub struct DebugVariableType(pub VariableType);
+pub struct DebuggableVariableType(pub VariableType);
 #[derive(Clone)]
-pub struct DebugAssignOp(pub AssignOp);
+pub struct DebuggableAssignOp(pub AssignOp);
 #[derive(Clone, PartialEq)]
-pub struct DebugExpressionInfixOpcode(pub ExpressionInfixOpcode);
+pub struct DebuggableExpressionInfixOpcode(pub ExpressionInfixOpcode);
 #[derive(Clone, PartialEq)]
-pub struct DebugExpressionPrefixOpcode(pub ExpressionPrefixOpcode);
+pub struct DebuggableExpressionPrefixOpcode(pub ExpressionPrefixOpcode);
 
 #[derive(Clone)]
 pub enum DebugAccess {
     ComponentAccess(usize),
-    ArrayAccess(DebugExpression),
+    ArrayAccess(DebuggableExpression),
 }
 
 #[derive(Clone)]
-pub enum DebugExpression {
+pub enum DebuggableExpression {
     InfixOp {
-        lhe: Box<DebugExpression>,
-        infix_op: DebugExpressionInfixOpcode,
-        rhe: Box<DebugExpression>,
+        lhe: Box<DebuggableExpression>,
+        infix_op: DebuggableExpressionInfixOpcode,
+        rhe: Box<DebuggableExpression>,
     },
     PrefixOp {
-        prefix_op: DebugExpressionPrefixOpcode,
-        rhe: Box<DebugExpression>,
+        prefix_op: DebuggableExpressionPrefixOpcode,
+        rhe: Box<DebuggableExpression>,
     },
     InlineSwitchOp {
-        cond: Box<DebugExpression>,
-        if_true: Box<DebugExpression>,
-        if_false: Box<DebugExpression>,
+        cond: Box<DebuggableExpression>,
+        if_true: Box<DebuggableExpression>,
+        if_false: Box<DebuggableExpression>,
     },
     ParallelOp {
-        rhe: Box<DebugExpression>,
+        rhe: Box<DebuggableExpression>,
     },
     Variable {
         id: usize,
@@ -61,82 +61,82 @@ pub enum DebugExpression {
     Number(BigInt),
     Call {
         id: usize,
-        args: Vec<DebugExpression>,
+        args: Vec<DebuggableExpression>,
     },
     BusCall {
         id: usize,
-        args: Vec<DebugExpression>,
+        args: Vec<DebuggableExpression>,
     },
     AnonymousComp {
         id: usize,
         is_parallel: bool,
-        params: Vec<DebugExpression>,
-        signals: Vec<DebugExpression>,
+        params: Vec<DebuggableExpression>,
+        signals: Vec<DebuggableExpression>,
         names: Option<Vec<(AssignOp, String)>>,
     },
     ArrayInLine {
-        values: Vec<DebugExpression>,
+        values: Vec<DebuggableExpression>,
     },
     Tuple {
-        values: Vec<DebugExpression>,
+        values: Vec<DebuggableExpression>,
     },
     UniformArray {
-        value: Box<DebugExpression>,
-        dimension: Box<DebugExpression>,
+        value: Box<DebuggableExpression>,
+        dimension: Box<DebuggableExpression>,
     },
 }
 
 #[derive(Clone)]
-pub enum DebugStatement {
+pub enum DebuggableStatement {
     IfThenElse {
         meta: Meta,
-        cond: DebugExpression,
-        if_case: Box<DebugStatement>,
-        else_case: Option<Box<DebugStatement>>,
+        cond: DebuggableExpression,
+        if_case: Box<DebuggableStatement>,
+        else_case: Option<Box<DebuggableStatement>>,
     },
     While {
         meta: Meta,
-        cond: DebugExpression,
-        stmt: Box<DebugStatement>,
+        cond: DebuggableExpression,
+        stmt: Box<DebuggableStatement>,
     },
     Return {
         meta: Meta,
-        value: DebugExpression,
+        value: DebuggableExpression,
     },
     InitializationBlock {
         meta: Meta,
         xtype: VariableType,
-        initializations: Vec<DebugStatement>,
+        initializations: Vec<DebuggableStatement>,
     },
     Declaration {
         meta: Meta,
         xtype: VariableType,
         id: usize,
-        dimensions: Vec<DebugExpression>,
+        dimensions: Vec<DebuggableExpression>,
         is_constant: bool,
     },
     Substitution {
         meta: Meta,
         var: usize,
         access: Vec<DebugAccess>,
-        op: DebugAssignOp,
-        rhe: DebugExpression,
+        op: DebuggableAssignOp,
+        rhe: DebuggableExpression,
     },
     MultSubstitution {
         meta: Meta,
-        lhe: DebugExpression,
-        op: DebugAssignOp,
-        rhe: DebugExpression,
+        lhe: DebuggableExpression,
+        op: DebuggableAssignOp,
+        rhe: DebuggableExpression,
     },
     UnderscoreSubstitution {
         meta: Meta,
-        op: DebugAssignOp,
-        rhe: DebugExpression,
+        op: DebuggableAssignOp,
+        rhe: DebuggableExpression,
     },
     ConstraintEquality {
         meta: Meta,
-        lhe: DebugExpression,
-        rhe: DebugExpression,
+        lhe: DebuggableExpression,
+        rhe: DebuggableExpression,
     },
     LogCall {
         meta: Meta,
@@ -144,11 +144,11 @@ pub enum DebugStatement {
     },
     Block {
         meta: Meta,
-        stmts: Vec<DebugStatement>,
+        stmts: Vec<DebuggableStatement>,
     },
     Assert {
         meta: Meta,
-        arg: DebugExpression,
+        arg: DebuggableExpression,
     },
     Ret,
 }
@@ -171,13 +171,13 @@ impl DebugAccess {
                 DebugAccess::ComponentAccess(i)
             }
             Access::ArrayAccess(expr) => {
-                DebugAccess::ArrayAccess(DebugExpression::from(expr, name2id, id2name))
+                DebugAccess::ArrayAccess(DebuggableExpression::from(expr, name2id, id2name))
             }
         }
     }
 }
 
-impl DebugExpression {
+impl DebuggableExpression {
     pub fn from(
         expr: Expression,
         name2id: &mut FxHashMap<String, usize>,
@@ -189,31 +189,31 @@ impl DebugExpression {
                 lhe,
                 infix_op,
                 rhe,
-            } => DebugExpression::InfixOp {
-                lhe: Box::new(DebugExpression::from(*lhe, name2id, id2name)),
-                infix_op: DebugExpressionInfixOpcode(infix_op),
-                rhe: Box::new(DebugExpression::from(*rhe, name2id, id2name)),
+            } => DebuggableExpression::InfixOp {
+                lhe: Box::new(DebuggableExpression::from(*lhe, name2id, id2name)),
+                infix_op: DebuggableExpressionInfixOpcode(infix_op),
+                rhe: Box::new(DebuggableExpression::from(*rhe, name2id, id2name)),
             },
             Expression::PrefixOp {
                 meta: _,
                 prefix_op,
                 rhe,
-            } => DebugExpression::PrefixOp {
-                prefix_op: DebugExpressionPrefixOpcode(prefix_op),
-                rhe: Box::new(DebugExpression::from(*rhe, name2id, id2name)),
+            } => DebuggableExpression::PrefixOp {
+                prefix_op: DebuggableExpressionPrefixOpcode(prefix_op),
+                rhe: Box::new(DebuggableExpression::from(*rhe, name2id, id2name)),
             },
             Expression::InlineSwitchOp {
                 meta: _,
                 cond,
                 if_true,
                 if_false,
-            } => DebugExpression::InlineSwitchOp {
-                cond: Box::new(DebugExpression::from(*cond, name2id, id2name)),
-                if_true: Box::new(DebugExpression::from(*if_true, name2id, id2name)),
-                if_false: Box::new(DebugExpression::from(*if_false, name2id, id2name)),
+            } => DebuggableExpression::InlineSwitchOp {
+                cond: Box::new(DebuggableExpression::from(*cond, name2id, id2name)),
+                if_true: Box::new(DebuggableExpression::from(*if_true, name2id, id2name)),
+                if_false: Box::new(DebuggableExpression::from(*if_false, name2id, id2name)),
             },
-            Expression::ParallelOp { meta: _, rhe } => DebugExpression::ParallelOp {
-                rhe: Box::new(DebugExpression::from(*rhe, name2id, id2name)),
+            Expression::ParallelOp { meta: _, rhe } => DebuggableExpression::ParallelOp {
+                rhe: Box::new(DebuggableExpression::from(*rhe, name2id, id2name)),
             },
             Expression::Variable {
                 meta: _,
@@ -227,7 +227,7 @@ impl DebugExpression {
                     id2name.insert(name2id[&name], name);
                     name2id.len() - 1
                 };
-                DebugExpression::Variable {
+                DebuggableExpression::Variable {
                     id: i,
                     access: access
                         .into_iter()
@@ -235,7 +235,7 @@ impl DebugExpression {
                         .collect(),
                 }
             }
-            Expression::Number(_, value) => DebugExpression::Number(value),
+            Expression::Number(_, value) => DebuggableExpression::Number(value),
             Expression::Call { meta: _, id, args } => {
                 let i = if let Some(i) = name2id.get(&id) {
                     *i
@@ -244,11 +244,11 @@ impl DebugExpression {
                     id2name.insert(name2id[&id], id);
                     name2id.len() - 1
                 };
-                DebugExpression::Call {
+                DebuggableExpression::Call {
                     id: i,
                     args: args
                         .into_iter()
-                        .map(|arg| DebugExpression::from(arg, name2id, id2name))
+                        .map(|arg| DebuggableExpression::from(arg, name2id, id2name))
                         .collect(),
                 }
             }
@@ -260,11 +260,11 @@ impl DebugExpression {
                     id2name.insert(name2id[&id], id);
                     name2id.len() - 1
                 };
-                DebugExpression::BusCall {
+                DebuggableExpression::BusCall {
                     id: i,
                     args: args
                         .into_iter()
-                        .map(|arg| DebugExpression::from(arg, name2id, id2name))
+                        .map(|arg| DebuggableExpression::from(arg, name2id, id2name))
                         .collect(),
                 }
             }
@@ -283,45 +283,45 @@ impl DebugExpression {
                     id2name.insert(name2id[&id], id);
                     name2id.len() - 1
                 };
-                DebugExpression::AnonymousComp {
+                DebuggableExpression::AnonymousComp {
                     id: i,
                     is_parallel,
                     params: params
                         .into_iter()
-                        .map(|p| DebugExpression::from(p, name2id, id2name))
+                        .map(|p| DebuggableExpression::from(p, name2id, id2name))
                         .collect(),
                     signals: signals
                         .into_iter()
-                        .map(|s| DebugExpression::from(s, name2id, id2name))
+                        .map(|s| DebuggableExpression::from(s, name2id, id2name))
                         .collect(),
                     names,
                 }
             }
-            Expression::ArrayInLine { meta: _, values } => DebugExpression::ArrayInLine {
+            Expression::ArrayInLine { meta: _, values } => DebuggableExpression::ArrayInLine {
                 values: values
                     .into_iter()
-                    .map(|v| DebugExpression::from(v, name2id, id2name))
+                    .map(|v| DebuggableExpression::from(v, name2id, id2name))
                     .collect(),
             },
-            Expression::Tuple { meta: _, values } => DebugExpression::Tuple {
+            Expression::Tuple { meta: _, values } => DebuggableExpression::Tuple {
                 values: values
                     .into_iter()
-                    .map(|v| DebugExpression::from(v, name2id, id2name))
+                    .map(|v| DebuggableExpression::from(v, name2id, id2name))
                     .collect(),
             },
             Expression::UniformArray {
                 meta: _,
                 value,
                 dimension,
-            } => DebugExpression::UniformArray {
-                value: Box::new(DebugExpression::from(*value, name2id, id2name)),
-                dimension: Box::new(DebugExpression::from(*dimension, name2id, id2name)),
+            } => DebuggableExpression::UniformArray {
+                value: Box::new(DebuggableExpression::from(*value, name2id, id2name)),
+                dimension: Box::new(DebuggableExpression::from(*dimension, name2id, id2name)),
             },
         }
     }
 }
 
-impl DebugStatement {
+impl DebuggableStatement {
     pub fn from(
         stmt: Statement,
         name2id: &mut FxHashMap<String, usize>,
@@ -333,32 +333,33 @@ impl DebugStatement {
                 cond,
                 if_case,
                 else_case,
-            } => DebugStatement::IfThenElse {
+            } => DebuggableStatement::IfThenElse {
                 meta,
-                cond: DebugExpression::from(cond, name2id, id2name),
-                if_case: Box::new(DebugStatement::from(*if_case, name2id, id2name)),
-                else_case: else_case
-                    .map(|else_case| Box::new(DebugStatement::from(*else_case, name2id, id2name))),
+                cond: DebuggableExpression::from(cond, name2id, id2name),
+                if_case: Box::new(DebuggableStatement::from(*if_case, name2id, id2name)),
+                else_case: else_case.map(|else_case| {
+                    Box::new(DebuggableStatement::from(*else_case, name2id, id2name))
+                }),
             },
-            Statement::While { meta, cond, stmt } => DebugStatement::While {
+            Statement::While { meta, cond, stmt } => DebuggableStatement::While {
                 meta,
-                cond: DebugExpression::from(cond, name2id, id2name),
-                stmt: Box::new(DebugStatement::from(*stmt, name2id, id2name)),
+                cond: DebuggableExpression::from(cond, name2id, id2name),
+                stmt: Box::new(DebuggableStatement::from(*stmt, name2id, id2name)),
             },
-            Statement::Return { meta, value } => DebugStatement::Return {
+            Statement::Return { meta, value } => DebuggableStatement::Return {
                 meta,
-                value: DebugExpression::from(value, name2id, id2name),
+                value: DebuggableExpression::from(value, name2id, id2name),
             },
             Statement::InitializationBlock {
                 meta,
                 xtype,
                 initializations,
-            } => DebugStatement::InitializationBlock {
+            } => DebuggableStatement::InitializationBlock {
                 meta,
                 xtype,
                 initializations: initializations
                     .into_iter()
-                    .map(|stmt| DebugStatement::from(stmt, name2id, id2name))
+                    .map(|stmt| DebuggableStatement::from(stmt, name2id, id2name))
                     .collect(),
             },
             Statement::Declaration {
@@ -375,13 +376,13 @@ impl DebugStatement {
                     id2name.insert(name2id[&name], name);
                     name2id.len() - 1
                 };
-                DebugStatement::Declaration {
+                DebuggableStatement::Declaration {
                     meta: meta,
                     xtype: xtype,
                     id: i,
                     dimensions: dimensions
                         .into_iter()
-                        .map(|dim| DebugExpression::from(dim, name2id, id2name))
+                        .map(|dim| DebuggableExpression::from(dim, name2id, id2name))
                         .collect(),
                     is_constant: is_constant,
                 }
@@ -400,72 +401,72 @@ impl DebugStatement {
                     id2name.insert(name2id[&var], var);
                     name2id.len() - 1
                 };
-                DebugStatement::Substitution {
+                DebuggableStatement::Substitution {
                     meta,
                     var: i,
                     access: access
                         .into_iter()
                         .map(|a| DebugAccess::from(a, name2id, id2name))
                         .collect(),
-                    op: DebugAssignOp(op),
-                    rhe: DebugExpression::from(rhe, name2id, id2name),
+                    op: DebuggableAssignOp(op),
+                    rhe: DebuggableExpression::from(rhe, name2id, id2name),
                 }
             }
             Statement::MultSubstitution { meta, lhe, op, rhe } => {
-                DebugStatement::MultSubstitution {
+                DebuggableStatement::MultSubstitution {
                     meta,
-                    lhe: DebugExpression::from(lhe, name2id, id2name),
-                    op: DebugAssignOp(op),
-                    rhe: DebugExpression::from(rhe, name2id, id2name),
+                    lhe: DebuggableExpression::from(lhe, name2id, id2name),
+                    op: DebuggableAssignOp(op),
+                    rhe: DebuggableExpression::from(rhe, name2id, id2name),
                 }
             }
             Statement::UnderscoreSubstitution { meta, op, rhe } => {
-                DebugStatement::UnderscoreSubstitution {
+                DebuggableStatement::UnderscoreSubstitution {
                     meta,
-                    op: DebugAssignOp(op),
-                    rhe: DebugExpression::from(rhe, name2id, id2name),
+                    op: DebuggableAssignOp(op),
+                    rhe: DebuggableExpression::from(rhe, name2id, id2name),
                 }
             }
             Statement::ConstraintEquality { meta, lhe, rhe } => {
-                DebugStatement::ConstraintEquality {
+                DebuggableStatement::ConstraintEquality {
                     meta,
-                    lhe: DebugExpression::from(lhe, name2id, id2name),
-                    rhe: DebugExpression::from(rhe, name2id, id2name),
+                    lhe: DebuggableExpression::from(lhe, name2id, id2name),
+                    rhe: DebuggableExpression::from(rhe, name2id, id2name),
                 }
             }
-            Statement::LogCall { meta, args } => DebugStatement::LogCall { meta, args },
-            Statement::Block { meta, stmts } => DebugStatement::Block {
+            Statement::LogCall { meta, args } => DebuggableStatement::LogCall { meta, args },
+            Statement::Block { meta, stmts } => DebuggableStatement::Block {
                 meta,
                 stmts: stmts
                     .into_iter()
-                    .map(|stmt| DebugStatement::from(stmt, name2id, id2name))
+                    .map(|stmt| DebuggableStatement::from(stmt, name2id, id2name))
                     .collect(),
             },
-            Statement::Assert { meta, arg } => DebugStatement::Assert {
+            Statement::Assert { meta, arg } => DebuggableStatement::Assert {
                 meta,
-                arg: DebugExpression::from(arg, name2id, id2name),
+                arg: DebuggableExpression::from(arg, name2id, id2name),
             },
         }
     }
 }
 
-impl Hash for DebugExpressionInfixOpcode {
+impl Hash for DebuggableExpressionInfixOpcode {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(&self.0).hash(state);
     }
 }
 
-impl Eq for DebugExpressionInfixOpcode {}
+impl Eq for DebuggableExpressionInfixOpcode {}
 
-impl Hash for DebugExpressionPrefixOpcode {
+impl Hash for DebuggableExpressionPrefixOpcode {
     fn hash<H: Hasher>(&self, state: &mut H) {
         std::mem::discriminant(&self.0).hash(state);
     }
 }
 
-impl Eq for DebugExpressionPrefixOpcode {}
+impl Eq for DebuggableExpressionPrefixOpcode {}
 
-impl fmt::Debug for DebugSignalType {
+impl fmt::Debug for DebuggableSignalType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             SignalType::Output => {
@@ -481,7 +482,7 @@ impl fmt::Debug for DebugSignalType {
     }
 }
 
-impl fmt::Debug for DebugVariableType {
+impl fmt::Debug for DebuggableVariableType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             VariableType::Var => {
@@ -491,7 +492,7 @@ impl fmt::Debug for DebugVariableType {
                 write!(
                     f,
                     "Signal: {:?} {:?}",
-                    &DebugSignalType(*signaltype),
+                    &DebuggableSignalType(*signaltype),
                     &taglist
                 )
             }
@@ -506,7 +507,7 @@ impl fmt::Debug for DebugVariableType {
                     f,
                     "Bus: {} {:?} {:?}",
                     name,
-                    &DebugSignalType(*signaltype),
+                    &DebuggableSignalType(*signaltype),
                     &taglist
                 )
             }
@@ -532,7 +533,7 @@ impl DebugAccess {
     }
 }
 
-impl fmt::Debug for DebugAssignOp {
+impl fmt::Debug for DebuggableAssignOp {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
             AssignOp::AssignVar => f.debug_struct("AssignVar").finish(),
@@ -542,7 +543,7 @@ impl fmt::Debug for DebugAssignOp {
     }
 }
 
-impl fmt::Debug for DebugExpressionInfixOpcode {
+impl fmt::Debug for DebuggableExpressionInfixOpcode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
             ExpressionInfixOpcode::Mul => f.debug_struct("Mul").finish(),
@@ -569,7 +570,7 @@ impl fmt::Debug for DebugExpressionInfixOpcode {
     }
 }
 
-impl fmt::Debug for DebugExpressionPrefixOpcode {
+impl fmt::Debug for DebuggableExpressionPrefixOpcode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.0 {
             ExpressionPrefixOpcode::Sub => f.debug_struct("Minus").finish(),
@@ -579,15 +580,15 @@ impl fmt::Debug for DebugExpressionPrefixOpcode {
     }
 }
 
-impl DebugExpression {
+impl DebuggableExpression {
     pub fn lookup_fmt(&self, lookup: &FxHashMap<usize, String>, indent: usize) -> String {
         let mut s = "".to_string();
         let indentation = "  ".repeat(indent);
         match &self {
-            DebugExpression::Number(value) => {
+            DebuggableExpression::Number(value) => {
                 format!("{}{}Number:{} {}\n", indentation, BLUE, RESET, value)
             }
-            DebugExpression::InfixOp {
+            DebuggableExpression::InfixOp {
                 lhe, infix_op, rhe, ..
             } => {
                 s += &format!("{}{}InfixOp:{}\n", indentation, GREEN, RESET);
@@ -607,7 +608,7 @@ impl DebugExpression {
                 s += &(*rhe.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugExpression::PrefixOp { prefix_op, rhe, .. } => {
+            DebuggableExpression::PrefixOp { prefix_op, rhe, .. } => {
                 s += &format!("{}{}PrefixOp:{}\n", indentation, GREEN, RESET);
                 s += &format!(
                     "{}  {}Operator:{} {:?}\n",
@@ -620,7 +621,7 @@ impl DebugExpression {
                 s += &(*rhe.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugExpression::ParallelOp { rhe, .. } => {
+            DebuggableExpression::ParallelOp { rhe, .. } => {
                 s += &format!("{}ParallelOp\n", indentation);
                 s += &format!(
                     "{}  {}Right-Hand Expression:{}\n",
@@ -629,7 +630,7 @@ impl DebugExpression {
                 s += &(*rhe.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugExpression::Variable { id, access, .. } => {
+            DebuggableExpression::Variable { id, access, .. } => {
                 s += &format!("{}{}Variable:{}\n", indentation, BLUE, RESET);
                 s += &format!("{}  Name: {}\n", indentation, lookup[id]);
                 s += &format!("{}  Access:\n", indentation);
@@ -638,7 +639,7 @@ impl DebugExpression {
                 }
                 s
             }
-            DebugExpression::InlineSwitchOp {
+            DebuggableExpression::InlineSwitchOp {
                 cond: _,
                 if_true,
                 if_false,
@@ -651,7 +652,7 @@ impl DebugExpression {
                 s += &(*if_false.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugExpression::Call { id, args, .. } => {
+            DebuggableExpression::Call { id, args, .. } => {
                 s += &format!("{}Call\n", indentation);
                 s += &format!("{}  id: {}\n", indentation, lookup[id]);
                 s += &format!("{}  args:\n", indentation);
@@ -660,7 +661,7 @@ impl DebugExpression {
                 }
                 s
             }
-            DebugExpression::ArrayInLine { values, .. } => {
+            DebuggableExpression::ArrayInLine { values, .. } => {
                 s += &format!("{}ArrayInLine\n", indentation);
                 s += &format!("{}  values:\n", indentation);
                 for v in values {
@@ -668,7 +669,7 @@ impl DebugExpression {
                 }
                 s
             }
-            DebugExpression::Tuple { values, .. } => {
+            DebuggableExpression::Tuple { values, .. } => {
                 s += &format!("{}Tuple\n", indentation);
                 s += &format!("{}  values:\n", indentation);
                 for v in values {
@@ -676,7 +677,7 @@ impl DebugExpression {
                 }
                 s
             }
-            DebugExpression::UniformArray {
+            DebuggableExpression::UniformArray {
                 value, dimension, ..
             } => {
                 s += &format!("{}UniformArray\n", indentation);
@@ -686,7 +687,7 @@ impl DebugExpression {
                 s += &(*dimension.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugExpression::BusCall { id, args, .. } => {
+            DebuggableExpression::BusCall { id, args, .. } => {
                 s += &format!("{}BusCall\n", indentation);
                 s += &format!("{}  id:\n", id);
                 s += &format!("{}  args:\n", indentation);
@@ -695,7 +696,7 @@ impl DebugExpression {
                 }
                 s
             }
-            DebugExpression::AnonymousComp {
+            DebuggableExpression::AnonymousComp {
                 id,
                 is_parallel,
                 params,
@@ -721,19 +722,19 @@ impl DebugExpression {
     }
 }
 
-impl DebugStatement {
+impl DebuggableStatement {
     pub fn apply_iterative<F>(&mut self, mut func: F)
     where
-        F: FnMut(&mut DebugStatement),
+        F: FnMut(&mut DebuggableStatement),
     {
-        let mut stack = vec![self]; // Stack to store DebugStatements for traversal
+        let mut stack = vec![self]; // Stack to store DebuggableStatements for traversal
 
         while let Some(current) = stack.pop() {
             func(current); // Apply the function to the current statement
 
             // Push child nodes onto the stack for further processing
             match current {
-                DebugStatement::IfThenElse {
+                DebuggableStatement::IfThenElse {
                     if_case, else_case, ..
                 } => {
                     stack.push(if_case);
@@ -741,17 +742,17 @@ impl DebugStatement {
                         stack.push(else_case);
                     }
                 }
-                DebugStatement::While { stmt, .. } => {
+                DebuggableStatement::While { stmt, .. } => {
                     stack.push(stmt);
                 }
-                DebugStatement::InitializationBlock {
+                DebuggableStatement::InitializationBlock {
                     initializations, ..
                 } => {
                     for init in initializations.iter_mut() {
                         stack.push(init);
                     }
                 }
-                DebugStatement::Block { stmts, .. } => {
+                DebuggableStatement::Block { stmts, .. } => {
                     for stmt in stmts.iter_mut() {
                         stack.push(stmt);
                     }
@@ -765,7 +766,7 @@ impl DebugStatement {
         let mut s = "".to_string();
         let indentation = "  ".repeat(indent);
         match &self {
-            DebugStatement::IfThenElse {
+            DebuggableStatement::IfThenElse {
                 cond,
                 if_case,
                 else_case,
@@ -786,7 +787,7 @@ impl DebugStatement {
                 }
                 s
             }
-            DebugStatement::While { cond, stmt, meta } => {
+            DebuggableStatement::While { cond, stmt, meta } => {
                 s += &format!(
                     "{}{}While{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
@@ -797,7 +798,7 @@ impl DebugStatement {
                 s += &(*stmt.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugStatement::Return { value, meta, .. } => {
+            DebuggableStatement::Return { value, meta, .. } => {
                 s += &format!(
                     "{}{}Return{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
@@ -806,7 +807,7 @@ impl DebugStatement {
                 s += &(value.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugStatement::Substitution {
+            DebuggableStatement::Substitution {
                 var,
                 access,
                 op,
@@ -834,7 +835,7 @@ impl DebugStatement {
                 s += &(rhe.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugStatement::Block { stmts, meta, .. } => {
+            DebuggableStatement::Block { stmts, meta, .. } => {
                 s += &format!(
                     "{}{}Block{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
@@ -852,7 +853,7 @@ impl DebugStatement {
                 }
                 s
             }
-            DebugStatement::Assert { arg, meta, .. } => {
+            DebuggableStatement::Assert { arg, meta, .. } => {
                 s += &format!(
                     "{}{}Assert{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
@@ -861,7 +862,7 @@ impl DebugStatement {
                 s += &(arg.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugStatement::InitializationBlock {
+            DebuggableStatement::InitializationBlock {
                 meta,
                 xtype,
                 initializations,
@@ -875,7 +876,7 @@ impl DebugStatement {
                     indentation,
                     CYAN,
                     RESET,
-                    &DebugVariableType(xtype.clone())
+                    &DebuggableVariableType(xtype.clone())
                 );
                 s += &format!("{}  {}Initializations:{}\n", indentation, YELLOW, RESET);
                 for i in initializations {
@@ -883,7 +884,7 @@ impl DebugStatement {
                 }
                 s
             }
-            DebugStatement::Declaration {
+            DebuggableStatement::Declaration {
                 meta,
                 xtype,
                 id,
@@ -899,7 +900,7 @@ impl DebugStatement {
                     indentation,
                     CYAN,
                     RESET,
-                    &DebugVariableType(xtype.clone())
+                    &DebuggableVariableType(xtype.clone())
                 );
                 s += &format!(
                     "{}  {}Name:{} {}\n",
@@ -915,7 +916,7 @@ impl DebugStatement {
                 );
                 s
             }
-            DebugStatement::MultSubstitution {
+            DebuggableStatement::MultSubstitution {
                 lhe, op, rhe, meta, ..
             } => {
                 s += &format!(
@@ -935,7 +936,7 @@ impl DebugStatement {
                 s += &(rhe.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugStatement::UnderscoreSubstitution { op, rhe, meta, .. } => {
+            DebuggableStatement::UnderscoreSubstitution { op, rhe, meta, .. } => {
                 s += &format!(
                     "{}{}UnderscoreSubstitution{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
@@ -948,7 +949,7 @@ impl DebugStatement {
                 s += &(rhe.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugStatement::ConstraintEquality { lhe, rhe, meta, .. } => {
+            DebuggableStatement::ConstraintEquality { lhe, rhe, meta, .. } => {
                 s += &format!(
                     "{}{}ConstraintEquality{} (elem_id={}):\n",
                     indentation, GREEN, RESET, meta.elem_id
@@ -965,10 +966,10 @@ impl DebugStatement {
                 s += &(rhe.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebugStatement::LogCall { args: _, .. } => {
+            DebuggableStatement::LogCall { args: _, .. } => {
                 format!("{}{}LogCall{}\n", indentation, GREEN, RESET)
             }
-            DebugStatement::Ret => format!("{}{}Ret{}\n", indentation, BLUE, RESET),
+            DebuggableStatement::Ret => format!("{}{}Ret{}\n", indentation, BLUE, RESET),
         }
     }
 }

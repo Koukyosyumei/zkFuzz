@@ -15,8 +15,8 @@ use program_structure::ast::{
 };
 
 use crate::executor::debug_ast::{
-    DebugAccess, DebugAssignOp, DebugExpression, DebugExpressionInfixOpcode, DebugStatement,
-    DebugVariableType,
+    DebugAccess, DebuggableAssignOp, DebuggableExpression, DebuggableExpressionInfixOpcode,
+    DebuggableStatement, DebuggableVariableType,
 };
 use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_state::SymbolicState;
@@ -30,7 +30,7 @@ use crate::executor::utils::generate_cartesian_product_indices;
 
 pub struct SymbolicStore {
     pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,
-    pub variable_types: FxHashMap<usize, DebugVariableType>,
+    pub variable_types: FxHashMap<usize, DebuggableVariableType>,
     pub max_depth: usize,
 }
 
@@ -190,7 +190,7 @@ impl<'a> SymbolicExecutor<'a> {
         let mut id2name = self.symbolic_library.id2name.clone();
         for (n, a) in names.iter().zip(args.iter()) {
             let evaled_a = self.evaluate_expression(
-                &DebugExpression::from(a.clone(), &mut name2id, &mut id2name),
+                &DebuggableExpression::from(a.clone(), &mut name2id, &mut id2name),
                 usize::MAX,
             );
             let simplified_a = self.simplify_variables(&evaled_a, usize::MAX, true, false);
@@ -216,14 +216,15 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// * `statements` - A vector of extended statements representing program logic to execute symbolically.
     /// * `cur_bid` - Current block index to start execution from.
-    pub fn execute(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
+    pub fn execute(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
         if cur_bid < statements.len() {
             self.symbolic_store.max_depth =
                 max(self.symbolic_store.max_depth, self.cur_state.get_depth());
 
             if self.setting.only_initialization_blocks {
                 match &statements[cur_bid] {
-                    DebugStatement::InitializationBlock { .. } | DebugStatement::Block { .. } => {}
+                    DebuggableStatement::InitializationBlock { .. }
+                    | DebuggableStatement::Block { .. } => {}
                     _ => {
                         if !self.cur_state.is_within_initialization_block {
                             self.execute(statements, cur_bid + 1);
@@ -234,37 +235,37 @@ impl<'a> SymbolicExecutor<'a> {
             }
 
             match &statements[cur_bid] {
-                DebugStatement::InitializationBlock { .. } => {
+                DebuggableStatement::InitializationBlock { .. } => {
                     self.handle_initialization_block(statements, cur_bid);
                 }
-                DebugStatement::Block { .. } => {
+                DebuggableStatement::Block { .. } => {
                     self.handle_block(statements, cur_bid);
                 }
-                DebugStatement::IfThenElse { .. } => {
+                DebuggableStatement::IfThenElse { .. } => {
                     self.handle_if_then_else(statements, cur_bid);
                 }
-                DebugStatement::While { .. } => {
+                DebuggableStatement::While { .. } => {
                     self.handle_while(statements, cur_bid);
                 }
-                DebugStatement::Return { .. } => {
+                DebuggableStatement::Return { .. } => {
                     self.handle_return(statements, cur_bid);
                 }
-                DebugStatement::Declaration { .. } => {
+                DebuggableStatement::Declaration { .. } => {
                     self.handle_declaration(statements, cur_bid);
                 }
-                DebugStatement::Substitution { .. } => {
+                DebuggableStatement::Substitution { .. } => {
                     self.handle_substitution(statements, cur_bid);
                 }
-                DebugStatement::MultSubstitution { .. } => {
+                DebuggableStatement::MultSubstitution { .. } => {
                     self.handle_multi_substitution(statements, cur_bid);
                 }
-                DebugStatement::ConstraintEquality { .. } => {
+                DebuggableStatement::ConstraintEquality { .. } => {
                     self.handle_constraint_equality(statements, cur_bid);
                 }
-                DebugStatement::Assert { .. } => {
+                DebuggableStatement::Assert { .. } => {
                     self.handle_assert(statements, cur_bid);
                 }
-                DebugStatement::UnderscoreSubstitution {
+                DebuggableStatement::UnderscoreSubstitution {
                     meta,
                     op: _,
                     rhe: _,
@@ -272,10 +273,10 @@ impl<'a> SymbolicExecutor<'a> {
                 } => {
                     self.trace_if_enabled(&meta);
                 }
-                DebugStatement::LogCall { meta, .. } => {
+                DebuggableStatement::LogCall { meta, .. } => {
                     self.trace_if_enabled(&meta);
                 }
-                DebugStatement::Ret => {
+                DebuggableStatement::Ret => {
                     self.handle_ret();
                 }
             }
@@ -336,11 +337,11 @@ impl<'a> SymbolicExecutor<'a> {
 
     pub fn evaluate_dimension(
         &mut self,
-        dims: &Vec<DebugExpression>,
+        dims: &Vec<DebuggableExpression>,
         elem_id: usize,
     ) -> Vec<usize> {
         dims.iter()
-            .map(|arg0: &DebugExpression| {
+            .map(|arg0: &DebuggableExpression| {
                 let evaled_arg0 = self.evaluate_expression(arg0, elem_id);
                 let simplified_arg0 = self.simplify_variables(&evaled_arg0, elem_id, false, false);
                 if let SymbolicValue::ConstantInt(bint) = &simplified_arg0 {
@@ -569,16 +570,20 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// # Arguments
     ///
-    /// * `expr` - The `DebugExpression` to evaluate.
+    /// * `expr` - The `DebuggableExpression` to evaluate.
     /// * `elem_id` - Unique element id
     ///
     /// # Returns
     ///
     /// A `SymbolicValue` representing the evaluated expression.
-    fn evaluate_expression(&mut self, expr: &DebugExpression, elem_id: usize) -> SymbolicValue {
+    fn evaluate_expression(
+        &mut self,
+        expr: &DebuggableExpression,
+        elem_id: usize,
+    ) -> SymbolicValue {
         match &expr {
-            DebugExpression::Number(value) => SymbolicValue::ConstantInt(value.clone()),
-            DebugExpression::Variable { id, access } => {
+            DebuggableExpression::Number(value) => SymbolicValue::ConstantInt(value.clone()),
+            DebuggableExpression::Variable { id, access } => {
                 let resolved_sym_name = if access.is_empty() {
                     SymbolicName::new(*id, self.cur_state.owner_name.clone(), None)
                 } else {
@@ -612,16 +617,16 @@ impl<'a> SymbolicExecutor<'a> {
                 };
                 SymbolicValue::Variable(resolved_sym_name)
             }
-            DebugExpression::InfixOp { lhe, infix_op, rhe } => {
+            DebuggableExpression::InfixOp { lhe, infix_op, rhe } => {
                 let lhs = self.evaluate_expression(lhe, elem_id);
                 let rhs = self.evaluate_expression(rhe, elem_id);
                 SymbolicValue::BinaryOp(Rc::new(lhs), infix_op.clone(), Rc::new(rhs))
             }
-            DebugExpression::PrefixOp { prefix_op, rhe } => {
+            DebuggableExpression::PrefixOp { prefix_op, rhe } => {
                 let expr = self.evaluate_expression(rhe, elem_id);
                 SymbolicValue::UnaryOp(prefix_op.clone(), Rc::new(expr))
             }
-            DebugExpression::InlineSwitchOp {
+            DebuggableExpression::InlineSwitchOp {
                 cond,
                 if_true,
                 if_false,
@@ -635,29 +640,29 @@ impl<'a> SymbolicExecutor<'a> {
                     Rc::new(false_branch),
                 )
             }
-            DebugExpression::ParallelOp { rhe, .. } => self.evaluate_expression(rhe, elem_id),
-            DebugExpression::ArrayInLine { values } => {
+            DebuggableExpression::ParallelOp { rhe, .. } => self.evaluate_expression(rhe, elem_id),
+            DebuggableExpression::ArrayInLine { values } => {
                 let elements = values
                     .iter()
                     .map(|v| Rc::new(self.evaluate_expression(v, elem_id)))
                     .collect();
                 SymbolicValue::Array(elements)
             }
-            DebugExpression::Tuple { values } => {
+            DebuggableExpression::Tuple { values } => {
                 let elements = values
                     .iter()
                     .map(|v| Rc::new(self.evaluate_expression(v, elem_id)))
                     .collect();
                 SymbolicValue::Array(elements)
             }
-            DebugExpression::UniformArray {
+            DebuggableExpression::UniformArray {
                 value, dimension, ..
             } => {
                 let evaluated_value = self.evaluate_expression(value, elem_id);
                 let evaluated_dimension = self.evaluate_expression(dimension, elem_id);
                 SymbolicValue::UniformArray(Rc::new(evaluated_value), Rc::new(evaluated_dimension))
             }
-            DebugExpression::Call { id, args, .. } => {
+            DebuggableExpression::Call { id, args, .. } => {
                 let evaluated_args: Vec<_> = args
                     .iter()
                     .map(|arg| self.evaluate_expression(arg, elem_id))
@@ -751,8 +756,12 @@ impl<'a> SymbolicExecutor<'a> {
 }
 
 impl<'a> SymbolicExecutor<'a> {
-    fn handle_initialization_block(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::InitializationBlock {
+    fn handle_initialization_block(
+        &mut self,
+        statements: &Vec<DebuggableStatement>,
+        cur_bid: usize,
+    ) {
+        if let DebuggableStatement::InitializationBlock {
             initializations,
             xtype,
             ..
@@ -774,16 +783,16 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn handle_block(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::Block { meta, stmts, .. } = &statements[cur_bid] {
+    fn handle_block(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
+        if let DebuggableStatement::Block { meta, stmts, .. } = &statements[cur_bid] {
             self.trace_if_enabled(&meta);
             self.execute(&stmts, 0);
             self.execute(statements, cur_bid + 1);
         }
     }
 
-    fn handle_if_then_else(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::IfThenElse {
+    fn handle_if_then_else(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
+        if let DebuggableStatement::IfThenElse {
             meta,
             cond,
             if_case,
@@ -820,8 +829,8 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn handle_substitution(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::Substitution {
+    fn handle_substitution(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
+        if let DebuggableStatement::Substitution {
             meta,
             var,
             access,
@@ -925,8 +934,8 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn handle_multi_substitution(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::MultSubstitution {
+    fn handle_multi_substitution(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
+        if let DebuggableStatement::MultSubstitution {
             meta, lhe, op, rhe, ..
         } = &statements[cur_bid]
         {
@@ -939,7 +948,7 @@ impl<'a> SymbolicExecutor<'a> {
 
             if self.setting.keep_track_constraints {
                 match op {
-                    DebugAssignOp(AssignOp::AssignConstraintSignal) => {
+                    DebuggableAssignOp(AssignOp::AssignConstraintSignal) => {
                         let cont = SymbolicValue::AssignEq(
                             Rc::new(simplified_lhe_val),
                             Rc::new(simplified_rhe_val),
@@ -947,7 +956,7 @@ impl<'a> SymbolicExecutor<'a> {
                         self.cur_state.push_trace_constraint(&cont);
                         self.cur_state.push_side_constraint(&cont);
                     }
-                    DebugAssignOp(AssignOp::AssignSignal) => {
+                    DebuggableAssignOp(AssignOp::AssignSignal) => {
                         let cont = SymbolicValue::Assign(
                             Rc::new(simplified_lhe_val),
                             Rc::new(simplified_rhe_val),
@@ -964,8 +973,8 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn handle_while(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::While {
+    fn handle_while(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
+        if let DebuggableStatement::While {
             meta, cond, stmt, ..
         } = &statements[cur_bid]
         {
@@ -989,8 +998,8 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn handle_return(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::Return { meta, value, .. } = &statements[cur_bid] {
+    fn handle_return(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
+        if let DebuggableStatement::Return { meta, value, .. } = &statements[cur_bid] {
             self.trace_if_enabled(&meta);
             let tmp_val = self.evaluate_expression(value, meta.elem_id);
             let return_value = self.simplify_variables(&tmp_val, meta.elem_id, true, false);
@@ -1013,20 +1022,24 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn handle_declaration(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::Declaration { id, xtype, .. } = &statements[cur_bid] {
+    fn handle_declaration(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
+        if let DebuggableStatement::Declaration { id, xtype, .. } = &statements[cur_bid] {
             let var_name = SymbolicName::new(*id, self.cur_state.owner_name.clone(), None);
             self.symbolic_store
                 .variable_types
-                .insert(*id, DebugVariableType(xtype.clone()));
+                .insert(*id, DebuggableVariableType(xtype.clone()));
             let value = SymbolicValue::Variable(var_name.clone());
             self.cur_state.set_sym_val(var_name, value);
             self.execute(statements, cur_bid + 1);
         }
     }
 
-    fn handle_constraint_equality(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::ConstraintEquality { meta, lhe, rhe } = &statements[cur_bid] {
+    fn handle_constraint_equality(
+        &mut self,
+        statements: &Vec<DebuggableStatement>,
+        cur_bid: usize,
+    ) {
+        if let DebuggableStatement::ConstraintEquality { meta, lhe, rhe } = &statements[cur_bid] {
             self.trace_if_enabled(&meta);
 
             let lhe_val = self.evaluate_expression(lhe, meta.elem_id);
@@ -1036,7 +1049,7 @@ impl<'a> SymbolicExecutor<'a> {
 
             let cond = SymbolicValue::BinaryOp(
                 Rc::new(simplified_lhe_val),
-                DebugExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                 Rc::new(simplified_rhe_val),
             );
 
@@ -1054,8 +1067,8 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn handle_assert(&mut self, statements: &Vec<DebugStatement>, cur_bid: usize) {
-        if let DebugStatement::Assert { meta, arg, .. } = &statements[cur_bid] {
+    fn handle_assert(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
+        if let DebuggableStatement::Assert { meta, arg, .. } = &statements[cur_bid] {
             self.trace_if_enabled(&meta);
             let expr = self.evaluate_expression(&arg, meta.elem_id);
             let condition = self.simplify_variables(&expr, meta.elem_id, true, true);
@@ -1095,7 +1108,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// Updates the current symbolic state with individual array element assignments.
     fn handle_array_substitution(
         &mut self,
-        op: &DebugAssignOp,
+        op: &DebuggableAssignOp,
         left_var_name: &SymbolicName,
         arr: &SymbolicValue,
         elem_id: usize,
@@ -1183,7 +1196,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// May initialize a new component in the symbolic store or update
     fn handle_call_substitution(
         &mut self,
-        op: &DebugAssignOp,
+        op: &DebuggableAssignOp,
         callee_name: &usize,
         args: &Vec<Rc<SymbolicValue>>,
         var_name: &SymbolicName,
@@ -1191,7 +1204,7 @@ impl<'a> SymbolicExecutor<'a> {
         elem_id: usize,
     ) {
         let is_mutable = match op {
-            DebugAssignOp(AssignOp::AssignSignal) => true,
+            DebuggableAssignOp(AssignOp::AssignSignal) => true,
             _ => false,
         };
         if self
@@ -1399,13 +1412,13 @@ impl<'a> SymbolicExecutor<'a> {
     /// Updates the current symbolic state and may add constraints.
     fn handle_non_call_substitution(
         &mut self,
-        op: &DebugAssignOp,
+        op: &DebuggableAssignOp,
         var_name: &SymbolicName,
         value: &SymbolicValue,
     ) {
         if self.setting.keep_track_constraints {
             match op {
-                DebugAssignOp(AssignOp::AssignConstraintSignal) => {
+                DebuggableAssignOp(AssignOp::AssignConstraintSignal) => {
                     let cont = SymbolicValue::AssignEq(
                         Rc::new(SymbolicValue::Variable(var_name.clone())),
                         Rc::new(value.clone()),
@@ -1413,7 +1426,7 @@ impl<'a> SymbolicExecutor<'a> {
                     self.cur_state.push_trace_constraint(&cont);
                     self.cur_state.push_side_constraint(&cont);
                 }
-                DebugAssignOp(AssignOp::AssignSignal) => {
+                DebuggableAssignOp(AssignOp::AssignSignal) => {
                     let cont = SymbolicValue::Assign(
                         Rc::new(SymbolicValue::Variable(var_name.clone())),
                         Rc::new(value.clone()),
