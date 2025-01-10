@@ -726,7 +726,13 @@ pub fn evaluate_binary_op(
     match (&normalized_lhs, &normalized_rhs) {
         (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match &op.0 {
             ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt((lv + rv) % prime),
-            ExpressionInfixOpcode::Sub => SymbolicValue::ConstantInt((lv - rv) % prime),
+            ExpressionInfixOpcode::Sub => {
+                let mut tmp = (lv - rv) % prime;
+                if tmp.is_negative() {
+                    tmp += prime;
+                }
+                SymbolicValue::ConstantInt(tmp)
+            }
             ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt((lv * rv) % prime),
             ExpressionInfixOpcode::Pow => SymbolicValue::ConstantInt(modpow(lv, rv, prime)),
             ExpressionInfixOpcode::Div => {
