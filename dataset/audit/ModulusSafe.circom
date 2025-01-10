@@ -13,10 +13,16 @@ template Modulus(p, n) {
   q <-- x \ p;
   x === q * p + y;
 
-//   component ltP = LessThan(n);
-//   ltP.in[0] <== p;
-//   ltP.in[1] <== y;
-//   ltP.out === 0;
+  // Constraint to enforce 0 <= y < p
+  component ltP = LessThan(n);
+  ltP.in[0] <== y;
+  ltP.in[1] <== p;
+  ltP.out === 1; // Ensure y < p
+
+  component gteZeroY = LessThan(n);
+  gteZeroY.in[0] <== 0;
+  gteZeroY.in[1] <== y;
+  gteZeroY.out === 1; // Ensure y >= 0
 
   component ltQ = LessThan(n);
   ltQ.in[0] <== x;
@@ -24,4 +30,4 @@ template Modulus(p, n) {
   ltQ.out === 0;
 }
 
-component main = Modulus(5, 6);
+component main = Modulus(5, 6);  
