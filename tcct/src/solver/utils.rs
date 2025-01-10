@@ -771,12 +771,7 @@ pub fn verify_assignment(
         sexe.concrete_execute(&setting.target_template_name, assignment);
 
         if sexe.cur_state.is_failed {
-            return VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedTrace(
-                sexe.violated_condition
-                    .clone()
-                    .unwrap()
-                    .lookup_fmt(&sexe.symbolic_library.id2name),
-            ));
+            return VerificationResult::WellConstrained;
         }
 
         let mut result = VerificationResult::WellConstrained;

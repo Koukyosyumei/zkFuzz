@@ -1062,7 +1062,12 @@ impl<'a> SymbolicExecutor<'a> {
                 let simplified_cond = self.simplify_variables(&cond, meta.elem_id, false, false);
                 if let SymbolicValue::ConstantBool(false) = simplified_cond {
                     self.cur_state.is_failed = true;
-                    self.violated_condition = Some(simplified_cond.clone());
+                    let original_cond = SymbolicValue::BinaryOp(
+                        Rc::new(lhe_val),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                        Rc::new(rhe_val),
+                    );
+                    self.violated_condition = Some(original_cond.clone());
                 }
             }
 
