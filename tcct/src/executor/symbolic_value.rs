@@ -447,7 +447,7 @@ impl SymbolicLibrary {
         let mut id2dimensions = FxHashMap::default();
 
         let is_lessthan = &name == "LessThan";
-        let is_safe = &name == "Num2Bits";
+        let is_safe = &name == "Num2Bits" || &name == "IsZero";
 
         let i = if let Some(i) = self.name2id.get(&name) {
             *i
