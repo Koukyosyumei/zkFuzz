@@ -19,7 +19,7 @@ template Modulus(p, n) {
   ltP.in[1] <== p;
   ltP.out === 1; // Ensure y < p
 
-  component gteZeroY = LessThan(n);
+  component gteZeroY = LessEqThan(n);
   gteZeroY.in[0] <== 0;
   gteZeroY.in[1] <== y;
   gteZeroY.out === 1; // Ensure y >= 0
