@@ -27,6 +27,7 @@ use crate::solver::utils::{extract_variables, CounterExample, VerificationSettin
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 struct MutationSettings {
+    seed: u64,
     program_population_size: usize,
     input_population_size: usize,
     max_generations: usize,
@@ -34,13 +35,17 @@ struct MutationSettings {
     fitness_function: String,
     mutation_rate: f64,
     crossover_rate: f64,
+    coverage_based_input_generation_max_iteration: usize,
+    coverage_based_input_generation_crossover_rate: f64,
+    coverage_based_input_generation_mutation_rate: f64,
+    coverage_based_input_generation_singlepoint_mutation_rate: f64,
     save_fitness_scores: bool,
-    seed: u64,
 }
 
 impl Default for MutationSettings {
     fn default() -> Self {
         MutationSettings {
+            seed: 0,
             program_population_size: 30,
             input_population_size: 30,
             max_generations: 300,
@@ -48,8 +53,11 @@ impl Default for MutationSettings {
             fitness_function: "error".to_string(),
             mutation_rate: 0.3,
             crossover_rate: 0.5,
+            coverage_based_input_generation_max_iteration: 30,
+            coverage_based_input_generation_crossover_rate: 0.66,
+            coverage_based_input_generation_mutation_rate: 0.5,
+            coverage_based_input_generation_singlepoint_mutation_rate: 0.5,
             save_fitness_scores: false,
-            seed: 0,
         }
     }
 }
@@ -64,8 +72,8 @@ impl fmt::Display for MutationSettings {
     ├─ Max Generations            : {}
     ├─ Input Initialization Method: {} 
     ├─ Fitness Function           : {} 
-    ├─ Mutation Rate              : {}
-    └─ Crossover Rate             : {}",
+    ├─ Trace Mutation Rate        : {}
+    └─ Trace Crossover Rate       : {}",
             self.program_population_size.to_string().bright_yellow(),
             self.input_population_size.to_string().bright_yellow(),
             self.max_generations.to_string().bright_yellow(),
@@ -183,6 +191,10 @@ pub fn mutation_test_search(
                     &mut input_population,
                     mutation_setting.input_population_size / 2 as usize,
                     mutation_setting.input_population_size,
+                    mutation_setting.max_generations,
+                    mutation_setting.coverage_based_input_generation_crossover_rate,
+                    mutation_setting.coverage_based_input_generation_mutation_rate,
+                    mutation_setting.coverage_based_input_generation_singlepoint_mutation_rate,
                     &setting,
                     &mut rng,
                 );
@@ -338,6 +350,10 @@ fn mutate_input_population_with_coverage_maximization(
     inputs_population: &mut Vec<FxHashMap<SymbolicName, BigInt>>,
     input_population_size: usize,
     maximum_size: usize,
+    max_iteration: usize,
+    cross_over_rate: f64,
+    mutation_rate: f64,
+    singlepoint_mutation_rate: f64,
     setting: &VerificationSetting,
     rng: &mut StdRng,
 ) {
@@ -355,7 +371,6 @@ fn mutate_input_population_with_coverage_maximization(
         }
     }
 
-    let max_iteration = 30;
     for _ in 0..max_iteration {
         let mut new_inputs_population = Vec::new();
 
@@ -363,25 +378,27 @@ fn mutate_input_population_with_coverage_maximization(
         for input in inputs_population.iter() {
             let mut new_input = input.clone();
 
-            let p = rng.gen::<f64>();
-            if p > 0.66 {
+            if rng.gen::<f64>() < cross_over_rate {
                 // Crossover
                 let other = inputs_population[rng.gen_range(0, inputs_population.len())].clone();
                 new_input = random_crossover(input, &other, rng);
-            } else if p > 0.1 {
-                // Mutate each input variable with a small probability
-                for var in input_variables {
-                    // rng.gen_bool(0.2)
-                    if rng.gen::<bool>() {
-                        let mutation = draw_random_constant(setting, rng);
-                        new_input.insert(var.clone(), mutation);
+            }
+            if rng.gen::<f64>() < mutation_rate {
+                if rng.gen::<f64>() < singlepoint_mutation_rate {
+                    // Mutate only one input variable
+                    let var = &input_variables[rng.gen_range(0, input_variables.len())];
+                    let mutation = draw_random_constant(setting, rng);
+                    new_input.insert(var.clone(), mutation);
+                } else {
+                    // Mutate each input variable with a small probability
+                    for var in input_variables {
+                        // rng.gen_bool(0.2)
+                        if rng.gen::<bool>() {
+                            let mutation = draw_random_constant(setting, rng);
+                            new_input.insert(var.clone(), mutation);
+                        }
                     }
                 }
-            } else {
-                // Mutate only one input variable
-                let var = &input_variables[rng.gen_range(0, input_variables.len())];
-                let mutation = draw_random_constant(setting, rng);
-                new_input.insert(var.clone(), mutation);
             }
 
             // Evaluate the new input
