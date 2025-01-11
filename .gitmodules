@@ -4,3 +4,6 @@
 [submodule "dataset/include/circom-pairing"]
 	path = dataset/include/circom-pairing
 	url = https://github.com/yi-sun/circom-pairing.git
+[submodule "dataset/include/zk-email-verify"]
+	path = dataset/include/zk-email-verify
+	url = https://github.com/zkemail/zk-email-verify.git
