@@ -18,6 +18,8 @@ use env_logger;
 use input_user::Input;
 use log::{debug, warn};
 use num_bigint_dig::BigInt;
+use rand::distributions::Alphanumeric;
+use rand::{thread_rng, Rng};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use program_structure::ast::Expression;
@@ -319,8 +321,6 @@ fn start() -> Result<(), ()> {
                     };
                     if let Some(ce) = counterexample {
                         is_safe = false;
-                        println!("{}", ce.lookup_fmt(&conc_executor.symbolic_library.id2name));
-
                         if user_input.flag_save_output {
                             // Save the output as JSON
                             let ce_meta = FxHashMap::from_iter([
@@ -339,13 +339,25 @@ fn start() -> Result<(), ()> {
                                 &conc_executor.symbolic_library.id2name,
                                 &ce_meta,
                             );
+
                             let mut file_path = user_input.input_file().to_string();
+                            file_path.push('_');
+                            let random_string: String = thread_rng()
+                                .sample_iter(&Alphanumeric)
+                                .take(10)
+                                .map(char::from)
+                                .collect();
+                            file_path.push_str(&random_string);
                             file_path.push_str("_counterexample.json");
+                            println!("{} {}", "💾 Saving the output into", file_path.cyan(),);
+
                             let mut file = File::create(file_path).expect("Unable to create file");
                             let json_string = serde_json::to_string_pretty(&json_output).unwrap();
                             file.write_all(json_string.as_bytes())
                                 .expect("Unable to write data");
                         }
+
+                        println!("{}", ce.lookup_fmt(&conc_executor.symbolic_library.id2name));
                     }
                 }
             }
