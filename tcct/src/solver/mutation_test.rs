@@ -248,14 +248,6 @@ pub fn mutation_test_search(
             );
             println!("\n    └─ Solution found in generation {}", generation);
 
-            /*
-            let _ = save_auxiliray_result(
-                "auxiliary_result.json".to_string(),
-                true,
-                generation,
-                fitness_score_log,
-            );*/
-
             return MutationTestResult {
                 random_seed: seed,
                 counter_example: evaluations[best_idx].2.clone(),
