@@ -34,6 +34,7 @@ struct MutationSettings {
     fitness_function: String,
     mutation_rate: f64,
     crossover_rate: f64,
+    save_fitness_scores: bool,
     seed: u64,
 }
 
@@ -47,6 +48,7 @@ impl Default for MutationSettings {
             fitness_function: "error".to_string(),
             mutation_rate: 0.3,
             crossover_rate: 0.5,
+            save_fitness_scores: false,
             seed: 0,
         }
     }
@@ -75,29 +77,11 @@ impl fmt::Display for MutationSettings {
     }
 }
 
-#[derive(Serialize)]
-pub struct AuxiliaryResult {
-    find_bug: bool,
-    generation: usize,
-    fitness_score_log: Vec<BigInt>,
-}
-
-fn save_auxiliray_result(
-    path: String,
-    find_bug: bool,
-    generation: usize,
-    fitness_score_log: Vec<BigInt>,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let aux_result = AuxiliaryResult {
-        find_bug,
-        generation,
-        fitness_score_log,
-    };
-    let serialized = serde_json::to_string(&aux_result)?;
-    let mut file = File::create(path)?;
-    file.write_all(serialized.as_bytes())?;
-
-    Ok(())
+pub struct MutationTestResult {
+    pub random_seed: u64,
+    pub counter_example: Option<CounterExample>,
+    pub generation: usize,
+    pub fitness_score_log: Vec<BigInt>,
 }
 
 fn load_settings_from_json(file_path: &str) -> Result<MutationSettings, serde_json::Error> {
@@ -117,7 +101,7 @@ pub fn mutation_test_search(
     side_constraints: &Vec<SymbolicValueRef>,
     setting: &VerificationSetting,
     path_to_mutation_setting: &String,
-) -> Option<CounterExample> {
+) -> MutationTestResult {
     let mutation_setting = load_settings_from_json(path_to_mutation_setting).unwrap();
     info!("\n{}", mutation_setting);
 
@@ -176,7 +160,11 @@ pub fn mutation_test_search(
     );
     let mut fitness_scores = vec![-setting.prime.clone(); mutation_setting.input_population_size];
     let mut input_population = Vec::new();
-    let mut fitness_score_log = Vec::with_capacity(mutation_setting.max_generations);
+    let mut fitness_score_log = if mutation_setting.save_fitness_scores {
+        Vec::with_capacity(mutation_setting.max_generations)
+    } else {
+        Vec::new()
+    };
 
     println!(
         "{} {}",
@@ -268,7 +256,12 @@ pub fn mutation_test_search(
                 fitness_score_log,
             );*/
 
-            return evaluations[best_idx].2.clone();
+            return MutationTestResult {
+                random_seed: seed,
+                counter_example: evaluations[best_idx].2.clone(),
+                generation: generation,
+                fitness_score_log: fitness_score_log,
+            };
         }
 
         print!(
@@ -277,7 +270,9 @@ pub fn mutation_test_search(
         );
         io::stdout().flush().unwrap();
 
-        fitness_score_log.push(fitness_scores[best_idx].clone());
+        if mutation_setting.save_fitness_scores {
+            fitness_score_log.push(fitness_scores[best_idx].clone());
+        }
     }
 
     println!(
@@ -285,15 +280,12 @@ pub fn mutation_test_search(
         mutation_setting.max_generations
     );
 
-    /*
-    let _ = save_auxiliray_result(
-        "auxiliary_result.json".to_string(),
-        false,
-        mutation_setting.max_generations,
-        fitness_score_log,
-    );*/
-
-    None
+    MutationTestResult {
+        random_seed: seed,
+        counter_example: None,
+        generation: mutation_setting.max_generations,
+        fitness_score_log: fitness_score_log,
+    }
 }
 
 fn draw_random_constant(setting: &VerificationSetting, rng: &mut StdRng) -> BigInt {

@@ -30,6 +30,7 @@ use executor::symbolic_setting::{
     get_default_setting_for_concrete_execution, get_default_setting_for_symbolic_execution,
 };
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
+use serde_json::json;
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
     unused_outputs::check_unused_outputs, utils::VerificationSetting,
@@ -288,6 +289,7 @@ fn start() -> Result<(), ()> {
                         &verification_setting.template_param_values,
                     );
 
+                    let mut auxiliary_result = json!({});
                     let counterexample = match &*user_input.search_mode() {
                         "quick" => brute_force_search(
                             &mut conc_executor,
@@ -307,13 +309,17 @@ fn start() -> Result<(), ()> {
                             &sym_executor.cur_state.side_constraints.clone(),
                             &verification_setting,
                         ),
-                        "ga" => mutation_test_search(
-                            &mut conc_executor,
-                            &sym_executor.cur_state.trace_constraints.clone(),
-                            &sym_executor.cur_state.side_constraints.clone(),
-                            &verification_setting,
-                            &user_input.path_to_mutation_setting(),
-                        ),
+                        "ga" => {
+                            let result = mutation_test_search(
+                                &mut conc_executor,
+                                &sym_executor.cur_state.trace_constraints.clone(),
+                                &sym_executor.cur_state.side_constraints.clone(),
+                                &verification_setting,
+                                &user_input.path_to_mutation_setting(),
+                            );
+                            auxiliary_result["mutation_test_result"] = json!({"seed":result.random_seed,"generation":result.generation, "fitness_score_log":result.fitness_score_log});
+                            result.counter_example
+                        }
                         _ => panic!(
                             "search_mode={} is not supported",
                             user_input.search_mode.to_string()
@@ -335,10 +341,11 @@ fn start() -> Result<(), ()> {
                                     format!("{:?}", start_time.elapsed()),
                                 ),
                             ]);
-                            let json_output = ce.to_json_with_meta(
+                            let mut json_output = ce.to_json_with_meta(
                                 &conc_executor.symbolic_library.id2name,
                                 &ce_meta,
                             );
+                            json_output["auxiliary_result"] = auxiliary_result;
 
                             let mut file_path = user_input.input_file().to_string();
                             file_path.push('_');

@@ -73,8 +73,8 @@ impl VerificationResult {
                 UnderConstrainedType::UnusedOutput => {
                     json!({"1_type": "UnderConstrained-UnusedOutput"})
                 }
-                UnderConstrainedType::UnexpectedTrace(pos, violated_condition) => {
-                    json!({"1_type": "UnderConstrained-UnexpectedTrace", "2_violated_condition":json!({"pos":pos,"condition":violated_condition})})
+                UnderConstrainedType::UnexpectedTrace(pos, _violated_condition) => {
+                    json!({"1_type": "UnderConstrained-UnexpectedTrace", "2_violated_condition":json!({"pos":pos})})
                 }
                 UnderConstrainedType::NonDeterministic(_sym_name, name, value) => {
                     json!({"1_type": "UnderConstrained-NonDeterministic", "2_expected_output": json!({"name": name, "value":value.to_string()})})
@@ -112,17 +112,11 @@ impl CounterExample {
             base_json["5_target_output"] = json!(target.lookup_fmt(lookup));
         }
 
-        base_json["6_assignment"] = self
+        base_json["6_assignment"] = json!(self
             .assignment
             .iter()
-            .map(|(var_name, value)| {
-                let name = var_name.lookup_fmt(lookup);
-                json!({
-                    "name": name,
-                    "value": value.to_string()
-                })
-            })
-            .collect();
+            .map(|(var_name, value)| (var_name.lookup_fmt(lookup), value.to_string()))
+            .collect::<FxHashMap<String, String>>());
 
         base_json
     }
