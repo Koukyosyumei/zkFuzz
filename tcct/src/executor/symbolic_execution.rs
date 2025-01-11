@@ -110,7 +110,7 @@ pub struct SymbolicExecutor<'a> {
     pub setting: &'a SymbolicExecutorSetting,
     pub symbolic_store: SymbolicStore,
     pub cur_state: SymbolicState,
-    pub violated_condition: Option<SymbolicValue>,
+    //pub violated_condition: Option<(usize, SymbolicValue)>,
     coverage_tracker: CoverageTracker,
     enable_coverage_tracking: bool,
 }
@@ -140,7 +140,7 @@ impl<'a> SymbolicExecutor<'a> {
                 max_depth: 0,
             },
             cur_state: SymbolicState::new(),
-            violated_condition: None,
+            //violated_condition: None,
             coverage_tracker: CoverageTracker::new(),
             setting: setting,
             enable_coverage_tracking: false,
@@ -1062,12 +1062,12 @@ impl<'a> SymbolicExecutor<'a> {
                 let simplified_cond = self.simplify_variables(&cond, meta.elem_id, false, false);
                 if let SymbolicValue::ConstantBool(false) = simplified_cond {
                     self.cur_state.is_failed = true;
-                    let original_cond = SymbolicValue::BinaryOp(
-                        Rc::new(lhe_val),
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                        Rc::new(rhe_val),
-                    );
-                    self.violated_condition = Some(original_cond.clone());
+                    //let original_cond = SymbolicValue::BinaryOp(
+                    //    Rc::new(lhe_val),
+                    //    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+                    //    Rc::new(rhe_val),
+                    //);
+                    //self.violated_condition = Some((meta.elem_id, original_cond.clone()));
                 }
             }
 

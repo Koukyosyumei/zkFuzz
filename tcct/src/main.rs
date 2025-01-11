@@ -7,6 +7,9 @@ mod stats;
 mod type_analysis_user;
 
 use std::env;
+use std::fs::File;
+use std::io::{self, BufRead};
+use std::path::Path;
 use std::str::FromStr;
 use std::time;
 
@@ -15,7 +18,7 @@ use env_logger;
 use input_user::Input;
 use log::{debug, warn};
 use num_bigint_dig::BigInt;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use program_structure::ast::Expression;
 use program_structure::program_archive::ProgramArchive;
@@ -56,6 +59,16 @@ fn display_tcct_logo() {
     );
 }
 
+fn read_file_to_lines(file_path: &str) -> io::Result<Vec<String>> {
+    let path = Path::new(file_path);
+    let file = File::open(path)?;
+    let reader = io::BufReader::new(file);
+
+    let lines: Vec<String> = reader.lines().collect::<Result<_, _>>()?;
+
+    Ok(lines)
+}
+
 fn main() {
     display_tcct_logo();
 
@@ -92,6 +105,17 @@ fn start() -> Result<(), ()> {
 
     env_logger::init();
 
+    println!("{}", "🧾 Loading Whitelists...".green());
+    let white_lists = if user_input.path_to_white_lists() == "none" {
+        FxHashSet::from_iter(["IsZero".to_string(), "Num2Bits".to_string()])
+    } else {
+        FxHashSet::from_iter(
+            read_file_to_lines(&user_input.path_to_mutation_setting())
+                .unwrap()
+                .into_iter(),
+        )
+    };
+
     let mut symbolic_library = SymbolicLibrary {
         template_library: FxHashMap::default(),
         name2id: FxHashMap::default(),
@@ -103,7 +127,12 @@ fn start() -> Result<(), ()> {
     println!("{}", "🧩 Parsing Templates...".green());
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = v.get_body().clone();
-        symbolic_library.register_template(k.clone(), &body.clone(), v.get_name_of_params());
+        symbolic_library.register_template(
+            k.clone(),
+            &body.clone(),
+            v.get_name_of_params(),
+            &white_lists,
+        );
 
         if user_input.flag_printout_ast {
             println!(

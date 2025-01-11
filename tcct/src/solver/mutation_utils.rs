@@ -164,6 +164,7 @@ pub fn evaluate_trace_fitness_by_error(
                     counter_example = Some(CounterExample {
                         flag: VerificationResult::UnderConstrained(
                             UnderConstrainedType::UnexpectedTrace(
+                                failure_pos,
                                 mutated_trace_constraints[failure_pos]
                                     .lookup_fmt(&sexe.symbolic_library.id2name),
                             ),

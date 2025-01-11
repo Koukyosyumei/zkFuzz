@@ -24,7 +24,7 @@ use crate::executor::symbolic_value::{
 #[derive(Clone)]
 pub enum UnderConstrainedType {
     UnusedOutput,
-    UnexpectedTrace(String),
+    UnexpectedTrace(usize, String),
     NonDeterministic(SymbolicName, String, BigInt),
 }
 
@@ -47,7 +47,7 @@ impl fmt::Display for VerificationResult {
                 UnderConstrainedType::UnusedOutput => {
                     "👻 UnderConstrained (Unused-Output) 👻".red().bold().to_string()
                 }
-                UnderConstrainedType::UnexpectedTrace(violated_condition) => {
+                UnderConstrainedType::UnexpectedTrace(_pos, violated_condition) => {
                     format!("{} {}", "🧟 UnderConstrained (Unexpected-Trace) 🧟\n║           Violated Condition:".red().bold(), violated_condition)
                 }
                 UnderConstrainedType::NonDeterministic(_sym_name, name, value) => format!(

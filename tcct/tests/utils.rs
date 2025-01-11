@@ -1,7 +1,7 @@
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 use num_bigint_dig::BigInt;
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use program_structure::ast::Expression;
 use program_structure::error_definition::Report;
@@ -40,9 +40,16 @@ pub fn prepare_symbolic_library(
         function_counter: FxHashMap::default(),
     };
 
+    let white_lists = FxHashSet::default();
+
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = v.get_body().clone();
-        symbolic_library.register_template(k.clone(), &body.clone(), v.get_name_of_params());
+        symbolic_library.register_template(
+            k.clone(),
+            &body.clone(),
+            v.get_name_of_params(),
+            &white_lists,
+        );
     }
 
     for (k, v) in program_archive.functions.clone().into_iter() {
