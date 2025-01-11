@@ -26,7 +26,7 @@ pragma circom 2.0.0;
  * - Vulnerable behavior:
  *   - By setting `inv = 0` for all cases, the output will always be `1`, even when `in != 0`.
  */
-template IsZero() {
+template VulnerableIsZero() {
     signal input in;    // Input signal to check if it's zero or non-zero.
     signal output out;  // Output signal: 1 if `in == 0`, 0 if `in != 0`.
     signal inv;         // Intended inverse of `in`, but vulnerable to manipulation.
@@ -48,4 +48,4 @@ template IsZero() {
  * @input {signal} in - A public input to be checked for zero or non-zero.
  * @output {signal} out - Expected to be `1` if `in == 0`, and `0` if `in != 0`, but this behavior can be manipulated.
  */
-component main = IsZero();
+component main = VulnerableIsZero();
