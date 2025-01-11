@@ -6,7 +6,6 @@ use std::io::Write;
 use std::str::FromStr;
 
 use colored::Colorize;
-use lazy_static::lazy_static;
 use log::info;
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
@@ -477,7 +476,7 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
         .map(|_| {
             pos.iter()
                 .map(|p| {
-                    (match &*trace_constraints[*p] {
+                    match &*trace_constraints[*p] {
                         SymbolicValue::BinaryOp(left, op, right) => {
                             if rng.gen::<f64>() < operator_mutation_rate {
                                 let mutated_op = if let Some(related_ops) =
@@ -513,7 +512,7 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
                             p.clone(),
                             SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
                         ),
-                    })
+                    }
                 })
                 .collect()
         })
