@@ -349,7 +349,7 @@ fn start() -> Result<(), ()> {
                                 .collect();
                             file_path.push_str(&random_string);
                             file_path.push_str("_counterexample.json");
-                            println!("{} {}", "💾 Saving the output into", file_path.cyan(),);
+                            println!("{} {}", "💾 Saving the output to:", file_path.cyan(),);
 
                             let mut file = File::create(file_path).expect("Unable to create file");
                             let json_string = serde_json::to_string_pretty(&json_output).unwrap();
