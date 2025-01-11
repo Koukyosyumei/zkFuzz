@@ -830,7 +830,7 @@ pub fn verify_assignment(
                 .contains(&k.id)
             {
                 let original_sym_value = &sexe.cur_state.symbol_binding_map[&k];
-                let original_int_value = match &(*original_sym_value.clone()) {
+                let original_int_value = match &**original_sym_value {
                     SymbolicValue::ConstantInt(num) => num.clone(),
                     SymbolicValue::ConstantBool(b) => {
                         if *b {

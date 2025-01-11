@@ -607,7 +607,7 @@ impl<'a> SymbolicExecutor<'a> {
                     }
 
                     if sv.is_some() && component_name.is_none() {
-                        match (*sv.unwrap().clone()).clone() {
+                        match &*sv.unwrap() {
                             SymbolicValue::Array(values) => {
                                 return access_multidimensional_array(&values, &dims);
                             }
@@ -1127,8 +1127,8 @@ impl<'a> SymbolicExecutor<'a> {
             .symbol_binding_map
             .contains_key(left_var_name)
         {
-            base_array = match (*self.cur_state.symbol_binding_map[left_var_name]).clone() {
-                SymbolicValue::Array(elems) => SymbolicValue::Array(elems),
+            base_array = match &*self.cur_state.symbol_binding_map[left_var_name] {
+                SymbolicValue::Array(elems) => SymbolicValue::Array(elems.to_vec()),
                 SymbolicValue::UniformArray(_, _) => {
                     let (elem, counts) = decompose_uniform_array(
                         self.cur_state.symbol_binding_map[left_var_name].clone(),
