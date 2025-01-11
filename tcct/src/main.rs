@@ -8,7 +8,7 @@ mod type_analysis_user;
 
 use std::env;
 use std::fs::File;
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Write};
 use std::path::Path;
 use std::str::FromStr;
 use std::time;
@@ -317,14 +317,35 @@ fn start() -> Result<(), ()> {
                             user_input.search_mode.to_string()
                         ),
                     };
-                    if counterexample.is_some() {
+                    if let Some(ce) = counterexample {
                         is_safe = false;
-                        println!(
-                            "{}",
-                            counterexample
-                                .unwrap()
-                                .lookup_fmt(&conc_executor.symbolic_library.id2name)
-                        );
+                        println!("{}", ce.lookup_fmt(&conc_executor.symbolic_library.id2name));
+
+                        if user_input.flag_save_output {
+                            // Save the output as JSON
+                            let ce_meta = FxHashMap::from_iter([
+                                (
+                                    "0_target_path".to_string(),
+                                    user_input.input_file().to_string(),
+                                ),
+                                ("1_main_template".to_string(), id.to_string()),
+                                ("2_search_mode".to_string(), user_input.search_mode()),
+                                (
+                                    "3_execution_time".to_string(),
+                                    format!("{:?}", start_time.elapsed()),
+                                ),
+                            ]);
+                            let json_output = ce.to_json_with_meta(
+                                &conc_executor.symbolic_library.id2name,
+                                &ce_meta,
+                            );
+                            let mut file_path = user_input.input_file().to_string();
+                            file_path.push_str("_counterexample.json");
+                            let mut file = File::create(file_path).expect("Unable to create file");
+                            let json_string = serde_json::to_string_pretty(&json_output).unwrap();
+                            file.write_all(json_string.as_bytes())
+                                .expect("Unable to write data");
+                        }
                     }
                 }
             }

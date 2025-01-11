@@ -38,6 +38,7 @@ pub struct Input {
     pub flag_printout_ast: bool,
     pub flag_printout_stats: bool,
     pub flag_symbolic_template_params: bool,
+    pub flag_save_output: bool,
     pub show_stats_of_ast: bool,
     pub prime: String,
     pub debug_prime: String,
@@ -122,6 +123,7 @@ impl Input {
             flag_printout_ast: input_processing::get_ast(&matches),
             flag_printout_stats: input_processing::get_stats(&matches),
             flag_symbolic_template_params: input_processing::get_symbolic_template_params(&matches),
+            flag_save_output: input_processing::get_save_output(&matches),
             show_stats_of_ast: input_processing::get_show_stats_of_ast(&matches),
             prime: input_processing::get_prime(&matches)?,
             debug_prime: input_processing::get_debug_prime(&matches)?,
@@ -353,6 +355,10 @@ mod input_processing {
 
     pub fn get_symbolic_template_params(matches: &ArgMatches) -> bool {
         matches.is_present("symbolic_template_params")
+    }
+
+    pub fn get_save_output(matches: &ArgMatches) -> bool {
+        matches.is_present("save_output")
     }
 
     pub fn get_show_stats_of_ast(matches: &ArgMatches) -> bool {
@@ -646,6 +652,13 @@ mod input_processing {
                     .takes_value(false)
                     .display_order(1020)
                     .help("(TCCT) Treats the template parameters of the main template as symbolic values"),
+            )
+            .arg(
+                Arg::with_name("save_output")
+                    .long("save_output")
+                    .takes_value(false)
+                    .display_order(1030)
+                    .help("(TCCT) Save the otuput when the counterexample is found"),
             )
             .arg (
                 Arg::with_name("search_mode")

@@ -11,6 +11,8 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use program_structure::ast::Expression;
 use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
+use serde::de::value;
+use serde_json::{json, Value};
 
 use crate::executor::debug_ast::{
     DebuggableExpressionInfixOpcode, DebuggableExpressionPrefixOpcode,
@@ -64,6 +66,26 @@ impl fmt::Display for VerificationResult {
     }
 }
 
+impl VerificationResult {
+    pub fn to_json(&self) -> Value {
+        match self {
+            VerificationResult::UnderConstrained(typ) => match typ {
+                UnderConstrainedType::UnusedOutput => {
+                    json!({"1_type": "UnderConstrained-UnusedOutput"})
+                }
+                UnderConstrainedType::UnexpectedTrace(pos, violated_condition) => {
+                    json!({"1_type": "UnderConstrained-UnexpectedTrace", "2_violated_condition":json!({"pos":pos,"condition":violated_condition})})
+                }
+                UnderConstrainedType::NonDeterministic(_sym_name, name, value) => {
+                    json!({"1_type": "UnderConstrained-NonDeterministic", "2_expected_output": json!({"name": name, "value":value.to_string()})})
+                }
+            },
+            VerificationResult::OverConstrained => json!({"1_type": "OverConstrained"}),
+            VerificationResult::WellConstrained => json!({"1_type": "WellConstrained"}),
+        }
+    }
+}
+
 /// Represents a counterexample when constraints are found to be invalid.
 #[derive(Clone)]
 pub struct CounterExample {
@@ -73,6 +95,38 @@ pub struct CounterExample {
 }
 
 impl CounterExample {
+    pub fn to_json_with_meta(
+        &self,
+        lookup: &FxHashMap<usize, String>,
+        meta: &FxHashMap<String, String>,
+    ) -> Value {
+        let mut base_json = json!({
+            "4_flag": self.flag.to_json(),
+        });
+
+        for (key, value) in meta {
+            base_json[key] = json!(value);
+        }
+
+        if let Some(target) = &self.target_output {
+            base_json["5_target_output"] = json!(target.lookup_fmt(lookup));
+        }
+
+        base_json["6_assignment"] = self
+            .assignment
+            .iter()
+            .map(|(var_name, value)| {
+                let name = var_name.lookup_fmt(lookup);
+                json!({
+                    "name": name,
+                    "value": value.to_string()
+                })
+            })
+            .collect();
+
+        base_json
+    }
+
     /// Generates a detailed, user-friendly debug output for the counterexample.
     ///
     /// # Parameters
