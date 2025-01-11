@@ -341,6 +341,7 @@ fn start() -> Result<(), ()> {
                                     format!("{:?}", start_time.elapsed()),
                                 ),
                             ]);
+                          
                             let mut json_output = ce.to_json_with_meta(
                                 &conc_executor.symbolic_library.id2name,
                                 &ce_meta,
