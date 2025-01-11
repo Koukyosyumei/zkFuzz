@@ -106,7 +106,7 @@ fn start() -> Result<(), ()> {
     env_logger::init();
 
     println!("{}", "🧾 Loading Whitelists...".green());
-    let white_lists = if user_input.path_to_white_lists() == "none" {
+    let whitelist = if user_input.path_to_whitelist() == "none" {
         FxHashSet::from_iter(["IsZero".to_string(), "Num2Bits".to_string()])
     } else {
         FxHashSet::from_iter(
@@ -131,7 +131,7 @@ fn start() -> Result<(), ()> {
             k.clone(),
             &body.clone(),
             v.get_name_of_params(),
-            &white_lists,
+            &whitelist,
         );
 
         if user_input.flag_printout_ast {

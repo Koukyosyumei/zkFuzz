@@ -44,7 +44,7 @@ pub struct Input {
     pub heuristics_range: String,
     pub search_mode: String,
     pub path_to_mutation_setting: String,
-    pub path_to_white_lists: String,
+    pub path_to_whitelist: String,
 }
 
 /*
@@ -128,7 +128,7 @@ impl Input {
             heuristics_range: input_processing::get_heuristics_range(&matches)?,
             search_mode: input_processing::get_search_mode(&matches)?,
             path_to_mutation_setting: input_processing::get_path_to_mutation_setting(&matches)?,
-            path_to_white_lists: input_processing::get_path_to_white_lists(&matches)?,
+            path_to_whitelist: input_processing::get_path_to_whitelist(&matches)?,
             link_libraries
         })
     }
@@ -259,8 +259,8 @@ impl Input {
     pub fn path_to_mutation_setting(&self) -> String{
         self.path_to_mutation_setting.clone()
     }
-    pub fn path_to_white_lists(&self) -> String{
-        self.path_to_white_lists.clone()
+    pub fn path_to_whitelist(&self) -> String{
+        self.path_to_whitelist.clone()
     }
 }
 mod input_processing {
@@ -439,9 +439,9 @@ mod input_processing {
         }
     }
 
-    pub fn get_path_to_white_lists(matches: &ArgMatches) -> Result<String, ()> {
-        match matches.is_present("path_to_white_lists") {
-            true => Ok(String::from(matches.value_of("path_to_white_lists").unwrap())),
+    pub fn get_path_to_whitelist(matches: &ArgMatches) -> Result<String, ()> {
+        match matches.is_present("path_to_whitelist") {
+            true => Ok(String::from(matches.value_of("path_to_whitelist").unwrap())),
             false => Ok(String::from("none"))
         }
     }
@@ -664,8 +664,8 @@ mod input_processing {
                     .help("(TCCT) Path to the setting file for Mutation Testing"),
             )
             .arg (
-                Arg::with_name("path_to_white_lists")
-                    .long("path_to_white_lists")
+                Arg::with_name("path_to_whitelist")
+                    .long("path_to_whitelist")
                     .takes_value(true)
                     .default_value("none")
                     .display_order(1046)

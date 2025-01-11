@@ -440,7 +440,7 @@ impl SymbolicLibrary {
         name: String,
         body: &Statement,
         template_parameter_names: &Vec<String>,
-        white_lists: &FxHashSet<String>,
+        whitelist: &FxHashSet<String>,
     ) {
         let mut input_ids = FxHashSet::default();
         let mut output_ids = FxHashSet::default();
@@ -448,7 +448,7 @@ impl SymbolicLibrary {
         let mut id2dimensions = FxHashMap::default();
 
         let is_lessthan = &name == "LessThan";
-        let is_safe = white_lists.contains(&name);
+        let is_safe = whitelist.contains(&name);
 
         let i = if let Some(i) = self.name2id.get(&name) {
             *i

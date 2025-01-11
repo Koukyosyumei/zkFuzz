@@ -40,7 +40,7 @@ pub fn prepare_symbolic_library(
         function_counter: FxHashMap::default(),
     };
 
-    let white_lists = FxHashSet::default();
+    let whitelist = FxHashSet::default();
 
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = v.get_body().clone();
@@ -48,7 +48,7 @@ pub fn prepare_symbolic_library(
             k.clone(),
             &body.clone(),
             v.get_name_of_params(),
-            &white_lists,
+            &whitelist,
         );
     }
 
