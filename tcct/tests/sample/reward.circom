@@ -4,6 +4,7 @@ template Reward() {
     signal input inp;
     signal output out;
     var gwei = 2;
+    log(gwei);
     out <-- inp \ gwei;
     out * gwei === inp;
 }

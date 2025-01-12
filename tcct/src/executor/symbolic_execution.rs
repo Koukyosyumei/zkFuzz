@@ -274,9 +274,11 @@ impl<'a> SymbolicExecutor<'a> {
                     ..
                 } => {
                     self.trace_if_enabled(&meta);
+                    self.execute(statements, cur_bid + 1);
                 }
                 DebuggableStatement::LogCall { meta, .. } => {
                     self.trace_if_enabled(&meta);
+                    self.execute(statements, cur_bid + 1);
                 }
                 DebuggableStatement::Ret => {
                     self.handle_ret();
