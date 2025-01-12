@@ -609,6 +609,7 @@ pub fn evaluate_symbolic_value(
                 keep_track_constraints: false,
                 substitute_output: false,
                 propagate_assignments: true,
+                constraint_assert_dissabled: false,
             };
             let mut subse = SymbolicExecutor::new(symbolic_library, &setting);
 

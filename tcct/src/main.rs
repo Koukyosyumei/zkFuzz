@@ -178,6 +178,7 @@ fn start() -> Result<(), ()> {
 
     let setting = get_default_setting_for_symbolic_execution(
         BigInt::from_str(&user_input.debug_prime()).unwrap(),
+        user_input.constraint_assert_dissabled_flag,
     );
     let mut sym_executor = SymbolicExecutor::new(&mut symbolic_library, &setting);
 
@@ -281,6 +282,7 @@ fn start() -> Result<(), ()> {
                 } else {
                     let subse_setting = get_default_setting_for_concrete_execution(
                         BigInt::from_str(&user_input.debug_prime()).unwrap(),
+                        user_input.constraint_assert_dissabled_flag,
                     );
                     let mut conc_executor =
                         SymbolicExecutor::new(&mut sym_executor.symbolic_library, &subse_setting);

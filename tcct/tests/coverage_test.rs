@@ -99,7 +99,7 @@ fn test_coverage_test() {
     .unwrap();
 
     let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
-    let setting = get_default_setting_for_concrete_execution(prime);
+    let setting = get_default_setting_for_concrete_execution(prime, false);
 
     let mut cexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
 

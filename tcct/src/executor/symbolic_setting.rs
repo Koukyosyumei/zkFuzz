@@ -9,9 +9,13 @@ pub struct SymbolicExecutorSetting {
     pub keep_track_constraints: bool,
     pub substitute_output: bool,
     pub propagate_assignments: bool,
+    pub constraint_assert_dissabled: bool,
 }
 
-pub fn get_default_setting_for_symbolic_execution(prime: BigInt) -> SymbolicExecutorSetting {
+pub fn get_default_setting_for_symbolic_execution(
+    prime: BigInt,
+    constraint_assert_dissabled: bool,
+) -> SymbolicExecutorSetting {
     SymbolicExecutorSetting {
         prime: prime,
         skip_initialization_blocks: false,
@@ -20,10 +24,14 @@ pub fn get_default_setting_for_symbolic_execution(prime: BigInt) -> SymbolicExec
         keep_track_constraints: true,
         substitute_output: false,
         propagate_assignments: false,
+        constraint_assert_dissabled: constraint_assert_dissabled,
     }
 }
 
-pub fn get_default_setting_for_concrete_execution(prime: BigInt) -> SymbolicExecutorSetting {
+pub fn get_default_setting_for_concrete_execution(
+    prime: BigInt,
+    constraint_assert_dissabled: bool,
+) -> SymbolicExecutorSetting {
     SymbolicExecutorSetting {
         prime: prime,
         skip_initialization_blocks: true,
@@ -32,5 +40,6 @@ pub fn get_default_setting_for_concrete_execution(prime: BigInt) -> SymbolicExec
         keep_track_constraints: false,
         substitute_output: true,
         propagate_assignments: true,
+        constraint_assert_dissabled: constraint_assert_dissabled,
     }
 }
