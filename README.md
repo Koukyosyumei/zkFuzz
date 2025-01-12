@@ -42,7 +42,7 @@ or
 
 **Example output:**
 
-<img src="img/main_result.png" alt="Result" width=600>
+<img src="img/main_result.png" alt="Result" width=700>
 
 This tool also provides multiple verbosity levels for detailed analysis with the environmental variable `RUST_LOG`:
 
