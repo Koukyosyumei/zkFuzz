@@ -317,7 +317,10 @@ fn start() -> Result<(), ()> {
                                 &verification_setting,
                                 &user_input.path_to_mutation_setting(),
                             );
-                            auxiliary_result["mutation_test_result"] = json!({"seed":result.random_seed,"generation":result.generation, "fitness_score_log":result.fitness_score_log});
+                            auxiliary_result["mutation_test_setting"] =
+                                serde_json::to_value(result.mutation_setting)
+                                    .expect("Failed to serialize to JSON");
+                            auxiliary_result["mutation_test_log"] = json!({"random_seed":result.random_seed,"generation":result.generation, "fitness_score_log":result.fitness_score_log});
                             result.counter_example
                         }
                         _ => panic!(
@@ -350,7 +353,7 @@ fn start() -> Result<(), ()> {
                                 &conc_executor.symbolic_library.id2name,
                                 &ce_meta,
                             );
-                            json_output["auxiliary_result"] = auxiliary_result;
+                            json_output["8_auxiliary_result"] = auxiliary_result;
 
                             let mut file_path = user_input.input_file().to_string();
                             file_path.push('_');

@@ -27,9 +27,9 @@ use crate::solver::mutation_utils::{
 };
 use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
-struct MutationSettings {
+pub struct MutationSettings {
     seed: u64,
     program_population_size: usize,
     input_population_size: usize,
@@ -90,6 +90,7 @@ impl fmt::Display for MutationSettings {
 
 pub struct MutationTestResult {
     pub random_seed: u64,
+    pub mutation_setting: MutationSettings,
     pub counter_example: Option<CounterExample>,
     pub generation: usize,
     pub fitness_score_log: Vec<BigInt>,
@@ -265,6 +266,7 @@ pub fn mutation_test_search(
 
             return MutationTestResult {
                 random_seed: seed,
+                mutation_setting: mutation_setting,
                 counter_example: evaluations[best_idx].2.clone(),
                 generation: generation,
                 fitness_score_log: fitness_score_log,
@@ -289,6 +291,7 @@ pub fn mutation_test_search(
 
     MutationTestResult {
         random_seed: seed,
+        mutation_setting: mutation_setting.clone(),
         counter_example: None,
         generation: mutation_setting.max_generations,
         fitness_score_log: fitness_score_log,
