@@ -215,8 +215,8 @@ pub fn mutation_test_search(
         }
 
         // Evolve the trace population
-        trace_population = if !trace_population.is_empty() {
-            evolve_population(
+        if !trace_population.is_empty() {
+            trace_population = evolve_population(
                 &trace_population,
                 &fitness_scores,
                 mutation_setting.program_population_size,
@@ -226,10 +226,9 @@ pub fn mutation_test_search(
                 &mut rng,
                 |individual, setting, rng| trace_mutate(individual, setting, rng),
                 |parent1, parent2, rng| random_crossover(parent1, parent2, rng),
-            )
-        } else {
-            vec![FxHashMap::default()]
-        };
+            );
+        }
+        trace_population.push(FxHashMap::default());
 
         let evaluations: Vec<_> = trace_population
             .iter()

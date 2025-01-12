@@ -175,6 +175,17 @@ pub fn evaluate_trace_fitness_by_error(
                     break;
                 }
             }
+        } else {
+            if trace_mutation.is_empty() && is_success {
+                max_idx = i;
+                max_score = BigInt::zero();
+                counter_example = Some(CounterExample {
+                    flag: VerificationResult::OverConstrained,
+                    target_output: None,
+                    assignment: assignment.clone(),
+                });
+                break;
+            }
         }
 
         if score > max_score {

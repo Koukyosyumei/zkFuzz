@@ -819,6 +819,11 @@ pub fn verify_assignment(
         sexe.concrete_execute(&setting.target_template_name, assignment);
 
         if sexe.cur_state.is_failed {
+            //TODO: Fix this logic
+            //return VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedTrace(
+            //    0,
+            //    "".to_string(),
+            //));
             return VerificationResult::WellConstrained;
         }
 
