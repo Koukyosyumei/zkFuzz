@@ -28,12 +28,12 @@ pub struct Input {
     pub fast_flag: bool,
     pub reduced_simplification_flag: bool,
     pub parallel_simplification_flag: bool,
-    pub constraint_assert_dissabled_flag: bool,
     pub flag_old_heuristics: bool,
     pub inspect_constraints_flag: bool,
     pub no_rounds: usize,
     pub flag_verbose: bool,
         */
+    pub constraint_assert_dissabled_flag: bool,
     pub link_libraries : Vec<PathBuf>,
     pub flag_printout_ast: bool,
     pub flag_printout_stats: bool,
@@ -115,11 +115,11 @@ impl Input {
             fast_flag: o_style == SimplificationStyle::O0,
             reduced_simplification_flag: o_style == SimplificationStyle::O1,
             parallel_simplification_flag: input_processing::get_parallel_simplification(&matches),
-            constraint_assert_dissabled_flag: input_processing::get_constraint_assert_dissabled(&matches),
             inspect_constraints_flag: input_processing::get_inspect_constraints(&matches),
             flag_old_heuristics: input_processing::get_flag_old_heuristics(&matches),
             flag_verbose: input_processing::get_flag_verbose(&matches), 
             */
+            constraint_assert_dissabled_flag: input_processing::get_constraint_assert_dissabled(&matches),
             flag_printout_ast: input_processing::get_ast(&matches),
             flag_printout_stats: input_processing::get_stats(&matches),
             flag_symbolic_template_params: input_processing::get_symbolic_template_params(&matches),
@@ -237,15 +237,15 @@ impl Input {
     pub fn parallel_simplification_flag(&self) -> bool {
         self.parallel_simplification_flag
     }
-    pub fn constraint_assert_dissabled_flag(&self) -> bool {
-        self.constraint_assert_dissabled_flag
-    }
     pub fn flag_old_heuristics(&self) -> bool {
         self.flag_old_heuristics
     }
     pub fn no_rounds(&self) -> usize {
         self.no_rounds
     }*/
+    pub fn constraint_assert_dissabled_flag(&self) -> bool {
+        self.constraint_assert_dissabled_flag
+    }
     pub fn prime(&self) -> String{
         self.prime.clone()
     }
@@ -374,10 +374,6 @@ mod input_processing {
         matches.is_present("parallel_simplification")
     }
 
-    pub fn get_constraint_assert_dissabled(matches: &ArgMatches) -> bool {
-        matches.is_present("constraint_assert_dissabled")
-    }
-
     pub fn get_ir(matches: &ArgMatches) -> bool {
         matches.is_present("print_ir")
     }
@@ -392,6 +388,11 @@ mod input_processing {
     pub fn get_flag_old_heuristics(matches: &ArgMatches) -> bool {
         matches.is_present("flag_old_heuristics")
     }*/
+
+    pub fn get_constraint_assert_dissabled(matches: &ArgMatches) -> bool {
+        matches.is_present("constraint_assert_dissabled")
+    }
+
     pub fn get_prime(matches: &ArgMatches) -> Result<String, ()> {
         
         match matches.is_present("prime"){
@@ -571,6 +572,14 @@ mod input_processing {
                 .display_order(330) 
                 .help("Adds directory to library search path"),
             )
+            .arg(
+                Arg::with_name("constraint_assert_dissabled")
+                    .long("constraint_assert_dissabled")
+                    .takes_value(false)
+                    .hidden(false)
+                    .display_order(810)
+                    .help("Does not add asserts in the generated code for === constraint equalities"),
+            )
             /*
             .arg(
                 Arg::with_name("print_c")
@@ -587,14 +596,6 @@ mod input_processing {
                     .hidden(true)
                     .display_order(180)
                     .help("Runs non-linear simplification in parallel"),
-            )
-            .arg(
-                Arg::with_name("constraint_assert_dissabled")
-                    .long("constraint_assert_dissabled")
-                    .takes_value(false)
-                    .hidden(false)
-                    .display_order(810)
-                    .help("Does not add asserts in the generated code for === constraint equalities"),
             )
             .arg(
                 Arg::with_name("main_inputs_log")
