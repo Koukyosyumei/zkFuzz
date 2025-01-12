@@ -872,7 +872,13 @@ impl<'a> SymbolicExecutor<'a> {
                         self.get_full_dimension_of_var(&left_var_name, id_of_direct_owner);
                     is_bulk_assignment = full_dim_of_left_var > dim_of_left_var;
                     if full_dim_of_left_var > dim_of_left_var {
+                        let component_name = if access.is_empty() {
+                            None
+                        } else {
+                            Some(left_base_name.clone())
+                        };
                         self.handle_bulk_assignment(
+                            &component_name,
                             &left_var_name,
                             dim_of_left_var,
                             full_dim_of_left_var,
@@ -1280,10 +1286,12 @@ impl<'a> SymbolicExecutor<'a> {
         se_for_initialization.execute(&template.body.clone(), 0);
 
         let mut symbol_optional_binding_map = FxHashMap::default();
+        let mut inputs_dimension_map = FxHashMap::default();
 
         se_for_initialization.initialize_template_inputs(
             &template,
             &mut symbol_optional_binding_map,
+            &mut inputs_dimension_map,
             elem_id,
         );
 
@@ -1293,6 +1301,7 @@ impl<'a> SymbolicExecutor<'a> {
             template_name: *callee_name,
             args: args.clone(),
             symbol_optional_binding_map: symbol_optional_binding_map,
+            inputs_dimension_map: inputs_dimension_map,
             is_done: false,
         };
         self.symbolic_store
@@ -1304,11 +1313,13 @@ impl<'a> SymbolicExecutor<'a> {
         &mut self,
         template: &SymbolicTemplate,
         inputs_of_component: &mut FxHashMap<SymbolicName, Option<SymbolicValue>>,
+        dimensions_of_inputs: &mut FxHashMap<usize, Vec<usize>>,
         elem_id: usize,
     ) {
         for id in &template.input_ids {
             let dims = self.evaluate_dimension(&template.id2dimensions[id], elem_id);
             register_array_elements(*id, &dims, None, inputs_of_component);
+            dimensions_of_inputs.insert(*id, dims);
         }
     }
 
@@ -1359,6 +1370,7 @@ impl<'a> SymbolicExecutor<'a> {
 
     fn handle_bulk_assignment(
         &mut self,
+        component_name: &Option<SymbolicName>,
         left_var_name: &SymbolicName,
         dim_of_left_var: usize,
         full_dim_of_left_var: usize,
@@ -1370,13 +1382,22 @@ impl<'a> SymbolicExecutor<'a> {
         elem_id: usize,
     ) {
         if let SymbolicValue::Variable(ref right_var_name) = rhe {
-            let omitted_dims = self.recover_omitted_dims(
-                &left_var_name,
-                dim_of_left_var,
-                full_dim_of_left_var,
-                id_of_direct_owner,
-                elem_id,
-            );
+            let omitted_dims = if let Some(cn) = component_name {
+                self.recover_omitted_dims_within_callee(
+                    &cn,
+                    &left_var_name,
+                    dim_of_left_var,
+                    full_dim_of_left_var,
+                )
+            } else {
+                self.recover_omitted_dims(
+                    &left_var_name,
+                    dim_of_left_var,
+                    full_dim_of_left_var,
+                    id_of_direct_owner,
+                    elem_id,
+                )
+            };
             let positions = generate_cartesian_product_indices(&omitted_dims);
             for p in positions {
                 let mut left_var_name_p = left_var_name.clone();
@@ -1872,6 +1893,23 @@ impl<'a> SymbolicExecutor<'a> {
             if let SymbolicValue::ConstantInt(ref num) = simplified_dim {
                 omitted_dims.push(num.to_usize().unwrap());
             }
+        }
+        return omitted_dims;
+    }
+
+    fn recover_omitted_dims_within_callee(
+        &mut self,
+        component_name: &SymbolicName,
+        var_name: &SymbolicName,
+        cur_dim: usize,
+        full_dim: usize,
+    ) -> Vec<usize> {
+        let mut omitted_dims = Vec::new();
+        for i in cur_dim..full_dim {
+            omitted_dims.push(
+                self.symbolic_store.components_store[component_name].inputs_dimension_map
+                    [&var_name.id][i],
+            );
         }
         return omitted_dims;
     }

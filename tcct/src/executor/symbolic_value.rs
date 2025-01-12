@@ -368,6 +368,7 @@ pub struct SymbolicComponent {
     pub template_name: usize,
     pub args: Vec<SymbolicValueRef>,
     pub symbol_optional_binding_map: FxHashMap<SymbolicName, Option<SymbolicValue>>,
+    pub inputs_dimension_map: FxHashMap<usize, Vec<usize>>,
     pub is_done: bool,
 }
 

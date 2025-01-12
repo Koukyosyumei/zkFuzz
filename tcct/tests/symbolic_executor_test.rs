@@ -1598,6 +1598,24 @@ fn test_branch_within_callee() {
 }
 
 #[test]
+fn test_array_dimension_calculation_within_callee() {
+    let path = "./tests/sample/test_array_dimension_calculation_within_callee.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = get_default_setting_for_symbolic_execution(prime, false);
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    assert_eq!(sexe.cur_state.trace_constraints.len(), 4);
+    assert_eq!(sexe.cur_state.side_constraints.len(), 4)
+}
+
+#[test]
 fn test_one_line_call() {
     let path = "./tests/sample/test_one_line_call.circom".to_string();
     let prime = BigInt::from_str(
