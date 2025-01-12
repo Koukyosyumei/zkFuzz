@@ -340,8 +340,12 @@ fn start() -> Result<(), ()> {
                                     "3_execution_time".to_string(),
                                     format!("{:?}", start_time.elapsed()),
                                 ),
+                                (
+                                    "4_git_hash_of_tcct".to_string(),
+                                    format!("{}", option_env!("GIT_HASH").unwrap_or("unknown")),
+                                ),
                             ]);
-                          
+
                             let mut json_output = ce.to_json_with_meta(
                                 &conc_executor.symbolic_library.id2name,
                                 &ce_meta,

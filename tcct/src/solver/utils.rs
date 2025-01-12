@@ -100,7 +100,7 @@ impl CounterExample {
         meta: &FxHashMap<String, String>,
     ) -> Value {
         let mut base_json = json!({
-            "4_flag": self.flag.to_json(),
+            "5_flag": self.flag.to_json(),
         });
 
         for (key, value) in meta {
@@ -108,10 +108,10 @@ impl CounterExample {
         }
 
         if let Some(target) = &self.target_output {
-            base_json["5_target_output"] = json!(target.lookup_fmt(lookup));
+            base_json["6_target_output"] = json!(target.lookup_fmt(lookup));
         }
 
-        base_json["6_assignment"] = json!(self
+        base_json["7_assignment"] = json!(self
             .assignment
             .iter()
             .map(|(var_name, value)| (var_name.lookup_fmt(lookup), value.to_string()))
