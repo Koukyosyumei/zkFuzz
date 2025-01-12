@@ -21,13 +21,14 @@ USAGE:
     tcct [FLAGS] [OPTIONS] [--] [input]
 
 FLAGS:
-    -h, --help                        Prints help information
-        --show_stats_of_ast           (TCCT) Prints the basic stats of AST
-    -V, --version                     Prints version information
-        --print_ast                   (TCCT) Prints AST
-        --print_stats                 (TCCT) Prints the stats of constraints
-        --symbolic_template_params    (TCCT) Treats the template parameters of the main template as symbolic values
-        --save_output                 (TCCT) Save the otuput when the counterexample is found
+        --constraint_assert_dissabled    Does not add asserts in the generated code for === constraint equalities
+    -h, --help                           Prints help information
+        --show_stats_of_ast              (TCCT) Prints the basic stats of AST
+    -V, --version                        Prints version information
+        --print_ast                      (TCCT) Prints AST
+        --print_stats                    (TCCT) Prints the stats of constraints
+        --symbolic_template_params       (TCCT) Treats the template parameters of the main template as symbolic values
+        --save_output                    (TCCT) Save the otuput when the counterexample is found
 
 OPTIONS:
     -p, --prime <prime>
