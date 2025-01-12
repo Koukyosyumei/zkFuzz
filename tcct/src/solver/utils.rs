@@ -819,12 +819,11 @@ pub fn verify_assignment(
         sexe.concrete_execute(&setting.target_template_name, assignment);
 
         if sexe.cur_state.is_failed {
-            //TODO: Fix this logic
-            //return VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedTrace(
-            //    0,
-            //    "".to_string(),
-            //));
-            return VerificationResult::WellConstrained;
+            let vc = sexe.violated_condition.clone().unwrap();
+            return VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedTrace(
+                vc.0,
+                vc.1.lookup_fmt(&sexe.symbolic_library.id2name),
+            ));
         }
 
         let mut result = VerificationResult::WellConstrained;
