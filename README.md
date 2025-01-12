@@ -15,19 +15,39 @@ cargo build --release
 ## Usage
 
 ```
+ZKP Circuit Debugger
+
 USAGE:
     tcct [FLAGS] [OPTIONS] [--] [input]
 
 FLAGS:
-        --print_ast                          (TCCT) Prints AST
-        --print_stats                        (TCCT) Prints the stats of constraints
-        --symbolic_template_params           (TCCT) Treats the template parameters of the main template as symbolic values
-        --propagate_substitution             (TCCT) Propagate variable substitution as much as possible
+    -h, --help                        Prints help information
+        --show_stats_of_ast           (TCCT) Prints the basic stats of AST
+    -V, --version                     Prints version information
+        --print_ast                   (TCCT) Prints AST
+        --print_stats                 (TCCT) Prints the stats of constraints
+        --symbolic_template_params    (TCCT) Treats the template parameters of the main template as symbolic values
+        --save_output                 (TCCT) Save the otuput when the counterexample is found
+
 OPTIONS:
-        --search_mode <search_mode>          (TCCT) Search mode to find the counter example that shows the given circuit
-                                                    is not well-constrained [default: none]
-        --debug_prime <debug_prime>          (TCCT) Prime number for TCCT debugging [default:
-                                                    21888242871839275222246405745257275088548364400416034343698204186575808495617]
+    -p, --prime <prime>
+            To choose the prime number to use to generate the circuit. Receives the name of the curve (bn128, bls12381,
+            goldilocks, grumpkin, pallas, vesta, secq256r1) [default: bn128]
+    -l <link_libraries>...                                       Adds directory to library search path
+        --search_mode <search_mode>
+            (TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained
+            [default: none]
+        --path_to_mutation_setting <path_to_mutation_setting>
+            (TCCT) Path to the setting file for Mutation Testing [default: none]
+
+        --path_to_whitelist <path_to_whitelist>                  (TCCT) Path to the white-lists file [default: none]
+        --debug_prime <debug_prime>
+            (TCCT) Prime number for TCCT debugging [default:
+            21888242871839275222246405745257275088548364400416034343698204186575808495617]
+        --heuristics_range <heuristics_range>
+            (TCCT) Heuristics range for TCCT debugging [default: 100]
+
+
 ARGS:
     <input>    Path to a circuit with a main component [default: ./circuit.circom]
 ```
@@ -65,81 +85,3 @@ RUST_LOG=trace ./target/debug/tcct ../sample/lessthan3.circom --print_ast --prin
   <img src="img/result.png" alt="Summary Reports" style="width: 20%;">
 </div>
 
-## Tips
-
-### Performance Stats
-
-**Example command:**
-
-```bash
-perf stat -- ./target/release/tcct ./tests/sample/iszero_vuln.circom --search_mode="ga"
-```
-
-**Example output:**
-
-```bash
- Performance counter stats for './target/release/tcct ./tests/sample/iszero_vuln.circom --search_mode=ga':
-
-           2443.80 msec task-clock:u              #    0.995 CPUs utilized
-                 0      context-switches:u        #    0.000 /sec
-                 0      cpu-migrations:u          #    0.000 /sec
-               691      page-faults:u             #  282.756 /sec
-        3970688350      cycles:u                  #    1.625 GHz
-       14853648990      instructions:u            #    3.74  insn per cycle
-   <not supported>      branches:u
-          16513206      branch-misses:u
-
-       2.456600004 seconds time elapsed
-
-       2.434860000 seconds user
-       0.000000000 seconds sys
-```
-
-### Profiling Information
-
-**Example command:**
-
-```bash
-perf record -g -- ./target/release/tcct ./tests/sample/iszero_vuln.circom --search_mode="ga"
-perf report
-```
-
-**Example output:**
-
-```bash
-# To display the perf.data header info, please use --header/--header-only options.
-#
-#
-# Total Lost Samples: 0
-#
-# Samples: 4K of event 'cycles:u'
-# Event count (approx.): 3608619584
-#
-# Children      Self  Command  Shared Object          Symbol                                                                                                    >
-# ........  ........  .......  .....................  ..........................................................................................................>
-#
-    10.56%    10.56%  tcct     tcct                   [.] tcct::solver::utils::evaluate_symbolic_value
-            |
-             --9.89%--tcct::solver::utils::evaluate_symbolic_value
-
-     9.67%     9.63%  tcct     tcct                   [.] <num_bigint_dig::bigint::BigInt as num_integer::Integer>::div_rem
-            |
-            |--8.35%--<num_bigint_dig::bigint::BigInt as num_integer::Integer>::div_rem
-            |
-             --0.57%--0
-                       <num_bigint_dig::bigint::BigInt as num_integer::Integer>::div_rem
-
-     8.19%     8.19%  tcct     tcct                   [.] num_bigint_dig::bigint::BigInt::from_biguint
-            |
-       .
-       .
-       .
-```
-
-### Coverage
-
-**Example command:**
-
-```bash
-cargo tarpaulin
-```
