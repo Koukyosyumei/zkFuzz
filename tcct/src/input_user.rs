@@ -455,14 +455,15 @@ mod input_processing {
     pub fn view() -> ArgMatches<'static> {
         App::new("circom compiler")
             .version(VERSION)
-            .author("IDEN3")
-            .about("Compiler for the circom programming language")
+            .author("Hideaki Takhashi and Jihwan Kim")
+            .about("ZKP Circuit Debugger")
             .arg(
                 Arg::with_name("input")
                     .multiple(false)
                     .default_value("./circuit.circom")
                     .help("Path to a circuit with a main component"),
             )
+            /*
             .arg(
                 Arg::with_name("no_simplification")
                     .long("O0")
@@ -560,7 +561,7 @@ mod input_processing {
                     .takes_value(false)
                     .display_order(120)
                     .help("Compiles the circuit to wat"),
-            )
+            )*/
             .arg(
                 Arg::with_name("link_libraries")
                 .short("l")
@@ -570,6 +571,7 @@ mod input_processing {
                 .display_order(330) 
                 .help("Adds directory to library search path"),
             )
+            /*
             .arg(
                 Arg::with_name("print_c")
                     .long("c")
@@ -616,6 +618,7 @@ mod input_processing {
                     .display_order(980)
                     .help("Applies the old version of the heuristics when performing linear simplification"),
             )
+            */
             .arg (
                 Arg::with_name("prime")
                     .short("prime")
