@@ -1,5 +1,11 @@
 ## Tips
 
+### Test
+
+```bash
+cargo test
+```
+
 ### Performance Stats
 
 **Example command:**
