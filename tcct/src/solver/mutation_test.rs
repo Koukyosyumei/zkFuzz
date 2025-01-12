@@ -298,12 +298,12 @@ pub fn mutation_test_search(
 fn draw_random_constant(setting: &VerificationSetting, rng: &mut StdRng) -> BigInt {
     if rng.gen::<bool>() {
         rng.gen_bigint_range(
-            &(BigInt::from_str("10").unwrap() * -BigInt::one()),
-            &(BigInt::from_str("10").unwrap()),
+            &(BigInt::from_str("100").unwrap() * -BigInt::one()),
+            &(BigInt::from_str("100").unwrap()),
         )
     } else {
         rng.gen_bigint_range(
-            &(setting.prime.clone() - BigInt::from_str("100").unwrap()),
+            &(setting.prime.clone() - BigInt::from_str("1000").unwrap()),
             &(setting.prime),
         )
     }
@@ -475,44 +475,41 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
     (0..size)
         .map(|_| {
             pos.iter()
-                .map(|p| {
-                    match &*trace_constraints[*p] {
-                        SymbolicValue::BinaryOp(left, op, right) => {
-                            if rng.gen::<f64>() < operator_mutation_rate {
-                                let mutated_op = if let Some(related_ops) =
-                                    OPERATOR_MUTATION_CANDIDATES
-                                        .iter()
-                                        .find(|&&(key, _)| key == op.0)
-                                        .map(|&(_, ref ops)| ops)
-                                {
-                                    *related_ops
-                                        .iter()
-                                        .choose(rng)
-                                        .expect("Related operator group cannot be empty")
-                                } else {
-                                    panic!("No group defined for the given opcode: {:?}", op);
-                                };
-
-                                (
-                                    p.clone(),
-                                    SymbolicValue::BinaryOp(
-                                        left.clone(),
-                                        DebuggableExpressionInfixOpcode(mutated_op),
-                                        right.clone(),
-                                    ),
-                                )
+                .map(|p| match &*trace_constraints[*p] {
+                    SymbolicValue::BinaryOp(left, op, right) => {
+                        if rng.gen::<f64>() < operator_mutation_rate {
+                            let mutated_op = if let Some(related_ops) = OPERATOR_MUTATION_CANDIDATES
+                                .iter()
+                                .find(|&&(key, _)| key == op.0)
+                                .map(|&(_, ref ops)| ops)
+                            {
+                                *related_ops
+                                    .iter()
+                                    .choose(rng)
+                                    .expect("Related operator group cannot be empty")
                             } else {
-                                (
-                                    p.clone(),
-                                    SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
-                                )
-                            }
+                                panic!("No group defined for the given opcode: {:?}", op);
+                            };
+
+                            (
+                                p.clone(),
+                                SymbolicValue::BinaryOp(
+                                    left.clone(),
+                                    DebuggableExpressionInfixOpcode(mutated_op),
+                                    right.clone(),
+                                ),
+                            )
+                        } else {
+                            (
+                                p.clone(),
+                                SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
+                            )
                         }
-                        _ => (
-                            p.clone(),
-                            SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
-                        ),
                     }
+                    _ => (
+                        p.clone(),
+                        SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
+                    ),
                 })
                 .collect()
         })
