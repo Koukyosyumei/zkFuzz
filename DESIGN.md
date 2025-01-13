@@ -5,6 +5,7 @@
 input_population <- Input_Generation()
 symbolic_trace_population <- Trace_Mutation(original_symbolic_trace)
 symbolic_trace_population.append(original_trace)
+symbolic_trace_fitness = [-inf, -inf, ...]
 
 // Main loop for trials
 for trial in 1..Max_Trial:
@@ -13,13 +14,13 @@ for trial in 1..Max_Trial:
         input_population <- Input_Update(input_population)
     
     // Perform crossover and mutation on symbolic traces
-    symbolic_trace_population <- Trace_Evolution(symbolic_trace_population)
+    symbolic_trace_population <- Trace_Evolution(symbolic_trace_population, symbolic_trace_fitness)
 
     // Initialize maximum score
     let max_score = -inf
 
     // Evaluate fitness of each symbolic trace against input population
-    for symbolic_trace in symbolic_trace_population:
+    for i, symbolic_trace in enumerate(symbolic_trace_population):
         for input in input_population:
             score, flag = evaluate_trace_fitness(original_symbolic_trace, symbolic_trace, side_condition, input)
             
@@ -29,6 +30,7 @@ for trial in 1..Max_Trial:
             
             // Update maximum score
             max_score = max(score, max_score)
+        symbolic_trace_fitness[i] = max_score
 
 // Function to evaluate trace fitness
 Func evaluate_trace_fitness(original_symbolic_trace, symbolic_trace, side_condition, input_population):
