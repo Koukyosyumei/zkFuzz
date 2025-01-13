@@ -785,14 +785,14 @@ fn is_equal_mod(a: &BigInt, b: &BigInt, p: &BigInt) -> bool {
 
 pub fn verify_assignment(
     sexe: &mut SymbolicExecutor,
-    trace_constraints: &[SymbolicValueRef],
+    symbolic_trace: &[SymbolicValueRef],
     side_constraints: &[SymbolicValueRef],
     assignment: &FxHashMap<SymbolicName, BigInt>,
     setting: &VerificationSetting,
 ) -> VerificationResult {
     let is_satisfy_tc = evaluate_constraints(
         &setting.prime,
-        trace_constraints,
+        symbolic_trace,
         assignment,
         &mut sexe.symbolic_library,
     );

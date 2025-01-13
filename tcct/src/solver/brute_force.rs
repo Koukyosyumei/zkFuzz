@@ -20,7 +20,7 @@ use crate::solver::utils::{
 ///
 /// # Parameters
 /// - `sexe`: A mutable reference to the symbolic executor.
-/// - `trace_constraints`: A vector of constraints representing the program trace.
+/// - `symbolic_trace`: A vector of constraints representing the program trace.
 /// - `side_constraints`: A vector of additional constraints for validation.
 /// - `setting`: The verification settings.
 ///
@@ -28,11 +28,11 @@ use crate::solver::utils::{
 /// An `Option<CounterExample>` containing a counterexample if constraints are invalid, or `None` otherwise.
 pub fn brute_force_search(
     sexe: &mut SymbolicExecutor,
-    trace_constraints: &Vec<SymbolicValueRef>,
+    symbolic_trace: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
     setting: &VerificationSetting,
 ) -> Option<CounterExample> {
-    let mut trace_variables = extract_variables(trace_constraints);
+    let mut trace_variables = extract_variables(symbolic_trace);
     let mut side_variables = extract_variables(side_constraints);
 
     let mut variables = Vec::new();
@@ -46,7 +46,7 @@ pub fn brute_force_search(
 
     fn search(
         sexe: &mut SymbolicExecutor,
-        trace_constraints: &[SymbolicValueRef],
+        symbolic_trace: &[SymbolicValueRef],
         side_constraints: &[SymbolicValueRef],
         setting: &VerificationSetting,
         index: usize,
@@ -66,13 +66,7 @@ pub fn brute_force_search(
                 io::stdout().flush().unwrap();
             }
 
-            return verify_assignment(
-                sexe,
-                trace_constraints,
-                side_constraints,
-                assignment,
-                setting,
-            );
+            return verify_assignment(sexe, symbolic_trace, side_constraints, assignment, setting);
         }
 
         let var = &variables[index];
@@ -82,7 +76,7 @@ pub fn brute_force_search(
                 assignment.insert(var.clone(), c.clone());
                 let result = search(
                     sexe,
-                    trace_constraints,
+                    symbolic_trace,
                     side_constraints,
                     setting,
                     index + 1,
@@ -102,7 +96,7 @@ pub fn brute_force_search(
 
                 let result = search(
                     sexe,
-                    trace_constraints,
+                    symbolic_trace,
                     side_constraints,
                     setting,
                     index + 1,
@@ -124,7 +118,7 @@ pub fn brute_force_search(
 
                 let result = search(
                     sexe,
-                    trace_constraints,
+                    symbolic_trace,
                     side_constraints,
                     setting,
                     index + 1,
@@ -145,7 +139,7 @@ pub fn brute_force_search(
                 assignment.insert(var.clone(), value.clone());
                 let result = search(
                     sexe,
-                    trace_constraints,
+                    symbolic_trace,
                     side_constraints,
                     setting,
                     index + 1,
@@ -165,7 +159,7 @@ pub fn brute_force_search(
 
     let flag = search(
         sexe,
-        &trace_constraints,
+        &symbolic_trace,
         &side_constraints,
         setting,
         0,

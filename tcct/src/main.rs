@@ -223,7 +223,7 @@ fn start() -> Result<(), ()> {
             );
             let mut ts = ConstraintStatistics::new();
             let mut ss = ConstraintStatistics::new();
-            for c in &sym_executor.cur_state.trace_constraints {
+            for c in &sym_executor.cur_state.symbolic_trace {
                 ts.update(c);
             }
             for c in &sym_executor.cur_state.side_constraints {
@@ -295,26 +295,26 @@ fn start() -> Result<(), ()> {
                     let counterexample = match &*user_input.search_mode() {
                         "quick" => brute_force_search(
                             &mut conc_executor,
-                            &sym_executor.cur_state.trace_constraints.clone(),
+                            &sym_executor.cur_state.symbolic_trace.clone(),
                             &sym_executor.cur_state.side_constraints.clone(),
                             &verification_setting,
                         ),
                         "full" => brute_force_search(
                             &mut conc_executor,
-                            &sym_executor.cur_state.trace_constraints.clone(),
+                            &sym_executor.cur_state.symbolic_trace.clone(),
                             &sym_executor.cur_state.side_constraints.clone(),
                             &verification_setting,
                         ),
                         "heuristics" => brute_force_search(
                             &mut conc_executor,
-                            &sym_executor.cur_state.trace_constraints.clone(),
+                            &sym_executor.cur_state.symbolic_trace.clone(),
                             &sym_executor.cur_state.side_constraints.clone(),
                             &verification_setting,
                         ),
                         "ga" => {
                             let result = mutation_test_search(
                                 &mut conc_executor,
-                                &sym_executor.cur_state.trace_constraints.clone(),
+                                &sym_executor.cur_state.symbolic_trace.clone(),
                                 &sym_executor.cur_state.side_constraints.clone(),
                                 &verification_setting,
                                 &user_input.path_to_mutation_setting(),

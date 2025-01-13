@@ -203,7 +203,7 @@ impl<'a> SymbolicExecutor<'a> {
             );
             self.cur_state.set_sym_val(sym_name, simplified_a);
             if self.setting.keep_track_constraints {
-                self.cur_state.push_trace_constraint(&cond);
+                self.cur_state.push_symbolic_trace(&cond);
                 self.cur_state.push_side_constraint(&cond);
             }
         }
@@ -722,8 +722,8 @@ impl<'a> SymbolicExecutor<'a> {
                     if !subse.cur_state.contains_symbolic_loop {
                         // NOTE: a function does not produce any constraint
                         self.cur_state
-                            .trace_constraints
-                            .append(&mut subse.cur_state.trace_constraints);
+                            .symbolic_trace
+                            .append(&mut subse.cur_state.symbolic_trace);
 
                         let return_sym_name =
                             SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
@@ -963,7 +963,7 @@ impl<'a> SymbolicExecutor<'a> {
                             Rc::new(simplified_lhe_val),
                             Rc::new(simplified_rhe_val),
                         );
-                        self.cur_state.push_trace_constraint(&cont);
+                        self.cur_state.push_symbolic_trace(&cont);
                         self.cur_state.push_side_constraint(&cont);
                     }
                     DebuggableAssignOp(AssignOp::AssignSignal) => {
@@ -973,7 +973,7 @@ impl<'a> SymbolicExecutor<'a> {
                             self.symbolic_library.template_library[&self.cur_state.template_id]
                                 .is_safe,
                         );
-                        self.cur_state.push_trace_constraint(&cont);
+                        self.cur_state.push_symbolic_trace(&cont);
                     }
                     _ => {}
                 }
@@ -1065,7 +1065,7 @@ impl<'a> SymbolicExecutor<'a> {
 
             if self.setting.keep_track_constraints {
                 if !self.setting.constraint_assert_dissabled {
-                    self.cur_state.push_trace_constraint(&cond);
+                    self.cur_state.push_symbolic_trace(&cond);
                 }
                 self.cur_state.push_side_constraint(&cond);
             } else {
@@ -1094,7 +1094,7 @@ impl<'a> SymbolicExecutor<'a> {
             let expr = self.evaluate_expression(&arg, meta.elem_id);
             let condition = self.simplify_variables(&expr, meta.elem_id, true, true);
             if self.setting.keep_track_constraints {
-                self.cur_state.push_trace_constraint(&condition);
+                self.cur_state.push_symbolic_trace(&condition);
             }
             self.execute(statements, cur_bid + 1);
         }
@@ -1240,7 +1240,7 @@ impl<'a> SymbolicExecutor<'a> {
                 Rc::new(right_call.clone()),
                 is_mutable,
             );
-            self.cur_state.push_trace_constraint(&cont);
+            self.cur_state.push_symbolic_trace(&cont);
         }
     }
 
@@ -1459,7 +1459,7 @@ impl<'a> SymbolicExecutor<'a> {
                         Rc::new(SymbolicValue::Variable(var_name.clone())),
                         Rc::new(value.clone()),
                     );
-                    self.cur_state.push_trace_constraint(&cont);
+                    self.cur_state.push_symbolic_trace(&cont);
                     self.cur_state.push_side_constraint(&cont);
                 }
                 DebuggableAssignOp(AssignOp::AssignSignal) => {
@@ -1468,7 +1468,7 @@ impl<'a> SymbolicExecutor<'a> {
                         Rc::new(value.clone()),
                         self.symbolic_library.template_library[&self.cur_state.template_id].is_safe,
                     );
-                    self.cur_state.push_trace_constraint(&cont);
+                    self.cur_state.push_symbolic_trace(&cont);
                 }
                 _ => {}
             }
@@ -1636,7 +1636,7 @@ impl<'a> SymbolicExecutor<'a> {
                 /*
                 let tp_cond =
                     SymbolicValue::AssignEq(Rc::new(SymbolicValue::Variable(tp_name)), tp_val);
-                self.cur_state.push_trace_constraint(&tp_cond);
+                self.cur_state.push_symbolic_trace(&tp_cond);
                 */
             }
 
@@ -1663,8 +1663,8 @@ impl<'a> SymbolicExecutor<'a> {
             subse.execute(&templ.body.clone(), 0);
 
             self.cur_state
-                .trace_constraints
-                .append(&mut subse.cur_state.trace_constraints);
+                .symbolic_trace
+                .append(&mut subse.cur_state.symbolic_trace);
             self.cur_state
                 .side_constraints
                 .append(&mut subse.cur_state.side_constraints);
@@ -1679,7 +1679,7 @@ impl<'a> SymbolicExecutor<'a> {
                     &subse.symbolic_library.name2id,
                     subse.cur_state.owner_name.clone(),
                 );
-                self.cur_state.push_trace_constraint(&cond);
+                self.cur_state.push_symbolic_trace(&cond);
             }
 
             if !self.setting.off_trace {

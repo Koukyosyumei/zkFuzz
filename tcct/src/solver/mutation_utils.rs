@@ -67,10 +67,10 @@ where
 }
 
 pub fn apply_trace_mutation(
-    trace_constraints: &Vec<SymbolicValueRef>,
+    symbolic_trace: &Vec<SymbolicValueRef>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
 ) -> Vec<SymbolicValueRef> {
-    let mut mutated_constraints = trace_constraints.clone();
+    let mut mutated_constraints = symbolic_trace.clone();
     for (index, value) in trace_mutation {
         if let SymbolicValue::Assign(lv, _, is_safe) = mutated_constraints[*index].as_ref().clone()
         {
@@ -97,12 +97,12 @@ pub fn apply_trace_mutation(
 pub fn evaluate_trace_fitness_by_error(
     sexe: &mut SymbolicExecutor,
     setting: &VerificationSetting,
-    trace_constraints: &Vec<SymbolicValueRef>,
+    symbolic_trace: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
     inputs_assignment: &Vec<FxHashMap<SymbolicName, BigInt>>,
 ) -> (usize, BigInt, Option<CounterExample>) {
-    let mutated_trace_constraints = apply_trace_mutation(trace_constraints, trace_mutation);
+    let mutated_symbolic_trace = apply_trace_mutation(symbolic_trace, trace_mutation);
 
     let mut max_idx = 0_usize;
     let mut max_score = -setting.prime.clone();
@@ -113,7 +113,7 @@ pub fn evaluate_trace_fitness_by_error(
 
         let (is_success, failure_pos) = emulate_symbolic_values(
             &setting.prime,
-            &mutated_trace_constraints,
+            &mutated_symbolic_trace,
             &mut assignment,
             &mut sexe.symbolic_library,
         );
@@ -127,13 +127,8 @@ pub fn evaluate_trace_fitness_by_error(
 
         if error_of_side_constraints.is_zero() {
             if is_success {
-                let flag = verify_assignment(
-                    sexe,
-                    trace_constraints,
-                    side_constraints,
-                    &assignment,
-                    setting,
-                );
+                let flag =
+                    verify_assignment(sexe, symbolic_trace, side_constraints, &assignment, setting);
                 if is_vulnerable(&flag) {
                     max_idx = i;
                     max_score = BigInt::zero();
@@ -165,7 +160,7 @@ pub fn evaluate_trace_fitness_by_error(
                         flag: VerificationResult::UnderConstrained(
                             UnderConstrainedType::UnexpectedTrace(
                                 failure_pos,
-                                mutated_trace_constraints[failure_pos]
+                                mutated_symbolic_trace[failure_pos]
                                     .lookup_fmt(&sexe.symbolic_library.id2name),
                             ),
                         ),

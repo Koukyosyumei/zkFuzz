@@ -18,10 +18,10 @@ pub fn check_unused_outputs(
 ) -> Option<CounterExample> {
     let mut variables: Vec<SymbolicName> = Vec::new();
     variables.append(&mut extract_variables(
-        &sexe.cur_state.trace_constraints.clone(),
+        &sexe.cur_state.symbolic_trace.clone(),
     ));
     variables.append(&mut extract_variables(
-        &sexe.cur_state.trace_constraints.clone(),
+        &sexe.cur_state.symbolic_trace.clone(),
     ));
     let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
 

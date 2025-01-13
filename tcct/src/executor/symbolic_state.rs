@@ -3,10 +3,8 @@ use std::rc::Rc;
 use colored::Colorize;
 use rustc_hash::FxHashMap;
 
-
 use crate::executor::symbolic_value::{
-    OwnerName, SymbolicAccess,
-    SymbolicName, SymbolicValue, SymbolicValueRef,
+    OwnerName, SymbolicAccess, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::italic;
 
@@ -23,7 +21,7 @@ pub struct SymbolicState {
     pub contains_symbolic_loop: bool,
     pub depth: usize,
     pub symbol_binding_map: SymbolBindingMap,
-    pub trace_constraints: SymbolicConstraints,
+    pub symbolic_trace: SymbolicConstraints,
     pub side_constraints: SymbolicConstraints,
     pub is_failed: bool,
 }
@@ -42,7 +40,7 @@ impl SymbolicState {
             contains_symbolic_loop: false,
             depth: 0_usize,
             symbol_binding_map: FxHashMap::default(),
-            trace_constraints: Vec::new(),
+            symbolic_trace: Vec::new(),
             side_constraints: Vec::new(),
             is_failed: false,
         }
@@ -163,8 +161,8 @@ impl SymbolicState {
     /// # Arguments
     ///
     /// * `constraint` - The symbolic value representing the constraint.
-    pub fn push_trace_constraint(&mut self, constraint: &SymbolicValue) {
-        self.trace_constraints.push(Rc::new(constraint.clone()));
+    pub fn push_symbolic_trace(&mut self, constraint: &SymbolicValue) {
+        self.symbolic_trace.push(Rc::new(constraint.clone()));
     }
 
     /// Adds a side constraint to the current state.
@@ -209,11 +207,11 @@ impl SymbolicState {
         }
         s += &format!(
             "  {} {}\n",
-            format!("{}", "🪶 trace_constraints:").cyan(),
+            format!("{}", "🪶 symbolic_trace:").cyan(),
             format!(
                 "{}",
                 &self
-                    .trace_constraints
+                    .symbolic_trace
                     .iter()
                     .map(|c| c.lookup_fmt(id2name))
                     .collect::<Vec<_>>()

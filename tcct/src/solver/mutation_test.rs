@@ -109,7 +109,7 @@ fn load_settings_from_json(file_path: &str) -> Result<MutationSettings, serde_js
 
 pub fn mutation_test_search(
     sexe: &mut SymbolicExecutor,
-    trace_constraints: &Vec<SymbolicValueRef>,
+    symbolic_trace: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
     setting: &VerificationSetting,
     path_to_mutation_setting: &String,
@@ -127,7 +127,7 @@ pub fn mutation_test_search(
 
     // Initial Population of Mutated Programs
     let mut assign_pos = Vec::new();
-    for (i, sv) in trace_constraints.iter().enumerate() {
+    for (i, sv) in symbolic_trace.iter().enumerate() {
         match *sv.clone() {
             SymbolicValue::Assign(_, _, false) | SymbolicValue::AssignCall(_, _, true) => {
                 assign_pos.push(i);
@@ -137,7 +137,7 @@ pub fn mutation_test_search(
     }
 
     // Initial Pupulation of Mutated Inputs
-    let mut variables = extract_variables(trace_constraints);
+    let mut variables = extract_variables(symbolic_trace);
     variables.append(&mut extract_variables(side_constraints));
     let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
     let mut input_variables = Vec::new();
@@ -158,7 +158,7 @@ pub fn mutation_test_search(
     ├─ #Side Constraints  : {}
     ├─ #Input Variables   : {}
     └─ #Mutation Candidate: {}",
-        trace_constraints.len().to_string().bright_yellow(),
+        symbolic_trace.len().to_string().bright_yellow(),
         side_constraints.len().to_string().bright_yellow(),
         input_variables.len().to_string().bright_yellow(),
         assign_pos.len().to_string().bright_yellow()
@@ -236,7 +236,7 @@ pub fn mutation_test_search(
                 evaluate_trace_fitness_by_error(
                     sexe,
                     &setting,
-                    trace_constraints,
+                    symbolic_trace,
                     side_constraints,
                     a,
                     &input_population,
@@ -469,7 +469,7 @@ lazy_static::lazy_static! {
 fn initialize_trace_mutation_operator_mutation_and_constant(
     pos: &[usize],
     size: usize,
-    trace_constraints: &[SymbolicValueRef],
+    symbolic_trace: &[SymbolicValueRef],
     operator_mutation_rate: f64,
     setting: &VerificationSetting,
     rng: &mut StdRng,
@@ -477,7 +477,7 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
     (0..size)
         .map(|_| {
             pos.iter()
-                .map(|p| match &*trace_constraints[*p] {
+                .map(|p| match &*symbolic_trace[*p] {
                     SymbolicValue::BinaryOp(left, op, right) => {
                         if rng.gen::<f64>() < operator_mutation_rate {
                             let mutated_op = if let Some(related_ops) = OPERATOR_MUTATION_CANDIDATES

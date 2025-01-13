@@ -42,39 +42,30 @@ Func evaluate_trace_fitness(original_symbolic_trace, symbolic_trace, side_condit
         error_of_side_condition = error_func(side_condition, input)
         score = -error_of_side_condition
         
-        // Check if side-conditions are met
-        if score == 0:
+        if score == 0: // Check if side-conditions are met
             if is_success:
                 // Check original program's success and output consistency
                 original_is_success, original_output = emulate_trace(original_symbolic_trace, input)
                 
                 if !original_is_success:
-                    // Original program crashes while side-conditions are met
-                    max_score = 0
+                    max_score = 0 // Original program crashes while side-conditions are met
                     return max_score, UnderConstrained::UnexpectedTrace
                 
                 if original_output != output:
-                    // Outputs differ despite meeting conditions
-                    max_score = 0
+                    max_score = 0 // Outputs differ despite meeting conditions
                     return max_score, UnderConstrained::NonDeterministic            
                 else:
                     score = -inf
-            
             else:
                 if symbolic_trace == original_trace:
-                    // Original program crashes while side-conditions are met
-                    max_score = 0
+                    max_score = 0 // Original program crashes while side-conditions are met
                     return max_score, UnderConstrained::UnexpectedTrace
-        
         else:
             if symbolic_trace == original_symbolic_trace && is_success:
-                // Trace-conditions met but side-condition violated
-                max_score = 0
+                max_score = 0 // Trace-conditions met but side-condition violated
                 return max_score, OverConstrained 
         
-        // Update maximum score if current score is higher
-        if score > max_score:
-            max_score = score
+        max_score = max(score, max_score) // Update maximum score if current score is higher
 
     return max_score, None  
 ```
