@@ -1,6 +1,6 @@
 # Design
 
-```c++
+```c
 // Initialize population and symbolic trace
 input_population <- Input_Generation()
 symbolic_trace_population <- Trace_Mutation(original_symbolic_trace)
