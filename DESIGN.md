@@ -1,6 +1,6 @@
 # Design
 
-```s
+```c++
 // Initialize population and symbolic trace
 input_population <- Input_Generation()
 symbolic_trace_population <- Trace_Mutation(original_symbolic_trace)
@@ -54,8 +54,7 @@ Func evaluate_trace_fitness(original_symbolic_trace, symbolic_trace, side_condit
                 if original_output != output:
                     // Outputs differ despite meeting conditions
                     max_score = 0
-                    return max_score, UnderConstrained::NonDeterministic
-                
+                    return max_score, UnderConstrained::NonDeterministic            
                 else:
                     score = -inf
             
