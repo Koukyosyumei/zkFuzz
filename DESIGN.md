@@ -49,7 +49,7 @@ Func evaluate_trace_fitness(original_symbolic_trace, symbolic_trace, side_condit
                 
                 if !original_is_success:
                     max_score = 0 // Original program crashes while side-conditions are met
-                    return max_score, UnderConstrained::UnexpectedTrace
+                    return max_score, UnderConstrained::UnexpectedInput
                 
                 if original_output != output:
                     max_score = 0 // Outputs differ despite meeting conditions
@@ -59,7 +59,7 @@ Func evaluate_trace_fitness(original_symbolic_trace, symbolic_trace, side_condit
             else:
                 if symbolic_trace == original_trace:
                     max_score = 0 // Original program crashes while side-conditions are met
-                    return max_score, UnderConstrained::UnexpectedTrace
+                    return max_score, UnderConstrained::UnexpectedInput
         else:
             if symbolic_trace == original_symbolic_trace && is_success:
                 max_score = 0 // Trace-conditions met but side-condition violated
