@@ -158,7 +158,7 @@ pub fn evaluate_trace_fitness_by_error(
                     max_score = BigInt::zero();
                     counter_example = Some(CounterExample {
                         flag: VerificationResult::UnderConstrained(
-                            UnderConstrainedType::UnexpectedTrace(
+                            UnderConstrainedType::UnexpectedInput(
                                 failure_pos,
                                 mutated_symbolic_trace[failure_pos]
                                     .lookup_fmt(&sexe.symbolic_library.id2name),

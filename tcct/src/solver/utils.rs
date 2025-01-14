@@ -25,7 +25,7 @@ use crate::executor::symbolic_value::{
 #[derive(Clone)]
 pub enum UnderConstrainedType {
     UnusedOutput,
-    UnexpectedTrace(usize, String),
+    UnexpectedInput(usize, String),
     NonDeterministic(SymbolicName, String, BigInt),
 }
 
@@ -48,8 +48,8 @@ impl fmt::Display for VerificationResult {
                 UnderConstrainedType::UnusedOutput => {
                     "👻 UnderConstrained (Unused-Output) 👻".red().bold().to_string()
                 }
-                UnderConstrainedType::UnexpectedTrace(_pos, violated_condition) => {
-                    format!("{} {}", "🧟 UnderConstrained (Unexpected-Trace) 🧟\n║           Violated Condition:".red().bold(), violated_condition)
+                UnderConstrainedType::UnexpectedInput(_pos, violated_condition) => {
+                    format!("{} {}", "🧟 UnderConstrained (Unexpected-Input) 🧟\n║           Violated Condition:".red().bold(), violated_condition)
                 }
                 UnderConstrainedType::NonDeterministic(_sym_name, name, value) => format!(
                     "🔥 UnderConstrained (Non-Deterministic) 🔥\n║           ➡️ `{}` is expected to be `{}`",
@@ -72,8 +72,8 @@ impl VerificationResult {
                 UnderConstrainedType::UnusedOutput => {
                     json!({"1_type": "UnderConstrained-UnusedOutput"})
                 }
-                UnderConstrainedType::UnexpectedTrace(pos, _violated_condition) => {
-                    json!({"1_type": "UnderConstrained-UnexpectedTrace", "2_violated_condition":json!({"pos":pos})})
+                UnderConstrainedType::UnexpectedInput(pos, _violated_condition) => {
+                    json!({"1_type": "UnderConstrained-UnexpectedInput", "2_violated_condition":json!({"pos":pos})})
                 }
                 UnderConstrainedType::NonDeterministic(_sym_name, name, value) => {
                     json!({"1_type": "UnderConstrained-NonDeterministic", "2_expected_output": json!({"name": name, "value":value.to_string()})})
@@ -820,7 +820,7 @@ pub fn verify_assignment(
 
         if sexe.cur_state.is_failed {
             let vc = sexe.violated_condition.clone().unwrap();
-            return VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedTrace(
+            return VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedInput(
                 vc.0,
                 vc.1.lookup_fmt(&sexe.symbolic_library.id2name),
             ));
