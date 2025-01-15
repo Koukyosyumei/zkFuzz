@@ -689,7 +689,7 @@ impl<'a> SymbolicExecutor<'a> {
                     subse_setting.only_initialization_blocks = false;
                     let mut subse = SymbolicExecutor::new(symbolic_library, &subse_setting);
 
-                    let mut updated_owner_list = (*self.cur_state.owner_name.clone()).clone();
+                    let mut updated_owner_list = (*self.cur_state.owner_name).clone();
                     updated_owner_list.push(OwnerName {
                         id: *id,
                         counter: subse.symbolic_library.function_counter[id],
@@ -734,7 +734,7 @@ impl<'a> SymbolicExecutor<'a> {
                         let return_sym_name =
                             SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
                         let return_value =
-                            (*subse.cur_state.symbol_binding_map[&return_sym_name].clone()).clone();
+                            (*subse.cur_state.symbol_binding_map[&return_sym_name]).clone();
                         match return_value {
                             SymbolicValue::ConstantBool(_) | SymbolicValue::ConstantInt(_) => {
                                 return_value
