@@ -602,8 +602,8 @@ impl<'a> SymbolicExecutor<'a> {
 
                     let mut component_name = None;
                     let mut dims = Vec::new();
-                    for acc in access {
-                        let evaled_access = self.evaluate_access(&acc.clone(), elem_id);
+                    for acc in access.iter() {
+                        let evaled_access = self.evaluate_access(acc, elem_id);
                         match evaled_access {
                             SymbolicAccess::ComponentAccess(tmp_name) => {
                                 component_name = Some(tmp_name.clone());
