@@ -396,8 +396,8 @@ fn gather_variables_for_template(
         ..
     } = dbody
     {
-        id2type.insert(id.clone(), xtype.clone());
-        id2dimensions.insert(id.clone(), dimensions.clone());
+        id2type.insert(*id, xtype.clone());
+        id2dimensions.insert(*id, dimensions.clone());
         if let VariableType::Signal(typ, _taglist) = &xtype {
             match typ {
                 SignalType::Input => {
@@ -417,7 +417,7 @@ fn gather_variables_for_function(
     id2dimensions: &mut FxHashMap<usize, Vec<DebuggableExpression>>,
 ) {
     if let DebuggableStatement::Declaration { id, dimensions, .. } = dbody {
-        id2dimensions.insert(id.clone(), dimensions.clone());
+        id2dimensions.insert(*id, dimensions.clone());
     }
 }
 
@@ -454,7 +454,7 @@ impl SymbolicLibrary {
         let i = if let Some(i) = self.name2id.get(&name) {
             *i
         } else {
-            self.name2id.insert(name.clone(), self.name2id.len());
+            self.name2id.insert((*name).to_string(), self.name2id.len());
             self.id2name.insert(self.name2id[&name], name.clone());
             self.name2id.len() - 1
         };
