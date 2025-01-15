@@ -1869,16 +1869,6 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn get_sym_name_of_direct_owner(&self, base_name: &SymbolicName) -> SymbolicName {
-        let mut owners = (*base_name.owner).clone();
-        let mut sym_name_of_owner = base_name.clone();
-        sym_name_of_owner.id = owners.last().unwrap().id;
-        sym_name_of_owner.access = owners.last().unwrap().access.clone();
-        owners.pop();
-        sym_name_of_owner.owner = Rc::new(owners);
-        sym_name_of_owner
-    }
-
     fn get_full_dimension_of_var(
         &self,
         var_name: &SymbolicName,
