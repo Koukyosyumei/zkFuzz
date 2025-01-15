@@ -1648,7 +1648,7 @@ impl<'a> SymbolicExecutor<'a> {
     ) {
         if !self.symbolic_store.components_store[base_name].is_done {
             let mut subse = SymbolicExecutor::new(&mut self.symbolic_library, self.setting);
-            let mut updated_owner_list = (*self.cur_state.owner_name.clone()).clone();
+            let mut updated_owner_list = (*self.cur_state.owner_name).clone();
             updated_owner_list.push(OwnerName {
                 id: var,
                 counter: 0,
@@ -1798,7 +1798,7 @@ impl<'a> SymbolicExecutor<'a> {
         let mut post_dims = Vec::new();
         let mut found_component = false;
         for acc in access {
-            let evaled_access = self.evaluate_access(&acc.clone(), elem_id);
+            let evaled_access = self.evaluate_access(&acc, elem_id);
             match evaled_access {
                 SymbolicAccess::ComponentAccess(tmp_name) => {
                     found_component = true;
@@ -1836,7 +1836,7 @@ impl<'a> SymbolicExecutor<'a> {
                 ),
             )
         } else {
-            let mut owner_name = (*self.cur_state.owner_name.clone()).clone();
+            let mut owner_name = (*self.cur_state.owner_name).clone();
             owner_name.push(OwnerName {
                 id: base_id,
                 counter: 0,
