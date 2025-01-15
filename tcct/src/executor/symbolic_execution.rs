@@ -1,14 +1,12 @@
-use std::clone;
 use std::cmp::max;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
-use std::thread::panicking;
 
 use colored::Colorize;
 use log::trace;
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
-use num_traits::{FromPrimitive, Zero};
+use num_traits::FromPrimitive;
 use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 
 use program_structure::ast::{
