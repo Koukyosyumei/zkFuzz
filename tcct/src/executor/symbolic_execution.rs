@@ -743,12 +743,12 @@ impl<'a> SymbolicExecutor<'a> {
                                 if is_concrete_array(&return_value) {
                                     return_value
                                 } else {
-                                    SymbolicValue::Call(id.clone(), simplified_args)
+                                    SymbolicValue::Call(*id, simplified_args)
                                 }
                             }
                         }
                     } else {
-                        SymbolicValue::Call(id.clone(), simplified_args)
+                        SymbolicValue::Call(*id, simplified_args)
                     }
                 } else {
                     panic!("Unknown Callee: {}", self.symbolic_library.id2name[id]);
