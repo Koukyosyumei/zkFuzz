@@ -1117,7 +1117,7 @@ impl<'a> SymbolicExecutor<'a> {
                             DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
                             Rc::new(rhe_val),
                         );
-                        self.violated_condition = Some((meta.elem_id, original_cond.clone()));
+                        self.violated_condition = Some((meta.elem_id, original_cond));
                     }
                 }
             }
@@ -1328,7 +1328,7 @@ impl<'a> SymbolicExecutor<'a> {
                 .set_rc_sym_val(tp_name, args[i].clone());
         }
 
-        se_for_initialization.execute(&template.body.clone(), 0);
+        se_for_initialization.execute(&template.body, 0);
 
         let mut symbol_optional_binding_map = FxHashMap::default();
         let mut id2dimensions = FxHashMap::default();
