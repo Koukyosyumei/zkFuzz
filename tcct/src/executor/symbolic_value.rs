@@ -543,14 +543,14 @@ pub fn access_multidimensional_array(
     values: &Vec<SymbolicValueRef>,
     dims: &[SymbolicAccess],
 ) -> SymbolicValue {
-    let mut current_values = values.clone();
+    let mut current_values = values;
     for dim in dims {
         if let SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(a)) = dim {
             let index = a.to_usize().unwrap();
             if index < current_values.len() {
                 match &*current_values[index] {
                     SymbolicValue::Array(inner_values) => {
-                        current_values = inner_values.clone();
+                        current_values = &inner_values;
                     }
                     value => return value.clone(),
                 };
@@ -559,7 +559,7 @@ pub fn access_multidimensional_array(
             }
         } else {
             //panic!("dims should be a list of SymbolicAccess::ArrayAccess");
-            return SymbolicValue::Array(current_values);
+            return SymbolicValue::Array(current_values.to_vec());
         }
     }
     panic!("Incomplete dimensions");
