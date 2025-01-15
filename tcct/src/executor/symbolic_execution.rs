@@ -1053,14 +1053,14 @@ impl<'a> SymbolicExecutor<'a> {
             {
                 self.evaluate_dimension(
                     &self.symbolic_library.template_library[&self.cur_state.template_id]
-                        .id2dimensions[id]
+                        .id2dimension_expressions[id]
                         .clone(),
                     elem_id,
                 )
             } else {
                 self.evaluate_dimension(
                     &self.symbolic_library.function_library[&self.cur_state.template_id]
-                        .id2dimensions[id]
+                        .id2dimension_expressions[id]
                         .clone(),
                     elem_id,
                 )
@@ -1313,12 +1313,12 @@ impl<'a> SymbolicExecutor<'a> {
         se_for_initialization.execute(&template.body.clone(), 0);
 
         let mut symbol_optional_binding_map = FxHashMap::default();
-        let mut inputs_dimension_map = FxHashMap::default();
+        let mut id2dimensions = FxHashMap::default();
 
         se_for_initialization.pre_determine_dimensions(
             &template,
             &mut symbol_optional_binding_map,
-            &mut inputs_dimension_map,
+            &mut id2dimensions,
             elem_id,
         );
 
@@ -1328,26 +1328,12 @@ impl<'a> SymbolicExecutor<'a> {
             template_name: *callee_name,
             args: args.clone(),
             symbol_optional_binding_map: symbol_optional_binding_map,
-            inputs_dimension_map: inputs_dimension_map,
+            id2dimensions: id2dimensions,
             is_done: false,
         };
         self.symbolic_store
             .components_store
             .insert(var_name.clone(), component);
-    }
-
-    fn initialize_template_inputs(
-        &mut self,
-        template: &SymbolicTemplate,
-        inputs_of_component: &mut FxHashMap<SymbolicName, Option<SymbolicValue>>,
-        dimensions_of_inputs: &mut FxHashMap<usize, Vec<usize>>,
-        elem_id: usize,
-    ) {
-        for id in &template.input_ids {
-            let dims = self.evaluate_dimension(&template.id2dimensions[id], elem_id);
-            register_array_elements(*id, &dims, None, inputs_of_component);
-            dimensions_of_inputs.insert(*id, dims);
-        }
     }
 
     fn pre_determine_dimensions(
@@ -1357,8 +1343,8 @@ impl<'a> SymbolicExecutor<'a> {
         dimensions_of_inputs: &mut FxHashMap<usize, Vec<usize>>,
         elem_id: usize,
     ) {
-        for (id, _) in template.id2dimensions.iter() {
-            let dims = self.evaluate_dimension(&template.id2dimensions[id], elem_id);
+        for (id, _) in template.id2dimension_expressions.iter() {
+            let dims = self.evaluate_dimension(&template.id2dimension_expressions[id], elem_id);
             if template.input_ids.contains(id) {
                 register_array_elements(*id, &dims, None, inputs_of_component);
             }
@@ -1885,7 +1871,7 @@ impl<'a> SymbolicExecutor<'a> {
             .components_store
             .contains_key(sym_name_of_direct_owner)
         {
-            self.symbolic_store.components_store[sym_name_of_direct_owner].inputs_dimension_map
+            self.symbolic_store.components_store[sym_name_of_direct_owner].id2dimensions
                 [&var_name.id]
                 .len()
         } else {
@@ -1907,7 +1893,7 @@ impl<'a> SymbolicExecutor<'a> {
             .components_store
             .contains_key(component_name.unwrap())
         {
-            &self.symbolic_store.components_store[component_name.unwrap()].inputs_dimension_map
+            &self.symbolic_store.components_store[component_name.unwrap()].id2dimensions
                 [&var_name.id]
         } else {
             &self.id2dimensions[&var_name.id]

@@ -348,7 +348,7 @@ pub struct SymbolicTemplate {
     pub input_ids: FxHashSet<usize>,
     pub output_ids: FxHashSet<usize>,
     pub id2type: FxHashMap<usize, VariableType>,
-    pub id2dimensions: FxHashMap<usize, Vec<DebuggableExpression>>,
+    pub id2dimension_expressions: FxHashMap<usize, Vec<DebuggableExpression>>,
     pub body: Vec<DebuggableStatement>,
     pub is_lessthan: bool,
     pub is_safe: bool,
@@ -358,7 +358,7 @@ pub struct SymbolicTemplate {
 #[derive(Default, Clone)]
 pub struct SymbolicFunction {
     pub function_argument_names: Vec<usize>,
-    pub id2dimensions: FxHashMap<usize, Vec<DebuggableExpression>>,
+    pub id2dimension_expressions: FxHashMap<usize, Vec<DebuggableExpression>>,
     pub body: Vec<DebuggableStatement>,
 }
 
@@ -368,7 +368,7 @@ pub struct SymbolicComponent {
     pub template_name: usize,
     pub args: Vec<SymbolicValueRef>,
     pub symbol_optional_binding_map: FxHashMap<SymbolicName, Option<SymbolicValue>>,
-    pub inputs_dimension_map: FxHashMap<usize, Vec<usize>>,
+    pub id2dimensions: FxHashMap<usize, Vec<usize>>,
     pub is_done: bool,
 }
 
@@ -446,7 +446,7 @@ impl SymbolicLibrary {
         let mut input_ids = FxHashSet::default();
         let mut output_ids = FxHashSet::default();
         let mut id2type = FxHashMap::default();
-        let mut id2dimensions = FxHashMap::default();
+        let mut id2dimension_expressions = FxHashMap::default();
 
         let is_lessthan = &name == "LessThan";
         let is_safe = whitelist.contains(&name);
@@ -467,7 +467,7 @@ impl SymbolicLibrary {
                 &mut input_ids,
                 &mut output_ids,
                 &mut id2type,
-                &mut id2dimensions,
+                &mut id2dimension_expressions,
             );
         });
 
@@ -489,7 +489,7 @@ impl SymbolicLibrary {
                 input_ids: input_ids,
                 output_ids: output_ids,
                 id2type: id2type,
-                id2dimensions: id2dimensions,
+                id2dimension_expressions: id2dimension_expressions,
                 body: vec![dbody.clone(), DebuggableStatement::Ret],
                 is_lessthan: is_lessthan,
                 is_safe: is_safe,
@@ -510,7 +510,7 @@ impl SymbolicLibrary {
         body: Statement,
         function_argument_names: &Vec<String>,
     ) {
-        let mut id2dimensions = FxHashMap::default();
+        let mut id2dimension_expressions = FxHashMap::default();
         let i = if let Some(i) = self.name2id.get(&name) {
             *i
         } else {
@@ -521,7 +521,7 @@ impl SymbolicLibrary {
 
         let mut dbody = DebuggableStatement::from(body, &mut self.name2id, &mut self.id2name);
         dbody.apply_iterative(|stmt| {
-            gather_variables_for_function(stmt, &mut id2dimensions);
+            gather_variables_for_function(stmt, &mut id2dimension_expressions);
         });
 
         self.function_library.insert(
@@ -531,7 +531,7 @@ impl SymbolicLibrary {
                     .iter()
                     .map(|p: &String| self.name2id[p])
                     .collect::<Vec<_>>(),
-                id2dimensions: id2dimensions,
+                id2dimension_expressions: id2dimension_expressions,
                 body: vec![dbody, DebuggableStatement::Ret],
             }),
         );
