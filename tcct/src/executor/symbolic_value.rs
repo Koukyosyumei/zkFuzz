@@ -937,18 +937,18 @@ pub fn create_nested_array(
 
 pub fn update_nested_array(
     dims: &[usize],
-    array: SymbolicValueRef,
-    value: SymbolicValueRef,
+    array: &SymbolicValueRef,
+    value: &SymbolicValueRef,
 ) -> SymbolicValueRef {
-    if let SymbolicValue::Array(arr) = (*array).clone() {
+    if let SymbolicValue::Array(arr) = (*array).as_ref() {
         let mut new_arr = arr.clone();
         if dims.len() == 1 {
-            new_arr[dims[0]] = value;
+            new_arr[dims[0]] = value.clone();
         } else {
-            new_arr[dims[0]] = update_nested_array(&dims[1..], arr[dims[0]].clone(), value);
+            new_arr[dims[0]] = update_nested_array(&dims[1..], &arr[dims[0]], value);
         }
         Rc::new(SymbolicValue::Array(new_arr))
     } else {
-        array
+        array.clone()
     }
 }

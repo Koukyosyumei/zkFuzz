@@ -1230,7 +1230,7 @@ impl<'a> SymbolicExecutor<'a> {
             if let SymbolicValue::Array(ref arr) = base_array {
                 if !arr.is_empty() {
                     base_array =
-                        (*update_nested_array(&pos, Rc::new(base_array), Rc::new(elem.clone())))
+                        (*update_nested_array(&pos, &Rc::new(base_array), &Rc::new(elem.clone())))
                             .clone();
                 }
             }
@@ -1987,7 +1987,7 @@ impl<'a> SymbolicExecutor<'a> {
                 Rc::new(SymbolicValue::Variable(var_name_p))
             };
 
-            sym_array = (*update_nested_array(&p, Rc::new(sym_array), sval)).clone();
+            sym_array = (*update_nested_array(&p, &Rc::new(sym_array), &sval)).clone();
         }
 
         sym_array
