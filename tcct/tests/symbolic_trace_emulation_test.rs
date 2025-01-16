@@ -7,16 +7,11 @@ use num_bigint_dig::BigInt;
 use num_traits::identities::Zero;
 use num_traits::One;
 
-use program_structure::ast::{Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode};
 
 use rustc_hash::FxHashMap;
-use tcct::executor::debug_ast::{
-    DebuggableExpressionInfixOpcode, DebuggableExpressionPrefixOpcode,
-};
 use tcct::executor::symbolic_execution::SymbolicExecutor;
 use tcct::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
-use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
-use tcct::solver::unused_outputs::check_unused_outputs;
+use tcct::executor::symbolic_value::{OwnerName, SymbolicName};
 use tcct::solver::utils::emulate_symbolic_trace;
 
 use crate::utils::{execute, prepare_symbolic_library};
