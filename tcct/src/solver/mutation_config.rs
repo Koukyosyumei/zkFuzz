@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
-pub struct MutationSettings {
+pub struct MutationConfig {
     pub seed: u64,
     pub program_population_size: usize,
     pub input_population_size: usize,
@@ -23,9 +23,9 @@ pub struct MutationSettings {
     pub save_fitness_scores: bool,
 }
 
-impl Default for MutationSettings {
+impl Default for MutationConfig {
     fn default() -> Self {
-        MutationSettings {
+        MutationConfig {
             seed: 0,
             program_population_size: 30,
             input_population_size: 30,
@@ -43,7 +43,7 @@ impl Default for MutationSettings {
     }
 }
 
-impl fmt::Display for MutationSettings {
+impl fmt::Display for MutationConfig {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -66,13 +66,13 @@ impl fmt::Display for MutationSettings {
     }
 }
 
-pub fn load_settings_from_json(file_path: &str) -> Result<MutationSettings, serde_json::Error> {
+pub fn load_config_from_json(file_path: &str) -> Result<MutationConfig, serde_json::Error> {
     let file = File::open(file_path);
     if file.is_ok() {
-        let settings: MutationSettings = serde_json::from_reader(file.unwrap())?;
+        let settings: MutationConfig = serde_json::from_reader(file.unwrap())?;
         Ok(settings)
     } else {
         info!("Use the default setting for mutation testing");
-        Ok(MutationSettings::default())
+        Ok(MutationConfig::default())
     }
 }

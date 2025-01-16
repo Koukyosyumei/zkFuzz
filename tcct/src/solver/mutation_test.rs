@@ -20,13 +20,13 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
 use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
 
-use crate::solver::mutation_setting::{load_settings_from_json, MutationSettings};
+use crate::solver::mutation_config::{load_config_from_json, MutationConfig};
 use crate::solver::mutation_utils::{random_crossover, roulette_selection};
 use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
 
 pub struct MutationTestResult {
     pub random_seed: u64,
-    pub mutation_setting: MutationSettings,
+    pub mutation_config: MutationConfig,
     pub counter_example: Option<CounterExample>,
     pub generation: usize,
     pub fitness_score_log: Vec<BigInt>,
@@ -39,7 +39,7 @@ pub fn mutation_test_search<FitnessFn, MutateFn, CrossoverFn, EvolveFn>(
     symbolic_trace: &SymbolicTrace,
     side_constraints: &SymbolicConstraints,
     setting: &VerificationSetting,
-    path_to_mutation_setting: &String,
+    mutation_config: &MutationConfig,
     fitness_fn: FitnessFn,
     evolve_fn: EvolveFn,
     mutate_fn: MutateFn,
@@ -58,7 +58,7 @@ where
         &[Gene],
         &[BigInt],
         &VerificationSetting,
-        &MutationSettings,
+        &MutationConfig,
         &mut StdRng,
         &MutateFn,
         &CrossoverFn,
@@ -66,18 +66,16 @@ where
     MutateFn: Fn(&mut Gene, &VerificationSetting, &mut StdRng),
     CrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
 {
-    let mutation_setting = load_settings_from_json(path_to_mutation_setting).unwrap();
-    info!("\n{}", mutation_setting);
-
-    let seed = if mutation_setting.seed.is_zero() {
+    // Set random seed
+    let seed = if mutation_config.seed.is_zero() {
         let mut seed_rng = rand::thread_rng();
         seed_rng.gen()
     } else {
-        mutation_setting.seed
+        mutation_config.seed
     };
     let mut rng = StdRng::seed_from_u64(seed);
 
-    // Initial Population of Mutated Programs
+    // Gather mutable locations
     let mut assign_pos = Vec::new();
     for (i, sv) in symbolic_trace.iter().enumerate() {
         match *sv.as_ref() {
@@ -88,6 +86,7 @@ where
         }
     }
 
+    // Gather input variables
     let mut variables = extract_variables(symbolic_trace);
     variables.append(&mut extract_variables(side_constraints));
     let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
@@ -118,14 +117,14 @@ where
     // Initial Pupulation of Mutated Inputs
     let mut trace_population = initialize_trace_mutation_only_constant(
         &assign_pos,
-        mutation_setting.program_population_size,
+        mutation_config.program_population_size,
         setting,
         &mut rng,
     );
-    let mut fitness_scores = vec![-setting.prime.clone(); mutation_setting.input_population_size];
+    let mut fitness_scores = vec![-setting.prime.clone(); mutation_config.input_population_size];
     let mut input_population = Vec::new();
-    let mut fitness_score_log = if mutation_setting.save_fitness_scores {
-        Vec::with_capacity(mutation_setting.max_generations)
+    let mut fitness_score_log = if mutation_config.save_fitness_scores {
+        Vec::with_capacity(mutation_config.max_generations)
     } else {
         Vec::new()
     };
@@ -136,34 +135,34 @@ where
         seed.to_string().bold().bright_yellow(),
     );
 
-    for generation in 0..mutation_setting.max_generations {
+    for generation in 0..mutation_config.max_generations {
         // Generate input population for this generation
-        if mutation_setting.input_initialization_method == "coverage" {
+        if mutation_config.input_initialization_method == "coverage" {
             if generation % 4 == 0 {
                 sexe.clear_coverage_tracker();
                 mutate_input_population_with_coverage_maximization(
                     sexe,
                     &input_variables,
                     &mut input_population,
-                    mutation_setting.input_population_size / 2 as usize,
-                    mutation_setting.input_population_size,
-                    mutation_setting.max_generations,
-                    mutation_setting.coverage_based_input_generation_crossover_rate,
-                    mutation_setting.coverage_based_input_generation_mutation_rate,
-                    mutation_setting.coverage_based_input_generation_singlepoint_mutation_rate,
+                    mutation_config.input_population_size / 2 as usize,
+                    mutation_config.input_population_size,
+                    mutation_config.max_generations,
+                    mutation_config.coverage_based_input_generation_crossover_rate,
+                    mutation_config.coverage_based_input_generation_mutation_rate,
+                    mutation_config.coverage_based_input_generation_singlepoint_mutation_rate,
                     &setting,
                     &mut rng,
                 );
             }
-        } else if mutation_setting.input_initialization_method == "random" {
+        } else if mutation_config.input_initialization_method == "random" {
             input_population = initialize_input_population(
                 &input_variables,
-                mutation_setting.input_population_size,
+                mutation_config.input_population_size,
                 &setting,
                 &mut rng,
             );
         } else {
-            panic!("mutation_setting.input_initialization_method should be one of [`coverage`, `random`]");
+            panic!("mutation_config.input_initialization_method should be one of [`coverage`, `random`]");
         }
 
         // Evolve the trace population
@@ -172,7 +171,7 @@ where
                 &trace_population,
                 &fitness_scores,
                 setting,
-                &mutation_setting,
+                &mutation_config,
                 &mut rng,
                 &mutate_fn,
                 &crossover_fn,
@@ -180,6 +179,7 @@ where
         }
         trace_population.push(FxHashMap::default());
 
+        // Evaluate the trace population
         let evaluations: Vec<_> = trace_population
             .iter()
             .map(|a| {
@@ -193,29 +193,31 @@ where
                 )
             })
             .collect();
+
+        // Pick the best one
         let best_idx = evaluations
             .iter()
             .enumerate()
             .max_by_key(|&(_, value)| value.1.clone())
             .map(|(index, _)| index)
             .unwrap();
-        if mutation_setting.fitness_function == "error" {
+        if mutation_config.fitness_function == "error" {
             fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
-        } else if mutation_setting.fitness_function == "constant" {
+        } else if mutation_config.fitness_function == "constant" {
         } else {
-            panic!("mutation_setting.fitness_function should be one of [`error`, `constant`]");
+            panic!("mutation_config.fitness_function should be one of [`error`, `constant`]");
         }
 
         if evaluations[best_idx].1.is_zero() {
             print!(
                 "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
-                generation, mutation_setting.max_generations, 0
+                generation, mutation_config.max_generations, 0
             );
             println!("\n    └─ Solution found in generation {}", generation);
 
             return MutationTestResult {
                 random_seed: seed,
-                mutation_setting: mutation_setting,
+                mutation_config: mutation_config.clone(),
                 counter_example: evaluations[best_idx].2.clone(),
                 generation: generation,
                 fitness_score_log: fitness_score_log,
@@ -224,25 +226,25 @@ where
 
         print!(
             "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
-            generation, mutation_setting.max_generations, fitness_scores[best_idx]
+            generation, mutation_config.max_generations, fitness_scores[best_idx]
         );
         io::stdout().flush().unwrap();
 
-        if mutation_setting.save_fitness_scores {
+        if mutation_config.save_fitness_scores {
             fitness_score_log.push(fitness_scores[best_idx].clone());
         }
     }
 
     println!(
         "\n └─ No solution found after {} generations",
-        mutation_setting.max_generations
+        mutation_config.max_generations
     );
 
     MutationTestResult {
         random_seed: seed,
-        mutation_setting: mutation_setting.clone(),
+        mutation_config: mutation_config.clone(),
         counter_example: None,
-        generation: mutation_setting.max_generations,
+        generation: mutation_config.max_generations,
         fitness_score_log: fitness_score_log,
     }
 }
@@ -472,7 +474,7 @@ pub fn evolve_population<T: Clone, MutateFn, CrossoverFn>(
     prev_population: &[T],
     prev_evaluations: &[BigInt],
     base_setting: &VerificationSetting,
-    mutation_setting: &MutationSettings,
+    mutation_config: &MutationConfig,
     rng: &mut StdRng,
     mutate_fn: &MutateFn,
     crossover_fn: &CrossoverFn,
@@ -481,16 +483,16 @@ where
     MutateFn: Fn(&mut T, &VerificationSetting, &mut StdRng),
     CrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
 {
-    (0..mutation_setting.program_population_size)
+    (0..mutation_config.program_population_size)
         .map(|_| {
             let parent1 = roulette_selection(prev_population, prev_evaluations, rng);
             let parent2 = roulette_selection(prev_population, prev_evaluations, rng);
-            let mut child = if rng.gen::<f64>() < mutation_setting.crossover_rate {
+            let mut child = if rng.gen::<f64>() < mutation_config.crossover_rate {
                 crossover_fn(&parent1, &parent2, rng)
             } else {
                 parent1.clone()
             };
-            if rng.gen::<f64>() < mutation_setting.mutation_rate {
+            if rng.gen::<f64>() < mutation_config.mutation_rate {
                 mutate_fn(&mut child, base_setting, rng);
             }
             child

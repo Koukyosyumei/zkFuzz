@@ -15,7 +15,7 @@ use std::time;
 use colored::Colorize;
 use env_logger;
 use input_user::Input;
-use log::{debug, warn};
+use log::{debug, info, warn};
 use num_bigint_dig::BigInt;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
@@ -30,6 +30,7 @@ use executor::symbolic_setting::{
 };
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 use serde_json::json;
+use solver::mutation_config::load_config_from_json;
 use solver::mutation_test::{evolve_population, trace_mutate};
 use solver::mutation_utils::{evaluate_trace_fitness_by_error, random_crossover};
 use solver::{
@@ -114,7 +115,7 @@ fn start() -> Result<(), ()> {
         FxHashSet::from_iter(["IsZero".to_string(), "Num2Bits".to_string()])
     } else {
         FxHashSet::from_iter(
-            read_file_to_lines(&user_input.path_to_mutation_setting())
+            read_file_to_lines(&&&user_input.path_to_whitelist())
                 .unwrap()
                 .into_iter(),
         )
@@ -313,19 +314,24 @@ fn start() -> Result<(), ()> {
                             &verification_setting,
                         ),
                         "ga" => {
+                            let mutation_config =
+                                load_config_from_json(&&user_input.path_to_mutation_setting())
+                                    .unwrap();
+                            info!("\n{}", mutation_config);
+
                             let result = mutation_test_search(
                                 &mut conc_executor,
                                 &sym_executor.cur_state.symbolic_trace.clone(),
                                 &sym_executor.cur_state.side_constraints.clone(),
                                 &verification_setting,
-                                &user_input.path_to_mutation_setting(),
+                                &mutation_config,
                                 evaluate_trace_fitness_by_error,
                                 evolve_population,
                                 trace_mutate,
                                 random_crossover,
                             );
                             auxiliary_result["mutation_test_setting"] =
-                                serde_json::to_value(result.mutation_setting)
+                                serde_json::to_value(result.mutation_config)
                                     .expect("Failed to serialize to JSON");
                             auxiliary_result["mutation_test_log"] = json!({"random_seed":result.random_seed,"generation":result.generation, "fitness_score_log":result.fitness_score_log});
                             result.counter_example
