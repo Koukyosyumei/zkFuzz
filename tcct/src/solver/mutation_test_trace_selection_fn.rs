@@ -1,11 +1,7 @@
-
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
 use num_traits::{One, Signed, Zero};
 use rand::rngs::StdRng;
-
-
-
 
 pub fn roulette_selection<'a, T: Clone>(
     population: &'a [T],

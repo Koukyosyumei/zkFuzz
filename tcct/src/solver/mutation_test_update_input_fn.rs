@@ -1,10 +1,7 @@
-
-use colored::Colorize;
 use num_bigint_dig::BigInt;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rustc_hash::FxHashMap;
-
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{OwnerName, SymbolicName};
