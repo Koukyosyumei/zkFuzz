@@ -9,6 +9,7 @@ use crate::executor::symbolic_value::{
 use crate::executor::utils::italic;
 
 pub type SymbolBindingMap = FxHashMap<SymbolicName, SymbolicValueRef>;
+pub type SymbolicTrace = Vec<SymbolicValueRef>;
 pub type SymbolicConstraints = Vec<SymbolicValueRef>;
 
 /// Represents the state of symbolic execution, holding symbolic values,
@@ -21,7 +22,7 @@ pub struct SymbolicState {
     pub contains_symbolic_loop: bool,
     pub depth: usize,
     pub symbol_binding_map: SymbolBindingMap,
-    pub symbolic_trace: SymbolicConstraints,
+    pub symbolic_trace: SymbolicTrace,
     pub side_constraints: SymbolicConstraints,
     pub is_failed: bool,
 }
@@ -39,9 +40,9 @@ impl SymbolicState {
             is_within_initialization_block: false,
             contains_symbolic_loop: false,
             depth: 0_usize,
-            symbol_binding_map: FxHashMap::default(),
-            symbolic_trace: Vec::new(),
-            side_constraints: Vec::new(),
+            symbol_binding_map: SymbolBindingMap::default(),
+            symbolic_trace: SymbolicTrace::new(),
+            side_constraints: SymbolicConstraints::new(),
             is_failed: false,
         }
     }

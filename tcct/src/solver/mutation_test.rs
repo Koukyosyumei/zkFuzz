@@ -20,11 +20,10 @@ use program_structure::ast::ExpressionInfixOpcode;
 
 use crate::executor::debug_ast::DebuggableExpressionInfixOpcode;
 use crate::executor::symbolic_execution::SymbolicExecutor;
+use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
 use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
 
-use crate::solver::mutation_utils::{
-    evaluate_trace_fitness_by_error, random_crossover, roulette_selection,
-};
+use crate::solver::mutation_utils::{random_crossover, roulette_selection};
 use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -107,13 +106,36 @@ fn load_settings_from_json(file_path: &str) -> Result<MutationSettings, serde_js
     }
 }
 
-pub fn mutation_test_search(
+/*
+fn evolve_population<T: Clone>(
+    prev_population: &[T],
+    prev_evaluations: &[BigInt],
+    base_setting: &VerificationSetting,
+    mutation_setting: &MutationSettings,
+    rng: &mut StdRng,
+    mutate_fn: impl Fn(&mut T, &VerificationSetting, &mut StdRng),
+    crossover_fn: impl Fn(&T, &T, &mut StdRng) -> T,
+)
+*/
+
+pub fn mutation_test_search<FitnessFn>(
     sexe: &mut SymbolicExecutor,
-    symbolic_trace: &Vec<SymbolicValueRef>,
-    side_constraints: &Vec<SymbolicValueRef>,
+    symbolic_trace: &SymbolicTrace,
+    side_constraints: &SymbolicConstraints,
     setting: &VerificationSetting,
     path_to_mutation_setting: &String,
-) -> MutationTestResult {
+    fitness_fn: FitnessFn,
+) -> MutationTestResult
+where
+    FitnessFn: Fn(
+        &mut SymbolicExecutor,
+        &VerificationSetting,
+        &SymbolicTrace,
+        &SymbolicConstraints,
+        &FxHashMap<usize, SymbolicValue>,
+        &Vec<FxHashMap<SymbolicName, BigInt>>,
+    ) -> (usize, BigInt, Option<CounterExample>),
+{
     let mutation_setting = load_settings_from_json(path_to_mutation_setting).unwrap();
     info!("\n{}", mutation_setting);
 
@@ -219,10 +241,8 @@ pub fn mutation_test_search(
             trace_population = evolve_population(
                 &trace_population,
                 &fitness_scores,
-                mutation_setting.program_population_size,
-                mutation_setting.mutation_rate,
-                mutation_setting.crossover_rate,
                 setting,
+                &mutation_setting,
                 &mut rng,
                 |individual, setting, rng| trace_mutate(individual, setting, rng),
                 |parent1, parent2, rng| random_crossover(parent1, parent2, rng),
@@ -233,7 +253,7 @@ pub fn mutation_test_search(
         let evaluations: Vec<_> = trace_population
             .iter()
             .map(|a| {
-                evaluate_trace_fitness_by_error(
+                fitness_fn(
                     sexe,
                     &setting,
                     symbolic_trace,
@@ -519,27 +539,25 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
 }
 
 fn evolve_population<T: Clone>(
-    current_population: &[T],
-    evaluations: &[BigInt],
-    population_size: usize,
-    mutation_rate: f64,
-    crossover_rate: f64,
-    setting: &VerificationSetting,
+    prev_population: &[T],
+    prev_evaluations: &[BigInt],
+    base_setting: &VerificationSetting,
+    mutation_setting: &MutationSettings,
     rng: &mut StdRng,
     mutate_fn: impl Fn(&mut T, &VerificationSetting, &mut StdRng),
     crossover_fn: impl Fn(&T, &T, &mut StdRng) -> T,
 ) -> Vec<T> {
-    (0..population_size)
+    (0..mutation_setting.program_population_size)
         .map(|_| {
-            let parent1 = roulette_selection(current_population, evaluations, rng);
-            let parent2 = roulette_selection(current_population, evaluations, rng);
-            let mut child = if rng.gen::<f64>() < crossover_rate {
+            let parent1 = roulette_selection(prev_population, prev_evaluations, rng);
+            let parent2 = roulette_selection(prev_population, prev_evaluations, rng);
+            let mut child = if rng.gen::<f64>() < mutation_setting.crossover_rate {
                 crossover_fn(&parent1, &parent2, rng)
             } else {
                 parent1.clone()
             };
-            if rng.gen::<f64>() < mutation_rate {
-                mutate_fn(&mut child, setting, rng);
+            if rng.gen::<f64>() < mutation_setting.mutation_rate {
+                mutate_fn(&mut child, base_setting, rng);
             }
             child
         })

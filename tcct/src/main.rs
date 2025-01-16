@@ -30,6 +30,7 @@ use executor::symbolic_setting::{
 };
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 use serde_json::json;
+use solver::mutation_utils::evaluate_trace_fitness_by_error;
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
     unused_outputs::check_unused_outputs, utils::VerificationSetting,
@@ -317,6 +318,7 @@ fn start() -> Result<(), ()> {
                                 &sym_executor.cur_state.side_constraints.clone(),
                                 &verification_setting,
                                 &user_input.path_to_mutation_setting(),
+                                evaluate_trace_fitness_by_error,
                             );
                             auxiliary_result["mutation_test_setting"] =
                                 serde_json::to_value(result.mutation_setting)
