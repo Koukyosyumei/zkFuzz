@@ -21,7 +21,7 @@ use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
 use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::mutation_config::MutationConfig;
-use crate::solver::mutation_utils::{random_crossover, roulette_selection};
+use crate::solver::mutation_utils::random_crossover;
 use crate::solver::utils::{extract_variables, BaseVerificationConfig, CounterExample};
 
 pub struct MutationTestResult {
