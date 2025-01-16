@@ -87,7 +87,7 @@ where
     ) -> Vec<Gene>,
     MutateFn: Fn(&mut Gene, &BaseVerificationConfig, &mut StdRng),
     CrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
-    SelectionFn: Fn(&[Gene], &[BigInt], &mut StdRng) -> Gene,
+    SelectionFn: for<'a> Fn(&'a [Gene], &[BigInt], &mut StdRng) -> &'a Gene,
 {
     // Set random seed
     let seed = if mutation_config.seed.is_zero() {
@@ -493,7 +493,7 @@ pub fn evolve_population<T: Clone, MutateFn, CrossoverFn, SelectionFn>(
 where
     MutateFn: Fn(&mut T, &BaseVerificationConfig, &mut StdRng),
     CrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
-    SelectionFn: Fn(&[T], &[BigInt], &mut StdRng) -> T,
+    SelectionFn: for<'a> Fn(&'a [T], &[BigInt], &mut StdRng) -> &'a T,
 {
     (0..mutation_config.program_population_size)
         .map(|_| {

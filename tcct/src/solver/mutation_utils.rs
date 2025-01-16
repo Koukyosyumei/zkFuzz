@@ -19,7 +19,7 @@ pub fn roulette_selection<'a, T: Clone>(
     population: &'a [T],
     fitness_scores: &[BigInt],
     rng: &mut StdRng,
-) -> T {
+) -> &'a T {
     let min_score = fitness_scores.iter().min().unwrap();
     let weights: Vec<_> = fitness_scores
         .iter()
@@ -34,11 +34,11 @@ pub fn roulette_selection<'a, T: Clone>(
     let mut target = rng.gen_bigint_range(&BigInt::zero(), &total_weight);
     for (individual, weight) in population.iter().zip(weights.iter()) {
         if &target < weight {
-            return individual.clone();
+            return individual;
         }
         target -= weight;
     }
-    population[0].clone()
+    &population[0]
 }
 
 pub fn random_crossover<K, V>(
