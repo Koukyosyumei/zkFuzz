@@ -1,29 +1,17 @@
-use std::collections::HashSet;
-use std::io;
-use std::io::Write;
-use std::str::FromStr;
 
-use colored::Colorize;
-use log::info;
-use num_bigint_dig::BigInt;
-use num_bigint_dig::RandBigInt;
-use num_traits::{One, Zero};
 use rand::rngs::StdRng;
 use rand::seq::IteratorRandom;
-use rand::{Rng, SeedableRng};
-use rustc_hash::FxHashMap;
+use rand::Rng;
 
 use program_structure::ast::ExpressionInfixOpcode;
 
 use crate::executor::debug_ast::DebuggableExpressionInfixOpcode;
-use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
-use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_value::{SymbolicValue, SymbolicValueRef};
 
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::mutation_test::Gene;
 use crate::solver::mutation_utils::draw_random_constant;
-use crate::solver::utils::{extract_variables, BaseVerificationConfig, CounterExample};
+use crate::solver::utils::BaseVerificationConfig;
 
 pub fn initialize_trace_mutation_only_constant(
     pos: &[usize],

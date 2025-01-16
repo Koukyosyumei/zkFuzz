@@ -1,28 +1,13 @@
-use std::collections::HashSet;
-use std::io;
-use std::io::Write;
-use std::str::FromStr;
 
-use colored::Colorize;
-use log::info;
 use num_bigint_dig::BigInt;
-use num_bigint_dig::RandBigInt;
-use num_traits::{One, Zero};
-use rand::rngs::StdRng;
-use rand::seq::IteratorRandom;
-use rand::{Rng, SeedableRng};
+use num_traits::Zero;
 use rustc_hash::FxHashMap;
 
-use program_structure::ast::ExpressionInfixOpcode;
 
-use crate::executor::debug_ast::DebuggableExpressionInfixOpcode;
 use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
-use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 
-use crate::solver::mutation_config::MutationConfig;
 use crate::solver::mutation_utils::apply_trace_mutation;
-use crate::solver::utils::extract_variables;
 use crate::solver::utils::{
     accumulate_error_of_constraints, emulate_symbolic_values, is_vulnerable, verify_assignment,
     BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,

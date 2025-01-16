@@ -3,18 +3,14 @@ use std::str::FromStr;
 
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
-use num_traits::{One, Signed, Zero};
+use num_traits::One;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
-use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_value::{SymbolicValue, SymbolicValueRef};
 
-use crate::solver::utils::{
-    accumulate_error_of_constraints, emulate_symbolic_values, is_vulnerable, verify_assignment,
-    BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
-};
+use crate::solver::utils::BaseVerificationConfig;
 
 pub fn draw_random_constant(base_config: &BaseVerificationConfig, rng: &mut StdRng) -> BigInt {
     if rng.gen::<bool>() {

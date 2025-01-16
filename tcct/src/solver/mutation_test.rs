@@ -1,24 +1,19 @@
 use std::collections::HashSet;
 use std::io;
 use std::io::Write;
-use std::str::FromStr;
 
 use colored::Colorize;
 use log::info;
 use num_bigint_dig::BigInt;
-use num_bigint_dig::RandBigInt;
-use num_traits::{One, Zero};
+use num_traits::Zero;
 use rand::rngs::StdRng;
-use rand::seq::IteratorRandom;
 use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 
-use program_structure::ast::ExpressionInfixOpcode;
 
-use crate::executor::debug_ast::DebuggableExpressionInfixOpcode;
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
-use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_value::{SymbolicName, SymbolicValue};
 
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::utils::{extract_variables, BaseVerificationConfig, CounterExample};
