@@ -30,7 +30,7 @@ use executor::symbolic_setting::{
 };
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 use serde_json::json;
-use solver::mutation_test::trace_mutate;
+use solver::mutation_test::{evolve_population, trace_mutate};
 use solver::mutation_utils::{evaluate_trace_fitness_by_error, random_crossover};
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
@@ -320,6 +320,7 @@ fn start() -> Result<(), ()> {
                                 &verification_setting,
                                 &user_input.path_to_mutation_setting(),
                                 evaluate_trace_fitness_by_error,
+                                evolve_population,
                                 trace_mutate,
                                 random_crossover,
                             );

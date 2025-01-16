@@ -108,13 +108,14 @@ fn load_settings_from_json(file_path: &str) -> Result<MutationSettings, serde_js
 
 type Gene = FxHashMap<usize, SymbolicValue>;
 
-pub fn mutation_test_search<FitnessFn, MutateFn, CrossoverFn>(
+pub fn mutation_test_search<FitnessFn, MutateFn, CrossoverFn, EvolveFn>(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &SymbolicTrace,
     side_constraints: &SymbolicConstraints,
     setting: &VerificationSetting,
     path_to_mutation_setting: &String,
     fitness_fn: FitnessFn,
+    evolve_fn: EvolveFn,
     mutate_fn: MutateFn,
     crossover_fn: CrossoverFn,
 ) -> MutationTestResult
@@ -127,6 +128,15 @@ where
         &Gene,
         &Vec<FxHashMap<SymbolicName, BigInt>>,
     ) -> (usize, BigInt, Option<CounterExample>),
+    EvolveFn: Fn(
+        &[Gene],
+        &[BigInt],
+        &VerificationSetting,
+        &MutationSettings,
+        &mut StdRng,
+        &MutateFn,
+        &CrossoverFn,
+    ) -> Vec<Gene>,
     MutateFn: Fn(&mut Gene, &VerificationSetting, &mut StdRng),
     CrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
 {
@@ -232,14 +242,14 @@ where
 
         // Evolve the trace population
         if !trace_population.is_empty() {
-            trace_population = evolve_population(
+            trace_population = evolve_fn(
                 &trace_population,
                 &fitness_scores,
                 setting,
                 &mutation_setting,
                 &mut rng,
-                |individual, setting, rng| mutate_fn(individual, setting, rng),
-                |parent1, parent2, rng| crossover_fn(parent1, parent2, rng),
+                &mutate_fn,
+                &crossover_fn,
             );
         }
         trace_population.push(FxHashMap::default());
@@ -532,14 +542,14 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
         .collect()
 }
 
-fn evolve_population<T: Clone, MutateFn, CrossoverFn>(
+pub fn evolve_population<T: Clone, MutateFn, CrossoverFn>(
     prev_population: &[T],
     prev_evaluations: &[BigInt],
     base_setting: &VerificationSetting,
     mutation_setting: &MutationSettings,
     rng: &mut StdRng,
-    mutate_fn: MutateFn,
-    crossover_fn: CrossoverFn,
+    mutate_fn: &MutateFn,
+    crossover_fn: &CrossoverFn,
 ) -> Vec<T>
 where
     MutateFn: Fn(&mut T, &VerificationSetting, &mut StdRng),
