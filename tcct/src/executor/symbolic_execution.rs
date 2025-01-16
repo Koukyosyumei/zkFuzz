@@ -558,7 +558,7 @@ impl<'a> SymbolicExecutor<'a> {
                         let evaled_access = self.evaluate_access(acc, elem_id);
                         match evaled_access {
                             SymbolicAccess::ComponentAccess(tmp_name) => {
-                                component_name = Some(tmp_name.clone());
+                                component_name = Some(tmp_name);
                             }
                             SymbolicAccess::ArrayAccess(_) => {
                                 dims.push(evaled_access);
@@ -1668,7 +1668,7 @@ impl<'a> SymbolicExecutor<'a> {
             if is_lessthan {
                 let cond = generate_lessthan_constraint(
                     &subse.symbolic_library.name2id,
-                    subse.cur_state.owner_name.clone(),
+                    subse.cur_state.owner_name,
                 );
                 self.cur_state.push_symbolic_trace(&cond);
             }
@@ -1748,7 +1748,7 @@ impl<'a> SymbolicExecutor<'a> {
             match evaled_access {
                 SymbolicAccess::ComponentAccess(tmp_name) => {
                     found_component = true;
-                    component_name = Some(tmp_name.clone());
+                    component_name = Some(tmp_name);
                 }
                 SymbolicAccess::ArrayAccess(_) => {
                     if found_component {

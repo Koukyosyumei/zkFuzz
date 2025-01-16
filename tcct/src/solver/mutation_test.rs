@@ -300,12 +300,12 @@ pub fn mutation_test_search(
 fn draw_random_constant(setting: &VerificationSetting, rng: &mut StdRng) -> BigInt {
     if rng.gen::<bool>() {
         rng.gen_bigint_range(
-            &(BigInt::from_str("100").unwrap() * -BigInt::one()),
-            &(BigInt::from_str("100").unwrap()),
+            &(BigInt::from_str("10").unwrap() * -BigInt::one()),
+            &(BigInt::from_str("10").unwrap()),
         )
     } else {
         rng.gen_bigint_range(
-            &(setting.prime.clone() - BigInt::from_str("1000").unwrap()),
+            &(setting.prime.clone() - BigInt::from_str("100").unwrap()),
             &(setting.prime),
         )
     }
