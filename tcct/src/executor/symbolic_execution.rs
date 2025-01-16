@@ -1,5 +1,4 @@
 use std::cmp::max;
-use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 use colored::Colorize;
@@ -7,13 +6,14 @@ use log::trace;
 use num_bigint_dig::BigInt;
 use num_traits::cast::ToPrimitive;
 use num_traits::FromPrimitive;
-use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
+use rustc_hash::FxHashMap;
 
 use program_structure::ast::{
     AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, Meta, SignalType,
     VariableType,
 };
 
+use crate::executor::coverage::CoverageTracker;
 use crate::executor::debug_ast::{
     DebugAccess, DebuggableAssignOp, DebuggableExpression, DebuggableExpressionInfixOpcode,
     DebuggableStatement, DebuggableVariableType,
@@ -38,54 +38,6 @@ impl SymbolicStore {
     pub fn clear(&mut self) {
         self.components_store.clear();
         self.max_depth = 0;
-    }
-}
-
-#[derive(Clone)]
-pub struct CoverageTracker {
-    paths: FxHashSet<u64>,
-    visit_counter: FxHashMap<usize, usize>,
-    current_path: Vec<(usize, usize, bool)>,
-}
-
-impl CoverageTracker {
-    pub fn new() -> Self {
-        CoverageTracker {
-            paths: FxHashSet::default(),
-            visit_counter: FxHashMap::default(),
-            current_path: Vec::new(),
-        }
-    }
-
-    pub fn record_branch(&mut self, meta_elem_id: usize, branch_cond: bool) {
-        *self.visit_counter.entry(meta_elem_id).or_insert(0) += 1;
-        self.current_path
-            .push((meta_elem_id, self.visit_counter[&meta_elem_id], branch_cond));
-    }
-
-    pub fn record_path(&mut self) {
-        let path_hash = self.hash_current_path();
-        self.paths.insert(path_hash);
-    }
-
-    fn hash_current_path(&self) -> u64 {
-        let mut hasher = FxHasher::default();
-        self.current_path.hash(&mut hasher);
-        hasher.finish()
-    }
-
-    pub fn clear(&mut self) {
-        self.clear_current_path();
-        self.paths.clear();
-    }
-
-    pub fn clear_current_path(&mut self) {
-        self.visit_counter.clear();
-        self.current_path.clear();
-    }
-
-    pub fn coverage_count(&self) -> usize {
-        self.paths.len()
     }
 }
 
