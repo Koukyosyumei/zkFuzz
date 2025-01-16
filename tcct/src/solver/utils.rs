@@ -385,13 +385,13 @@ pub fn count_satisfied_constraints(
 
 pub fn emulate_symbolic_trace(
     prime: &BigInt,
-    traces: &[SymbolicValueRef],
+    trace: &[SymbolicValueRef],
     assignment: &mut FxHashMap<SymbolicName, BigInt>,
     symbolic_library: &mut SymbolicLibrary,
 ) -> (bool, usize) {
     let mut success = true;
     let mut failure_pos = 0;
-    for (i, inst) in traces.iter().enumerate() {
+    for (i, inst) in trace.iter().enumerate() {
         match inst.as_ref() {
             SymbolicValue::ConstantBool(b) => {
                 if !b {
