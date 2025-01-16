@@ -162,7 +162,6 @@ where
         }
     }
 
-    // Initial Pupulation of Mutated Inputs
     let mut variables = extract_variables(symbolic_trace);
     variables.append(&mut extract_variables(side_constraints));
     let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
@@ -190,6 +189,7 @@ where
         assign_pos.len().to_string().bright_yellow()
     );
 
+    // Initial Pupulation of Mutated Inputs
     let mut trace_population = initialize_trace_mutation_only_constant(
         &assign_pos,
         mutation_setting.program_population_size,
@@ -213,7 +213,7 @@ where
     for generation in 0..mutation_setting.max_generations {
         // Generate input population for this generation
         if mutation_setting.input_initialization_method == "coverage" {
-            if generation % 4 == 3 {
+            if generation % 4 == 0 {
                 sexe.clear_coverage_tracker();
                 mutate_input_population_with_coverage_maximization(
                     sexe,
