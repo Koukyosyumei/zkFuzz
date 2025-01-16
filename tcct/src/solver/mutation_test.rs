@@ -538,15 +538,19 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
         .collect()
 }
 
-fn evolve_population<T: Clone>(
+fn evolve_population<T: Clone, MutateFn, CrossoverFn>(
     prev_population: &[T],
     prev_evaluations: &[BigInt],
     base_setting: &VerificationSetting,
     mutation_setting: &MutationSettings,
     rng: &mut StdRng,
-    mutate_fn: impl Fn(&mut T, &VerificationSetting, &mut StdRng),
-    crossover_fn: impl Fn(&T, &T, &mut StdRng) -> T,
-) -> Vec<T> {
+    mutate_fn: MutateFn,
+    crossover_fn: CrossoverFn,
+) -> Vec<T>
+where
+    MutateFn: Fn(&mut T, &VerificationSetting, &mut StdRng),
+    CrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
+{
     (0..mutation_setting.program_population_size)
         .map(|_| {
             let parent1 = roulette_selection(prev_population, prev_evaluations, rng);
