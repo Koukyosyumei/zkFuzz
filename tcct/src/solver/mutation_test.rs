@@ -10,7 +10,6 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 
-
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue};
@@ -28,6 +27,66 @@ pub struct MutationTestResult {
 
 pub type Gene = FxHashMap<usize, SymbolicValue>;
 
+/// Conducts a mutation-based search to find counterexamples for symbolic trace verification.
+///
+/// This function applies a genetic algorithm-like approach to search for counterexamples that
+/// violate the provided symbolic constraints. It initializes a population of symbolic traces,
+/// evolves them through mutation and crossover, evaluates their fitness, and selects the best
+/// candidates iteratively until a counterexample is found or a maximum number of generations is reached.
+///
+/// # Parameters
+/// - `sexe`: A mutable reference to the symbolic executor that executes symbolic traces.
+/// - `symbolic_trace`: The symbolic trace to be verified.
+/// - `side_constraints`: Additional symbolic constraints that must be satisfied.
+/// - `base_config`: The base configuration containing general verification settings.
+/// - `mutation_config`: The mutation-specific configuration, including parameters such as
+///   population size, mutation rate, and maximum number of generations.
+/// - `trace_initialization_fn`: A function that initializes the population of symbolic traces.
+/// - `update_input_fn`: A function that updates the input population at regular intervals.
+/// - `trace_fitness_fn`: A function that evaluates the fitness of a given trace and determines if it violates constraints.
+/// - `trace_evolution_fn`: A function that handles the evolution of the trace population by applying
+///   mutation, crossover, and selection.
+/// - `trace_mutation_fn`: A function that applies mutation to a trace.
+/// - `trace_crossover_fn`: A function that combines two parent traces to produce an offspring trace.
+/// - `trace_selection_fn`: A function that selects traces from the population based on their fitness scores.
+///
+/// # Returns
+/// A `MutationTestResult` containing:
+/// - `random_seed`: The seed used for the random number generator.
+/// - `mutation_config`: A copy of the mutation configuration.
+/// - `counter_example`: An optional counterexample found during the search.
+/// - `generation`: The generation in which the counterexample was found, or the maximum number of generations if no solution was found.
+/// - `fitness_score_log`: A log of the best fitness scores across generations.
+///
+/// # Type Parameters
+/// - `TraceInitializationFn`: A closure or function that initializes the population of traces.
+/// - `UpdateInputFn`: A closure or function that updates the input population.
+/// - `TraceFitnessFn`: A closure or function that evaluates the fitness of a symbolic trace.
+/// - `TraceEvolutionFn`: A closure or function that handles trace population evolution.
+/// - `TraceMutationFn`: A closure or function that mutates a trace.
+/// - `TraceCrossoverFn`: A closure or function that performs crossover between two traces.
+/// - `TraceSelectionFn`: A closure or function that selects traces from the population.
+///
+/// # Algorithm
+/// 1. **Initialization**:
+///    - Set the random seed.
+///    - Identify mutable locations in the symbolic trace.
+///    - Extract input variables and constraints.
+///    - Initialize the population of symbolic traces.
+///
+/// 2. **Iterative Search**:
+///    - Update the input population at regular intervals.
+///    - Evolve the trace population using mutation, crossover, and selection.
+///    - Evaluate the fitness of the population.
+///    - If a counterexample is found, return it immediately.
+///
+/// 3. **Termination**:
+///    - Stop after reaching the maximum number of generations.
+///    - If no solution is found, return a result indicating failure.
+///
+/// # Notes
+/// - This function assumes that all closures and functions provided as parameters are consistent with the structure of the symbolic execution process.
+/// - The fitness function must be designed such that a fitness score of zero indicates a counterexample.
 pub fn mutation_test_search<
     TraceInitializationFn,
     UpdateInputFn,
