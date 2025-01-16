@@ -33,6 +33,7 @@ use serde_json::json;
 use solver::mutation_config::load_config_from_json;
 use solver::mutation_test::{
     evolve_population, initialize_trace_mutation_only_constant, trace_mutate,
+    update_input_population_with_random_sampling,
 };
 use solver::mutation_utils::{evaluate_trace_fitness_by_error, random_crossover};
 use solver::{
@@ -330,6 +331,7 @@ fn start() -> Result<(), ()> {
                                 &verification_base_config,
                                 &mutation_config,
                                 initialize_trace_mutation_only_constant,
+                                update_input_population_with_random_sampling,
                                 evaluate_trace_fitness_by_error,
                                 evolve_population,
                                 trace_mutate,
