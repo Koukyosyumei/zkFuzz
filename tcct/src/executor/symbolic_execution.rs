@@ -1361,12 +1361,11 @@ impl<'a> SymbolicExecutor<'a> {
         dimensions_of_inputs: &mut FxHashMap<usize, Vec<usize>>,
         elem_id: usize,
     ) {
-        for (id, _) in template.id2dimension_expressions.iter() {
-            let dims = self.evaluate_dimension(&template.id2dimension_expressions[id], elem_id);
+        for (id, dims) in &self.id2dimensions {
             if template.input_ids.contains(id) {
                 register_array_elements(*id, &dims, None, inputs_of_component);
             }
-            dimensions_of_inputs.insert(*id, dims);
+            dimensions_of_inputs.insert(*id, dims.to_vec());
         }
     }
 
