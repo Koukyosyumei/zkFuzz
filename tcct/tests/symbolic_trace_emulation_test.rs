@@ -54,13 +54,21 @@ fn test_emulate_if_else() {
         None,
     );
 
-    let mut assignment = FxHashMap::from_iter([(main_in, BigInt::zero())]);
+    let mut assignment = FxHashMap::from_iter([(main_in.clone(), BigInt::zero())]);
     let _ = emulate_symbolic_trace(
         &prime,
         &sexe.cur_state.symbolic_trace,
         &mut assignment,
         &mut sexe.symbolic_library,
     );
-
     assert_eq!(assignment[&main_out], BigInt::one());
+
+    assignment.insert(main_in, BigInt::one());
+    let _ = emulate_symbolic_trace(
+        &prime,
+        &sexe.cur_state.symbolic_trace,
+        &mut assignment,
+        &mut sexe.symbolic_library,
+    );
+    assert_eq!(assignment[&main_out], BigInt::zero());
 }
