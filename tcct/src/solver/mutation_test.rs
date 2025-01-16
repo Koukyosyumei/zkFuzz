@@ -35,29 +35,29 @@ pub struct MutationTestResult {
 type Gene = FxHashMap<usize, SymbolicValue>;
 
 pub fn mutation_test_search<
-    InitializeTraceFn,
+    TraceInitializationFn,
     UpdateInputFn,
     FitnessFn,
-    EvolveFn,
-    MutateFn,
-    CrossoverFn,
-    SelectionFn,
+    TraceEvolutionFn,
+    TraceMutationFn,
+    TraceCrossoverFn,
+    TraceSelectionFn,
 >(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &SymbolicTrace,
     side_constraints: &SymbolicConstraints,
     base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
-    trace_initialization_fn: InitializeTraceFn,
-    input_update_fn: UpdateInputFn,
+    trace_initialization_fn: TraceInitializationFn,
+    update_input_fn: UpdateInputFn,
     fitness_fn: FitnessFn,
-    evolve_fn: EvolveFn,
-    mutate_fn: MutateFn,
-    crossover_fn: CrossoverFn,
-    selection_fn: SelectionFn,
+    trace_evolution_fn: TraceEvolutionFn,
+    trace_mutation_fn: TraceMutationFn,
+    trace_crossover_fn: TraceCrossoverFn,
+    trace_selection_fn: TraceSelectionFn,
 ) -> MutationTestResult
 where
-    InitializeTraceFn:
+    TraceInitializationFn:
         Fn(&[usize], &BaseVerificationConfig, &MutationConfig, &mut StdRng) -> Vec<Gene>,
     UpdateInputFn: Fn(
         &mut SymbolicExecutor,
@@ -75,19 +75,19 @@ where
         &Gene,
         &Vec<FxHashMap<SymbolicName, BigInt>>,
     ) -> (usize, BigInt, Option<CounterExample>),
-    EvolveFn: Fn(
+    TraceEvolutionFn: Fn(
         &[Gene],
         &[BigInt],
         &BaseVerificationConfig,
         &MutationConfig,
         &mut StdRng,
-        &MutateFn,
-        &CrossoverFn,
-        &SelectionFn,
+        &TraceMutationFn,
+        &TraceCrossoverFn,
+        &TraceSelectionFn,
     ) -> Vec<Gene>,
-    MutateFn: Fn(&mut Gene, &BaseVerificationConfig, &mut StdRng),
-    CrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
-    SelectionFn: for<'a> Fn(&'a [Gene], &[BigInt], &mut StdRng) -> &'a Gene,
+    TraceMutationFn: Fn(&mut Gene, &BaseVerificationConfig, &mut StdRng),
+    TraceCrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
+    TraceSelectionFn: for<'a> Fn(&'a [Gene], &[BigInt], &mut StdRng) -> &'a Gene,
 {
     // Set random seed
     let seed = if mutation_config.seed.is_zero() {
@@ -158,7 +158,7 @@ where
     for generation in 0..mutation_config.max_generations {
         // Generate input population for this generation
         if generation % mutation_config.input_update_interval == 0 {
-            input_update_fn(
+            update_input_fn(
                 sexe,
                 &input_variables,
                 &mut input_population,
@@ -170,15 +170,15 @@ where
 
         // Evolve the trace population
         if !trace_population.is_empty() {
-            trace_population = evolve_fn(
+            trace_population = trace_evolution_fn(
                 &trace_population,
                 &fitness_scores,
                 base_config,
                 &mutation_config,
                 &mut rng,
-                &mutate_fn,
-                &crossover_fn,
-                &selection_fn,
+                &trace_mutation_fn,
+                &trace_crossover_fn,
+                &trace_selection_fn,
             );
         }
         trace_population.push(FxHashMap::default());
@@ -480,32 +480,32 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
         .collect()
 }
 
-pub fn evolve_population<T: Clone, MutateFn, CrossoverFn, SelectionFn>(
+pub fn evolve_population<T: Clone, TraceMutationFn, TraceCrossoverFn, TraceSelectionFn>(
     prev_population: &[T],
     prev_evaluations: &[BigInt],
     base_base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
-    mutate_fn: &MutateFn,
-    crossover_fn: &CrossoverFn,
-    selection_fn: &SelectionFn,
+    trace_mutation_fn: &TraceMutationFn,
+    trace_crossover_fn: &TraceCrossoverFn,
+    trace_selection_fn: &TraceSelectionFn,
 ) -> Vec<T>
 where
-    MutateFn: Fn(&mut T, &BaseVerificationConfig, &mut StdRng),
-    CrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
-    SelectionFn: for<'a> Fn(&'a [T], &[BigInt], &mut StdRng) -> &'a T,
+    TraceMutationFn: Fn(&mut T, &BaseVerificationConfig, &mut StdRng),
+    TraceCrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
+    TraceSelectionFn: for<'a> Fn(&'a [T], &[BigInt], &mut StdRng) -> &'a T,
 {
     (0..mutation_config.program_population_size)
         .map(|_| {
-            let parent1 = selection_fn(prev_population, prev_evaluations, rng);
-            let parent2 = selection_fn(prev_population, prev_evaluations, rng);
+            let parent1 = trace_selection_fn(prev_population, prev_evaluations, rng);
+            let parent2 = trace_selection_fn(prev_population, prev_evaluations, rng);
             let mut child = if rng.gen::<f64>() < mutation_config.crossover_rate {
-                crossover_fn(&parent1, &parent2, rng)
+                trace_crossover_fn(&parent1, &parent2, rng)
             } else {
                 parent1.clone()
             };
             if rng.gen::<f64>() < mutation_config.mutation_rate {
-                mutate_fn(&mut child, base_base_config, rng);
+                trace_mutation_fn(&mut child, base_base_config, rng);
             }
             child
         })
