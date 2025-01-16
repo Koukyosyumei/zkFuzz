@@ -36,7 +36,7 @@ use solver::mutation_test_crossover_fn::random_crossover;
 use solver::mutation_test_evolution_fn::simple_evolution;
 use solver::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
 use solver::mutation_test_trace_initialization_fn::initialize_population_with_random_constant_replacement;
-use solver::mutation_test_trace_mutation_fn::trace_mutate;
+use solver::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
 use solver::mutation_test_trace_selection_fn::roulette_selection;
 use solver::mutation_test_update_input_fn::update_input_population_with_random_sampling;
 use solver::{
@@ -338,7 +338,7 @@ fn start() -> Result<(), ()> {
                                 update_input_population_with_random_sampling,
                                 evaluate_trace_fitness_by_error,
                                 simple_evolution,
-                                trace_mutate,
+                                mutate_trace_with_random_constant_replacement,
                                 random_crossover,
                                 roulette_selection,
                             );
