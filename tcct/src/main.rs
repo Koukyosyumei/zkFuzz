@@ -33,9 +33,9 @@ use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 
 use solver::mutation_config::load_config_from_json;
 use solver::mutation_test_crossover_fn::random_crossover;
-use solver::mutation_test_evolution_fn::evolve_population;
+use solver::mutation_test_evolution_fn::simple_evolution;
 use solver::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
-use solver::mutation_test_trace_initialization_fn::initialize_trace_population_only_constant;
+use solver::mutation_test_trace_initialization_fn::initialize_population_with_random_constant_replacement;
 use solver::mutation_test_trace_mutation_fn::trace_mutate;
 use solver::mutation_test_trace_selection_fn::roulette_selection;
 use solver::mutation_test_update_input_fn::update_input_population_with_random_sampling;
@@ -334,10 +334,10 @@ fn start() -> Result<(), ()> {
                                 &sym_executor.cur_state.side_constraints.clone(),
                                 &verification_base_config,
                                 &mutation_config,
-                                initialize_trace_population_only_constant,
+                                initialize_population_with_random_constant_replacement,
                                 update_input_population_with_random_sampling,
                                 evaluate_trace_fitness_by_error,
-                                evolve_population,
+                                simple_evolution,
                                 trace_mutate,
                                 random_crossover,
                                 roulette_selection,
