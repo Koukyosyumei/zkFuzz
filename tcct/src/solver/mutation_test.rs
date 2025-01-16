@@ -106,25 +106,17 @@ fn load_settings_from_json(file_path: &str) -> Result<MutationSettings, serde_js
     }
 }
 
-/*
-fn evolve_population<T: Clone>(
-    prev_population: &[T],
-    prev_evaluations: &[BigInt],
-    base_setting: &VerificationSetting,
-    mutation_setting: &MutationSettings,
-    rng: &mut StdRng,
-    mutate_fn: impl Fn(&mut T, &VerificationSetting, &mut StdRng),
-    crossover_fn: impl Fn(&T, &T, &mut StdRng) -> T,
-)
-*/
+type Gene = FxHashMap<usize, SymbolicValue>;
 
-pub fn mutation_test_search<FitnessFn>(
+pub fn mutation_test_search<FitnessFn, MutateFn, CrossoverFn>(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &SymbolicTrace,
     side_constraints: &SymbolicConstraints,
     setting: &VerificationSetting,
     path_to_mutation_setting: &String,
     fitness_fn: FitnessFn,
+    mutate_fn: MutateFn,
+    crossover_fn: CrossoverFn,
 ) -> MutationTestResult
 where
     FitnessFn: Fn(
@@ -132,9 +124,11 @@ where
         &VerificationSetting,
         &SymbolicTrace,
         &SymbolicConstraints,
-        &FxHashMap<usize, SymbolicValue>,
+        &Gene,
         &Vec<FxHashMap<SymbolicName, BigInt>>,
     ) -> (usize, BigInt, Option<CounterExample>),
+    MutateFn: Fn(&mut Gene, &VerificationSetting, &mut StdRng),
+    CrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
 {
     let mutation_setting = load_settings_from_json(path_to_mutation_setting).unwrap();
     info!("\n{}", mutation_setting);
@@ -244,8 +238,8 @@ where
                 setting,
                 &mutation_setting,
                 &mut rng,
-                |individual, setting, rng| trace_mutate(individual, setting, rng),
-                |parent1, parent2, rng| random_crossover(parent1, parent2, rng),
+                |individual, setting, rng| mutate_fn(individual, setting, rng),
+                |parent1, parent2, rng| crossover_fn(parent1, parent2, rng),
             );
         }
         trace_population.push(FxHashMap::default());
@@ -446,7 +440,7 @@ fn initialize_trace_mutation_only_constant(
     size: usize,
     setting: &VerificationSetting,
     rng: &mut StdRng,
-) -> Vec<FxHashMap<usize, SymbolicValue>> {
+) -> Vec<Gene> {
     (0..size)
         .map(|_| {
             pos.iter()
@@ -493,7 +487,7 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
     operator_mutation_rate: f64,
     setting: &VerificationSetting,
     rng: &mut StdRng,
-) -> Vec<FxHashMap<usize, SymbolicValue>> {
+) -> Vec<Gene> {
     (0..size)
         .map(|_| {
             pos.iter()
@@ -568,11 +562,7 @@ where
         .collect()
 }
 
-fn trace_mutate(
-    individual: &mut FxHashMap<usize, SymbolicValue>,
-    setting: &VerificationSetting,
-    rng: &mut StdRng,
-) {
+pub fn trace_mutate(individual: &mut Gene, setting: &VerificationSetting, rng: &mut StdRng) {
     if !individual.is_empty() {
         let var = individual.keys().choose(rng).unwrap();
         /*
