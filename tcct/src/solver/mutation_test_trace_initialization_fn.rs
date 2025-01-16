@@ -12,7 +12,7 @@ use crate::solver::mutation_test::Gene;
 use crate::solver::mutation_utils::draw_random_constant;
 use crate::solver::utils::BaseVerificationConfig;
 
-pub fn initialize_trace_mutation_only_constant(
+pub fn initialize_trace_population_only_constant(
     pos: &[usize],
     base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
@@ -57,7 +57,7 @@ lazy_static::lazy_static! {
     };
 }
 
-fn initialize_trace_mutation_operator_mutation_and_constant(
+fn initialize_trace_population_operator_mutation_and_constant(
     pos: &[usize],
     size: usize,
     symbolic_trace: &[SymbolicValueRef],
