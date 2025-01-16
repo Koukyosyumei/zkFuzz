@@ -21,7 +21,6 @@ use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
 use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
 
 use crate::solver::mutation_config::MutationConfig;
-use crate::solver::mutation_utils::random_crossover;
 use crate::solver::utils::{extract_variables, BaseVerificationConfig, CounterExample};
 
 pub struct MutationTestResult {
@@ -32,12 +31,12 @@ pub struct MutationTestResult {
     pub fitness_score_log: Vec<BigInt>,
 }
 
-type Gene = FxHashMap<usize, SymbolicValue>;
+pub type Gene = FxHashMap<usize, SymbolicValue>;
 
 pub fn mutation_test_search<
     TraceInitializationFn,
     UpdateInputFn,
-    FitnessFn,
+    TraceFitnessFn,
     TraceEvolutionFn,
     TraceMutationFn,
     TraceCrossoverFn,
@@ -50,7 +49,7 @@ pub fn mutation_test_search<
     mutation_config: &MutationConfig,
     trace_initialization_fn: TraceInitializationFn,
     update_input_fn: UpdateInputFn,
-    fitness_fn: FitnessFn,
+    trace_fitness_fn: TraceFitnessFn,
     trace_evolution_fn: TraceEvolutionFn,
     trace_mutation_fn: TraceMutationFn,
     trace_crossover_fn: TraceCrossoverFn,
@@ -67,7 +66,7 @@ where
         &MutationConfig,
         &mut StdRng,
     ),
-    FitnessFn: Fn(
+    TraceFitnessFn: Fn(
         &mut SymbolicExecutor,
         &BaseVerificationConfig,
         &SymbolicTrace,
@@ -187,7 +186,7 @@ where
         let evaluations: Vec<_> = trace_population
             .iter()
             .map(|a| {
-                fitness_fn(
+                trace_fitness_fn(
                     sexe,
                     &base_config,
                     symbolic_trace,
@@ -249,275 +248,5 @@ where
         counter_example: None,
         generation: mutation_config.max_generations,
         fitness_score_log: fitness_score_log,
-    }
-}
-
-fn draw_random_constant(base_config: &BaseVerificationConfig, rng: &mut StdRng) -> BigInt {
-    if rng.gen::<bool>() {
-        rng.gen_bigint_range(
-            &(BigInt::from_str("10").unwrap() * -BigInt::one()),
-            &(BigInt::from_str("10").unwrap()),
-        )
-    } else {
-        rng.gen_bigint_range(
-            &(base_config.prime.clone() - BigInt::from_str("100").unwrap()),
-            &(base_config.prime),
-        )
-    }
-}
-
-pub fn update_input_population_with_random_sampling(
-    _sexe: &mut SymbolicExecutor,
-    input_variables: &[SymbolicName],
-    inputs_population: &mut Vec<FxHashMap<SymbolicName, BigInt>>,
-    base_config: &BaseVerificationConfig,
-    mutation_config: &MutationConfig,
-    rng: &mut StdRng,
-) {
-    let mut new_inputs_population: Vec<_> = (0..mutation_config.input_population_size)
-        .map(|_| {
-            input_variables
-                .iter()
-                .map(|var| (var.clone(), draw_random_constant(base_config, rng)))
-                .collect::<FxHashMap<SymbolicName, BigInt>>()
-        })
-        .collect();
-    inputs_population.clear();
-    inputs_population.append(&mut new_inputs_population);
-}
-
-pub fn evaluate_coverage(
-    sexe: &mut SymbolicExecutor,
-    inputs: &FxHashMap<SymbolicName, BigInt>,
-    base_config: &BaseVerificationConfig,
-) -> usize {
-    sexe.clear();
-    sexe.turn_on_coverage_tracking();
-    sexe.cur_state.add_owner(&OwnerName {
-        id: sexe.symbolic_library.name2id["main"],
-        counter: 0,
-        access: None,
-    });
-    sexe.feed_arguments(
-        &base_config.template_param_names,
-        &base_config.template_param_values,
-    );
-    sexe.concrete_execute(&base_config.target_template_name, inputs);
-    sexe.record_path();
-    sexe.turn_off_coverage_tracking();
-    sexe.coverage_count()
-}
-
-pub fn update_input_population_with_coverage_maximization(
-    sexe: &mut SymbolicExecutor,
-    input_variables: &[SymbolicName],
-    inputs_population: &mut Vec<FxHashMap<SymbolicName, BigInt>>,
-    base_config: &BaseVerificationConfig,
-    mutation_config: &MutationConfig,
-    rng: &mut StdRng,
-) {
-    sexe.clear_coverage_tracker();
-    let mut total_coverage = 0_usize;
-    inputs_population.clear();
-
-    let mut initial_input_population = Vec::new();
-    update_input_population_with_random_sampling(
-        sexe,
-        input_variables,
-        &mut initial_input_population,
-        &base_config,
-        &mutation_config,
-        rng,
-    );
-
-    for input in &initial_input_population {
-        let new_coverage = evaluate_coverage(sexe, &input, base_config);
-        if new_coverage > total_coverage {
-            inputs_population.push(input.clone());
-            total_coverage = new_coverage;
-        }
-    }
-
-    for _ in 0..mutation_config.input_generation_max_iteration {
-        let mut new_inputs_population = Vec::new();
-
-        // Iterate through the population and attempt mutations
-        for input in inputs_population.iter() {
-            let mut new_input = input.clone();
-
-            if rng.gen::<f64>() < mutation_config.input_generation_crossover_rate {
-                // Crossover
-                let other = inputs_population[rng.gen_range(0, inputs_population.len())].clone();
-                new_input = random_crossover(input, &other, rng);
-            }
-            if rng.gen::<f64>() < mutation_config.input_generation_mutation_rate {
-                if rng.gen::<f64>() < mutation_config.input_generation_singlepoint_mutation_rate {
-                    // Mutate only one input variable
-                    let var = &input_variables[rng.gen_range(0, input_variables.len())];
-                    let mutation = draw_random_constant(base_config, rng);
-                    new_input.insert(var.clone(), mutation);
-                } else {
-                    // Mutate each input variable with a small probability
-                    for var in input_variables {
-                        // rng.gen_bool(0.2)
-                        if rng.gen::<bool>() {
-                            let mutation = draw_random_constant(base_config, rng);
-                            new_input.insert(var.clone(), mutation);
-                        }
-                    }
-                }
-            }
-
-            // Evaluate the new input
-            let new_coverage = evaluate_coverage(sexe, &new_input, base_config);
-            if new_coverage > total_coverage {
-                new_inputs_population.push(new_input);
-                total_coverage = new_coverage;
-            }
-        }
-        inputs_population.append(&mut new_inputs_population);
-
-        if inputs_population.len() > mutation_config.input_population_size {
-            break;
-        }
-    }
-}
-
-pub fn initialize_trace_mutation_only_constant(
-    pos: &[usize],
-    base_config: &BaseVerificationConfig,
-    mutation_config: &MutationConfig,
-    rng: &mut StdRng,
-) -> Vec<Gene> {
-    (0..mutation_config.program_population_size)
-        .map(|_| {
-            pos.iter()
-                .map(|p| {
-                    (
-                        p.clone(),
-                        SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
-                    )
-                })
-                .collect()
-        })
-        .collect()
-}
-
-lazy_static::lazy_static! {
-    static ref OPERATOR_MUTATION_CANDIDATES: Vec<(ExpressionInfixOpcode,Vec<ExpressionInfixOpcode>)> = {
-        vec![
-            (ExpressionInfixOpcode::Add, vec![ExpressionInfixOpcode::Sub, ExpressionInfixOpcode::Mul]),
-            (ExpressionInfixOpcode::Sub, vec![ExpressionInfixOpcode::Add, ExpressionInfixOpcode::Mul]),
-            (ExpressionInfixOpcode::Mul, vec![ExpressionInfixOpcode::Add, ExpressionInfixOpcode::Sub, ExpressionInfixOpcode::Pow]),
-            (ExpressionInfixOpcode::Pow, vec![ExpressionInfixOpcode::Mul]),
-            (ExpressionInfixOpcode::Div, vec![ExpressionInfixOpcode::IntDiv, ExpressionInfixOpcode::Mul]),
-            (ExpressionInfixOpcode::IntDiv, vec![ExpressionInfixOpcode::Div, ExpressionInfixOpcode::Mul]),
-            (ExpressionInfixOpcode::Mod, vec![ExpressionInfixOpcode::Div, ExpressionInfixOpcode::IntDiv]),
-            (ExpressionInfixOpcode::BitOr, vec![ExpressionInfixOpcode::BitAnd, ExpressionInfixOpcode::BitXor]),
-            (ExpressionInfixOpcode::BitAnd, vec![ExpressionInfixOpcode::BitOr, ExpressionInfixOpcode::BitXor]),
-            (ExpressionInfixOpcode::BitXor, vec![ExpressionInfixOpcode::BitOr, ExpressionInfixOpcode::BitAnd]),
-            (ExpressionInfixOpcode::ShiftL, vec![ExpressionInfixOpcode::ShiftR]),
-            (ExpressionInfixOpcode::ShiftR, vec![ExpressionInfixOpcode::ShiftL]),
-            (ExpressionInfixOpcode::Lesser, vec![ExpressionInfixOpcode::Greater, ExpressionInfixOpcode::LesserEq]),
-            (ExpressionInfixOpcode::Greater, vec![ExpressionInfixOpcode::Lesser, ExpressionInfixOpcode::GreaterEq]),
-            (ExpressionInfixOpcode::LesserEq, vec![ExpressionInfixOpcode::GreaterEq, ExpressionInfixOpcode::Lesser]),
-            (ExpressionInfixOpcode::GreaterEq, vec![ExpressionInfixOpcode::LesserEq, ExpressionInfixOpcode::Greater]),
-            (ExpressionInfixOpcode::Eq, vec![ExpressionInfixOpcode::NotEq]),
-            (ExpressionInfixOpcode::NotEq, vec![ExpressionInfixOpcode::Eq]),
-        ]
-    };
-}
-
-fn initialize_trace_mutation_operator_mutation_and_constant(
-    pos: &[usize],
-    size: usize,
-    symbolic_trace: &[SymbolicValueRef],
-    operator_mutation_rate: f64,
-    base_config: &BaseVerificationConfig,
-    rng: &mut StdRng,
-) -> Vec<Gene> {
-    (0..size)
-        .map(|_| {
-            pos.iter()
-                .map(|p| match &*symbolic_trace[*p] {
-                    SymbolicValue::BinaryOp(left, op, right) => {
-                        if rng.gen::<f64>() < operator_mutation_rate {
-                            let mutated_op = if let Some(related_ops) = OPERATOR_MUTATION_CANDIDATES
-                                .iter()
-                                .find(|&&(key, _)| key == op.0)
-                                .map(|&(_, ref ops)| ops)
-                            {
-                                *related_ops
-                                    .iter()
-                                    .choose(rng)
-                                    .expect("Related operator group cannot be empty")
-                            } else {
-                                panic!("No group defined for the given opcode: {:?}", op);
-                            };
-
-                            (
-                                p.clone(),
-                                SymbolicValue::BinaryOp(
-                                    left.clone(),
-                                    DebuggableExpressionInfixOpcode(mutated_op),
-                                    right.clone(),
-                                ),
-                            )
-                        } else {
-                            (
-                                p.clone(),
-                                SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
-                            )
-                        }
-                    }
-                    _ => (
-                        p.clone(),
-                        SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
-                    ),
-                })
-                .collect()
-        })
-        .collect()
-}
-
-pub fn evolve_population<T: Clone, TraceMutationFn, TraceCrossoverFn, TraceSelectionFn>(
-    prev_population: &[T],
-    prev_evaluations: &[BigInt],
-    base_base_config: &BaseVerificationConfig,
-    mutation_config: &MutationConfig,
-    rng: &mut StdRng,
-    trace_mutation_fn: &TraceMutationFn,
-    trace_crossover_fn: &TraceCrossoverFn,
-    trace_selection_fn: &TraceSelectionFn,
-) -> Vec<T>
-where
-    TraceMutationFn: Fn(&mut T, &BaseVerificationConfig, &mut StdRng),
-    TraceCrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
-    TraceSelectionFn: for<'a> Fn(&'a [T], &[BigInt], &mut StdRng) -> &'a T,
-{
-    (0..mutation_config.program_population_size)
-        .map(|_| {
-            let parent1 = trace_selection_fn(prev_population, prev_evaluations, rng);
-            let parent2 = trace_selection_fn(prev_population, prev_evaluations, rng);
-            let mut child = if rng.gen::<f64>() < mutation_config.crossover_rate {
-                trace_crossover_fn(&parent1, &parent2, rng)
-            } else {
-                parent1.clone()
-            };
-            if rng.gen::<f64>() < mutation_config.mutation_rate {
-                trace_mutation_fn(&mut child, base_base_config, rng);
-            }
-            child
-        })
-        .collect()
-}
-
-pub fn trace_mutate(individual: &mut Gene, base_config: &BaseVerificationConfig, rng: &mut StdRng) {
-    if !individual.is_empty() {
-        let var = individual.keys().choose(rng).unwrap();
-        individual.insert(
-            var.clone(),
-            SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
-        );
     }
 }

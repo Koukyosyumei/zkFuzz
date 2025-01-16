@@ -7,7 +7,7 @@ use colored::Colorize;
 use log::info;
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
-use num_traits::{One, Signed, Zero};
+use num_traits::{One, Zero};
 use rand::rngs::StdRng;
 use rand::seq::IteratorRandom;
 use rand::{Rng, SeedableRng};
@@ -23,28 +23,27 @@ use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, Sy
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::utils::{extract_variables, BaseVerificationConfig, CounterExample};
 
-pub fn roulette_selection<'a, T: Clone>(
-    population: &'a [T],
-    fitness_scores: &[BigInt],
+pub fn random_crossover<K, V>(
+    parent1: &FxHashMap<K, V>,
+    parent2: &FxHashMap<K, V>,
     rng: &mut StdRng,
-) -> &'a T {
-    let min_score = fitness_scores.iter().min().unwrap();
-    let weights: Vec<_> = fitness_scores
+) -> FxHashMap<K, V>
+where
+    K: Clone + std::hash::Hash + std::cmp::Eq,
+    V: Clone,
+{
+    parent1
         .iter()
-        .map(|score| score - min_score)
-        .collect();
-    let mut total_weight: BigInt = weights.iter().sum();
-    total_weight = if total_weight.is_positive() {
-        total_weight
-    } else {
-        BigInt::one()
-    };
-    let mut target = rng.gen_bigint_range(&BigInt::zero(), &total_weight);
-    for (individual, weight) in population.iter().zip(weights.iter()) {
-        if &target < weight {
-            return individual;
-        }
-        target -= weight;
-    }
-    &population[0]
+        .map(|(var, val)| {
+            if rng.gen::<bool>() {
+                (var.clone(), val.clone())
+            } else {
+                if parent2.contains_key(var) {
+                    (var.clone(), parent2[var].clone())
+                } else {
+                    (var.clone(), val.clone())
+                }
+            }
+        })
+        .collect()
 }

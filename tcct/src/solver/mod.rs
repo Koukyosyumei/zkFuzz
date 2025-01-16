@@ -1,6 +1,13 @@
 pub mod brute_force;
 pub mod mutation_config;
 pub mod mutation_test;
+pub mod mutation_test_crossover_fn;
+pub mod mutation_test_evolution_fn;
+pub mod mutation_test_trace_fitness_fn;
+pub mod mutation_test_trace_initialization_fn;
+pub mod mutation_test_trace_mutation_fn;
+pub mod mutation_test_trace_selection_fn;
+pub mod mutation_test_update_input_fn;
 pub mod mutation_utils;
 pub mod unused_outputs;
 pub mod utils;

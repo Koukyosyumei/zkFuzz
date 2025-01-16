@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::str::FromStr;
 
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
@@ -15,55 +16,18 @@ use crate::solver::utils::{
     BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
 };
 
-pub fn roulette_selection<'a, T: Clone>(
-    population: &'a [T],
-    fitness_scores: &[BigInt],
-    rng: &mut StdRng,
-) -> &'a T {
-    let min_score = fitness_scores.iter().min().unwrap();
-    let weights: Vec<_> = fitness_scores
-        .iter()
-        .map(|score| score - min_score)
-        .collect();
-    let mut total_weight: BigInt = weights.iter().sum();
-    total_weight = if total_weight.is_positive() {
-        total_weight
+pub fn draw_random_constant(base_config: &BaseVerificationConfig, rng: &mut StdRng) -> BigInt {
+    if rng.gen::<bool>() {
+        rng.gen_bigint_range(
+            &(BigInt::from_str("10").unwrap() * -BigInt::one()),
+            &(BigInt::from_str("10").unwrap()),
+        )
     } else {
-        BigInt::one()
-    };
-    let mut target = rng.gen_bigint_range(&BigInt::zero(), &total_weight);
-    for (individual, weight) in population.iter().zip(weights.iter()) {
-        if &target < weight {
-            return individual;
-        }
-        target -= weight;
+        rng.gen_bigint_range(
+            &(base_config.prime.clone() - BigInt::from_str("100").unwrap()),
+            &(base_config.prime),
+        )
     }
-    &population[0]
-}
-
-pub fn random_crossover<K, V>(
-    parent1: &FxHashMap<K, V>,
-    parent2: &FxHashMap<K, V>,
-    rng: &mut StdRng,
-) -> FxHashMap<K, V>
-where
-    K: Clone + std::hash::Hash + std::cmp::Eq,
-    V: Clone,
-{
-    parent1
-        .iter()
-        .map(|(var, val)| {
-            if rng.gen::<bool>() {
-                (var.clone(), val.clone())
-            } else {
-                if parent2.contains_key(var) {
-                    (var.clone(), parent2[var].clone())
-                } else {
-                    (var.clone(), val.clone())
-                }
-            }
-        })
-        .collect()
 }
 
 pub fn apply_trace_mutation(
@@ -92,107 +56,4 @@ pub fn apply_trace_mutation(
         }
     }
     mutated_constraints
-}
-
-pub fn evaluate_trace_fitness_by_error(
-    sexe: &mut SymbolicExecutor,
-    base_config: &BaseVerificationConfig,
-    symbolic_trace: &Vec<SymbolicValueRef>,
-    side_constraints: &Vec<SymbolicValueRef>,
-    trace_mutation: &FxHashMap<usize, SymbolicValue>,
-    inputs_assignment: &Vec<FxHashMap<SymbolicName, BigInt>>,
-) -> (usize, BigInt, Option<CounterExample>) {
-    let mutated_symbolic_trace = apply_trace_mutation(symbolic_trace, trace_mutation);
-
-    let mut max_idx = 0_usize;
-    let mut max_score = -base_config.prime.clone();
-    let mut counter_example = None;
-
-    for (i, inp) in inputs_assignment.iter().enumerate() {
-        let mut assignment = inp.clone();
-
-        let (is_success, failure_pos) = emulate_symbolic_values(
-            &base_config.prime,
-            &mutated_symbolic_trace,
-            &mut assignment,
-            &mut sexe.symbolic_library,
-        );
-        let error_of_side_constraints = accumulate_error_of_constraints(
-            &base_config.prime,
-            side_constraints,
-            &assignment,
-            &mut sexe.symbolic_library,
-        );
-        let mut score = -error_of_side_constraints.clone();
-
-        if error_of_side_constraints.is_zero() {
-            if is_success {
-                let flag = verify_assignment(
-                    sexe,
-                    symbolic_trace,
-                    side_constraints,
-                    &assignment,
-                    base_config,
-                );
-                if is_vulnerable(&flag) {
-                    max_idx = i;
-                    max_score = BigInt::zero();
-                    counter_example = if let VerificationResult::UnderConstrained(
-                        UnderConstrainedType::NonDeterministic(sym_name, _, _),
-                    ) = &flag
-                    {
-                        Some(CounterExample {
-                            flag: flag.clone(),
-                            target_output: Some(sym_name.clone()),
-                            assignment: assignment.clone(),
-                        })
-                    } else {
-                        Some(CounterExample {
-                            flag: flag,
-                            target_output: None,
-                            assignment: assignment.clone(),
-                        })
-                    };
-                    break;
-                } else {
-                    score = -base_config.prime.clone();
-                }
-            } else {
-                if trace_mutation.is_empty() {
-                    max_idx = i;
-                    max_score = BigInt::zero();
-                    counter_example = Some(CounterExample {
-                        flag: VerificationResult::UnderConstrained(
-                            UnderConstrainedType::UnexpectedInput(
-                                failure_pos,
-                                mutated_symbolic_trace[failure_pos]
-                                    .lookup_fmt(&sexe.symbolic_library.id2name),
-                            ),
-                        ),
-                        target_output: None,
-                        assignment: assignment.clone(),
-                    });
-                    break;
-                }
-            }
-        } else {
-            if trace_mutation.is_empty() && is_success {
-                max_idx = i;
-                max_score = BigInt::zero();
-                counter_example = Some(CounterExample {
-                    flag: VerificationResult::OverConstrained,
-                    target_output: None,
-                    assignment: assignment.clone(),
-                });
-                break;
-            }
-        }
-
-        if score > max_score {
-            max_idx = i;
-            max_score = score;
-        }
-    }
-
-    (max_idx, max_score, counter_example)
 }
