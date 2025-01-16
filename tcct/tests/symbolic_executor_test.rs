@@ -16,7 +16,7 @@ use tcct::executor::symbolic_execution::SymbolicExecutor;
 use tcct::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
 use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
 use tcct::solver::unused_outputs::check_unused_outputs;
-use tcct::solver::utils::VerificationSetting;
+use tcct::solver::utils::BaseVerificationConfig;
 
 use crate::utils::{execute, prepare_symbolic_library};
 
@@ -2158,7 +2158,7 @@ fn test_unused_outputs() {
         _ => unimplemented!(),
     }
 
-    let verification_setting = VerificationSetting {
+    let verification_setting = BaseVerificationConfig {
         target_template_name: main_template_id.to_string(),
         prime: prime.clone(),
         range: range.clone(),

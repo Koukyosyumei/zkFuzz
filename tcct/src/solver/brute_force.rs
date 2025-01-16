@@ -12,8 +12,8 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValueRef};
 
 use crate::solver::utils::{
-    extract_variables, is_vulnerable, verify_assignment, CounterExample, VerificationResult,
-    VerificationSetting,
+    extract_variables, is_vulnerable, verify_assignment, BaseVerificationConfig, CounterExample,
+    VerificationResult,
 };
 
 /// Performs a brute-force search over variable assignments to evaluate constraints.
@@ -30,7 +30,7 @@ pub fn brute_force_search(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
 ) -> Option<CounterExample> {
     let mut trace_variables = extract_variables(symbolic_trace);
     let mut side_variables = extract_variables(side_constraints);
@@ -48,7 +48,7 @@ pub fn brute_force_search(
         sexe: &mut SymbolicExecutor,
         symbolic_trace: &[SymbolicValueRef],
         side_constraints: &[SymbolicValueRef],
-        setting: &VerificationSetting,
+        setting: &BaseVerificationConfig,
         index: usize,
         variables: &[SymbolicName],
         assignment: &mut FxHashMap<SymbolicName, BigInt>,

@@ -208,7 +208,7 @@ pub fn is_vulnerable(vr: &VerificationResult) -> bool {
 }
 
 /// Configures the settings for the verification process.
-pub struct VerificationSetting {
+pub struct BaseVerificationConfig {
     pub target_template_name: String,
     pub prime: BigInt,
     pub range: BigInt,
@@ -788,7 +788,7 @@ pub fn verify_assignment(
     symbolic_trace: &[SymbolicValueRef],
     side_constraints: &[SymbolicValueRef],
     assignment: &FxHashMap<SymbolicName, BigInt>,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
 ) -> VerificationResult {
     let is_satisfy_tc = evaluate_constraints(
         &setting.prime,

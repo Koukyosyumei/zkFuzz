@@ -20,9 +20,9 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
 use crate::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue, SymbolicValueRef};
 
-use crate::solver::mutation_config::{load_config_from_json, MutationConfig};
+use crate::solver::mutation_config::MutationConfig;
 use crate::solver::mutation_utils::{random_crossover, roulette_selection};
-use crate::solver::utils::{extract_variables, CounterExample, VerificationSetting};
+use crate::solver::utils::{extract_variables, BaseVerificationConfig, CounterExample};
 
 pub struct MutationTestResult {
     pub random_seed: u64,
@@ -38,7 +38,7 @@ pub fn mutation_test_search<FitnessFn, MutateFn, CrossoverFn, EvolveFn>(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &SymbolicTrace,
     side_constraints: &SymbolicConstraints,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     fitness_fn: FitnessFn,
     evolve_fn: EvolveFn,
@@ -48,7 +48,7 @@ pub fn mutation_test_search<FitnessFn, MutateFn, CrossoverFn, EvolveFn>(
 where
     FitnessFn: Fn(
         &mut SymbolicExecutor,
-        &VerificationSetting,
+        &BaseVerificationConfig,
         &SymbolicTrace,
         &SymbolicConstraints,
         &Gene,
@@ -57,13 +57,13 @@ where
     EvolveFn: Fn(
         &[Gene],
         &[BigInt],
-        &VerificationSetting,
+        &BaseVerificationConfig,
         &MutationConfig,
         &mut StdRng,
         &MutateFn,
         &CrossoverFn,
     ) -> Vec<Gene>,
-    MutateFn: Fn(&mut Gene, &VerificationSetting, &mut StdRng),
+    MutateFn: Fn(&mut Gene, &BaseVerificationConfig, &mut StdRng),
     CrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
 {
     // Set random seed
@@ -249,7 +249,7 @@ where
     }
 }
 
-fn draw_random_constant(setting: &VerificationSetting, rng: &mut StdRng) -> BigInt {
+fn draw_random_constant(setting: &BaseVerificationConfig, rng: &mut StdRng) -> BigInt {
     if rng.gen::<bool>() {
         rng.gen_bigint_range(
             &(BigInt::from_str("10").unwrap() * -BigInt::one()),
@@ -266,7 +266,7 @@ fn draw_random_constant(setting: &VerificationSetting, rng: &mut StdRng) -> BigI
 fn initialize_input_population(
     variables: &[SymbolicName],
     size: usize,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
     rng: &mut StdRng,
 ) -> Vec<FxHashMap<SymbolicName, BigInt>> {
     (0..size)
@@ -282,7 +282,7 @@ fn initialize_input_population(
 fn evaluate_coverage(
     sexe: &mut SymbolicExecutor,
     inputs: &FxHashMap<SymbolicName, BigInt>,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
 ) -> usize {
     sexe.clear();
     sexe.turn_on_coverage_tracking();
@@ -311,7 +311,7 @@ fn mutate_input_population_with_coverage_maximization(
     cross_over_rate: f64,
     mutation_rate: f64,
     singlepoint_mutation_rate: f64,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
     rng: &mut StdRng,
 ) {
     let mut total_coverage = 0_usize;
@@ -376,7 +376,7 @@ fn mutate_input_population_with_coverage_maximization(
 fn initialize_trace_mutation_only_constant(
     pos: &[usize],
     size: usize,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
     (0..size)
@@ -423,7 +423,7 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
     size: usize,
     symbolic_trace: &[SymbolicValueRef],
     operator_mutation_rate: f64,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
     (0..size)
@@ -473,14 +473,14 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
 pub fn evolve_population<T: Clone, MutateFn, CrossoverFn>(
     prev_population: &[T],
     prev_evaluations: &[BigInt],
-    base_setting: &VerificationSetting,
+    base_setting: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
     mutate_fn: &MutateFn,
     crossover_fn: &CrossoverFn,
 ) -> Vec<T>
 where
-    MutateFn: Fn(&mut T, &VerificationSetting, &mut StdRng),
+    MutateFn: Fn(&mut T, &BaseVerificationConfig, &mut StdRng),
     CrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
 {
     (0..mutation_config.program_population_size)
@@ -500,7 +500,7 @@ where
         .collect()
 }
 
-pub fn trace_mutate(individual: &mut Gene, setting: &VerificationSetting, rng: &mut StdRng) {
+pub fn trace_mutate(individual: &mut Gene, setting: &BaseVerificationConfig, rng: &mut StdRng) {
     if !individual.is_empty() {
         let var = individual.keys().choose(rng).unwrap();
         /*

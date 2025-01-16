@@ -8,13 +8,13 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{register_array_elements, SymbolicName};
 
 use crate::solver::utils::{
-    extract_variables, CounterExample, UnderConstrainedType, VerificationResult,
-    VerificationSetting,
+    extract_variables, BaseVerificationConfig, CounterExample, UnderConstrainedType,
+    VerificationResult,
 };
 
 pub fn check_unused_outputs(
     sexe: &mut SymbolicExecutor,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
 ) -> Option<CounterExample> {
     let mut variables: Vec<SymbolicName> = Vec::new();
     variables.append(&mut extract_variables(

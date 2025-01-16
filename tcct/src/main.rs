@@ -35,7 +35,7 @@ use solver::mutation_test::{evolve_population, trace_mutate};
 use solver::mutation_utils::{evaluate_trace_fitness_by_error, random_crossover};
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
-    unused_outputs::check_unused_outputs, utils::VerificationSetting,
+    unused_outputs::check_unused_outputs, utils::BaseVerificationConfig,
 };
 use stats::ast_stats::ASTStats;
 use stats::symbolic_stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
@@ -261,7 +261,7 @@ fn start() -> Result<(), ()> {
                     _ => unimplemented!(),
                 }
 
-                let verification_setting = VerificationSetting {
+                let verification_setting = BaseVerificationConfig {
                     target_template_name: main_template_name.to_string(),
                     prime: BigInt::from_str(&user_input.debug_prime()).unwrap(),
                     range: BigInt::from_str(&user_input.heuristics_range()).unwrap(),

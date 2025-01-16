@@ -12,7 +12,7 @@ use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValue
 
 use crate::solver::utils::{
     accumulate_error_of_constraints, emulate_symbolic_values, is_vulnerable, verify_assignment,
-    CounterExample, UnderConstrainedType, VerificationResult, VerificationSetting,
+    BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
 };
 
 pub fn roulette_selection<'a, T: Clone>(
@@ -96,7 +96,7 @@ pub fn apply_trace_mutation(
 
 pub fn evaluate_trace_fitness_by_error(
     sexe: &mut SymbolicExecutor,
-    setting: &VerificationSetting,
+    setting: &BaseVerificationConfig,
     symbolic_trace: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
