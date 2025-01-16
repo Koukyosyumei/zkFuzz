@@ -20,6 +20,7 @@ use num_bigint_dig::BigInt;
 use rand::distributions::Alphanumeric;
 use rand::{thread_rng, Rng};
 use rustc_hash::{FxHashMap, FxHashSet};
+use serde_json::json;
 
 use program_structure::ast::Expression;
 use program_structure::program_archive::ProgramArchive;
@@ -29,19 +30,20 @@ use executor::symbolic_setting::{
     get_default_setting_for_concrete_execution, get_default_setting_for_symbolic_execution,
 };
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
-use serde_json::json;
+
 use solver::mutation_config::load_config_from_json;
-use solver::mutation_test::{
-    evolve_population, initialize_trace_mutation_only_constant, trace_mutate,
-    update_input_population_with_random_sampling,
-};
-use solver::mutation_utils::{
-    evaluate_trace_fitness_by_error, random_crossover, roulette_selection,
-};
+use solver::mutation_test_crossover_fn::random_crossover;
+use solver::mutation_test_evolution_fn::evolve_population;
+use solver::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
+use solver::mutation_test_trace_initialization_fn::initialize_trace_mutation_only_constant;
+use solver::mutation_test_trace_mutation_fn::trace_mutate;
+use solver::mutation_test_trace_selection_fn::roulette_selection;
+use solver::mutation_test_update_input_fn::update_input_population_with_random_sampling;
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
     unused_outputs::check_unused_outputs, utils::BaseVerificationConfig,
 };
+
 use stats::ast_stats::ASTStats;
 use stats::symbolic_stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
 
