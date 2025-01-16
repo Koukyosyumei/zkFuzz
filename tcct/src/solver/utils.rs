@@ -383,7 +383,7 @@ pub fn count_satisfied_constraints(
         .count()
 }
 
-pub fn emulate_symbolic_values(
+pub fn emulate_symbolic_trace(
     prime: &BigInt,
     traces: &[SymbolicValueRef],
     assignment: &mut FxHashMap<SymbolicName, BigInt>,

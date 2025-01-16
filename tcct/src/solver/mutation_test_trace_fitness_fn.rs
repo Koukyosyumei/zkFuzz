@@ -7,7 +7,7 @@ use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValue
 
 use crate::solver::mutation_utils::apply_trace_mutation;
 use crate::solver::utils::{
-    accumulate_error_of_constraints, emulate_symbolic_values, is_vulnerable, verify_assignment,
+    accumulate_error_of_constraints, emulate_symbolic_trace, is_vulnerable, verify_assignment,
     BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
 };
 
@@ -64,7 +64,7 @@ pub fn evaluate_trace_fitness_by_error(
     for (i, inp) in inputs_assignment.iter().enumerate() {
         let mut assignment = inp.clone();
 
-        let (is_success, failure_pos) = emulate_symbolic_values(
+        let (is_success, failure_pos) = emulate_symbolic_trace(
             &base_config.prime,
             &mutated_symbolic_trace,
             &mut assignment,
