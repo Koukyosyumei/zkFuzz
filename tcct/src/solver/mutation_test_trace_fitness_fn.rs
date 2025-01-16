@@ -11,6 +11,42 @@ use crate::solver::utils::{
     BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
 };
 
+/// Evaluates the fitness of a mutated symbolic execution trace by calculating the error score.
+///
+/// This function applies a mutation to a symbolic trace and evaluates the fitness of the trace
+/// based on its ability to satisfy both the trace's symbolic constraints and the given side constraints.
+/// If the trace produces a counterexample, such as an under-constrained or over-constrained assignment,
+/// it is returned along with the fitness score.
+///
+/// # Parameters
+/// - `sexe`: A mutable reference to a `SymbolicExecutor` instance responsible for symbolic execution.
+/// - `base_config`: The base verification configuration, containing the prime modulus and other verification parameters.
+/// - `symbolic_trace`: A vector of references to symbolic values representing the trace to be evaluated.
+/// - `side_constraints`: A vector of references to symbolic values representing additional constraints for the evaluation.
+/// - `trace_mutation`: A mapping of indices to mutated symbolic values applied to the trace.
+/// - `inputs_assignment`: A vector of potential input assignments, where each assignment is a mapping of symbolic names to `BigInt` values.
+///
+/// # Returns
+/// A tuple containing:
+/// - `usize`: The index of the input assignment with the best fitness score.
+/// - `BigInt`: The maximum fitness score achieved.
+/// - `Option<CounterExample>`: An optional counterexample, if the trace is found to be under-constrained or over-constrained.
+///
+/// # Behavior
+/// 1. Applies the provided mutation to the symbolic trace.
+/// 2. For each input assignment:
+///    - Simulates the trace using the assignment and evaluates errors in the side constraints.
+///    - Checks if the trace successfully satisfies the constraints and whether it results in a counterexample.
+/// 3. Tracks the highest fitness score and the associated input assignment.
+/// 4. If a counterexample is found, the evaluation halts early and returns the result.
+///
+/// # Fitness Scoring
+/// - Fitness scores are calculated based on the negated error of the side constraints.
+/// - A score of zero indicates either an over-constrained or under-constrained trace with a corresponding counterexample.
+///
+/// # Notes
+/// - If the provided `trace_mutation` is empty, the function evaluates the original trace directly.
+/// - This function terminates early if a valid counterexample is found.
 pub fn evaluate_trace_fitness_by_error(
     sexe: &mut SymbolicExecutor,
     base_config: &BaseVerificationConfig,
