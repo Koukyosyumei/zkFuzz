@@ -81,20 +81,6 @@ impl SymbolicName {
         }
     }
 
-    pub fn get_the_final_component_id(&self) -> Option<usize> {
-        let mut fti = None;
-        for o in self.owner.iter() {
-            if o.access.is_some() {
-                for a in o.access.clone().unwrap() {
-                    if let SymbolicAccess::ComponentAccess(i) = a {
-                        fti = Some(i);
-                    }
-                }
-            }
-        }
-        fti
-    }
-
     pub fn get_dim(&self) -> usize {
         if let Some(ref local_access) = self.access {
             local_access.len()
@@ -721,8 +707,7 @@ pub fn evaluate_binary_op(
         // Keep booleans as they are for logical operators
         ExpressionInfixOpcode::BoolAnd | ExpressionInfixOpcode::BoolOr => {
             (normalize_to_bool(lhs, prime), normalize_to_bool(rhs, prime))
-        }
-        _ => (lhs.clone(), rhs.clone()), // Default case
+        } //_ => (lhs.clone(), rhs.clone()), // Default case
     };
 
     match (&normalized_lhs, &normalized_rhs) {

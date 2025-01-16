@@ -2,7 +2,6 @@ use program_structure::abstract_syntax_tree::ast::{AssignOp, Statement};
 
 #[derive(Default)]
 pub struct ASTStats {
-    code_size: usize,
     num_variables: usize,
     num_statements: usize,
     num_if_then_else: usize,
@@ -21,7 +20,7 @@ impl ASTStats {
         self.num_statements += 1;
 
         match statement {
-            Statement::Declaration {  .. } => {
+            Statement::Declaration { .. } => {
                 self.num_variables += 1;
             }
             Statement::InitializationBlock {

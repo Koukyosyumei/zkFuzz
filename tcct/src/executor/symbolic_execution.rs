@@ -917,7 +917,6 @@ impl<'a> SymbolicExecutor<'a> {
                     args,
                     &left_var_name,
                     &simplified_rhe,
-                    meta.elem_id,
                 );
             } else {
                 if is_bulk_assignment {
@@ -1267,7 +1266,6 @@ impl<'a> SymbolicExecutor<'a> {
         args: &Vec<Rc<SymbolicValue>>,
         var_name: &SymbolicName,
         right_call: &SymbolicValue,
-        elem_id: usize,
     ) {
         let is_mutable = match op {
             DebuggableAssignOp(AssignOp::AssignSignal) => true,
@@ -1278,7 +1276,7 @@ impl<'a> SymbolicExecutor<'a> {
             .template_library
             .contains_key(callee_name)
         {
-            self.initialize_template_component(callee_name, args, var_name, elem_id);
+            self.initialize_template_component(callee_name, args, var_name);
         } else {
             let cont = SymbolicValue::AssignCall(
                 Rc::new(SymbolicValue::Variable(var_name.clone())),
@@ -1294,7 +1292,6 @@ impl<'a> SymbolicExecutor<'a> {
         callee_name: &usize,
         args: &Vec<Rc<SymbolicValue>>,
         var_name: &SymbolicName,
-        elem_id: usize,
     ) {
         let mut subse_setting = self.setting.clone();
         subse_setting.only_initialization_blocks = true;
