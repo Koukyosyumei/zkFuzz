@@ -383,6 +383,35 @@ pub fn count_satisfied_constraints(
         .count()
 }
 
+/// Simulates the execution of a symbolic trace, evaluating the values of symbolic variables.
+///
+/// This function processes a symbolic trace step by step, updating the provided `assignment` with the values
+/// of symbolic variables as determined by the trace's operations. It checks whether each operation is valid
+/// based on the current assignment and symbolic library, and if any error occurs (e.g., unsatisfied condition),
+/// it marks the simulation as unsuccessful and returns the index of the failure.
+///
+/// # Parameters
+/// - `prime`: A reference to the prime modulus used for modular arithmetic.
+/// - `trace`: A slice of references to symbolic values representing the symbolic trace to be simulated.
+/// - `assignment`: A mutable hash map of symbolic variable names to their corresponding `BigInt` values.
+/// - `symbolic_library`: A mutable reference to a symbolic library containing the definitions of symbolic values.
+///
+/// # Returns
+/// A tuple:
+/// - `bool`: Indicates whether the symbolic trace simulation was successful (`true`) or failed (`false`).
+/// - `usize`: The index of the trace operation that caused the failure, if any; otherwise, `0`.
+///
+/// # Behavior
+/// 1. The function iterates over each symbolic value in the trace:
+///    - For constants, it checks whether they match the expected value.
+///    - For assignments, it evaluates the right-hand side expression and updates the `assignment` map.
+///    - For binary and unary operations, it checks the result of the operation and compares it to the expected value.
+/// 2. If an operation fails (e.g., an unsatisfied condition), the simulation is marked as unsuccessful,
+///    and the index of the failing operation is returned.
+///
+/// # Errors
+/// - If the left-hand side of an assignment is not a variable, the function will panic.
+/// - If there is an unassigned variable in the expression being evaluated, the function will panic.
 pub fn emulate_symbolic_trace(
     prime: &BigInt,
     trace: &[SymbolicValueRef],
