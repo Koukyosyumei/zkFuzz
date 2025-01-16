@@ -1337,7 +1337,6 @@ impl<'a> SymbolicExecutor<'a> {
             &template,
             &mut symbol_optional_binding_map,
             &mut id2dimensions,
-            elem_id,
         );
 
         self.restore_escaped_variables(&escaped_vars);
@@ -1359,7 +1358,6 @@ impl<'a> SymbolicExecutor<'a> {
         template: &SymbolicTemplate,
         inputs_of_component: &mut FxHashMap<SymbolicName, Option<SymbolicValue>>,
         dimensions_of_inputs: &mut FxHashMap<usize, Vec<usize>>,
-        elem_id: usize,
     ) {
         for (id, dims) in &self.id2dimensions {
             if template.input_ids.contains(id) {
