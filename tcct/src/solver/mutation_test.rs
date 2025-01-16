@@ -34,18 +34,21 @@ pub struct MutationTestResult {
 
 type Gene = FxHashMap<usize, SymbolicValue>;
 
-pub fn mutation_test_search<FitnessFn, MutateFn, CrossoverFn, EvolveFn>(
+pub fn mutation_test_search<InitializeTraceFn, FitnessFn, MutateFn, CrossoverFn, EvolveFn>(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &SymbolicTrace,
     side_constraints: &SymbolicConstraints,
     base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
+    trace_initialization_fn: InitializeTraceFn,
     fitness_fn: FitnessFn,
     evolve_fn: EvolveFn,
     mutate_fn: MutateFn,
     crossover_fn: CrossoverFn,
 ) -> MutationTestResult
 where
+    InitializeTraceFn:
+        Fn(&[usize], usize, &BaseVerificationConfig, &MutationConfig, &mut StdRng) -> Vec<Gene>,
     FitnessFn: Fn(
         &mut SymbolicExecutor,
         &BaseVerificationConfig,
@@ -115,10 +118,11 @@ where
     );
 
     // Initial Pupulation of Mutated Inputs
-    let mut trace_population = initialize_trace_mutation_only_constant(
+    let mut trace_population = trace_initialization_fn(
         &assign_pos,
         mutation_config.program_population_size,
         base_config,
+        mutation_config,
         &mut rng,
     );
     let mut fitness_scores =
@@ -139,7 +143,7 @@ where
     for generation in 0..mutation_config.max_generations {
         // Generate input population for this generation
         if mutation_config.input_initialization_method == "coverage" {
-            if generation % 4 == 0 {
+            if generation % mutation_config.input_update_interval == 0 {
                 sexe.clear_coverage_tracker();
                 mutate_input_population_with_coverage_maximization(
                     sexe,
@@ -148,9 +152,9 @@ where
                     mutation_config.input_population_size / 2 as usize,
                     mutation_config.input_population_size,
                     mutation_config.max_generations,
-                    mutation_config.coverage_based_input_generation_crossover_rate,
-                    mutation_config.coverage_based_input_generation_mutation_rate,
-                    mutation_config.coverage_based_input_generation_singlepoint_mutation_rate,
+                    mutation_config.input_generation_crossover_rate,
+                    mutation_config.input_generation_mutation_rate,
+                    mutation_config.input_generation_singlepoint_mutation_rate,
                     &base_config,
                     &mut rng,
                 );
@@ -202,11 +206,10 @@ where
             .max_by_key(|&(_, value)| value.1.clone())
             .map(|(index, _)| index)
             .unwrap();
-        if mutation_config.fitness_function == "error" {
+
+        // Extract the fitness scores
+        if mutation_config.fitness_function != "const" {
             fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
-        } else if mutation_config.fitness_function == "constant" {
-        } else {
-            panic!("mutation_config.fitness_function should be one of [`error`, `constant`]");
         }
 
         if evaluations[best_idx].1.is_zero() {
@@ -374,10 +377,11 @@ fn mutate_input_population_with_coverage_maximization(
     }
 }
 
-fn initialize_trace_mutation_only_constant(
+pub fn initialize_trace_mutation_only_constant(
     pos: &[usize],
     size: usize,
     base_config: &BaseVerificationConfig,
+    _mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
     (0..size)

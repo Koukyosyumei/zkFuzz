@@ -31,7 +31,9 @@ use executor::symbolic_setting::{
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 use serde_json::json;
 use solver::mutation_config::load_config_from_json;
-use solver::mutation_test::{evolve_population, trace_mutate};
+use solver::mutation_test::{
+    evolve_population, initialize_trace_mutation_only_constant, trace_mutate,
+};
 use solver::mutation_utils::{evaluate_trace_fitness_by_error, random_crossover};
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
@@ -327,6 +329,7 @@ fn start() -> Result<(), ()> {
                                 &sym_executor.cur_state.side_constraints.clone(),
                                 &verification_base_config,
                                 &mutation_config,
+                                initialize_trace_mutation_only_constant,
                                 evaluate_trace_fitness_by_error,
                                 evolve_population,
                                 trace_mutate,

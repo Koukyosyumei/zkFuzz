@@ -16,10 +16,11 @@ pub struct MutationConfig {
     pub fitness_function: String,
     pub mutation_rate: f64,
     pub crossover_rate: f64,
-    pub coverage_based_input_generation_max_iteration: usize,
-    pub coverage_based_input_generation_crossover_rate: f64,
-    pub coverage_based_input_generation_mutation_rate: f64,
-    pub coverage_based_input_generation_singlepoint_mutation_rate: f64,
+    pub input_update_interval: usize,
+    pub input_generation_max_iteration: usize,
+    pub input_generation_crossover_rate: f64,
+    pub input_generation_mutation_rate: f64,
+    pub input_generation_singlepoint_mutation_rate: f64,
     pub save_fitness_scores: bool,
 }
 
@@ -34,10 +35,11 @@ impl Default for MutationConfig {
             fitness_function: "error".to_string(),
             mutation_rate: 0.3,
             crossover_rate: 0.5,
-            coverage_based_input_generation_max_iteration: 30,
-            coverage_based_input_generation_crossover_rate: 0.66,
-            coverage_based_input_generation_mutation_rate: 0.5,
-            coverage_based_input_generation_singlepoint_mutation_rate: 0.5,
+            input_update_interval: 1,
+            input_generation_max_iteration: 30,
+            input_generation_crossover_rate: 0.66,
+            input_generation_mutation_rate: 0.5,
+            input_generation_singlepoint_mutation_rate: 0.5,
             save_fitness_scores: false,
         }
     }
