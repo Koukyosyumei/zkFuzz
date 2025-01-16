@@ -35,7 +35,9 @@ use solver::mutation_test::{
     evolve_population, initialize_trace_mutation_only_constant, trace_mutate,
     update_input_population_with_random_sampling,
 };
-use solver::mutation_utils::{evaluate_trace_fitness_by_error, random_crossover};
+use solver::mutation_utils::{
+    evaluate_trace_fitness_by_error, random_crossover, roulette_selection,
+};
 use solver::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
     unused_outputs::check_unused_outputs, utils::BaseVerificationConfig,
@@ -336,6 +338,7 @@ fn start() -> Result<(), ()> {
                                 evolve_population,
                                 trace_mutate,
                                 random_crossover,
+                                roulette_selection,
                             );
                             auxiliary_result["mutation_test_config"] =
                                 serde_json::to_value(result.mutation_config)

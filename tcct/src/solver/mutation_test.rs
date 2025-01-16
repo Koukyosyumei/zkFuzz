@@ -38,9 +38,10 @@ pub fn mutation_test_search<
     InitializeTraceFn,
     UpdateInputFn,
     FitnessFn,
+    EvolveFn,
     MutateFn,
     CrossoverFn,
-    EvolveFn,
+    SelectionFn,
 >(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &SymbolicTrace,
@@ -53,6 +54,7 @@ pub fn mutation_test_search<
     evolve_fn: EvolveFn,
     mutate_fn: MutateFn,
     crossover_fn: CrossoverFn,
+    selection_fn: SelectionFn,
 ) -> MutationTestResult
 where
     InitializeTraceFn:
@@ -81,9 +83,11 @@ where
         &mut StdRng,
         &MutateFn,
         &CrossoverFn,
+        &SelectionFn,
     ) -> Vec<Gene>,
     MutateFn: Fn(&mut Gene, &BaseVerificationConfig, &mut StdRng),
     CrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
+    SelectionFn: Fn(&[Gene], &[BigInt], &mut StdRng) -> Gene,
 {
     // Set random seed
     let seed = if mutation_config.seed.is_zero() {
@@ -174,6 +178,7 @@ where
                 &mut rng,
                 &mutate_fn,
                 &crossover_fn,
+                &selection_fn,
             );
         }
         trace_population.push(FxHashMap::default());
@@ -475,7 +480,7 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
         .collect()
 }
 
-pub fn evolve_population<T: Clone, MutateFn, CrossoverFn>(
+pub fn evolve_population<T: Clone, MutateFn, CrossoverFn, SelectionFn>(
     prev_population: &[T],
     prev_evaluations: &[BigInt],
     base_base_config: &BaseVerificationConfig,
@@ -483,15 +488,17 @@ pub fn evolve_population<T: Clone, MutateFn, CrossoverFn>(
     rng: &mut StdRng,
     mutate_fn: &MutateFn,
     crossover_fn: &CrossoverFn,
+    selection_fn: &SelectionFn,
 ) -> Vec<T>
 where
     MutateFn: Fn(&mut T, &BaseVerificationConfig, &mut StdRng),
     CrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
+    SelectionFn: Fn(&[T], &[BigInt], &mut StdRng) -> T,
 {
     (0..mutation_config.program_population_size)
         .map(|_| {
-            let parent1 = roulette_selection(prev_population, prev_evaluations, rng);
-            let parent2 = roulette_selection(prev_population, prev_evaluations, rng);
+            let parent1 = selection_fn(prev_population, prev_evaluations, rng);
+            let parent2 = selection_fn(prev_population, prev_evaluations, rng);
             let mut child = if rng.gen::<f64>() < mutation_config.crossover_rate {
                 crossover_fn(&parent1, &parent2, rng)
             } else {
