@@ -22,7 +22,7 @@ use crate::solver::utils::{
 /// - `sexe`: A mutable reference to the symbolic executor.
 /// - `symbolic_trace`: A vector of constraints representing the program trace.
 /// - `side_constraints`: A vector of additional constraints for validation.
-/// - `setting`: The verification settings.
+/// - `base_config`: The verification base_configs.
 ///
 /// # Returns
 /// An `Option<CounterExample>` containing a counterexample if constraints are invalid, or `None` otherwise.
@@ -30,7 +30,7 @@ pub fn brute_force_search(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
-    setting: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
 ) -> Option<CounterExample> {
     let mut trace_variables = extract_variables(symbolic_trace);
     let mut side_variables = extract_variables(side_constraints);
@@ -48,7 +48,7 @@ pub fn brute_force_search(
         sexe: &mut SymbolicExecutor,
         symbolic_trace: &[SymbolicValueRef],
         side_constraints: &[SymbolicValueRef],
-        setting: &BaseVerificationConfig,
+        base_config: &BaseVerificationConfig,
         index: usize,
         variables: &[SymbolicName],
         assignment: &mut FxHashMap<SymbolicName, BigInt>,
@@ -56,21 +56,27 @@ pub fn brute_force_search(
     ) -> VerificationResult {
         if index == variables.len() {
             let iter = current_iteration.fetch_add(1, Ordering::SeqCst);
-            if iter % setting.progress_interval == 0 {
+            if iter % base_config.progress_interval == 0 {
                 print!(
                     "\rProgress: {} / {}^{}",
                     iter,
-                    &setting.prime,
+                    &base_config.prime,
                     variables.len()
                 );
                 io::stdout().flush().unwrap();
             }
 
-            return verify_assignment(sexe, symbolic_trace, side_constraints, assignment, setting);
+            return verify_assignment(
+                sexe,
+                symbolic_trace,
+                side_constraints,
+                assignment,
+                base_config,
+            );
         }
 
         let var = &variables[index];
-        if setting.quick_mode {
+        if base_config.quick_mode {
             let candidates = vec![BigInt::zero(), BigInt::one(), -1 * BigInt::one()];
             for c in candidates.into_iter() {
                 assignment.insert(var.clone(), c.clone());
@@ -78,7 +84,7 @@ pub fn brute_force_search(
                     sexe,
                     symbolic_trace,
                     side_constraints,
-                    setting,
+                    base_config,
                     index + 1,
                     variables,
                     assignment,
@@ -89,16 +95,16 @@ pub fn brute_force_search(
                 }
                 assignment.remove(var);
             }
-        } else if setting.heuristics_mode {
-            let mut value = -&setting.range;
-            while value <= setting.range {
+        } else if base_config.heuristics_mode {
+            let mut value = -&base_config.range;
+            while value <= base_config.range {
                 assignment.insert(var.clone(), value.clone());
 
                 let result = search(
                     sexe,
                     symbolic_trace,
                     side_constraints,
-                    setting,
+                    base_config,
                     index + 1,
                     variables,
                     assignment,
@@ -111,16 +117,16 @@ pub fn brute_force_search(
                 assignment.remove(&var);
                 value += BigInt::one();
             }
-            let mut value = &setting.prime - &setting.range;
+            let mut value = &base_config.prime - &base_config.range;
 
-            while value < setting.prime {
+            while value < base_config.prime {
                 assignment.insert(var.clone(), value.clone());
 
                 let result = search(
                     sexe,
                     symbolic_trace,
                     side_constraints,
-                    setting,
+                    base_config,
                     index + 1,
                     variables,
                     assignment,
@@ -135,13 +141,13 @@ pub fn brute_force_search(
             }
         } else {
             let mut value = BigInt::zero();
-            while value < setting.prime {
+            while value < base_config.prime {
                 assignment.insert(var.clone(), value.clone());
                 let result = search(
                     sexe,
                     symbolic_trace,
                     side_constraints,
-                    setting,
+                    base_config,
                     index + 1,
                     variables,
                     assignment,
@@ -161,7 +167,7 @@ pub fn brute_force_search(
         sexe,
         &symbolic_trace,
         &side_constraints,
-        setting,
+        base_config,
         0,
         &variables,
         &mut assignment,
@@ -171,7 +177,7 @@ pub fn brute_force_search(
     print!(
         "\rProgress: {} / {}^{}",
         current_iteration.load(Ordering::SeqCst),
-        setting.prime,
+        base_config.prime,
         variables.len()
     );
     io::stdout().flush().unwrap();

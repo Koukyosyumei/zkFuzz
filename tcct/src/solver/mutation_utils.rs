@@ -96,7 +96,7 @@ pub fn apply_trace_mutation(
 
 pub fn evaluate_trace_fitness_by_error(
     sexe: &mut SymbolicExecutor,
-    setting: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
     symbolic_trace: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
@@ -105,20 +105,20 @@ pub fn evaluate_trace_fitness_by_error(
     let mutated_symbolic_trace = apply_trace_mutation(symbolic_trace, trace_mutation);
 
     let mut max_idx = 0_usize;
-    let mut max_score = -setting.prime.clone();
+    let mut max_score = -base_config.prime.clone();
     let mut counter_example = None;
 
     for (i, inp) in inputs_assignment.iter().enumerate() {
         let mut assignment = inp.clone();
 
         let (is_success, failure_pos) = emulate_symbolic_values(
-            &setting.prime,
+            &base_config.prime,
             &mutated_symbolic_trace,
             &mut assignment,
             &mut sexe.symbolic_library,
         );
         let error_of_side_constraints = accumulate_error_of_constraints(
-            &setting.prime,
+            &base_config.prime,
             side_constraints,
             &assignment,
             &mut sexe.symbolic_library,
@@ -127,8 +127,13 @@ pub fn evaluate_trace_fitness_by_error(
 
         if error_of_side_constraints.is_zero() {
             if is_success {
-                let flag =
-                    verify_assignment(sexe, symbolic_trace, side_constraints, &assignment, setting);
+                let flag = verify_assignment(
+                    sexe,
+                    symbolic_trace,
+                    side_constraints,
+                    &assignment,
+                    base_config,
+                );
                 if is_vulnerable(&flag) {
                     max_idx = i;
                     max_score = BigInt::zero();
@@ -150,7 +155,7 @@ pub fn evaluate_trace_fitness_by_error(
                     };
                     break;
                 } else {
-                    score = -setting.prime.clone();
+                    score = -base_config.prime.clone();
                 }
             } else {
                 if trace_mutation.is_empty() {

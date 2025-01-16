@@ -14,7 +14,7 @@ use crate::solver::utils::{
 
 pub fn check_unused_outputs(
     sexe: &mut SymbolicExecutor,
-    setting: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
 ) -> Option<CounterExample> {
     let mut variables: Vec<SymbolicName> = Vec::new();
     variables.append(&mut extract_variables(
@@ -27,13 +27,13 @@ pub fn check_unused_outputs(
 
     let mut used_outputs: FxHashMap<SymbolicName, Option<bool>> = FxHashMap::default();
     for oup_name in &sexe.symbolic_library.template_library
-        [&sexe.symbolic_library.name2id[&setting.target_template_name]]
+        [&sexe.symbolic_library.name2id[&base_config.target_template_name]]
         .output_ids
         .clone()
     {
         let dims = sexe.evaluate_dimension(
             &sexe.symbolic_library.template_library
-                [&sexe.symbolic_library.name2id[&setting.target_template_name]]
+                [&sexe.symbolic_library.name2id[&base_config.target_template_name]]
                 .id2dimension_expressions[&oup_name]
                 .clone(),
             usize::MAX,

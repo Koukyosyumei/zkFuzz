@@ -38,7 +38,7 @@ pub fn mutation_test_search<FitnessFn, MutateFn, CrossoverFn, EvolveFn>(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &SymbolicTrace,
     side_constraints: &SymbolicConstraints,
-    setting: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     fitness_fn: FitnessFn,
     evolve_fn: EvolveFn,
@@ -94,7 +94,7 @@ where
     for v in variables_set.iter() {
         if v.owner.len() == 1
             && sexe.symbolic_library.template_library
-                [&sexe.symbolic_library.name2id[&setting.target_template_name]]
+                [&sexe.symbolic_library.name2id[&base_config.target_template_name]]
                 .input_ids
                 .contains(&v.id)
         {
@@ -118,10 +118,11 @@ where
     let mut trace_population = initialize_trace_mutation_only_constant(
         &assign_pos,
         mutation_config.program_population_size,
-        setting,
+        base_config,
         &mut rng,
     );
-    let mut fitness_scores = vec![-setting.prime.clone(); mutation_config.input_population_size];
+    let mut fitness_scores =
+        vec![-base_config.prime.clone(); mutation_config.input_population_size];
     let mut input_population = Vec::new();
     let mut fitness_score_log = if mutation_config.save_fitness_scores {
         Vec::with_capacity(mutation_config.max_generations)
@@ -150,7 +151,7 @@ where
                     mutation_config.coverage_based_input_generation_crossover_rate,
                     mutation_config.coverage_based_input_generation_mutation_rate,
                     mutation_config.coverage_based_input_generation_singlepoint_mutation_rate,
-                    &setting,
+                    &base_config,
                     &mut rng,
                 );
             }
@@ -158,7 +159,7 @@ where
             input_population = initialize_input_population(
                 &input_variables,
                 mutation_config.input_population_size,
-                &setting,
+                &base_config,
                 &mut rng,
             );
         } else {
@@ -170,7 +171,7 @@ where
             trace_population = evolve_fn(
                 &trace_population,
                 &fitness_scores,
-                setting,
+                base_config,
                 &mutation_config,
                 &mut rng,
                 &mutate_fn,
@@ -185,7 +186,7 @@ where
             .map(|a| {
                 fitness_fn(
                     sexe,
-                    &setting,
+                    &base_config,
                     symbolic_trace,
                     side_constraints,
                     a,
@@ -249,7 +250,7 @@ where
     }
 }
 
-fn draw_random_constant(setting: &BaseVerificationConfig, rng: &mut StdRng) -> BigInt {
+fn draw_random_constant(base_config: &BaseVerificationConfig, rng: &mut StdRng) -> BigInt {
     if rng.gen::<bool>() {
         rng.gen_bigint_range(
             &(BigInt::from_str("10").unwrap() * -BigInt::one()),
@@ -257,8 +258,8 @@ fn draw_random_constant(setting: &BaseVerificationConfig, rng: &mut StdRng) -> B
         )
     } else {
         rng.gen_bigint_range(
-            &(setting.prime.clone() - BigInt::from_str("100").unwrap()),
-            &(setting.prime),
+            &(base_config.prime.clone() - BigInt::from_str("100").unwrap()),
+            &(base_config.prime),
         )
     }
 }
@@ -266,14 +267,14 @@ fn draw_random_constant(setting: &BaseVerificationConfig, rng: &mut StdRng) -> B
 fn initialize_input_population(
     variables: &[SymbolicName],
     size: usize,
-    setting: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
     rng: &mut StdRng,
 ) -> Vec<FxHashMap<SymbolicName, BigInt>> {
     (0..size)
         .map(|_| {
             variables
                 .iter()
-                .map(|var| (var.clone(), draw_random_constant(setting, rng)))
+                .map(|var| (var.clone(), draw_random_constant(base_config, rng)))
                 .collect()
         })
         .collect()
@@ -282,7 +283,7 @@ fn initialize_input_population(
 fn evaluate_coverage(
     sexe: &mut SymbolicExecutor,
     inputs: &FxHashMap<SymbolicName, BigInt>,
-    setting: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
 ) -> usize {
     sexe.clear();
     sexe.turn_on_coverage_tracking();
@@ -292,10 +293,10 @@ fn evaluate_coverage(
         access: None,
     });
     sexe.feed_arguments(
-        &setting.template_param_names,
-        &setting.template_param_values,
+        &base_config.template_param_names,
+        &base_config.template_param_values,
     );
-    sexe.concrete_execute(&setting.target_template_name, inputs);
+    sexe.concrete_execute(&base_config.target_template_name, inputs);
     sexe.record_path();
     sexe.turn_off_coverage_tracking();
     sexe.coverage_count()
@@ -311,17 +312,17 @@ fn mutate_input_population_with_coverage_maximization(
     cross_over_rate: f64,
     mutation_rate: f64,
     singlepoint_mutation_rate: f64,
-    setting: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
     rng: &mut StdRng,
 ) {
     let mut total_coverage = 0_usize;
     inputs_population.clear();
 
     let initial_input_population =
-        initialize_input_population(input_variables, input_population_size, &setting, rng);
+        initialize_input_population(input_variables, input_population_size, &base_config, rng);
 
     for input in &initial_input_population {
-        let new_coverage = evaluate_coverage(sexe, &input, setting);
+        let new_coverage = evaluate_coverage(sexe, &input, base_config);
         if new_coverage > total_coverage {
             inputs_population.push(input.clone());
             total_coverage = new_coverage;
@@ -344,14 +345,14 @@ fn mutate_input_population_with_coverage_maximization(
                 if rng.gen::<f64>() < singlepoint_mutation_rate {
                     // Mutate only one input variable
                     let var = &input_variables[rng.gen_range(0, input_variables.len())];
-                    let mutation = draw_random_constant(setting, rng);
+                    let mutation = draw_random_constant(base_config, rng);
                     new_input.insert(var.clone(), mutation);
                 } else {
                     // Mutate each input variable with a small probability
                     for var in input_variables {
                         // rng.gen_bool(0.2)
                         if rng.gen::<bool>() {
-                            let mutation = draw_random_constant(setting, rng);
+                            let mutation = draw_random_constant(base_config, rng);
                             new_input.insert(var.clone(), mutation);
                         }
                     }
@@ -359,7 +360,7 @@ fn mutate_input_population_with_coverage_maximization(
             }
 
             // Evaluate the new input
-            let new_coverage = evaluate_coverage(sexe, &new_input, setting);
+            let new_coverage = evaluate_coverage(sexe, &new_input, base_config);
             if new_coverage > total_coverage {
                 new_inputs_population.push(new_input);
                 total_coverage = new_coverage;
@@ -376,7 +377,7 @@ fn mutate_input_population_with_coverage_maximization(
 fn initialize_trace_mutation_only_constant(
     pos: &[usize],
     size: usize,
-    setting: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
     (0..size)
@@ -385,7 +386,7 @@ fn initialize_trace_mutation_only_constant(
                 .map(|p| {
                     (
                         p.clone(),
-                        SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
+                        SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
                     )
                 })
                 .collect()
@@ -423,7 +424,7 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
     size: usize,
     symbolic_trace: &[SymbolicValueRef],
     operator_mutation_rate: f64,
-    setting: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
     (0..size)
@@ -456,13 +457,13 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
                         } else {
                             (
                                 p.clone(),
-                                SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
+                                SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
                             )
                         }
                     }
                     _ => (
                         p.clone(),
-                        SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
+                        SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
                     ),
                 })
                 .collect()
@@ -473,7 +474,7 @@ fn initialize_trace_mutation_operator_mutation_and_constant(
 pub fn evolve_population<T: Clone, MutateFn, CrossoverFn>(
     prev_population: &[T],
     prev_evaluations: &[BigInt],
-    base_setting: &BaseVerificationConfig,
+    base_base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
     mutate_fn: &MutateFn,
@@ -493,14 +494,14 @@ where
                 parent1.clone()
             };
             if rng.gen::<f64>() < mutation_config.mutation_rate {
-                mutate_fn(&mut child, base_setting, rng);
+                mutate_fn(&mut child, base_base_config, rng);
             }
             child
         })
         .collect()
 }
 
-pub fn trace_mutate(individual: &mut Gene, setting: &BaseVerificationConfig, rng: &mut StdRng) {
+pub fn trace_mutate(individual: &mut Gene, base_config: &BaseVerificationConfig, rng: &mut StdRng) {
     if !individual.is_empty() {
         let var = individual.keys().choose(rng).unwrap();
         /*
@@ -518,7 +519,7 @@ pub fn trace_mutate(individual: &mut Gene, setting: &BaseVerificationConfig, rng
 
         individual.insert(
             var.clone(),
-            SymbolicValue::ConstantInt(draw_random_constant(setting, rng)),
+            SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
         );
     }
 }
