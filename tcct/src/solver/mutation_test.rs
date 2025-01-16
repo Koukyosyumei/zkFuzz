@@ -142,32 +142,34 @@ where
 
     for generation in 0..mutation_config.max_generations {
         // Generate input population for this generation
-        if mutation_config.input_initialization_method == "coverage" {
-            if generation % mutation_config.input_update_interval == 0 {
-                sexe.clear_coverage_tracker();
-                mutate_input_population_with_coverage_maximization(
-                    sexe,
+        if generation % mutation_config.input_update_interval == 0 {
+            if mutation_config.input_initialization_method == "coverage" {
+                {
+                    sexe.clear_coverage_tracker();
+                    mutate_input_population_with_coverage_maximization(
+                        sexe,
+                        &input_variables,
+                        &mut input_population,
+                        mutation_config.input_population_size / 2 as usize,
+                        mutation_config.input_population_size,
+                        mutation_config.max_generations,
+                        mutation_config.input_generation_crossover_rate,
+                        mutation_config.input_generation_mutation_rate,
+                        mutation_config.input_generation_singlepoint_mutation_rate,
+                        &base_config,
+                        &mut rng,
+                    );
+                }
+            } else if mutation_config.input_initialization_method == "random" {
+                input_population = initialize_input_population(
                     &input_variables,
-                    &mut input_population,
-                    mutation_config.input_population_size / 2 as usize,
                     mutation_config.input_population_size,
-                    mutation_config.max_generations,
-                    mutation_config.input_generation_crossover_rate,
-                    mutation_config.input_generation_mutation_rate,
-                    mutation_config.input_generation_singlepoint_mutation_rate,
                     &base_config,
                     &mut rng,
                 );
+            } else {
+                panic!("mutation_config.input_initialization_method should be one of [`coverage`, `random`]");
             }
-        } else if mutation_config.input_initialization_method == "random" {
-            input_population = initialize_input_population(
-                &input_variables,
-                mutation_config.input_population_size,
-                &base_config,
-                &mut rng,
-            );
-        } else {
-            panic!("mutation_config.input_initialization_method should be one of [`coverage`, `random`]");
         }
 
         // Evolve the trace population
