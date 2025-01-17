@@ -1031,10 +1031,6 @@ impl<'a> SymbolicExecutor<'a> {
                     elem_id,
                 )
             };
-            println!(
-                "self.id2dimensions - {}: {:?}",
-                self.symbolic_library.id2name[id], dims
-            );
             self.id2dimensions.insert(*id, dims);
 
             self.execute(statements, cur_bid + 1);
@@ -1225,13 +1221,7 @@ impl<'a> SymbolicExecutor<'a> {
             }
         }
 
-        println!(
-            "base_array2: {}",
-            base_array.lookup_fmt(&self.symbolic_library.id2name)
-        );
-
         if let SymbolicValue::Array(ref arr) = base_array {
-            println!("aaaaaaaaaaaaaa");
             if !arr.is_empty() {
                 self.cur_state
                     .set_sym_val(left_var_name.clone(), base_array);
