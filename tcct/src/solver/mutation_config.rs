@@ -1,10 +1,10 @@
 use std::fmt;
 use std::fs::File;
+use std::str::FromStr;
 
 use colored::Colorize;
 use log::info;
 use num_bigint_dig::BigInt;
-use num_traits::Zero;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -45,8 +45,9 @@ impl Default for MutationConfig {
             input_generation_mutation_rate: 0.5,
             input_generation_singlepoint_mutation_rate: 0.5,
             random_value_ranges: vec![
-                (BigInt::zero(), BigInt::from(10)),
-                (BigInt::from(-100), BigInt::from(0)),
+                (BigInt::from(-10), BigInt::from(10)),
+                (BigInt::from_str("21888242871839275222246405745257275088548364400416034343698204186575808495517").unwrap(),
+                 BigInt::from_str("21888242871839275222246405745257275088548364400416034343698204186575808495617").unwrap()),
             ],
             random_value_probs: vec![0.5, 0.5],
             save_fitness_scores: false,
