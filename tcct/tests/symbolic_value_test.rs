@@ -8,7 +8,7 @@ use program_structure::ast::ExpressionInfixOpcode;
 
 use tcct::executor::debug_ast::DebuggableExpressionInfixOpcode;
 use tcct::executor::symbolic_value::{
-    create_nested_array_with_indicies, enumerate_array, evaluate_binary_op, OwnerName,
+    enumerate_array, evaluate_binary_op, initialize_symbolic_nested_array_with_name, OwnerName,
     SymbolicAccess, SymbolicName, SymbolicValue,
 };
 
@@ -297,7 +297,7 @@ fn test_enumerate_empty_array() {
 }
 
 #[test]
-fn test_create_nested_array_with_indicies() {
+fn test_initialize_symbolic_nested_array_with_name() {
     let main_in = SymbolicName::new(
         0,
         Rc::new(vec![OwnerName {
@@ -341,7 +341,7 @@ fn test_create_nested_array_with_indicies() {
         })
         .collect();
 
-    let sym_array = create_nested_array_with_indicies(&[2, 3], &main_in);
+    let sym_array = initialize_symbolic_nested_array_with_name(&[2, 3], &main_in);
     assert_eq!(
         sym_array,
         SymbolicValue::Array(

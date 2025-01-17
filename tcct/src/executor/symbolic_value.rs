@@ -899,7 +899,7 @@ pub fn decompose_uniform_array(
     (current, dims)
 }
 
-pub fn create_nested_array(
+pub fn initialize_symbolic_nested_array_with_value(
     dims: &[usize],
     initial_value: SymbolicValueRef,
 ) -> Vec<SymbolicValueRef> {
@@ -911,16 +911,18 @@ pub fn create_nested_array(
         vec![initial_value; dims[0]]
     } else {
         vec![
-            Rc::new(SymbolicValue::Array(create_nested_array(
-                &dims[1..],
-                initial_value.clone()
-            )));
+            Rc::new(SymbolicValue::Array(
+                initialize_symbolic_nested_array_with_value(&dims[1..], initial_value.clone())
+            ));
             dims[0]
         ]
     }
 }
 
-pub fn create_nested_array_with_indicies(dims: &[usize], sym_name: &SymbolicName) -> SymbolicValue {
+pub fn initialize_symbolic_nested_array_with_name(
+    dims: &[usize],
+    sym_name: &SymbolicName,
+) -> SymbolicValue {
     if dims.is_empty() {
         SymbolicValue::Variable(sym_name.clone())
     } else {
@@ -934,7 +936,10 @@ pub fn create_nested_array_with_indicies(dims: &[usize], sym_name: &SymbolicName
                     )));
                     new_sym_name.access = Some(access);
                     // new_left_var_name.update_hash();
-                    Rc::new(create_nested_array_with_indicies(&dims[1..], &new_sym_name))
+                    Rc::new(initialize_symbolic_nested_array_with_name(
+                        &dims[1..],
+                        &new_sym_name,
+                    ))
                 })
                 .collect(),
         )

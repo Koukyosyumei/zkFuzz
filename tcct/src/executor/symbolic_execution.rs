@@ -21,11 +21,11 @@ use crate::executor::debug_ast::{
 use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_state::SymbolicState;
 use crate::executor::symbolic_value::{
-    access_multidimensional_array, create_nested_array, create_nested_array_with_indicies,
-    decompose_uniform_array, enumerate_array, evaluate_binary_op, generate_lessthan_constraint,
-    is_concrete_array, register_array_elements, update_nested_array, OwnerName, SymbolicAccess,
-    SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicTemplate, SymbolicValue,
-    SymbolicValueRef,
+    access_multidimensional_array, decompose_uniform_array, enumerate_array, evaluate_binary_op,
+    generate_lessthan_constraint, initialize_symbolic_nested_array_with_name,
+    initialize_symbolic_nested_array_with_value, is_concrete_array, register_array_elements,
+    update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
+    SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::generate_cartesian_product_indices;
 
@@ -1128,7 +1128,10 @@ impl<'a> SymbolicExecutor<'a> {
             }
         }
         if is_success {
-            SymbolicValue::Array(create_nested_array(&concrete_counts, elem))
+            SymbolicValue::Array(initialize_symbolic_nested_array_with_value(
+                &concrete_counts,
+                elem,
+            ))
         } else {
             SymbolicValue::Array(Vec::new())
         }
@@ -1172,7 +1175,7 @@ impl<'a> SymbolicExecutor<'a> {
                 };
                 println!("d: {:?}", dims);
 
-                let decomposed_array = create_nested_array_with_indicies(dims, sym_name);
+                let decomposed_array = initialize_symbolic_nested_array_with_name(dims, sym_name);
                 println!(
                     "decomposed_array: {}",
                     decomposed_array.lookup_fmt(&self.symbolic_library.id2name)
