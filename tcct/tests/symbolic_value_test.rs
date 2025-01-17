@@ -2,11 +2,15 @@ use std::rc::Rc;
 use std::str::FromStr;
 
 use num_bigint_dig::BigInt;
+use num_traits::{One, Zero};
 
 use program_structure::ast::ExpressionInfixOpcode;
 
 use tcct::executor::debug_ast::DebuggableExpressionInfixOpcode;
-use tcct::executor::symbolic_value::{enumerate_array, evaluate_binary_op, SymbolicValue};
+use tcct::executor::symbolic_value::{
+    create_nested_array_with_indicies, enumerate_array, evaluate_binary_op, OwnerName,
+    SymbolicAccess, SymbolicName, SymbolicValue,
+};
 
 #[test]
 fn test_arithmetic_operations() {
@@ -290,4 +294,62 @@ fn test_enumerate_empty_array() {
     let result = enumerate_array(&empty_array);
 
     assert_eq!(result.len(), 0);
+}
+
+#[test]
+fn test_create_nested_array_with_indicies() {
+    let main_in = SymbolicName::new(
+        0,
+        Rc::new(vec![OwnerName {
+            id: 1,
+            access: None,
+            counter: 0,
+        }]),
+        None,
+    );
+
+    let first_row: Vec<_> = (0..3)
+        .map(|i| {
+            Rc::new(SymbolicValue::Variable(SymbolicName::new(
+                0,
+                Rc::new(vec![OwnerName {
+                    id: 1,
+                    access: None,
+                    counter: 0,
+                }]),
+                Some(vec![
+                    SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(BigInt::zero())),
+                    SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(BigInt::from(i))),
+                ]),
+            )))
+        })
+        .collect();
+    let second_row: Vec<_> = (0..3)
+        .map(|i| {
+            Rc::new(SymbolicValue::Variable(SymbolicName::new(
+                0,
+                Rc::new(vec![OwnerName {
+                    id: 1,
+                    access: None,
+                    counter: 0,
+                }]),
+                Some(vec![
+                    SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(BigInt::one())),
+                    SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(BigInt::from(i))),
+                ]),
+            )))
+        })
+        .collect();
+
+    let sym_array = create_nested_array_with_indicies(&[2, 3], &main_in);
+    assert_eq!(
+        sym_array,
+        SymbolicValue::Array(
+            [
+                Rc::new(SymbolicValue::Array(first_row)),
+                Rc::new(SymbolicValue::Array(second_row)),
+            ]
+            .to_vec(),
+        )
+    );
 }

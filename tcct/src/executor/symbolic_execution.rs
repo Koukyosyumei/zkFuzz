@@ -21,10 +21,11 @@ use crate::executor::debug_ast::{
 use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_state::SymbolicState;
 use crate::executor::symbolic_value::{
-    access_multidimensional_array, create_nested_array, decompose_uniform_array, enumerate_array,
-    evaluate_binary_op, generate_lessthan_constraint, is_concrete_array, register_array_elements,
-    update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
-    SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
+    access_multidimensional_array, create_nested_array, create_nested_array_with_indicies,
+    decompose_uniform_array, enumerate_array, evaluate_binary_op, generate_lessthan_constraint,
+    is_concrete_array, register_array_elements, update_nested_array, OwnerName, SymbolicAccess,
+    SymbolicComponent, SymbolicLibrary, SymbolicName, SymbolicTemplate, SymbolicValue,
+    SymbolicValueRef,
 };
 use crate::executor::utils::generate_cartesian_product_indices;
 
@@ -1030,6 +1031,10 @@ impl<'a> SymbolicExecutor<'a> {
                     elem_id,
                 )
             };
+            println!(
+                "self.id2dimensions - {}: {:?}",
+                self.symbolic_library.id2name[id], dims
+            );
             self.id2dimensions.insert(*id, dims);
 
             self.execute(statements, cur_bid + 1);
@@ -1129,6 +1134,59 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    fn decompose_array(&mut self, sym_val: &SymbolicValue) -> SymbolicValue {
+        match &sym_val {
+            SymbolicValue::Array(elems) => SymbolicValue::Array(
+                elems
+                    .iter()
+                    .map(|e| Rc::new(self.decompose_array(e)))
+                    .collect(),
+            ),
+            SymbolicValue::Variable(sym_name) => {
+                let mut owner_name = sym_name.clone();
+                let mut owner_lists = (*owner_name.owner).clone();
+                owner_name.id = owner_lists.last().unwrap().id;
+                owner_name.access = owner_lists.last().unwrap().access.clone();
+                owner_lists.pop();
+                owner_name.owner = Rc::new(owner_lists.to_vec());
+                owner_name.update_hash();
+
+                println!(
+                    "sym_name: {}, owner_name: {}",
+                    sym_name.lookup_fmt(&self.symbolic_library.id2name),
+                    owner_name.lookup_fmt(&self.symbolic_library.id2name)
+                );
+
+                let dims = if self
+                    .symbolic_store
+                    .components_store
+                    .contains_key(&owner_name)
+                {
+                    &self.symbolic_store.components_store[&owner_name].id2dimensions[&sym_name.id]
+                } else {
+                    if self.id2dimensions.contains_key(&sym_name.id) {
+                        &self.id2dimensions[&sym_name.id]
+                    } else {
+                        &Vec::new()
+                    }
+                };
+                println!("d: {:?}", dims);
+
+                let decomposed_array = create_nested_array_with_indicies(dims, sym_name);
+                println!(
+                    "decomposed_array: {}",
+                    decomposed_array.lookup_fmt(&self.symbolic_library.id2name)
+                );
+
+                let positions = generate_cartesian_product_indices(dims);
+                println!("p: {:?}", positions);
+
+                sym_val.clone()
+            }
+            _ => sym_val.clone(),
+        }
+    }
+
     /// Handles array substitution in symbolic execution.
     ///
     /// This method processes the assignment of array values, updating the symbolic state
@@ -1165,6 +1223,8 @@ impl<'a> SymbolicExecutor<'a> {
                 _ => arr.clone(), //SymbolicValue::Array(Vec::new()),
             };
         }
+
+        self.decompose_array(&base_array);
 
         let enumerated_elements = enumerate_array(arr);
         for (pos, elem) in enumerated_elements {

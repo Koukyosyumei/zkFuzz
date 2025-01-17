@@ -920,6 +920,27 @@ pub fn create_nested_array(
     }
 }
 
+pub fn create_nested_array_with_indicies(dims: &[usize], sym_name: &SymbolicName) -> SymbolicValue {
+    if dims.is_empty() {
+        SymbolicValue::Variable(sym_name.clone())
+    } else {
+        SymbolicValue::Array(
+            (0..dims[0])
+                .map(|i| {
+                    let mut new_sym_name = sym_name.clone();
+                    let mut access = new_sym_name.access.unwrap_or_default();
+                    access.push(SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(
+                        BigInt::from_usize(i).unwrap(),
+                    )));
+                    new_sym_name.access = Some(access);
+                    // new_left_var_name.update_hash();
+                    Rc::new(create_nested_array_with_indicies(&dims[1..], &new_sym_name))
+                })
+                .collect(),
+        )
+    }
+}
+
 pub fn update_nested_array(
     dims: &[usize],
     array: &SymbolicValueRef,
