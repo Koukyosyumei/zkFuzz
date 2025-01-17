@@ -22,7 +22,7 @@ use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_state::SymbolicState;
 use crate::executor::symbolic_value::{
     access_multidimensional_array, decompose_uniform_array, enumerate_array, evaluate_binary_op,
-    generate_lessthan_constraint, initialize_symbolic_nested_array_with_name,
+    generate_lessthan_constraint,
     initialize_symbolic_nested_array_with_value, is_concrete_array, register_array_elements,
     update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
     SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
