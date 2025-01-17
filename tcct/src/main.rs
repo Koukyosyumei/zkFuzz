@@ -279,6 +279,10 @@ fn start() -> Result<(), ()> {
                     template_param_values: template_param_values,
                 };
 
+                let mut new_base_config = base_config.clone();
+                new_base_config.off_trace = true;
+                sym_executor.setting = &new_base_config;
+
                 if let Some(counter_example_for_unused_outputs) =
                     check_unused_outputs(&mut sym_executor, &verification_base_config)
                 {
