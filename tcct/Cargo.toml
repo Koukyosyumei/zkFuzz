@@ -29,3 +29,4 @@ rand = "0.7.0"
 serde = {version = "1.0.217", features = ["derive"]}
 serde_json = "1.0.134"
 lazy_static = "1.4.0"
+serde_with = "3.12.0"

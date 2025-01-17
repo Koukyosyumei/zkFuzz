@@ -6,7 +6,9 @@ use colored::Colorize;
 use log::info;
 use num_bigint_dig::BigInt;
 use serde::{Deserialize, Serialize};
+use serde_with::{serde_as, DisplayFromStr};
 
+#[serde_as]
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct MutationConfig {
@@ -23,6 +25,7 @@ pub struct MutationConfig {
     pub input_generation_crossover_rate: f64,
     pub input_generation_mutation_rate: f64,
     pub input_generation_singlepoint_mutation_rate: f64,
+    #[serde_as(as = "Vec<(DisplayFromStr, DisplayFromStr)>")]
     pub random_value_ranges: Vec<(BigInt, BigInt)>,
     pub random_value_probs: Vec<f64>,
     pub save_fitness_scores: bool,

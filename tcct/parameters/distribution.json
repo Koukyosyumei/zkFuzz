@@ -1,0 +1,4 @@
+{
+    "random_value_ranges": [["0", "10"], ["20", "30"]],
+    "fitness_function": "error"
+}
