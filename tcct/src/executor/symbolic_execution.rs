@@ -1325,7 +1325,7 @@ impl<'a> SymbolicExecutor<'a> {
         self.restore_escaped_variables(&escaped_vars);
 
         let component = SymbolicComponent {
-            template_name: *callee_template_id,
+            template_id: *callee_template_id,
             args: args.clone(),
             inputs_binding_map: inputs_binding_map,
             id2dimensions: id2dimensions,
@@ -1644,10 +1644,10 @@ impl<'a> SymbolicExecutor<'a> {
             subse.cur_state.owner_name = Rc::new(updated_owner_list);
 
             let templ = &subse.symbolic_library.template_library
-                [&self.symbolic_store.components_store[component_name].template_name];
-            subse.cur_state.set_template_id(
-                self.symbolic_store.components_store[component_name].template_name,
-            );
+                [&self.symbolic_store.components_store[component_name].template_id];
+            subse
+                .cur_state
+                .set_template_id(self.symbolic_store.components_store[component_name].template_id);
 
             // Set template-parameters of the component
             for i in 0..templ.template_parameter_names.len() {
@@ -1677,7 +1677,7 @@ impl<'a> SymbolicExecutor<'a> {
                 trace!(
                     "📞 Call {}",
                     subse.symbolic_library.id2name
-                        [&self.symbolic_store.components_store[component_name].template_name]
+                        [&self.symbolic_store.components_store[component_name].template_id]
                 );
             }
 

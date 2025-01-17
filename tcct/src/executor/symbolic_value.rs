@@ -351,7 +351,7 @@ pub struct SymbolicFunction {
 /// Represents a symbolic component used in the symbolic execution process.
 #[derive(Default, Clone)]
 pub struct SymbolicComponent {
-    pub template_name: usize,
+    pub template_id: usize,
     pub args: Vec<SymbolicValueRef>,
     pub inputs_binding_map: FxHashMap<SymbolicName, Option<SymbolicValue>>,
     pub id2dimensions: FxHashMap<usize, Vec<usize>>,
