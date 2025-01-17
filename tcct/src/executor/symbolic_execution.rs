@@ -1235,11 +1235,10 @@ impl<'a> SymbolicExecutor<'a> {
     ///
     /// # Arguments
     ///
-    /// * `callee_name` - The name of the called function or template.
+    /// * `callee_id` - The name of the called function or template.
     /// * `args` - The arguments passed to the call.
-    /// * `var_name` - The symbolic name where the call result is being assigned.
-    /// * `base_name` - The base symbolic name for component initialization.
-    /// * `elem_id` - Unique element id
+    /// * `component_or_return_name` - The symbolic name where the call result is being assigned.
+    /// * `right_call` - The symbolic call.
     ///
     /// # Side Effects
     ///
@@ -1249,7 +1248,7 @@ impl<'a> SymbolicExecutor<'a> {
         op: &DebuggableAssignOp,
         callee_id: &usize,
         args: &Vec<Rc<SymbolicValue>>,
-        callee_name: &SymbolicName,
+        component_or_return_name: &SymbolicName,
         right_call: &SymbolicValue,
     ) {
         let is_mutable = match op {
@@ -1261,10 +1260,10 @@ impl<'a> SymbolicExecutor<'a> {
             .template_library
             .contains_key(callee_id)
         {
-            self.initialize_template_component(callee_id, args, callee_name);
+            self.initialize_template_component(callee_id, args, component_or_return_name);
         } else {
             let cont = SymbolicValue::AssignCall(
-                Rc::new(SymbolicValue::Variable(callee_name.clone())),
+                Rc::new(SymbolicValue::Variable(component_or_return_name.clone())),
                 Rc::new(right_call.clone()),
                 is_mutable,
             );
