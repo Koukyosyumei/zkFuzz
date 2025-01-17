@@ -22,10 +22,9 @@ use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_state::SymbolicState;
 use crate::executor::symbolic_value::{
     access_multidimensional_array, decompose_uniform_array, enumerate_array, evaluate_binary_op,
-    generate_lessthan_constraint,
-    initialize_symbolic_nested_array_with_value, is_concrete_array, register_array_elements,
-    update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
-    SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
+    generate_lessthan_constraint, initialize_symbolic_nested_array_with_value, is_concrete_array,
+    register_array_elements, update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent,
+    SymbolicLibrary, SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::generate_cartesian_product_indices;
 
@@ -1204,7 +1203,7 @@ impl<'a> SymbolicExecutor<'a> {
                     &mut symbolic_positions,
                 )
             } else {
-                left_var_names.push(new_left_var_name.clone());
+                left_var_names.push(new_left_var_name);
                 right_values.push(elem.clone());
             }
             for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
@@ -1448,7 +1447,7 @@ impl<'a> SymbolicExecutor<'a> {
                     right_var_name_p.access = Some(symbolic_p);
                 }
                 right_var_name_p.update_hash();
-                left_var_names.push(left_var_name_p.clone());
+                left_var_names.push(left_var_name_p);
                 right_values.push(SymbolicValue::Variable(right_var_name_p));
             }
         } else {
