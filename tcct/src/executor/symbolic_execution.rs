@@ -1261,6 +1261,18 @@ impl<'a> SymbolicExecutor<'a> {
             .contains_key(callee_id)
         {
             self.initialize_template_component(callee_id, args, component_or_return_name);
+            if self.is_ready(component_or_return_name) {
+                let pre_dims = if let Some(acc) = &component_or_return_name.access {
+                    acc
+                } else {
+                    &Vec::new()
+                };
+                self.execute_ready_component(
+                    component_or_return_name.id,
+                    component_or_return_name,
+                    pre_dims,
+                );
+            }
         } else {
             let cont = SymbolicValue::AssignCall(
                 Rc::new(SymbolicValue::Variable(component_or_return_name.clone())),
