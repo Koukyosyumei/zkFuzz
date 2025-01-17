@@ -1137,43 +1137,6 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    fn decompose_array(&mut self, sym_val: &SymbolicValue) -> SymbolicValue {
-        match &sym_val {
-            SymbolicValue::Array(elems) => SymbolicValue::Array(
-                elems
-                    .iter()
-                    .map(|e| Rc::new(self.decompose_array(e)))
-                    .collect(),
-            ),
-            SymbolicValue::Variable(sym_name) => {
-                let mut owner_name = sym_name.clone();
-                let mut owner_lists = (*owner_name.owner).clone();
-                owner_name.id = owner_lists.last().unwrap().id;
-                owner_name.access = owner_lists.last().unwrap().access.clone();
-                owner_lists.pop();
-                owner_name.owner = Rc::new(owner_lists.to_vec());
-                owner_name.update_hash();
-
-                let dims = if self
-                    .symbolic_store
-                    .components_store
-                    .contains_key(&owner_name)
-                {
-                    &self.symbolic_store.components_store[&owner_name].id2dimensions[&sym_name.id]
-                } else {
-                    if self.id2dimensions.contains_key(&sym_name.id) {
-                        &self.id2dimensions[&sym_name.id]
-                    } else {
-                        &Vec::new()
-                    }
-                };
-
-                initialize_symbolic_nested_array_with_name(dims, sym_name)
-            }
-            _ => sym_val.clone(),
-        }
-    }
-
     /// Handles array substitution in symbolic execution.
     ///
     /// This method processes the assignment of array values, updating the symbolic state
@@ -1211,12 +1174,6 @@ impl<'a> SymbolicExecutor<'a> {
             };
         }
 
-        //base_array = self.decompose_array(&base_array);
-        println!(
-            "base_array1: {}",
-            base_array.lookup_fmt(&self.symbolic_library.id2name)
-        );
-
         let enumerated_elements = enumerate_array(arr);
         for (pos, elem) in enumerated_elements {
             let mut new_left_var_name = left_var_name.clone();
@@ -1231,24 +1188,10 @@ impl<'a> SymbolicExecutor<'a> {
 
             let mut owner_new_left_var_name = new_left_var_name.clone();
             owner_new_left_var_name.access = None;
-            /*
-            let mut owner_new_left_var_lists = (*owner_new_left_var_name.owner).clone();
-            owner_new_left_var_name.id = owner_new_left_var_lists.last().unwrap().id;
-            owner_new_left_var_name.access =
-                owner_new_left_var_lists.last().unwrap().access.clone();
-            owner_new_left_var_lists.pop();
-            owner_new_left_var_name.owner = Rc::new(owner_new_left_var_lists.to_vec());
-            */
             owner_new_left_var_name.update_hash();
             let dim_of_left_var = new_left_var_name.get_dim();
             let full_dim_of_left_var =
                 self.get_full_dimension_of_var(&new_left_var_name, &owner_new_left_var_name);
-            println!(
-                "{} - {}",
-                new_left_var_name.lookup_fmt(&self.symbolic_library.id2name),
-                owner_new_left_var_name.lookup_fmt(&self.symbolic_library.id2name)
-            );
-            println!("{} - {}", dim_of_left_var, full_dim_of_left_var);
 
             let mut left_var_names = Vec::new();
             let mut right_values = Vec::new();
@@ -1267,14 +1210,11 @@ impl<'a> SymbolicExecutor<'a> {
             } else {
                 left_var_names.push(new_left_var_name.clone());
                 right_values.push(elem.clone());
-                //self.handle_non_call_substitution(op, &new_left_var_name, elem);
             }
             for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
                 self.cur_state.set_sym_val(lvn.clone(), rv.clone());
                 self.handle_non_call_substitution(op, &lvn, &rv);
             }
-
-            //self.cur_state.set_sym_val(new_left_var_name, elem.clone());
 
             if let SymbolicValue::Array(ref arr) = base_array {
                 if !arr.is_empty() {
