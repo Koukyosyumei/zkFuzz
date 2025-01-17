@@ -1312,12 +1312,12 @@ impl<'a> SymbolicExecutor<'a> {
 
         se_for_initialization.execute(&template.body, 0);
 
-        let mut symbol_optional_binding_map = FxHashMap::default();
+        let mut inputs_binding_map = FxHashMap::default();
         let mut id2dimensions = FxHashMap::default();
 
         se_for_initialization.pre_determine_dimensions(
             &template,
-            &mut symbol_optional_binding_map,
+            &mut inputs_binding_map,
             &mut id2dimensions,
         );
 
@@ -1326,7 +1326,7 @@ impl<'a> SymbolicExecutor<'a> {
         let component = SymbolicComponent {
             template_name: *callee_name,
             args: args.clone(),
-            symbol_optional_binding_map: symbol_optional_binding_map,
+            inputs_binding_map: inputs_binding_map,
             id2dimensions: id2dimensions,
             is_done: false,
         };
@@ -1384,7 +1384,7 @@ impl<'a> SymbolicExecutor<'a> {
                 }
                 inp_name.update_hash();
                 component
-                    .symbol_optional_binding_map
+                    .inputs_binding_map
                     .insert(inp_name, Some(sym_val.clone()));
             }
         }
@@ -1550,18 +1550,18 @@ impl<'a> SymbolicExecutor<'a> {
                         new_inp_name.access = Some(access);
                         new_inp_name.update_hash();
                         component
-                            .symbol_optional_binding_map
+                            .inputs_binding_map
                             .insert(new_inp_name, Some(elem.clone()));
                     }
 
                     // TODO: is this line necessary?
                     component
-                        .symbol_optional_binding_map
+                        .inputs_binding_map
                         .insert(inp_name, Some(value.clone()));
                 }
                 _ => {
                     component
-                        .symbol_optional_binding_map
+                        .inputs_binding_map
                         .insert(inp_name, Some(value.clone()));
                 }
             }
@@ -1614,7 +1614,7 @@ impl<'a> SymbolicExecutor<'a> {
     fn is_ready(&self, name: &SymbolicName) -> bool {
         self.symbolic_store.components_store.contains_key(name)
             && self.symbolic_store.components_store[name]
-                .symbol_optional_binding_map
+                .inputs_binding_map
                 .iter()
                 .all(|(_, v)| v.is_some())
     }
@@ -1666,7 +1666,7 @@ impl<'a> SymbolicExecutor<'a> {
 
             // Set inputs of the component
             for (k, v) in self.symbolic_store.components_store[base_name]
-                .symbol_optional_binding_map
+                .inputs_binding_map
                 .iter()
             {
                 let n =
