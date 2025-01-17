@@ -1154,12 +1154,6 @@ impl<'a> SymbolicExecutor<'a> {
                 owner_name.owner = Rc::new(owner_lists.to_vec());
                 owner_name.update_hash();
 
-                println!(
-                    "sym_name: {}, owner_name: {}",
-                    sym_name.lookup_fmt(&self.symbolic_library.id2name),
-                    owner_name.lookup_fmt(&self.symbolic_library.id2name)
-                );
-
                 let dims = if self
                     .symbolic_store
                     .components_store
@@ -1173,18 +1167,8 @@ impl<'a> SymbolicExecutor<'a> {
                         &Vec::new()
                     }
                 };
-                println!("d: {:?}", dims);
 
-                let decomposed_array = initialize_symbolic_nested_array_with_name(dims, sym_name);
-                println!(
-                    "decomposed_array: {}",
-                    decomposed_array.lookup_fmt(&self.symbolic_library.id2name)
-                );
-
-                let positions = generate_cartesian_product_indices(dims);
-                println!("p: {:?}", positions);
-
-                sym_val.clone()
+                initialize_symbolic_nested_array_with_name(dims, sym_name)
             }
             _ => sym_val.clone(),
         }
@@ -1227,7 +1211,11 @@ impl<'a> SymbolicExecutor<'a> {
             };
         }
 
-        self.decompose_array(&base_array);
+        //base_array = self.decompose_array(&base_array);
+        println!(
+            "base_array1: {}",
+            base_array.lookup_fmt(&self.symbolic_library.id2name)
+        );
 
         let enumerated_elements = enumerate_array(arr);
         for (pos, elem) in enumerated_elements {
@@ -1241,8 +1229,52 @@ impl<'a> SymbolicExecutor<'a> {
             new_left_var_name.access = Some(access);
             new_left_var_name.update_hash();
 
-            self.handle_non_call_substitution(op, &new_left_var_name, elem);
-            self.cur_state.set_sym_val(new_left_var_name, elem.clone());
+            let mut owner_new_left_var_name = new_left_var_name.clone();
+            owner_new_left_var_name.access = None;
+            /*
+            let mut owner_new_left_var_lists = (*owner_new_left_var_name.owner).clone();
+            owner_new_left_var_name.id = owner_new_left_var_lists.last().unwrap().id;
+            owner_new_left_var_name.access =
+                owner_new_left_var_lists.last().unwrap().access.clone();
+            owner_new_left_var_lists.pop();
+            owner_new_left_var_name.owner = Rc::new(owner_new_left_var_lists.to_vec());
+            */
+            owner_new_left_var_name.update_hash();
+            let dim_of_left_var = new_left_var_name.get_dim();
+            let full_dim_of_left_var =
+                self.get_full_dimension_of_var(&new_left_var_name, &owner_new_left_var_name);
+            println!(
+                "{} - {}",
+                new_left_var_name.lookup_fmt(&self.symbolic_library.id2name),
+                owner_new_left_var_name.lookup_fmt(&self.symbolic_library.id2name)
+            );
+            println!("{} - {}", dim_of_left_var, full_dim_of_left_var);
+
+            let mut left_var_names = Vec::new();
+            let mut right_values = Vec::new();
+            let mut symbolic_positions = Vec::new();
+            if full_dim_of_left_var > dim_of_left_var {
+                self.handle_bulk_assignment(
+                    &None,
+                    &new_left_var_name,
+                    dim_of_left_var,
+                    full_dim_of_left_var,
+                    &elem,
+                    &mut left_var_names,
+                    &mut right_values,
+                    &mut symbolic_positions,
+                )
+            } else {
+                left_var_names.push(new_left_var_name.clone());
+                right_values.push(elem.clone());
+                //self.handle_non_call_substitution(op, &new_left_var_name, elem);
+            }
+            for (lvn, rv) in left_var_names.iter().zip(right_values.iter()) {
+                self.cur_state.set_sym_val(lvn.clone(), rv.clone());
+                self.handle_non_call_substitution(op, &lvn, &rv);
+            }
+
+            //self.cur_state.set_sym_val(new_left_var_name, elem.clone());
 
             if let SymbolicValue::Array(ref arr) = base_array {
                 if !arr.is_empty() {
@@ -1253,7 +1285,13 @@ impl<'a> SymbolicExecutor<'a> {
             }
         }
 
+        println!(
+            "base_array2: {}",
+            base_array.lookup_fmt(&self.symbolic_library.id2name)
+        );
+
         if let SymbolicValue::Array(ref arr) = base_array {
+            println!("aaaaaaaaaaaaaa");
             if !arr.is_empty() {
                 self.cur_state
                     .set_sym_val(left_var_name.clone(), base_array);
@@ -1886,16 +1924,16 @@ impl<'a> SymbolicExecutor<'a> {
         var_name: &SymbolicName,
         sym_name_of_direct_owner: &SymbolicName,
     ) -> usize {
-        if self
+        if let Some(cs) = self
             .symbolic_store
             .components_store
-            .contains_key(sym_name_of_direct_owner)
+            .get(sym_name_of_direct_owner)
         {
-            self.symbolic_store.components_store[sym_name_of_direct_owner].id2dimensions
-                [&var_name.id]
-                .len()
+            cs.id2dimensions[&var_name.id].len()
+        } else if let Some(dim) = self.id2dimensions.get(&sym_name_of_direct_owner.id) {
+            dim.len()
         } else {
-            self.id2dimensions[&sym_name_of_direct_owner.id].len()
+            0
         }
     }
 
