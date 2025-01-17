@@ -1249,7 +1249,7 @@ impl<'a> SymbolicExecutor<'a> {
         op: &DebuggableAssignOp,
         callee_id: &usize,
         args: &Vec<Rc<SymbolicValue>>,
-        var_name: &SymbolicName,
+        callee_name: &SymbolicName,
         right_call: &SymbolicValue,
     ) {
         let is_mutable = match op {
@@ -1261,10 +1261,10 @@ impl<'a> SymbolicExecutor<'a> {
             .template_library
             .contains_key(callee_id)
         {
-            self.initialize_template_component(callee_id, args, var_name);
+            self.initialize_template_component(callee_id, args, callee_name);
         } else {
             let cont = SymbolicValue::AssignCall(
-                Rc::new(SymbolicValue::Variable(var_name.clone())),
+                Rc::new(SymbolicValue::Variable(callee_name.clone())),
                 Rc::new(right_call.clone()),
                 is_mutable,
             );
@@ -1276,7 +1276,7 @@ impl<'a> SymbolicExecutor<'a> {
         &mut self,
         callee_template_id: &usize,
         args: &Vec<Rc<SymbolicValue>>,
-        var_name: &SymbolicName,
+        component_name: &SymbolicName,
     ) {
         let mut subse_setting = self.setting.clone();
         subse_setting.only_initialization_blocks = true;
@@ -1333,7 +1333,7 @@ impl<'a> SymbolicExecutor<'a> {
         };
         self.symbolic_store
             .components_store
-            .insert(var_name.clone(), component);
+            .insert(component_name.clone(), component);
     }
 
     fn pre_determine_dimensions(
