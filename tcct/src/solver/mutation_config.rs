@@ -63,20 +63,38 @@ impl fmt::Display for MutationConfig {
         write!(
             f,
             "🧬 Mutation Settings:
-    ├─ Program Population Size    : {}
-    ├─ Input Population Size      : {}
-    ├─ Max Generations            : {}
-    ├─ Input Initialization Method: {} 
-    ├─ Fitness Function           : {} 
-    ├─ Trace Mutation Rate        : {}
-    └─ Trace Crossover Rate       : {}",
+    ├─ Program Population Size                    : {}
+    ├─ Input Population Size                      : {}
+    ├─ Max Generations                            : {}
+    ├─ Input Initialization Method                : {} 
+    ├─ Fitness Function                           : {} 
+    ├─ Trace Mutation Rate                        : {}
+    ├─ Trace Crossover Rate                       : {}
+    ├─ Input Generation Interval                  : {} 
+    ├─ Input Generation Maximum Iteration         : {} 
+    ├─ Input Generation Crossover Rate            : {}
+    ├─ Input Generation Mutation Rate             : {}
+    └─ Input Generation Singlepoint Mutation Rate : {}",
             self.program_population_size.to_string().bright_yellow(),
             self.input_population_size.to_string().bright_yellow(),
             self.max_generations.to_string().bright_yellow(),
             self.input_initialization_method.bright_yellow(),
             self.fitness_function.bright_yellow(),
             self.mutation_rate.to_string().bright_yellow(),
-            self.crossover_rate.to_string().bright_yellow()
+            self.crossover_rate.to_string().bright_yellow(),
+            self.input_update_interval.to_string().bright_yellow(),
+            self.input_generation_max_iteration
+                .to_string()
+                .bright_yellow(),
+            self.input_generation_crossover_rate
+                .to_string()
+                .bright_yellow(),
+            self.input_generation_mutation_rate
+                .to_string()
+                .bright_yellow(),
+            self.input_generation_singlepoint_mutation_rate
+                .to_string()
+                .bright_yellow()
         )
     }
 }
