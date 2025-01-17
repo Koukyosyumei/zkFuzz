@@ -8,14 +8,14 @@ use crate::executor::symbolic_value::{OwnerName, SymbolicName};
 
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::mutation_test_crossover_fn::random_crossover;
-use crate::solver::mutation_utils::draw_random_constant;
+use crate::solver::mutation_utils::{draw_bigint_with_probabilities, draw_random_constant};
 use crate::solver::utils::BaseVerificationConfig;
 
 pub fn update_input_population_with_random_sampling(
     _sexe: &mut SymbolicExecutor,
     input_variables: &[SymbolicName],
     inputs_population: &mut Vec<FxHashMap<SymbolicName, BigInt>>,
-    base_config: &BaseVerificationConfig,
+    _base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) {
@@ -23,7 +23,17 @@ pub fn update_input_population_with_random_sampling(
         .map(|_| {
             input_variables
                 .iter()
-                .map(|var| (var.clone(), draw_random_constant(base_config, rng)))
+                .map(|var| {
+                    (
+                        var.clone(),
+                        draw_bigint_with_probabilities(
+                            &mutation_config.random_value_ranges,
+                            &mutation_config.random_value_probs,
+                            rng,
+                        )
+                        .unwrap(),
+                    )
+                })
                 .collect::<FxHashMap<SymbolicName, BigInt>>()
         })
         .collect();

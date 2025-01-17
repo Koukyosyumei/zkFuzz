@@ -138,7 +138,7 @@ where
         &TraceCrossoverFn,
         &TraceSelectionFn,
     ) -> Vec<Gene>,
-    TraceMutationFn: Fn(&mut Gene, &BaseVerificationConfig, &mut StdRng),
+    TraceMutationFn: Fn(&mut Gene, &BaseVerificationConfig, &MutationConfig, &mut StdRng),
     TraceCrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
     TraceSelectionFn: for<'a> Fn(&'a [Gene], &[BigInt], &mut StdRng) -> &'a Gene,
 {

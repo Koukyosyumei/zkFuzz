@@ -58,7 +58,7 @@ pub fn simple_evolution<T: Clone, TraceMutationFn, TraceCrossoverFn, TraceSelect
     trace_selection_fn: &TraceSelectionFn,
 ) -> Vec<T>
 where
-    TraceMutationFn: Fn(&mut T, &BaseVerificationConfig, &mut StdRng),
+    TraceMutationFn: Fn(&mut T, &BaseVerificationConfig, &MutationConfig, &mut StdRng),
     TraceCrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
     TraceSelectionFn: for<'a> Fn(&'a [T], &[BigInt], &mut StdRng) -> &'a T,
 {
@@ -72,7 +72,7 @@ where
                 parent1.clone()
             };
             if rng.gen::<f64>() < mutation_config.mutation_rate {
-                trace_mutation_fn(&mut child, base_base_config, rng);
+                trace_mutation_fn(&mut child, base_base_config, mutation_config, rng);
             }
             child
         })

@@ -3,6 +3,8 @@ use std::fs::File;
 
 use colored::Colorize;
 use log::info;
+use num_bigint_dig::BigInt;
+use num_traits::Zero;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -21,6 +23,8 @@ pub struct MutationConfig {
     pub input_generation_crossover_rate: f64,
     pub input_generation_mutation_rate: f64,
     pub input_generation_singlepoint_mutation_rate: f64,
+    pub random_value_ranges: Vec<(BigInt, BigInt)>,
+    pub random_value_probs: Vec<f64>,
     pub save_fitness_scores: bool,
 }
 
@@ -40,6 +44,11 @@ impl Default for MutationConfig {
             input_generation_crossover_rate: 0.66,
             input_generation_mutation_rate: 0.5,
             input_generation_singlepoint_mutation_rate: 0.5,
+            random_value_ranges: vec![
+                (BigInt::zero(), BigInt::from(10)),
+                (BigInt::from(-100), BigInt::from(0)),
+            ],
+            random_value_probs: vec![0.5, 0.5],
             save_fitness_scores: false,
         }
     }
