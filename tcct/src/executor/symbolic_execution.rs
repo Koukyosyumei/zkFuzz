@@ -1,3 +1,4 @@
+use core::panic;
 use std::cmp::max;
 use std::rc::Rc;
 
@@ -727,20 +728,13 @@ impl<'a> SymbolicExecutor<'a> {
         cur_bid: usize,
     ) {
         if let DebuggableStatement::InitializationBlock {
-            initializations,
-            xtype,
-            ..
+            initializations, ..
         } = &statements[cur_bid]
         {
-            let is_input = matches!(xtype, VariableType::Signal(SignalType::Input, _));
-
             self.cur_state.is_within_initialization_block = true;
 
-            // We do not need to initialize the inputs during concrete execution
-            if !(self.setting.skip_initialization_blocks && is_input) {
-                for init in initializations {
-                    self.execute(&vec![init.clone()], 0);
-                }
+            for init in initializations {
+                self.execute(&vec![init.clone()], 0);
             }
 
             self.cur_state.is_within_initialization_block = false;
@@ -1008,8 +1002,12 @@ impl<'a> SymbolicExecutor<'a> {
             self.symbolic_store
                 .variable_types
                 .insert(*id, DebuggableVariableType(xtype.clone()));
-            let value = SymbolicValue::Variable(var_name.clone());
-            self.cur_state.set_sym_val(var_name, value);
+
+            let is_input = matches!(xtype, VariableType::Signal(SignalType::Input, _));
+            if !(self.setting.skip_initialization_blocks && is_input) {
+                let value = SymbolicValue::Variable(var_name.clone());
+                self.cur_state.set_sym_val(var_name, value);
+            }
 
             let dims = if self
                 .symbolic_library
@@ -1867,7 +1865,15 @@ impl<'a> SymbolicExecutor<'a> {
             .components_store
             .get(sym_name_of_direct_owner)
         {
-            cs.id2dimensions[&var_name.id].len()
+            if let Some(dims) = cs.id2dimensions.get(&var_name.id) {
+                dims.len()
+            } else {
+                panic!(
+                    "The dimensions of {} within {} has not been registered.",
+                    self.symbolic_library.id2name[&var_name.id],
+                    sym_name_of_direct_owner.lookup_fmt(&self.symbolic_library.id2name)
+                );
+            }
         } else if let Some(dim) = self.id2dimensions.get(&sym_name_of_direct_owner.id) {
             dim.len()
         } else {
