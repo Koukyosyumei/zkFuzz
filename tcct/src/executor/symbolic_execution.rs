@@ -305,10 +305,13 @@ impl<'a> SymbolicExecutor<'a> {
                 if let SymbolicValue::ConstantInt(bint) = &simplified_arg0 {
                     bint.to_usize().unwrap()
                 } else {
+                    /*
                     panic!(
                         "Undetermined dimension: {}",
                         simplified_arg0.lookup_fmt(&self.symbolic_library.id2name)
                     )
+                    */
+                    0
                 }
             })
             .collect::<Vec<_>>()
