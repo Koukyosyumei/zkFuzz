@@ -1247,7 +1247,7 @@ impl<'a> SymbolicExecutor<'a> {
     fn handle_call_substitution(
         &mut self,
         op: &DebuggableAssignOp,
-        callee_name: &usize,
+        callee_id: &usize,
         args: &Vec<Rc<SymbolicValue>>,
         var_name: &SymbolicName,
         right_call: &SymbolicValue,
@@ -1259,9 +1259,9 @@ impl<'a> SymbolicExecutor<'a> {
         if self
             .symbolic_library
             .template_library
-            .contains_key(callee_name)
+            .contains_key(callee_id)
         {
-            self.initialize_template_component(callee_name, args, var_name);
+            self.initialize_template_component(callee_id, args, var_name);
         } else {
             let cont = SymbolicValue::AssignCall(
                 Rc::new(SymbolicValue::Variable(var_name.clone())),
