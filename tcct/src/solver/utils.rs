@@ -653,6 +653,13 @@ pub fn evaluate_symbolic_value(
             match &cond_val {
                 SymbolicValue::ConstantBool(true) => then_val,
                 SymbolicValue::ConstantBool(false) => else_val,
+                SymbolicValue::ConstantInt(num) => {
+                    if num.is_positive() {
+                        then_val
+                    } else {
+                        else_val
+                    }
+                }
                 _ => panic!(
                     "Unassigned variables exist: {}",
                     cond_val.lookup_fmt(&symbolic_library.id2name)

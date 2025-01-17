@@ -723,7 +723,7 @@ pub fn evaluate_binary_op(
             ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt((lv * rv) % prime),
             ExpressionInfixOpcode::Pow => SymbolicValue::ConstantInt(modpow(lv, rv, prime)),
             ExpressionInfixOpcode::Div => {
-                if rv.is_zero() {
+                if lv.is_zero() || rv.is_zero() {
                     SymbolicValue::ConstantInt(BigInt::zero())
                 } else {
                     let mut r = prime.clone();
@@ -744,12 +744,20 @@ pub fn evaluate_binary_op(
                     SymbolicValue::ConstantInt((lv * rv_inv) % prime)
                 }
             }
-            ExpressionInfixOpcode::IntDiv => SymbolicValue::ConstantInt(if rv.is_zero() {
-                BigInt::zero()
-            } else {
-                lv / rv
-            }),
-            ExpressionInfixOpcode::Mod => SymbolicValue::ConstantInt(lv % rv),
+            ExpressionInfixOpcode::IntDiv => {
+                SymbolicValue::ConstantInt(if lv.is_zero() || rv.is_zero() {
+                    BigInt::zero()
+                } else {
+                    lv / rv
+                })
+            }
+            ExpressionInfixOpcode::Mod => {
+                SymbolicValue::ConstantInt(if lv.is_zero() || rv.is_zero() {
+                    BigInt::zero()
+                } else {
+                    lv % rv
+                })
+            }
             ExpressionInfixOpcode::BitOr => SymbolicValue::ConstantInt(lv | rv),
             ExpressionInfixOpcode::BitAnd => SymbolicValue::ConstantInt(lv & rv),
             ExpressionInfixOpcode::BitXor => SymbolicValue::ConstantInt(lv ^ rv),
