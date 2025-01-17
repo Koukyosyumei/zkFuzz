@@ -2189,3 +2189,55 @@ fn test_unused_outputs() {
 
     assert!(check_unused_outputs(&mut sexe, &verification_setting).is_some());
 }
+
+#[test]
+fn test_assign_nested_array() {
+    let path = "./tests/sample/test_assign_nested_array.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = get_default_setting_for_symbolic_execution(prime, false);
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    let last_cond = SymbolicValue::AssignEq(
+        Rc::new(SymbolicValue::Variable(SymbolicName::new(
+            sexe.symbolic_library.name2id["out"],
+            Rc::new(vec![OwnerName {
+                id: sexe.symbolic_library.name2id["main"],
+                access: None,
+                counter: 0,
+            }]),
+            Some(vec![
+                SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(BigInt::one())),
+                SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(BigInt::one())),
+                SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(BigInt::from(2))),
+            ]),
+        ))),
+        Rc::new(SymbolicValue::Variable(SymbolicName::new(
+            sexe.symbolic_library.name2id["y"],
+            Rc::new(vec![
+                OwnerName {
+                    id: sexe.symbolic_library.name2id["main"],
+                    access: None,
+                    counter: 0,
+                },
+                OwnerName {
+                    id: sexe.symbolic_library.name2id["c4"],
+                    access: None,
+                    counter: 0,
+                },
+            ]),
+            Some(vec![SymbolicAccess::ArrayAccess(
+                SymbolicValue::ConstantInt(BigInt::from(2)),
+            )]),
+        ))),
+    );
+
+    assert_eq!(**sexe.cur_state.symbolic_trace.last().unwrap(), last_cond);
+    assert_eq!(**sexe.cur_state.side_constraints.last().unwrap(), last_cond);
+}
