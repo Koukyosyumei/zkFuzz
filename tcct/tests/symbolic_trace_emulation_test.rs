@@ -117,3 +117,58 @@ fn test_recursive_call() {
 
     assert_eq!(assignment[&main_out], BigInt::from(19));
 }
+
+#[test]
+fn test_call_const_template() {
+    let path = "./tests/sample/test_call_const_template.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = get_default_setting_for_symbolic_execution(prime.clone(), false);
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    let main_a = SymbolicName::new(
+        sexe.symbolic_library.name2id["a"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        None,
+    );
+    let main_b = SymbolicName::new(
+        sexe.symbolic_library.name2id["b"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        None,
+    );
+    let main_c = SymbolicName::new(
+        sexe.symbolic_library.name2id["c"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        None,
+    );
+
+    let mut assignment = FxHashMap::from_iter([
+        (main_a.clone(), BigInt::from(3)),
+        (main_b.clone(), BigInt::from(4)),
+    ]);
+    let _ = emulate_symbolic_trace(
+        &prime,
+        &sexe.cur_state.symbolic_trace,
+        &mut assignment,
+        &mut sexe.symbolic_library,
+    );
+    assert_eq!(assignment[&main_c], BigInt::from(8));
+}

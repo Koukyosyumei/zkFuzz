@@ -7,7 +7,7 @@ function get_dim() {
 template Callee(){
     signal output arr[get_dim()];
     for(var i = 0; i < get_dim(); i++)
-        arr[i] <== 0;
+        arr[i] <== i;
 }
 
 template Caller() {
