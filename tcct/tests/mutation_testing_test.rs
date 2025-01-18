@@ -127,6 +127,7 @@ fn test_vuln_scholarshipcheck() {
     ));
 }
 
+#[test]
 fn test_vuln_rshift1() {
     let result = conduct_mutation_testing("./tests/sample/test_vuln_rshift1.circom".to_string());
 
