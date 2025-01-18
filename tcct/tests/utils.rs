@@ -50,6 +50,16 @@ pub fn prepare_symbolic_library(
             v.get_name_of_params(),
             &whitelist,
         );
+
+        println!(
+            "{}",
+            symbolic_library.template_library[&symbolic_library.name2id[&k]]
+                .body
+                .iter()
+                .map(|b| b.lookup_fmt(&symbolic_library.id2name, 0))
+                .collect::<Vec<_>>()
+                .join("")
+        );
     }
 
     for (k, v) in program_archive.functions.clone().into_iter() {
