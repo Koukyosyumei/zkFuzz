@@ -678,6 +678,55 @@ pub fn is_true(val: &SymbolicValue) -> bool {
     }
 }
 
+/// Evaluates a binary operation on two symbolic values, taking into account modular arithmetic
+/// with a specified prime and the type of operation.
+///
+/// # Parameters
+/// - `lhs`: A reference to the left-hand side operand, represented as a `SymbolicValue`.
+/// - `rhs`: A reference to the right-hand side operand, represented as a `SymbolicValue`.
+/// - `prime`: A reference to a `BigInt` representing the prime modulus used for modular arithmetic.
+/// - `op`: A reference to a `DebuggableExpressionInfixOpcode` representing the binary operation to evaluate.
+///
+/// # Returns
+/// A `SymbolicValue` representing the result of the binary operation. The result may be:
+/// - A constant integer or boolean for fully evaluated operations.
+/// - A new `BinaryOp` if the operands are not constant values.
+///
+/// # Behavior
+/// 1. Normalizes `lhs` and `rhs` based on the operation:
+///    - Arithmetic and bitwise operators convert operands to integers.
+///    - Logical operators retain their boolean values.
+/// 2. Performs the specified operation if both operands are constants:
+///    - Arithmetic (e.g., addition, subtraction, multiplication, division, modulo).
+///    - Bitwise operations (e.g., AND, OR, XOR, shifts).
+///    - Logical comparisons (e.g., equality, greater than, less than).
+/// 3. Returns a `BinaryOp` if the operands are non-constant values, preserving the symbolic structure.
+///
+/// # Special Cases
+/// - Modular arithmetic operations respect the `prime` modulus.
+/// - Division and modulo operations handle zero as a special case, returning zero when the divisor is zero.
+/// - Negative values are normalized using the modulus where applicable.
+///
+/// # Panics
+/// - The function may panic if an unsupported operation is encountered in a match statement with `todo!`.
+///
+/// # Example
+/// ```rust
+/// use num_bigint_dig::BigInt;
+///
+/// use program_structure::ast::ExpressionInfixOpcode;
+///
+/// use tcct::executor::debug_ast::{DebuggableExpressionInfixOpcode};
+/// use tcct::executor::symbolic_value::{SymbolicValue, evaluate_binary_op};
+///
+/// let lhs = SymbolicValue::ConstantInt(BigInt::from(10));
+/// let rhs = SymbolicValue::ConstantInt(BigInt::from(3));
+/// let prime = BigInt::from(7);
+/// let op = DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add);
+///
+/// let result = evaluate_binary_op(&lhs, &rhs, &prime, &op);
+/// assert_eq!(result, SymbolicValue::ConstantInt(BigInt::from(6))); // (10 + 3) % 7 = 6
+/// ```
 pub fn evaluate_binary_op(
     lhs: &SymbolicValue,
     rhs: &SymbolicValue,
