@@ -318,18 +318,50 @@ impl<'a> SymbolicExecutor<'a> {
             .collect::<Vec<_>>()
     }
 
-    /// Folds variables in a symbolic expression, potentially simplifying it.
+    /// Simplifies a given symbolic value (`sym_val`) based on the specified settings for constant
+    /// and variable simplifications, returning a potentially simplified version of the input.
     ///
-    /// # Arguments
-    ///
-    /// * `sym_val` - The symbolic expression to simplify.
-    /// * `elem_id` - Unique element id
-    /// * `only_constatant_simplification`
-    /// * `only_variable_simplification`
+    /// # Parameters
+    /// - `sym_val`: A reference to the symbolic value to be simplified. This value can represent
+    ///   variables, constants, expressions, or other symbolic constructs.
+    /// - `elem_id`: A unique identifier for the symbolic element being processed. This is used for
+    ///   tracking purposes, such as recording coverage during branch simplifications.
+    /// - `only_constatant_simplification`: If true, only variables ans signals to which constatns are assigned
+    ///   are simplified, leaving non-determined variables and non-constant expressions untouched.
+    /// - `only_variable_simplification`: If true, only variable substitutions are performed, leaving
+    ///   non-variable expressions, including signals, untouched.
     ///
     /// # Returns
+    /// A `SymbolicValue` representing the simplified result. Depending on the input and settings:
+    /// - Constants may be replaced with their simplified forms.
+    /// - Variables ans signals may be substituted based on the current state or template configuration.
+    /// - Composite structures (e.g., arrays, tuples, and operations) are recursively simplified.
     ///
-    /// A new `SymbolicValue` representing the simplified expression.
+    /// # Behavior
+    /// - If `only_constatant_simplification` is true, the function focuses on resolving constant
+    ///   expressions while ignoring variable substitutions.
+    /// - If `only_variable_simplification` is true, the function resolves symbolic variables
+    ///   without modifying constants.
+    /// - If neither flag is set, both constants and variables are simplified.
+    /// - For composite structures like arrays, tuples, and conditional branches, the function
+    ///   recursively simplifies each element or branch.
+    /// - Conditional branches are further simplified based on the evaluation of their condition.
+    ///   For example, a branch with a true or false condition can reduce to a single branch.
+    /// - Unary and binary operations are evaluated when possible, leveraging any simplified
+    ///   components.
+    /// - Array and tuple elements are recursively simplified.
+    /// - Uniform arrays are returned as-is, and its dimensions and intial value are simplified.
+    ///
+    /// # Notes
+    /// - This function depends on the state and configuration of the context, including
+    ///   `symbolic_library`, `cur_state`, and `setting`.
+    /// - The implementation respects the `enable_coverage_tracking` setting to track branch
+    ///   execution during simplification.
+    ///
+    /// # Performance
+    /// - Recursive simplification can have significant computational overhead for deeply nested
+    ///   structures or large arrays. Ensure input sizes are manageable in performance-critical
+    ///   contexts.
     fn simplify_variables(
         &mut self,
         sym_val: &SymbolicValue,
@@ -379,7 +411,12 @@ impl<'a> SymbolicExecutor<'a> {
                         _ => sym_val.clone(),
                     }
                 } else {
-                    self.cur_state.get_sym_val_or_make_symvar(&sym_name)
+                    self.simplify_variables(
+                        &self.cur_state.get_sym_val_or_make_symvar(&sym_name),
+                        elem_id,
+                        only_constatant_simplification,
+                        only_variable_simplification,
+                    )
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
