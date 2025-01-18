@@ -1,29 +1,21 @@
 mod utils;
 
-use std::rc::Rc;
 use std::str::FromStr;
 
 use num_bigint_dig::BigInt;
-use num_traits::identities::Zero;
-use num_traits::One;
 
-use program_structure::ast::{Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode};
+use program_structure::ast::Expression;
 
-use tcct::executor::debug_ast::{
-    DebuggableExpressionInfixOpcode, DebuggableExpressionPrefixOpcode,
-};
 use tcct::executor::symbolic_execution::SymbolicExecutor;
 use tcct::executor::symbolic_setting::{
     get_default_setting_for_concrete_execution, get_default_setting_for_symbolic_execution,
 };
-use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
-use tcct::solver::unused_outputs::check_unused_outputs;
 use tcct::solver::utils::{
     BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
 };
 
 use tcct::solver::mutation_config::load_config_from_json;
-use tcct::solver::mutation_test::mutation_test_search;
+use tcct::solver::mutation_test::{mutation_test_search, MutationTestResult};
 use tcct::solver::mutation_test_crossover_fn::random_crossover;
 use tcct::solver::mutation_test_evolution_fn::simple_evolution;
 use tcct::solver::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
@@ -34,9 +26,7 @@ use tcct::solver::mutation_test_update_input_fn::update_input_population_with_ra
 
 use crate::utils::{execute, prepare_symbolic_library};
 
-#[test]
-fn test_iszero_vuln() {
-    let path = "./tests/sample/test_iszero_vuln.circom".to_string();
+fn conduct_mutation_testing(path: String) -> MutationTestResult {
     let prime = BigInt::from_str(
         "21888242871839275222246405745257275088548364400416034343698204186575808495617",
     )
@@ -81,7 +71,7 @@ fn test_iszero_vuln() {
 
     let mutation_config = load_config_from_json("./tests/parameters/test.json").unwrap();
 
-    let result = mutation_test_search(
+    mutation_test_search(
         &mut conc_executor,
         &sexe.cur_state.symbolic_trace.clone(),
         &sexe.cur_state.side_constraints.clone(),
@@ -94,7 +84,25 @@ fn test_iszero_vuln() {
         mutate_trace_with_random_constant_replacement,
         random_crossover,
         roulette_selection,
-    );
+    )
+}
+
+#[test]
+fn test_vuln_iszero() {
+    let result = conduct_mutation_testing("./tests/sample/test_vuln_iszero.circom".to_string());
+
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic(..)),
+            ..
+        })
+    ));
+}
+
+#[test]
+fn test_vuln_average() {
+    let result = conduct_mutation_testing("./tests/sample/test_vuln_average.circom".to_string());
 
     assert!(matches!(
         result.counter_example,
