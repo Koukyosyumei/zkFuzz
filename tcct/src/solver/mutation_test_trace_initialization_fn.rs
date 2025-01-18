@@ -5,15 +5,39 @@ use rand::Rng;
 use program_structure::ast::ExpressionInfixOpcode;
 
 use crate::executor::debug_ast::DebuggableExpressionInfixOpcode;
-use crate::executor::symbolic_value::{SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_state::SymbolicTrace;
+use crate::executor::symbolic_value::SymbolicValue;
 
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::mutation_test::Gene;
 use crate::solver::mutation_utils::draw_random_constant;
 use crate::solver::utils::BaseVerificationConfig;
 
+/// Initializes a population of `Gene` instances by replacing all symbolic trace positions
+/// with random constant values.
+///
+/// This function generates a population for a given program, where each `Gene` is
+/// a mapping from trace positions to symbolic values, all of which are initialized to
+/// random constants based on the provided base configuration.
+///
+/// # Parameters
+/// - `pos`: A slice of indices representing positions in the symbolic trace to be initialized.
+/// - `_symbolic_trace`: A reference to the symbolic trace (`SymbolicTrace`). This parameter
+///   is currently unused but reserved for potential future enhancements.
+/// - `base_config`: Configuration object providing base parameters for generating random constants.
+/// - `mutation_config`: Configuration object defining mutation parameters, such as the population size.
+/// - `rng`: A mutable reference to a random number generator for consistent randomization.
+///
+/// # Returns
+/// A vector of `Gene` instances, where each `Gene` maps trace positions to randomly generated constant values.
+///
+/// # Details
+/// - For each position in the trace, a random constant value is generated using the
+///   `draw_random_constant` function and assigned as the symbolic value.
+/// - The size of the generated population is determined by `mutation_config.program_population_size`.
 pub fn initialize_population_with_random_constant_replacement(
     pos: &[usize],
+    _symbolic_trace: &SymbolicTrace,
     base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
@@ -57,10 +81,41 @@ lazy_static::lazy_static! {
     };
 }
 
+/// Initializes a population of `Gene` instances by applying random constant replacement
+/// and optional operator mutation to symbolic traces.
+///
+/// This function generates a population of symbolic mutations for a given program,
+/// following the configuration provided in `mutation_config`. Each `Gene` is a mapping
+/// from trace positions to their symbolic values.
+///
+/// # Parameters
+/// - `pos`: A slice of indices representing positions in the symbolic trace to be mutated.
+/// - `symbolic_trace`: A reference to the symbolic trace (`SymbolicTrace`) containing
+///   symbolic expressions associated with the original program under mutation.
+/// - `base_config`: Configuration object providing base parameters for generating random constants.
+/// - `mutation_config`: Configuration object defining mutation parameters, such as population
+///   size and operator mutation rate.
+/// - `rng`: A mutable reference to a random number generator for consistent randomization.
+///
+/// # Returns
+/// A vector of `Gene` instances, where each `Gene` maps positions to mutated symbolic values.
+///
+/// # Details
+/// - For each position in the trace, this function attempts to mutate the symbolic value:
+///   - If the value is a binary operation (`BinaryOp`), it may be mutated to use a related operator
+///     (defined in `OPERATOR_MUTATION_CANDIDATES`) with a probability specified by
+///     `mutation_config.operator_mutation_rate`.
+///   - Otherwise, or if no mutation is applied, a random constant is generated and assigned.
+/// - The operator mutation relies on a static mapping (`OPERATOR_MUTATION_CANDIDATES`)
+///   that defines groups of related operators.
+/// - The generated population size is controlled by `mutation_config.program_population_size`.
+///
+/// # Panics
+/// - Panics if an unsupported opcode is encountered during operator mutation.
+/// - Panics if the related operator group for a given opcode is empty.
 fn initialize_population_with_operator_mutation_and_random_constant_replacement(
     pos: &[usize],
-    symbolic_trace: &[SymbolicValueRef],
-    operator_mutation_rate: f64,
+    symbolic_trace: &SymbolicTrace,
     base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
@@ -70,7 +125,7 @@ fn initialize_population_with_operator_mutation_and_random_constant_replacement(
             pos.iter()
                 .map(|p| match &*symbolic_trace[*p] {
                     SymbolicValue::BinaryOp(left, op, right) => {
-                        if rng.gen::<f64>() < operator_mutation_rate {
+                        if rng.gen::<f64>() < mutation_config.operator_mutation_rate {
                             let mutated_op = if let Some(related_ops) = OPERATOR_MUTATION_CANDIDATES
                                 .iter()
                                 .find(|&&(key, _)| key == op.0)

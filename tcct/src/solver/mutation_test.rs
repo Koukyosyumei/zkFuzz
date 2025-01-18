@@ -110,8 +110,13 @@ pub fn mutation_test_search<
     trace_selection_fn: TraceSelectionFn,
 ) -> MutationTestResult
 where
-    TraceInitializationFn:
-        Fn(&[usize], &BaseVerificationConfig, &MutationConfig, &mut StdRng) -> Vec<Gene>,
+    TraceInitializationFn: Fn(
+        &[usize],
+        &SymbolicTrace,
+        &BaseVerificationConfig,
+        &MutationConfig,
+        &mut StdRng,
+    ) -> Vec<Gene>,
     UpdateInputFn: Fn(
         &mut SymbolicExecutor,
         &[SymbolicName],
@@ -191,8 +196,13 @@ where
     );
 
     // Initial Pupulation of Mutated Inputs
-    let mut trace_population =
-        trace_initialization_fn(&assign_pos, base_config, mutation_config, &mut rng);
+    let mut trace_population = trace_initialization_fn(
+        &assign_pos,
+        &symbolic_trace,
+        base_config,
+        mutation_config,
+        &mut rng,
+    );
     let mut fitness_scores =
         vec![-base_config.prime.clone(); mutation_config.input_population_size];
     let mut input_population = Vec::new();
