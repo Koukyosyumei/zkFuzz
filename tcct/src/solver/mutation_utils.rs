@@ -8,7 +8,8 @@ use rand::rngs::StdRng;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
-use crate::executor::symbolic_value::{SymbolicValue, SymbolicValueRef};
+use crate::executor::symbolic_state::SymbolicTrace;
+use crate::executor::symbolic_value::SymbolicValue;
 
 use crate::solver::utils::BaseVerificationConfig;
 
@@ -70,10 +71,37 @@ pub fn draw_bigint_with_probabilities(
     }
 }
 
+/// Applies trace mutations to a symbolic trace by replacing specific symbolic values.
+///
+/// # Parameters
+/// - `symbolic_trace`: A reference to SymbolicTrace, a vector of `SymbolicValueRef` representing the current symbolic execution trace.
+/// - `trace_mutation`: A reference to a hash map where the key is the index in the trace to mutate,
+///   and the value is the new `SymbolicValue` to apply.
+///
+/// # Returns
+/// A new `SymbolicTrace` representing the mutated symbolic trace.
+///
+/// # Behavior
+/// 1. Clones the provided `symbolic_trace` to prepare for mutations.
+/// 2. Iterates over the `trace_mutation` map and applies updates:
+///    - If the value at the specified index is a `SymbolicValue::Assign`, it is replaced with a new assignment
+///      using the provided value while preserving the left-hand side and safety flag.
+///    - If the value is a `SymbolicValue::AssignCall`, it is replaced with a new assignment,
+///      flipping the mutability flag while preserving the left-hand side.
+/// 3. Panics if an entry at the specified index is neither `SymbolicValue::Assign` nor `SymbolicValue::AssignCall`,
+///    as these are the only supported mutation targets.
+///
+/// # Panics
+/// - The function panics if a mutation is attempted on a value that is not of type `SymbolicValue::Assign`
+///   or `SymbolicValue::AssignCall`.
+///
+/// # Notes
+/// - The original `symbolic_trace` is not modified; all changes are applied to a cloned version.
+/// - This function assumes that indices in `trace_mutation` are valid within the range of the `symbolic_trace`.
 pub fn apply_trace_mutation(
-    symbolic_trace: &Vec<SymbolicValueRef>,
+    symbolic_trace: &SymbolicTrace,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
-) -> Vec<SymbolicValueRef> {
+) -> SymbolicTrace {
     let mut mutated_constraints = symbolic_trace.clone();
     for (index, value) in trace_mutation {
         if let SymbolicValue::Assign(lv, _, is_safe) = mutated_constraints[*index].as_ref().clone()

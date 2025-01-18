@@ -12,6 +12,38 @@ use crate::solver::utils::{
     VerificationResult,
 };
 
+/// Checks for unused outputs in the symbolic execution trace and returns a counterexample if any are found.
+///
+/// # Parameters
+/// - `sexe`: A mutable reference to the `SymbolicExecutor`, which holds the current state of symbolic execution,
+///   including the symbolic trace and symbolic library.
+/// - `base_config`: A reference to the `BaseVerificationConfig`, which contains configuration information
+///   such as the target template name to analyze.
+///
+/// # Returns
+/// An `Option<CounterExample>` containing:
+/// - `Some(CounterExample)` if unused outputs are detected, providing details about the unused outputs
+///   and a dummy assignment.
+/// - `None` if all outputs are used, indicating no under-constrained outputs.
+///
+/// # Behavior
+/// 1. Extracts all variables used in the current symbolic execution trace.
+/// 2. Collects all outputs defined in the target template specified in `base_config`.
+/// 3. Compares the collected outputs against the used variables to identify unused outputs.
+/// 4. If unused outputs are found:
+///    - Constructs a `CounterExample` with the unused outputs marked as under-constrained.
+///    - Assigns dummy values (e.g., zero) to the unused outputs for illustrative purposes.
+/// 5. If all outputs are used, returns `None`.
+///
+/// # Notes
+/// - This function assumes that the `SymbolicExecutor` contains a valid symbolic trace and a populated
+///   symbolic library.
+/// - The returned `CounterExample` highlights unused outputs as a potential issue, classified under
+///   `UnderConstrainedType::UnusedOutput`.
+///
+/// # Performance
+/// - The function iterates through the symbolic trace and template outputs, which may incur overhead
+///   proportional to the number of variables and outputs. Use cautiously in performance-critical contexts.
 pub fn check_unused_outputs(
     sexe: &mut SymbolicExecutor,
     base_config: &BaseVerificationConfig,
