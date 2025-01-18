@@ -4,7 +4,7 @@ use rand::seq::IteratorRandom;
 use crate::executor::symbolic_value::SymbolicValue;
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::mutation_test::Gene;
-use crate::solver::mutation_utils::{draw_bigint_with_probabilities, draw_random_constant};
+use crate::solver::mutation_utils::draw_bigint_with_probabilities;
 use crate::solver::utils::BaseVerificationConfig;
 
 pub fn mutate_trace_with_random_constant_replacement(
