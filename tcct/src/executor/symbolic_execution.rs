@@ -362,7 +362,7 @@ impl<'a> SymbolicExecutor<'a> {
     /// - Recursive simplification can have significant computational overhead for deeply nested
     ///   structures or large arrays. Ensure input sizes are manageable in performance-critical
     ///   contexts.
-    fn simplify_variables(
+    pub fn simplify_variables(
         &mut self,
         sym_val: &SymbolicValue,
         elem_id: usize,

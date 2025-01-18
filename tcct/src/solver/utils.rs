@@ -899,11 +899,13 @@ pub fn verify_assignment(
                 .output_ids
                 .contains(&k.id)
             {
-                let original_sym_value = &sexe.cur_state.symbol_binding_map[&k];
-                let original_int_value = match &**original_sym_value {
+                let original_sym_value = sexe.cur_state.symbol_binding_map[&k].clone();
+                let simplified_sym_value =
+                    sexe.simplify_variables(&original_sym_value, std::usize::MAX, false, false);
+                let original_int_value = match simplified_sym_value {
                     SymbolicValue::ConstantInt(num) => num.clone(),
                     SymbolicValue::ConstantBool(b) => {
-                        if *b {
+                        if b {
                             BigInt::one()
                         } else {
                             BigInt::zero()
