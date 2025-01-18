@@ -18,9 +18,12 @@ use tcct::executor::symbolic_setting::{
 };
 use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
 use tcct::solver::unused_outputs::check_unused_outputs;
-use tcct::solver::utils::BaseVerificationConfig;
+use tcct::solver::utils::{
+    BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
+};
 
 use tcct::solver::mutation_config::load_config_from_json;
+use tcct::solver::mutation_test::mutation_test_search;
 use tcct::solver::mutation_test_crossover_fn::random_crossover;
 use tcct::solver::mutation_test_evolution_fn::simple_evolution;
 use tcct::solver::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
@@ -28,7 +31,6 @@ use tcct::solver::mutation_test_trace_initialization_fn::initialize_population_w
 use tcct::solver::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
 use tcct::solver::mutation_test_trace_selection_fn::roulette_selection;
 use tcct::solver::mutation_test_update_input_fn::update_input_population_with_random_sampling;
-use tcct::solver::{brute_force::brute_force_search, mutation_test::mutation_test_search};
 
 use crate::utils::{execute, prepare_symbolic_library};
 
@@ -94,5 +96,11 @@ fn test_iszero_vuln() {
         roulette_selection,
     );
 
-    assert!(result.counter_example.is_some());
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic(..)),
+            ..
+        })
+    ));
 }
