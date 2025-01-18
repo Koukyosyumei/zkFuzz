@@ -1030,10 +1030,12 @@ impl<'a> SymbolicExecutor<'a> {
                     );
                 }
             } else {
+                vec![]
+                /*
                 panic!(
                     "{} does not exist in the library",
                     self.symbolic_library.id2name[&self.cur_state.template_id]
-                );
+                );*/
             };
             self.id2dimensions.insert(*id, dims);
 
