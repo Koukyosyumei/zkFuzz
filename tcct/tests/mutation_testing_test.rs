@@ -127,6 +127,18 @@ fn test_vuln_scholarshipcheck() {
     ));
 }
 
+fn test_vuln_rshift1() {
+    let result = conduct_mutation_testing("./tests/sample/test_vuln_rshift1.circom".to_string());
+
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic(..)),
+            ..
+        })
+    ));
+}
+
 #[test]
 fn test_lessthan() {
     let result = conduct_mutation_testing("./tests/sample/test_lessthan.circom".to_string());
