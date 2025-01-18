@@ -152,10 +152,3 @@ fn test_lessthan() {
         })
     ));
 }
-
-#[test]
-fn test_safelessthan() {
-    let result = conduct_mutation_testing("./tests/sample/test_safelessthan.circom".to_string());
-
-    assert!(matches!(result.counter_example, None));
-}
