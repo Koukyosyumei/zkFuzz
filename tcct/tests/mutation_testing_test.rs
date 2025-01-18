@@ -126,3 +126,23 @@ fn test_vuln_scholarshipcheck() {
         })
     ));
 }
+
+#[test]
+fn test_lessthan() {
+    let result = conduct_mutation_testing("./tests/sample/test_lessthan.circom".to_string());
+
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedInput(..)),
+            ..
+        })
+    ));
+}
+
+#[test]
+fn test_safelessthan() {
+    let result = conduct_mutation_testing("./tests/sample/test_safelessthan.circom".to_string());
+
+    assert!(matches!(result.counter_example, None));
+}
