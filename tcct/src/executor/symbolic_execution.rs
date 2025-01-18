@@ -1004,7 +1004,7 @@ impl<'a> SymbolicExecutor<'a> {
                 .insert(*id, DebuggableVariableType(xtype.clone()));
 
             let is_input = matches!(xtype, VariableType::Signal(SignalType::Input, _));
-            if !(self.setting.skip_initialization_blocks && is_input) {
+            if !(self.setting.is_input_overwrite_disabled && is_input) {
                 let value = SymbolicValue::Variable(var_name.clone());
                 self.cur_state.set_sym_val(var_name, value);
             }
