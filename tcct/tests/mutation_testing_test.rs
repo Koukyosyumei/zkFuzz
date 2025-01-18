@@ -112,3 +112,17 @@ fn test_vuln_average() {
         })
     ));
 }
+
+#[test]
+fn test_vuln_scholarshipcheck() {
+    let result =
+        conduct_mutation_testing("./tests/sample/test_vuln_scholarshipcheck.circom".to_string());
+
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic(..)),
+            ..
+        })
+    ));
+}
