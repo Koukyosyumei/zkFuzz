@@ -7,6 +7,32 @@ use crate::solver::mutation_test::Gene;
 use crate::solver::mutation_utils::draw_bigint_with_probabilities;
 use crate::solver::utils::BaseVerificationConfig;
 
+/// Mutates a trace by replacing a randomly selected position with a new random constant value.
+///
+/// This function introduces randomness into an individual's trace by selecting a position and replacing
+/// its value with a newly generated constant, based on configurable probabilities and value ranges.
+///
+/// # Parameters
+/// - `individual`: A mutable reference to a `Gene` (a mapping of position in a trace to symbolic values),
+///   representing the mutation of the trace.
+/// - `_base_config`: A reference to the `BaseVerificationConfig`, which is currently unused in this function
+///   but might be relevant in future extensions.
+/// - `mutation_config`: A reference to the `MutationConfig`, specifying the value ranges and probabilities
+///   used for generating random constants.
+/// - `rng`: A mutable reference to a random number generator (`StdRng`) for producing random values.
+///
+/// # Behavior
+/// - If the `individual` is not empty:
+///   - A position is selected randomly from its keys.
+///   - The selected position's value is replaced with a new `SymbolicValue::ConstantInt`,
+///     generated using `mutation_config.random_value_ranges` and `mutation_config.random_value_probs`.
+/// - If the `individual` is empty, the function does nothing.
+///
+/// # Notes
+/// - The generated constants are drawn according to the probabilities and ranges defined in the `MutationConfig`.
+///
+/// # Future Considerations
+/// - `_base_config` could be leveraged to introduce additional constraints or behaviors during mutation.
 pub fn mutate_trace_with_random_constant_replacement(
     individual: &mut Gene,
     _base_config: &BaseVerificationConfig,

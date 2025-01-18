@@ -59,13 +59,13 @@ lazy_static::lazy_static! {
 
 fn initialize_population_with_operator_mutation_and_random_constant_replacement(
     pos: &[usize],
-    size: usize,
     symbolic_trace: &[SymbolicValueRef],
     operator_mutation_rate: f64,
     base_config: &BaseVerificationConfig,
+    mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
-    (0..size)
+    (0..mutation_config.program_population_size)
         .map(|_| {
             pos.iter()
                 .map(|p| match &*symbolic_trace[*p] {
