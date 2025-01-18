@@ -1009,24 +1009,31 @@ impl<'a> SymbolicExecutor<'a> {
                 self.cur_state.set_sym_val(var_name, value);
             }
 
-            let dims = if self
+            let dims = if let Some(templ) = self
                 .symbolic_library
                 .template_library
-                .contains_key(&self.cur_state.template_id)
+                .get(&self.cur_state.template_id)
             {
-                self.evaluate_dimension(
-                    &self.symbolic_library.template_library[&self.cur_state.template_id]
-                        .id2dimension_expressions[id]
-                        .clone(),
-                    elem_id,
-                )
+                self.evaluate_dimension(&templ.id2dimension_expressions[id].clone(), elem_id)
+            } else if let Some(func) = self
+                .symbolic_library
+                .function_library
+                .get(&self.cur_state.template_id)
+            {
+                if let Some(dim_expr) = func.id2dimension_expressions.get(id) {
+                    self.evaluate_dimension(&dim_expr.clone(), elem_id)
+                } else {
+                    panic!(
+                        "Dim-expression of {} within {} cannt be found.",
+                        self.symbolic_library.id2name[id],
+                        self.symbolic_library.id2name[&self.cur_state.template_id]
+                    );
+                }
             } else {
-                self.evaluate_dimension(
-                    &self.symbolic_library.function_library[&self.cur_state.template_id]
-                        .id2dimension_expressions[id]
-                        .clone(),
-                    elem_id,
-                )
+                panic!(
+                    "{} does not exist in the library",
+                    self.symbolic_library.id2name[&self.cur_state.template_id]
+                );
             };
             self.id2dimensions.insert(*id, dims);
 
