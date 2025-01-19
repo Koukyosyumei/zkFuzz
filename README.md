@@ -112,78 +112,80 @@ If the configuration json file ommites some keys, the default values are used fo
 
 ### Field Descriptions
 
-**seed** (u64)
-- Purpose: Seed for random number generation to ensure reproducibility. If it is 0, the random seed is newly internernally generated with thread rng.
-- Default: `0`
+```
+- seed (u64)
+    - Purpose: Seed for random number generation to ensure reproducibility. If it is 0, the random seed is newly internernally generated with thread rng.
+    - Default: `0`
 
-**program_population_size** (usize)
-- Purpose: Size of the program population in the genetic algorithm.
-- Default: `30`
+- program_population_size (usize)
+    - Purpose: Size of the program population in the genetic algorithm.
+    - Default: `30`
 
-**input_population_size** (usize)
-- Purpose: Size of the input population in the genetic algorithm.
-- Default: `30`
+- input_population_size (usize)
+    - Purpose: Size of the input population in the genetic algorithm.
+    - Default: `30`
 
-**max_generations** (usize)
-- Purpose: Maximum number of generations for the evolutionary process.
-- Default: `300`
+- max_generations (usize)
+    - Purpose: Maximum number of generations for the evolutionary process.
+    - Default: `300`
 
-**input_initialization_method** (String)
-- Purpose: Method used to initialize inputs.
-- Default: `"random"`
+- input_initialization_method (String)
+    - Purpose: Method used to initialize inputs.
+    - Default: `"random"`
 
-**trace_mutation_method** (String)
-- Purpose: Method used for trace mutation.
-- Default: `"constant"`
+- trace_mutation_method (String)
+    - Purpose: Method used for trace mutation.
+    - Default: `"constant"`
 
-**fitness_function** (String)
-- Purpose: Function used to evaluate fitness of solutions.
-- Default: `"error"`
+- fitness_function (String)
+    - Purpose: Function used to evaluate fitness of solutions.
+    - Default: `"error"`
 
-**mutation_rate** (f64)
-- Purpose: Rate at which mutations occur in the genetic algorithm.
-- Example: `0.3`
+- mutation_rate (f64)
+    - Purpose: Rate at which mutations occur in the genetic algorithm.
+    - Default: `0.3`
 
-**crossover_rate** (f64)
-- Purpose: Rate at which crossover occurs in the genetic algorithm.
-- Example: `0.5`
+- crossover_rate (f64)
+    - Purpose: Rate at which crossover occurs in the genetic algorithm.
+    - Default: `0.5`
 
-**operator_mutation_rate** (f64)
-- Purpose: Rate of mutation for operators in the genetic algorithm.
-- Example: `0.2`
+- operator_mutation_rate (f64)
+    - Purpose: Rate of mutation for operators in the genetic algorithm.
+    - Default: `0.2`
 
-**input_update_interval** (usize)
-- Purpose: Interval at which inputs are updated.
-- Example: `1`
+- input_update_interval (usize)
+    - Purpose: Interval at which inputs are updated.
+    - Default: `1`
 
-**input_generation_max_iteration** (usize)
-- Purpose: Maximum number of iterations for input generation.
-- Example: `30`
+- input_generation_max_iteration (usize)
+    - Purpose: Maximum number of iterations for input generation.
+    - Default: `30`
 
-**input_generation_crossover_rate** (f64)
-- Purpose: Crossover rate for input generation.
-- Example: `0.66`
+- input_generation_crossover_rate (f64)
+    - Purpose: Crossover rate for input generation.
+    - Default: `0.66`
 
-**input_generation_mutation_rate** (f64)
-- Purpose: Mutation rate for input generation.
-- Example: `0.5`
+- input_generation_mutation_rate (f64)
+    - Purpose: Mutation rate for input generation.
+    - Default: `0.5`
 
-**input_generation_singlepoint_mutation_rate** (f64)
-- Purpose: Single-point mutation rate for input generation.
-- Example: `0.5`
+- input_generation_singlepoint_mutation_rate (f64)
+    - Purpose: Single-point mutation rate for input generation.
+    - Default: `0.5`
 
-**random_value_ranges** (Array of Arrays)
-- Purpose: Ranges for random value generation.
-- Format: Array of pairs of strings representing big integers.
-- Example: `[["-10", "10"], ["21888242871839275222246405745257275088548364400416034343698204186575808495517", "21888242871839275222246405745257275088548364400416034343698204186575808495617"]]`
+- random_value_ranges (Array of Arrays)
+    - Purpose: Ranges for random value generation.
+    - Format: Array of pairs of strings representing big integers.
+    - Default: `[["-10", "10"], ["21888242871839275222246405745257275088548364400416034343698204186575808495517", "21888242871839275222246405745257275088548364400416034343698204186575808495617"]]`
 
-**random_value_probs** (Array of f64)
-- Purpose: Probabilities associated with random value ranges.
-- Example: `[0.5, 0.5]`
+- random_value_probs (Array of f64)
+    - Purpose: Probabilities associated with random value ranges.
+    - Default: `[0.5, 0.5]`
 
-**save_fitness_scores** (bool)
-- Purpose: Flag to determine if fitness scores should be saved.
-- Example: `false`
+- save_fitness_scores (bool)
+    - Purpose: Flag to determine if fitness scores should be saved.
+    - Default: `false`
+```
 
 ## Tips
 
