@@ -11,6 +11,26 @@ use crate::solver::mutation_test_crossover_fn::random_crossover;
 use crate::solver::mutation_utils::draw_bigint_with_probabilities;
 use crate::solver::utils::BaseVerificationConfig;
 
+/// Updates the input population with randomly generated samples.
+///
+/// This function initializes the input population by generating random values for each input
+/// variable. The random values are drawn based on the specified value ranges and probabilities
+/// in the mutation configuration.
+///
+/// # Parameters
+/// - `_sexe`: A mutable reference to the symbolic executor. Not used in this implementation.
+/// - `input_variables`: A slice of symbolic names representing the input variables.
+/// - `inputs_population`: A mutable vector of hash maps representing the current input population.
+///   This will be cleared and replaced with the new randomly generated population.
+/// - `_base_config`: A reference to the base verification configuration. Not used in this implementation.
+/// - `mutation_config`: The configuration that defines mutation parameters, including population size
+///   and random value ranges.
+/// - `rng`: A mutable reference to the random number generator.
+///
+/// # Behavior
+/// The function creates a new population of inputs, with each input consisting of values
+/// randomly sampled according to the mutation configuration. The existing input population is replaced
+/// with the new one.
 pub fn update_input_population_with_random_sampling(
     _sexe: &mut SymbolicExecutor,
     input_variables: &[SymbolicName],
@@ -41,6 +61,22 @@ pub fn update_input_population_with_random_sampling(
     inputs_population.append(&mut new_inputs_population);
 }
 
+/// Evaluates the coverage achieved by a given set of inputs.
+///
+/// This function runs the symbolic executor with the provided inputs and measures
+/// the coverage based on the paths explored during execution.
+///
+/// # Parameters
+/// - `sexe`: A mutable reference to the symbolic executor used for evaluation.
+/// - `inputs`: A reference to a hash map representing the input values to evaluate.
+/// - `base_config`: A reference to the base verification configuration containing execution parameters.
+///
+/// # Returns
+/// The number of coverage points (e.g., branches or paths) achieved by the inputs.
+///
+/// # Behavior
+/// The symbolic executor is cleared and set up for coverage tracking. The inputs are fed into the executor,
+/// and the coverage is recorded. The coverage tracking is then disabled, and the coverage count is returned.
 pub fn evaluate_coverage(
     sexe: &mut SymbolicExecutor,
     inputs: &FxHashMap<SymbolicName, BigInt>,
@@ -63,6 +99,29 @@ pub fn evaluate_coverage(
     sexe.coverage_count()
 }
 
+/// Updates the input population to maximize coverage.
+///
+/// This function uses a combination of random sampling, mutation, and crossover techniques
+/// to evolve the input population towards achieving higher coverage. It iteratively refines
+/// the population by evaluating and retaining inputs that increase the coverage.
+///
+/// # Parameters
+/// - `sexe`: A mutable reference to the symbolic executor used for coverage evaluation.
+/// - `input_variables`: A slice of symbolic names representing the input variables.
+/// - `inputs_population`: A mutable vector of hash maps representing the current input population.
+///   This will be updated to contain inputs that maximize coverage.
+/// - `base_config`: A reference to the base verification configuration containing execution parameters.
+/// - `mutation_config`: The configuration that defines mutation parameters, including population size,
+///   mutation rates, and random value ranges.
+/// - `rng`: A mutable reference to the random number generator.
+///
+/// # Behavior
+/// 1. Initializes the population with random inputs.
+/// 2. Evaluates each input for coverage and retains those that increase coverage.
+/// 3. Iteratively performs mutations and crossovers on the population to explore new inputs,
+///    retaining inputs that further increase coverage.
+/// 4. The process stops when the population reaches the maximum size or the specified number
+///    of iterations is completed.
 pub fn update_input_population_with_coverage_maximization(
     sexe: &mut SymbolicExecutor,
     input_variables: &[SymbolicName],
