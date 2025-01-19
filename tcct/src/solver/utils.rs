@@ -1,5 +1,4 @@
 use std::fmt;
-use std::io::Write;
 use std::rc::Rc;
 
 use colored::Colorize;
