@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 
-
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue};
 
 const RESET: &str = "\x1b[0m";
@@ -17,7 +16,6 @@ pub struct ConstraintStatistics {
     pub constant_counts: usize,
     pub conditional_counts: usize,
     pub array_counts: usize,
-    pub tuple_counts: usize,
     pub function_call_counts: HashMap<usize, usize>,
     pub cache: HashSet<SymbolicValue>,
 }
@@ -92,12 +90,6 @@ impl ConstraintStatistics {
                     self.update_from_symbolic_value(elem, depth + 1);
                 }
             }
-            SymbolicValue::Tuple(elements) => {
-                self.tuple_counts += 1;
-                for elem in elements {
-                    self.update_from_symbolic_value(elem, depth + 1);
-                }
-            }
             SymbolicValue::UniformArray(value, size) => {
                 self.array_counts += 1;
                 self.update_from_symbolic_value(value, depth + 1);
@@ -140,7 +132,6 @@ pub fn print_constraint_summary_statistics_pretty(stats: &ConstraintStatistics) 
     println!(" │ Constant            │ {:11} │", stats.constant_counts);
     println!(" │ Conditional         │ {:11} │", stats.conditional_counts);
     println!(" │ Array               │ {:11} │", stats.array_counts);
-    println!(" │ Tuple               │ {:11} │", stats.tuple_counts);
     println!(" └─────────────────────┴─────────────┘");
 
     let avg_depth = if !stats.constraint_depths.is_empty() {
@@ -204,7 +195,6 @@ pub fn print_constraint_summary_statistics_csv(constraint_stats: &ConstraintStat
         "Constant_Counts",
         "Conditional_Counts",
         "Array_Counts",
-        "Tuple_Counts",
         "Avg_Depth",
         "Max_Depth",
         "Count_Mul",
@@ -240,7 +230,6 @@ pub fn print_constraint_summary_statistics_csv(constraint_stats: &ConstraintStat
     values.push(constraint_stats.constant_counts.to_string());
     values.push(constraint_stats.conditional_counts.to_string());
     values.push(constraint_stats.array_counts.to_string());
-    values.push(constraint_stats.tuple_counts.to_string());
 
     let avg_depth = if !constraint_stats.constraint_depths.is_empty() {
         constraint_stats.constraint_depths.iter().sum::<usize>() as f64

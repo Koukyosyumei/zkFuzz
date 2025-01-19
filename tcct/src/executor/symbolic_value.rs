@@ -186,7 +186,6 @@ pub enum SymbolicValue {
     Conditional(SymbolicValueRef, SymbolicValueRef, SymbolicValueRef),
     UnaryOp(DebuggableExpressionPrefixOpcode, SymbolicValueRef),
     Array(Vec<SymbolicValueRef>),
-    Tuple(Vec<SymbolicValueRef>),
     UniformArray(SymbolicValueRef, SymbolicValueRef),
     Call(usize, Vec<SymbolicValueRef>),
 }
@@ -320,7 +319,6 @@ impl SymbolicValue {
                     counts.lookup_fmt(lookup)
                 )
             }
-            _ => format!("❓Unknown symbolic value"),
         }
     }
 }

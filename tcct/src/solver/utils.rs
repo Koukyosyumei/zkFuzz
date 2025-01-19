@@ -257,7 +257,7 @@ pub fn extract_variables_from_symbolic_value(
             extract_variables_from_symbolic_value(&rhs, variables);
         }
         SymbolicValue::UnaryOp(_, expr) => extract_variables_from_symbolic_value(&expr, variables),
-        SymbolicValue::Array(elements) | SymbolicValue::Tuple(elements) => {
+        SymbolicValue::Array(elements) => {
             for elem in elements {
                 extract_variables_from_symbolic_value(&elem, variables);
             }
@@ -702,7 +702,6 @@ pub fn evaluate_symbolic_value(
             let return_value = (*subse.cur_state.symbol_binding_map[&return_name].clone()).clone();
             return_value
         }
-        _ => todo!("{:?}", value),
     }
 }
 

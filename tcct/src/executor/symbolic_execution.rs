@@ -518,19 +518,6 @@ impl<'a> SymbolicExecutor<'a> {
                     })
                     .collect(),
             ),
-            SymbolicValue::Tuple(elements) => SymbolicValue::Tuple(
-                elements
-                    .iter()
-                    .map(|e| {
-                        Rc::new(self.simplify_variables(
-                            e,
-                            elem_id,
-                            only_constatant_simplification,
-                            only_variable_simplification,
-                        ))
-                    })
-                    .collect(),
-            ),
             SymbolicValue::UniformArray(element, count) => {
                 let uarray = SymbolicValue::UniformArray(
                     Rc::new(self.simplify_variables(
