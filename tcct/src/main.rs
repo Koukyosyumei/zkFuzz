@@ -51,7 +51,10 @@ use solver::{
 };
 
 use stats::ast_stats::ASTStats;
-use stats::symbolic_stats::{print_constraint_summary_statistics_pretty, ConstraintStatistics};
+use stats::symbolic_stats::{
+    print_constraint_summary_statistics_csv, print_constraint_summary_statistics_pretty,
+    ConstraintStatistics,
+};
 
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";
@@ -466,6 +469,9 @@ fn start() -> Result<(), ()> {
                         .bold()
                 );
                 print_constraint_summary_statistics_pretty(&ss);
+            } else if user_input.flag_printout_stats_csv {
+                print_constraint_summary_statistics_csv(&ts);
+                print_constraint_summary_statistics_csv(&ss);
             }
             println!(
                 "{}",
