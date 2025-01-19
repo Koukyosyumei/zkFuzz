@@ -7,7 +7,6 @@ use program_structure::abstract_syntax_tree::ast::{
     Access, AssignOp, Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType,
     Statement, VariableType,
 };
-use program_structure::ast::LogArgument;
 use program_structure::ast::Meta;
 
 const RESET: &str = "\x1b[0m";
@@ -72,7 +71,6 @@ pub enum DebuggableExpression {
         is_parallel: bool,
         params: Vec<DebuggableExpression>,
         signals: Vec<DebuggableExpression>,
-        names: Option<Vec<(AssignOp, String)>>,
     },
     ArrayInLine {
         values: Vec<DebuggableExpression>,
@@ -140,7 +138,6 @@ pub enum DebuggableStatement {
     },
     LogCall {
         meta: Meta,
-        args: Vec<LogArgument>,
     },
     Block {
         meta: Meta,
@@ -274,7 +271,7 @@ impl DebuggableExpression {
                 is_parallel,
                 params,
                 signals,
-                names,
+                names: _,
             } => {
                 let i = if let Some(i) = name2id.get(&id) {
                     *i
@@ -294,7 +291,6 @@ impl DebuggableExpression {
                         .into_iter()
                         .map(|s| DebuggableExpression::from(s, name2id, id2name))
                         .collect(),
-                    names,
                 }
             }
             Expression::ArrayInLine { meta: _, values } => DebuggableExpression::ArrayInLine {
@@ -434,7 +430,7 @@ impl DebuggableStatement {
                     rhe: DebuggableExpression::from(rhe, name2id, id2name),
                 }
             }
-            Statement::LogCall { meta, args } => DebuggableStatement::LogCall { meta, args },
+            Statement::LogCall { meta, args: _ } => DebuggableStatement::LogCall { meta },
             Statement::Block { meta, stmts } => DebuggableStatement::Block {
                 meta,
                 stmts: stmts
@@ -701,7 +697,6 @@ impl DebuggableExpression {
                 is_parallel,
                 params,
                 signals,
-                names: _,
                 ..
             } => {
                 s += &format!("{}AnonymousComp\n", indentation);
@@ -966,7 +961,7 @@ impl DebuggableStatement {
                 s += &(rhe.clone()).lookup_fmt(lookup, indent + 2);
                 s
             }
-            DebuggableStatement::LogCall { args: _, .. } => {
+            DebuggableStatement::LogCall { .. } => {
                 format!("{}{}LogCall{}\n", indentation, GREEN, RESET)
             }
             DebuggableStatement::Ret => format!("{}{}Ret{}\n", indentation, BLUE, RESET),

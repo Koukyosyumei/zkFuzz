@@ -1894,7 +1894,7 @@ fn test_one_line_call() {
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
 
-    let main_A_11_152_a = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+    let main_a_11_152_a = Rc::new(SymbolicValue::Variable(SymbolicName::new(
         sexe.symbolic_library.name2id["a"],
         Rc::new(vec![
             OwnerName {
@@ -1911,7 +1911,7 @@ fn test_one_line_call() {
         None,
     )));
 
-    let main_A_11_152_b = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+    let main_a_11_152_b = Rc::new(SymbolicValue::Variable(SymbolicName::new(
         sexe.symbolic_library.name2id["b"],
         Rc::new(vec![
             OwnerName {
@@ -1928,7 +1928,7 @@ fn test_one_line_call() {
         None,
     )));
 
-    let main_A_11_152_c = Rc::new(SymbolicValue::Variable(SymbolicName::new(
+    let main_a_11_152_c = Rc::new(SymbolicValue::Variable(SymbolicName::new(
         sexe.symbolic_library.name2id["c"],
         Rc::new(vec![
             OwnerName {
@@ -1994,17 +1994,17 @@ fn test_one_line_call() {
             main_n.clone(),
             Rc::new(SymbolicValue::ConstantInt(BigInt::from_str("2").unwrap())),
         ),
-        SymbolicValue::AssignEq(main_A_11_152_a.clone(), main_in_0.clone()),
-        SymbolicValue::AssignEq(main_A_11_152_b.clone(), main_in_1.clone()),
+        SymbolicValue::AssignEq(main_a_11_152_a.clone(), main_in_0.clone()),
+        SymbolicValue::AssignEq(main_a_11_152_b.clone(), main_in_1.clone()),
         SymbolicValue::AssignEq(
-            main_A_11_152_c.clone(),
+            main_a_11_152_c.clone(),
             Rc::new(SymbolicValue::BinaryOp(
-                main_A_11_152_a,
+                main_a_11_152_a,
                 DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                main_A_11_152_b,
+                main_a_11_152_b,
             )),
         ),
-        SymbolicValue::AssignEq(main_out, main_A_11_152_c),
+        SymbolicValue::AssignEq(main_out, main_a_11_152_c),
     ];
 
     for i in 0..ground_truth_constraints.len() {

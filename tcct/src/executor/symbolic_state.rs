@@ -98,15 +98,6 @@ impl SymbolicState {
         self.template_id = id;
     }
 
-    /// Sets the current depth of the symbolic state.
-    ///
-    /// # Arguments
-    ///
-    /// * `d` - The depth level to set.
-    pub fn set_depth(&mut self, depth_level: usize) {
-        self.depth = depth_level;
-    }
-
     /// Retrieves the current depth of the symbolic state.
     ///
     /// # Returns
