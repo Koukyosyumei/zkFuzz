@@ -78,9 +78,6 @@ pub fn concrete_execute(
 
             cexe.feed_arguments(template.get_name_of_params(), args);
 
-            let body = cexe.symbolic_library.template_library[&cexe.symbolic_library.name2id[id]]
-                .body
-                .clone();
             let assignment = get_inputs(&cexe, inputs);
             cexe.concrete_execute(&"Main".to_string(), &assignment);
         }
