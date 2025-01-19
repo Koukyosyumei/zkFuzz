@@ -41,6 +41,7 @@ pub struct Input {
     pub flag_symbolic_template_params: bool,
     pub flag_save_output: bool,
     pub show_stats_of_ast: bool,
+    pub lessthan_dissabled_flag: bool,
     pub prime: String,
     pub debug_prime: String,
     pub heuristics_range: String,
@@ -127,6 +128,7 @@ impl Input {
             flag_symbolic_template_params: input_processing::get_symbolic_template_params(&matches),
             flag_save_output: input_processing::get_save_output(&matches),
             show_stats_of_ast: input_processing::get_show_stats_of_ast(&matches),
+            lessthan_dissabled_flag: input_processing::get_lessthan_dissabled_flag(&matches),
             prime: input_processing::get_prime(&matches)?,
             debug_prime: input_processing::get_debug_prime(&matches)?,
             heuristics_range: input_processing::get_heuristics_range(&matches)?,
@@ -371,6 +373,10 @@ mod input_processing {
         matches.is_present("show_stats_of_ast")
     }
 
+    pub fn get_lessthan_dissabled_flag(matches: &ArgMatches) -> bool {
+        matches.is_present("lessthan_dissabled")
+    }
+
     /* 
     pub fn get_main_inputs_log(matches: &ArgMatches) -> bool {
         matches.is_present("main_inputs_log")
@@ -585,6 +591,13 @@ mod input_processing {
                     .hidden(false)
                     .display_order(810)
                     .help("Does not add asserts in the generated code for === constraint equalities"),
+            )
+            .arg(
+                Arg::with_name("lessthan_dissabled")
+                    .long("lessthan_dissabled")
+                    .takes_value(false)
+                    .display_order(820)
+                    .help("(TCCT) Does not detect overflow erros due to LessThan template"),
             )
             /*
             .arg(

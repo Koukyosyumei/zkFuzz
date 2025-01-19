@@ -153,6 +153,7 @@ fn start() -> Result<(), ()> {
             &body.clone(),
             v.get_name_of_params(),
             &whitelist,
+            user_input.lessthan_dissabled_flag,
         );
 
         if user_input.flag_printout_ast {

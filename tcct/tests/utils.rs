@@ -49,6 +49,7 @@ pub fn prepare_symbolic_library(
             &body.clone(),
             v.get_name_of_params(),
             &whitelist,
+            false,
         );
 
         println!(
