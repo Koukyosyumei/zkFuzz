@@ -454,7 +454,7 @@ fn start() -> Result<(), ()> {
             if user_input.flag_printout_stats {
                 println!(
                     "\n{}",
-                    "🪶 Stats of Trace Constraint ══════════════════════"
+                    "🪶 Stats of Symbolic Trace  ══════════════════════"
                         .yellow()
                         .bold()
                 );
