@@ -226,9 +226,41 @@ The output filename will follow the pattern `<TARGET_FILE_NAME>_<RANDOM_SUFFIX>_
       "crossover_rate": 0.5,
       "fitness_function": "error",
       "input_generation_crossover_rate": 0.66,
-    .
-    .
-    .
+      "input_generation_max_iteration": 30,
+      "input_generation_mutation_rate": 0.5,
+      "input_generation_singlepoint_mutation_rate": 0.5,
+      "input_initialization_method": "random",
+      "input_population_size": 30,
+      "input_update_interval": 1,
+      "max_generations": 300,
+      "mutation_rate": 0.3,
+      "operator_mutation_rate": 0.2,
+      "program_population_size": 30,
+      "random_value_probs": [
+        0.5,
+        0.5
+      ],
+      "random_value_ranges": [
+        [
+          "-10",
+          "10"
+        ],
+        [
+          "21888242871839275222246405745257275088548364400416034343698204186575808495517",
+          "21888242871839275222246405745257275088548364400416034343698204186575808495617"
+        ]
+      ],
+      "save_fitness_scores": false,
+      "seed": 0,
+      "trace_mutation_method": "constant"
+    },
+    "mutation_test_log": {
+      "fitness_score_log": [],
+      "generation": 7,
+      "random_seed": 13057132941229430025
+    }
+  }
+}
 ```
 
 ### Logging
