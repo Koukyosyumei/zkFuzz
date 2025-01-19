@@ -581,8 +581,17 @@ mod input_processing {
                 .takes_value(true)
                 .multiple(true)
                 .number_of_values(1)   
-                .display_order(330) 
+                .display_order(100) 
                 .help("Adds directory to library search path"),
+            )
+            .arg (
+                Arg::with_name("prime")
+                    .short("prime")
+                    .long("prime")
+                    .takes_value(true)
+                    .default_value("bn128")
+                    .display_order(300)
+                    .help("To choose the prime number to use to generate the circuit. Receives the name of the curve (bn128, bls12381, goldilocks, grumpkin, pallas, vesta, secq256r1)"),
             )
             .arg(
                 Arg::with_name("constraint_assert_dissabled")
@@ -591,6 +600,46 @@ mod input_processing {
                     .hidden(false)
                     .display_order(810)
                     .help("Does not add asserts in the generated code for === constraint equalities"),
+            )
+            .arg (
+                Arg::with_name("debug_prime")
+                    .long("debug_prime")
+                    .takes_value(true)
+                    .default_value("21888242871839275222246405745257275088548364400416034343698204186575808495617")
+                    .display_order(310)
+                    .help("(TCCT) Prime number for TCCT debugging"),
+            )
+            .arg (
+                Arg::with_name("search_mode")
+                    .long("search_mode")
+                    .takes_value(true)
+                    .default_value("none")
+                    .display_order(320)
+                    .help("(TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained"),
+            )
+            .arg (
+                Arg::with_name("heuristics_range")
+                    .long("heuristics_range")
+                    .takes_value(true)
+                    .default_value("100")
+                    .display_order(330)
+                    .help("(TCCT) Heuristics range for TCCT debugging"),
+            )
+            .arg (
+                Arg::with_name("path_to_mutation_setting")
+                    .long("path_to_mutation_setting")
+                    .takes_value(true)
+                    .default_value("none")
+                    .display_order(340)
+                    .help("(TCCT) Path to the setting file for Mutation Testing"),
+            )
+            .arg (
+                Arg::with_name("path_to_whitelist")
+                    .long("path_to_whitelist")
+                    .takes_value(true)
+                    .default_value("none")
+                    .display_order(350)
+                    .help("(TCCT) Path to the white-lists file"),
             )
             .arg(
                 Arg::with_name("lessthan_dissabled")
@@ -639,96 +688,47 @@ mod input_processing {
                     .help("Applies the old version of the heuristics when performing linear simplification"),
             )
             */
-            .arg (
-                Arg::with_name("prime")
-                    .short("prime")
-                    .long("prime")
-                    .takes_value(true)
-                    .default_value("bn128")
-                    .display_order(300)
-                    .help("To choose the prime number to use to generate the circuit. Receives the name of the curve (bn128, bls12381, goldilocks, grumpkin, pallas, vesta, secq256r1)"),
+            .arg(
+                Arg::with_name("print_ast")
+                    .long("print_ast")
+                    .takes_value(false)
+                    .display_order(830)
+                    .help("(TCCT) Prints AST"),
             )
             .arg(
                 Arg::with_name("show_stats_of_ast")
                     .long("show_stats_of_ast")
                     .takes_value(false)
-                    .display_order(999)
+                    .display_order(840)
                     .help("(TCCT) Prints the basic stats of AST"),
-            )
-            .arg(
-                Arg::with_name("print_ast")
-                    .long("print_ast")
-                    .takes_value(false)
-                    .display_order(1000)
-                    .help("(TCCT) Prints AST"),
             )
             .arg(
                 Arg::with_name("print_stats")
                     .long("print_stats")
                     .takes_value(false)
-                    .display_order(1010)
+                    .display_order(850)
                     .help("(TCCT) Prints the stats of constraints"),
             )
             .arg(
                 Arg::with_name("print_stats_csv")
                     .long("print_stats_csv")
                     .takes_value(false)
-                    .display_order(1015)
+                    .display_order(860)
                     .help("(TCCT) Prints the stats of constraints in CSV format"),
             )
             .arg(
                 Arg::with_name("symbolic_template_params")
                     .long("symbolic_template_params")
                     .takes_value(false)
-                    .display_order(1020)
+                    .display_order(870)
                     .help("(TCCT) Treats the template parameters of the main template as symbolic values"),
             )
             .arg(
                 Arg::with_name("save_output")
                     .long("save_output")
                     .takes_value(false)
-                    .display_order(1030)
+                    .display_order(880)
                     .help("(TCCT) Save the output when the counterexample is found"),
-            )
-            .arg (
-                Arg::with_name("search_mode")
-                    .long("search_mode")
-                    .takes_value(true)
-                    .default_value("none")
-                    .display_order(1040)
-                    .help("(TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained"),
-            )
-            .arg (
-                Arg::with_name("path_to_mutation_setting")
-                    .long("path_to_mutation_setting")
-                    .takes_value(true)
-                    .default_value("none")
-                    .display_order(1045)
-                    .help("(TCCT) Path to the setting file for Mutation Testing"),
-            )
-            .arg (
-                Arg::with_name("path_to_whitelist")
-                    .long("path_to_whitelist")
-                    .takes_value(true)
-                    .default_value("none")
-                    .display_order(1046)
-                    .help("(TCCT) Path to the white-lists file"),
-            )
-            .arg (
-                Arg::with_name("debug_prime")
-                    .long("debug_prime")
-                    .takes_value(true)
-                    .default_value("21888242871839275222246405745257275088548364400416034343698204186575808495617")
-                    .display_order(1050)
-                    .help("(TCCT) Prime number for TCCT debugging"),
-            )
-            .arg (
-                Arg::with_name("heuristics_range")
-                    .long("heuristics_range")
-                    .takes_value(true)
-                    .default_value("100")
-                    .display_order(1060)
-                    .help("(TCCT) Heuristics range for TCCT debugging"),
             )
             .get_matches()
     }
