@@ -752,6 +752,26 @@ pub fn flip_op(value: &SymbolicValue) -> SymbolicValue {
     }
 }
 
+/// Evaluates the error of a symbolic value for a given assignment under modular arithmetic.
+///
+/// This function computes the "error" of a symbolic value when evaluated with a specific assignment
+/// of symbolic names to integer values. The error is defined as the absolute difference between
+/// expected and actual values modulo a prime number.
+///
+/// # Parameters
+/// - `prime`: The prime modulus used for modular arithmetic.
+/// - `value`: The symbolic value to evaluate the error for.
+/// - `assignment`: A mapping of symbolic names to their concrete integer values.
+/// - `symbolic_library`: A mutable reference to the symbolic library providing variable lookup and
+///   other symbolic operations.
+///
+/// # Returns
+/// The computed error as a `BigInt`. A zero error indicates the symbolic value matches the
+/// assignment modulo the prime.
+///
+/// # Panics
+/// - If unassigned variables are encountered in the symbolic value.
+/// - If unsupported operators are used, such as non-comparison or non-boolean operators.
 pub fn evaluate_error_of_symbolic_value(
     prime: &BigInt,
     value: &SymbolicValue,
@@ -821,6 +841,21 @@ pub fn evaluate_error_of_symbolic_value(
     }
 }
 
+/// Accumulates the total error for a set of symbolic constraints.
+///
+/// This function iterates over a list of symbolic constraints and evaluates the error of each
+/// constraint under a given assignment. Errors are clamped to zero to ignore negative values,
+/// and the total is computed as the sum of individual errors.
+///
+/// # Parameters
+/// - `prime`: The prime modulus used for modular arithmetic.
+/// - `constraints`: A slice of symbolic value references representing the constraints.
+/// - `assignment`: A mapping of symbolic names to their concrete integer values.
+/// - `symbolic_library`: A mutable reference to the symbolic library providing variable lookup and
+///   other symbolic operations.
+///
+/// # Returns
+/// The total error as a `BigInt`.
 pub fn accumulate_error_of_constraints(
     prime: &BigInt,
     constraints: &[SymbolicValueRef],
@@ -837,6 +872,18 @@ pub fn accumulate_error_of_constraints(
         .sum()
 }
 
+/// Checks if two integers are equivalent modulo a given prime.
+///
+/// This function determines whether two integers are congruent modulo the specified prime,
+/// accounting for potential negative values.
+///
+/// # Parameters
+/// - `a`: The first integer.
+/// - `b`: The second integer.
+/// - `p`: The prime modulus.
+///
+/// # Returns
+/// `true` if `a ≡ b (mod p)`, otherwise `false`.
 fn is_equal_mod(a: &BigInt, b: &BigInt, p: &BigInt) -> bool {
     let mut a_mod_p = a % p;
     let mut b_mod_p = b % p;
@@ -849,6 +896,45 @@ fn is_equal_mod(a: &BigInt, b: &BigInt, p: &BigInt) -> bool {
     a_mod_p == b_mod_p
 }
 
+/// Verifies an assignment for symbolic constraints and determines whether the constraints are
+/// under-constrained, over-constrained, or well-constrained.
+///
+/// This function evaluates both symbolic trace and side constraints for a given
+/// symbolic execution environment and assignment, returning a result that categorizes the
+/// verification outcome.
+///
+/// # Parameters
+/// - `sexe`: A mutable reference to the symbolic executor (`SymbolicExecutor`) which maintains
+///   the symbolic execution state and library.
+/// - `symbolic_trace`: A reference to a slice of symbolic values representing the symbolic trace.
+/// - `side_constraints`: A reference to a slice of symbolic values representing the side constraints.
+/// - `assignment`: A mapping from symbolic names to concrete integer values representing the assignment to be verified.
+/// - `setting`: Configuration settings (`BaseVerificationConfig`) including modular arithmetic parameters and template configurations.
+///
+/// # Returns
+/// A `VerificationResult` that represents one of the following:
+/// - `VerificationResult::WellConstrained`: The constraints are satisfied without ambiguity.
+/// - `VerificationResult::OverConstrained`: The symbolic trace are satisfied, but the side constraints are not.
+/// - `VerificationResult::UnderConstrained`: Either the program accepts unexpected input
+///   (`UnderConstrainedType::UnexpectedInput`) or exhibits non-deterministic behavior
+///   (`UnderConstrainedType::NonDeterministic`).
+///
+/// # Verification Process
+/// 1. Evaluate the symbolic trace (`symbolic_trace`) and side constraints (`side_constraints`)
+///    against the provided `assignment`.
+/// 2. Determine the constraint status:
+///     - If the symbolic trace is satisfied but the side constraints are not, return `OverConstrained`.
+///     - If the side constraints are satisfied but the symbolic trace is not:
+///         - Perform concrete execution with the given `assignment` to validate the symbolic
+///           execution state.
+///         - If the execution fails due to unexpected input, return `UnderConstrained` with details about the violated condition.
+///         - If execution succeeds but produces outputs that do not match the expected assignment, return `UnderConstrained`
+///           with non-deterministic output details.
+///     - If both constraints are satisfied or unsatisfied in harmony, return `WellConstrained`.
+///
+/// # Panics
+/// This function may panic if an undetermined output is encountered during execution,
+/// or if the provided symbolic library lacks the expected mappings.
 pub fn verify_assignment(
     sexe: &mut SymbolicExecutor,
     symbolic_trace: &[SymbolicValueRef],
@@ -856,7 +942,7 @@ pub fn verify_assignment(
     assignment: &FxHashMap<SymbolicName, BigInt>,
     setting: &BaseVerificationConfig,
 ) -> VerificationResult {
-    let is_satisfy_tc = evaluate_constraints(
+    let is_satisfy_st = evaluate_constraints(
         &setting.prime,
         symbolic_trace,
         assignment,
@@ -869,9 +955,9 @@ pub fn verify_assignment(
         &mut sexe.symbolic_library,
     );
 
-    if is_satisfy_tc && !is_satisfy_sc {
+    if is_satisfy_st && !is_satisfy_sc {
         VerificationResult::OverConstrained
-    } else if !is_satisfy_tc && is_satisfy_sc {
+    } else if !is_satisfy_st && is_satisfy_sc {
         sexe.clear();
         sexe.cur_state.add_owner(&OwnerName {
             id: sexe.symbolic_library.name2id["main"],
