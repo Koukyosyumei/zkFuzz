@@ -1,9 +1,7 @@
 use std::rc::Rc;
-use std::str::FromStr;
 
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
-use num_traits::One;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rustc_hash::FxHashMap;
@@ -11,7 +9,6 @@ use rustc_hash::FxHashMap;
 use crate::executor::symbolic_state::SymbolicTrace;
 use crate::executor::symbolic_value::SymbolicValue;
 
-use crate::solver::utils::BaseVerificationConfig;
 
 /// Draws a random BigInt from specified ranges based on given probabilities.
 ///
