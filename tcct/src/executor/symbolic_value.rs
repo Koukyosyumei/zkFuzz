@@ -753,7 +753,9 @@ pub fn evaluate_binary_op(
         | ExpressionInfixOpcode::LesserEq
         | ExpressionInfixOpcode::GreaterEq
         | ExpressionInfixOpcode::Eq
-        | ExpressionInfixOpcode::NotEq => (normalize_to_int(lhs), normalize_to_int(rhs)),
+        | ExpressionInfixOpcode::NotEq => {
+            (normalize_to_int(lhs, prime), normalize_to_int(rhs, prime))
+        }
         // Keep booleans as they are for logical operators
         ExpressionInfixOpcode::BoolAnd | ExpressionInfixOpcode::BoolOr => {
             (normalize_to_bool(lhs, prime), normalize_to_bool(rhs, prime))
@@ -838,10 +840,17 @@ pub fn evaluate_binary_op(
     }
 }
 
-fn normalize_to_int(val: &SymbolicValue) -> SymbolicValue {
+fn normalize_to_int(val: &SymbolicValue, prime: &BigInt) -> SymbolicValue {
     match val {
         SymbolicValue::ConstantBool(b) => {
             SymbolicValue::ConstantInt(if *b { BigInt::one() } else { BigInt::zero() })
+        }
+        SymbolicValue::ConstantInt(num) => {
+            if num.is_negative() {
+                SymbolicValue::ConstantInt(num + prime)
+            } else {
+                val.clone()
+            }
         }
         _ => val.clone(),
     }
