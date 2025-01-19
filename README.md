@@ -114,7 +114,7 @@ If the configuration json file ommites some keys, the default values are used fo
 
 ```yaml
 - seed (u64)
-    - Purpose: Seed for random number generation to ensure reproducibility. If it is 0, the random seed is newly internernally generated with thread rng.
+    - Purpose: Seed for random number generation to ensure reproducibility. If set to 0, a new seed is internally generated using the thread-local random number generator.
     - Default: `0`
 
 - program_population_size (usize)
