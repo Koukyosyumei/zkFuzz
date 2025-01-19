@@ -22,33 +22,34 @@ USAGE:
 
 FLAGS:
         --constraint_assert_dissabled    Does not add asserts in the generated code for === constraint equalities
-    -h, --help                           Prints help information
-        --show_stats_of_ast              (TCCT) Prints the basic stats of AST
-    -V, --version                        Prints version information
+        --lessthan_dissabled             (TCCT) Does not detect overflow erros due to LessThan template
         --print_ast                      (TCCT) Prints AST
+        --show_stats_of_ast              (TCCT) Prints the basic stats of AST
         --print_stats                    (TCCT) Prints the stats of constraints
         --print_stats_csv                (TCCT) Prints the stats of constraints in CSV format
         --symbolic_template_params       (TCCT) Treats the template parameters of the main template as symbolic values
         --save_output                    (TCCT) Save the output when the counterexample is found
+    -h, --help                           Prints help information
+    -V, --version                        Prints version information
 
 OPTIONS:
+    -l <link_libraries>...                                       Adds directory to library search path
     -p, --prime <prime>
             To choose the prime number to use to generate the circuit. Receives the name of the curve (bn128, bls12381,
             goldilocks, grumpkin, pallas, vesta, secq256r1) [default: bn128]
-    -l <link_libraries>...                                       Adds directory to library search path
+        --debug_prime <debug_prime>
+            (TCCT) Prime number for TCCT debugging [default:
+            21888242871839275222246405745257275088548364400416034343698204186575808495617]
         --search_mode <search_mode>
             (TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained
             [default: none]
+        --heuristics_range <heuristics_range>
+            (TCCT) Heuristics range for TCCT debugging [default: 100]
+
         --path_to_mutation_setting <path_to_mutation_setting>
             (TCCT) Path to the setting file for Mutation Testing [default: none]
 
         --path_to_whitelist <path_to_whitelist>                  (TCCT) Path to the white-lists file [default: none]
-        --debug_prime <debug_prime>
-            (TCCT) Prime number for TCCT debugging [default:
-            21888242871839275222246405745257275088548364400416034343698204186575808495617]
-        --heuristics_range <heuristics_range>
-            (TCCT) Heuristics range for TCCT debugging [default: 100]
-
 
 ARGS:
     <input>    Path to a circuit with a main component [default: ./circuit.circom]
