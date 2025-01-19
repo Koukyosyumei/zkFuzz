@@ -35,7 +35,10 @@ use solver::mutation_config::load_config_from_json;
 use solver::mutation_test_crossover_fn::random_crossover;
 use solver::mutation_test_evolution_fn::simple_evolution;
 use solver::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
-use solver::mutation_test_trace_initialization_fn::initialize_population_with_random_constant_replacement;
+use solver::mutation_test_trace_initialization_fn::{
+    initialize_population_with_operator_mutation_and_random_constant_replacement,
+    initialize_population_with_random_constant_replacement,
+};
 use solver::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
 use solver::mutation_test_trace_selection_fn::roulette_selection;
 use solver::mutation_test_update_input_fn::{
@@ -335,12 +338,19 @@ fn start() -> Result<(), ()> {
                                     .unwrap();
                             info!("\n{}", mutation_config);
 
+                            let trace_initialization_fn = match mutation_config.trace_mutation_method.as_str() {
+                                "constant" => initialize_population_with_random_constant_replacement,
+                                "constant_operator" => initialize_population_with_operator_mutation_and_random_constant_replacement,
+                                _ => panic!("`trace_mutation_method` should be one of [`constant`, `constant_operator`]")
+                            };
+
                             let update_input_fn = match mutation_config
                                 .input_initialization_method
                                 .as_str()
                             {
+                                "random" => update_input_population_with_random_sampling,
                                 "coverage" => update_input_population_with_coverage_maximization,
-                                _ => update_input_population_with_random_sampling,
+                                _ => panic!("`input_initialization_method` should be one of [`random`, `coverage`]")
                             };
 
                             let result = mutation_test_search(
@@ -349,7 +359,7 @@ fn start() -> Result<(), ()> {
                                 &sym_executor.cur_state.side_constraints.clone(),
                                 &verification_base_config,
                                 &mutation_config,
-                                initialize_population_with_random_constant_replacement,
+                                trace_initialization_fn,
                                 update_input_fn,
                                 evaluate_trace_fitness_by_error,
                                 simple_evolution,

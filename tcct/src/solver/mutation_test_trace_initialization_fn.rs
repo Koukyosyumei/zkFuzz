@@ -24,7 +24,8 @@ use crate::solver::utils::BaseVerificationConfig;
 /// - `pos`: A slice of indices representing positions in the symbolic trace to be initialized.
 /// - `_symbolic_trace`: A reference to the symbolic trace (`SymbolicTrace`). This parameter
 ///   is currently unused but reserved for potential future enhancements.
-/// - `base_config`: Configuration object providing base parameters for generating random constants.
+/// - `_base_config`: Configuration object providing base parameters for generating random constants.
+///   This parameter is currently unused but reserved for potential future enhancements.
 /// - `mutation_config`: Configuration object defining mutation parameters, such as the population size.
 /// - `rng`: A mutable reference to a random number generator for consistent randomization.
 ///
@@ -99,7 +100,8 @@ lazy_static::lazy_static! {
 /// - `pos`: A slice of indices representing positions in the symbolic trace to be mutated.
 /// - `symbolic_trace`: A reference to the symbolic trace (`SymbolicTrace`) containing
 ///   symbolic expressions associated with the original program under mutation.
-/// - `base_config`: Configuration object providing base parameters for generating random constants.
+/// - `_base_config`: Configuration object providing base parameters for generating random constants.
+///   This parameter is currently unused but reserved for potential future enhancements.
 /// - `mutation_config`: Configuration object defining mutation parameters, such as population
 ///   size and operator mutation rate.
 /// - `rng`: A mutable reference to a random number generator for consistent randomization.
@@ -120,10 +122,10 @@ lazy_static::lazy_static! {
 /// # Panics
 /// - Panics if an unsupported opcode is encountered during operator mutation.
 /// - Panics if the related operator group for a given opcode is empty.
-fn initialize_population_with_operator_mutation_and_random_constant_replacement(
+pub fn initialize_population_with_operator_mutation_and_random_constant_replacement(
     pos: &[usize],
     symbolic_trace: &SymbolicTrace,
-    base_config: &BaseVerificationConfig,
+    _base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
