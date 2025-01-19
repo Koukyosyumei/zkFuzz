@@ -27,8 +27,9 @@ FLAGS:
     -V, --version                        Prints version information
         --print_ast                      (TCCT) Prints AST
         --print_stats                    (TCCT) Prints the stats of constraints
+        --print_stats_csv                (TCCT) Prints the stats of constraints in CSV format
         --symbolic_template_params       (TCCT) Treats the template parameters of the main template as symbolic values
-        --save_output                    (TCCT) Save the otuput when the counterexample is found
+        --save_output                    (TCCT) Save the output when the counterexample is found
 
 OPTIONS:
     -p, --prime <prime>
