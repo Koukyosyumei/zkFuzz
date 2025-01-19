@@ -1645,6 +1645,34 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Handles bulk assignment of symbolic variables with optional dimensional adjustments.
+    ///
+    /// This function processes assignments where symbolic variables may represent arrays or have
+    /// omitted dimensions. It resolves these dimensions, generates the necessary symbolic access paths,
+    /// and updates the provided lists of left-hand variable names, right-hand values, and symbolic positions.
+    ///
+    /// # Parameters
+    /// - `component_name`: An optional symbolic name of the component being assigned, used to recover omitted dimensions.
+    /// - `left_var_name`: The symbolic name of the left-hand variable in the assignment.
+    /// - `dim_of_left_var`: The current dimensionality of the left-hand variable.
+    /// - `full_dim_of_left_var`: The full dimensionality of the left-hand variable, including omitted dimensions.
+    /// - `rhe`: The right-hand expression, which can be a symbolic value or variable.
+    /// - `left_var_names`: A mutable list to store the resolved symbolic names of left-hand variables after dimension adjustments.
+    /// - `right_values`: A mutable list to store the resolved right-hand values corresponding to the left-hand variables.
+    /// - `symbolic_positions`: A mutable list to store the symbolic access positions generated during the assignment.
+    ///
+    /// # Behavior
+    /// - If the right-hand expression (`rhe`) is a variable:
+    ///   - Recovers omitted dimensions for the left-hand variable based on `component_name` and the dimensionality parameters.
+    ///   - Generates a Cartesian product of the omitted dimensions to produce all possible access paths.
+    ///   - Updates the symbolic access paths and hashes for both left and right variables, appending them to the respective lists.
+    /// - If `rhe` is not a variable:
+    ///   - Directly appends the `left_var_name` and `rhe` to the respective lists without further processing.
+    ///
+    /// # Notes
+    /// - This function ensures that omitted dimensions in symbolic assignments are accounted for, enabling
+    ///   precise symbolic execution for multi-dimensional variables.
+    /// - It updates symbolic hashes and access paths to maintain consistency in symbolic state tracking.
     fn handle_bulk_assignment(
         &mut self,
         component_name: &Option<SymbolicName>,
@@ -1707,20 +1735,26 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    /// Handles non-call substitution in symbolic execution.
+    /// Handles non-call substitutions of symbolic variables and optionally tracks constraints.
     ///
-    /// This method processes standard variable assignments, updating the symbolic state
-    /// and potentially adding constraints based on the assignment type.
+    /// This function processes assignments that do not involve function calls, updating the current
+    /// symbolic state with the provided variable name and value. If constraint tracking is enabled,
+    /// it records the substitution as a symbolic trace and optionally as a side constraint.
     ///
-    /// # Arguments
+    /// # Parameters
+    /// - `op`: The assignment operation, wrapped in a `DebuggableAssignOp`, which determines the type of substitution.
+    /// - `var_name`: The symbolic name of the variable being assigned.
+    /// - `value`: The symbolic value being assigned to the variable.
     ///
-    /// * `op` - The assignment operator.
-    /// * `var_name` - The symbolic name of the variable being assigned.
-    /// * `value` - The symbolic value being assigned.
-    ///
-    /// # Side Effects
-    ///
-    /// Updates the current symbolic state and may add constraints.
+    /// # Behavior
+    /// - If `keep_track_constraints` is enabled in the settings:
+    ///   - For `AssignConstraintSignal` operations:
+    ///     - Creates an equality constraint (`AssignEq`) between the variable and the value.
+    ///     - Adds the constraint to the symbolic trace and side constraints.
+    ///   - For `AssignSignal` operations:
+    ///     - Creates a direct assignment (`Assign`) between the variable and the value.
+    ///     - Adds the assignment to the symbolic trace.
+    /// - For other assignment types, no action is taken.
     fn handle_non_call_substitution(
         &mut self,
         op: &DebuggableAssignOp,
@@ -1873,6 +1907,31 @@ impl<'a> SymbolicExecutor<'a> {
                     .is_empty())
     }
 
+    /// Executes a ready-to-run component in the symbolic execution context.
+    ///
+    /// This function initializes and executes a specified component if it has not already been executed.
+    /// The execution propagates the component's effects, such as symbolic traces, constraints, and assignments,
+    /// back to the current symbolic execution state.
+    ///
+    /// # Parameters
+    /// - `component_id`: The unique identifier of the component to be executed.
+    /// - `component_name`: The symbolic name of the component.
+    /// - `pre_dims`: A vector of symbolic accesses representing pre-computed dimensions or indices for the component.
+    ///
+    /// # Behavior
+    /// - Initializes a new symbolic executor for the component, inheriting and updating the owner list for context.
+    /// - Configures the component with its template parameters and input bindings.
+    /// - Executes the body of the component as defined in the template library.
+    /// - If `propagate_assignments` is enabled in the settings:
+    ///   - Merges the symbol binding map of the component back into the parent executor.
+    /// - Propagates symbolic traces and side constraints generated during the component's execution.
+    /// - If the component's template specifies `is_lessthan`, generates and appends a "less-than" constraint.
+    /// - Optionally logs detailed execution traces if tracing is enabled in the settings.
+    ///
+    /// # Notes
+    /// - The function ensures that the component is executed only once by checking its `is_done` flag in the `components_store`.
+    /// - The `SymbolicExecutor` is re-initialized for the component with an updated owner name that incorporates the component's ID, counter, and access dimensions.
+    /// - Handles template parameters and inputs before execution to ensure consistency with the symbolic model.
     fn execute_ready_component(
         &mut self,
         component_id: usize,
@@ -2122,6 +2181,28 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Recovers the omitted dimensions of a symbolic variable based on its current and full dimensions.
+    ///
+    /// This function identifies and returns the dimensions of a variable that were omitted, considering its current
+    /// dimension and the total dimensions available.
+    ///
+    /// # Parameters
+    /// - `component_name`: An optional symbolic name of the component to which the variable belongs.
+    ///   If `None`, the variable is treated as global.
+    /// - `var_name`: The symbolic name of the variable whose dimensions are to be recovered.
+    /// - `cur_dim`: The current dimension of the variable.
+    /// - `full_dim`: The total number of dimensions the variable is expected to have.
+    ///
+    /// # Returns
+    /// - A vector of `usize` values representing the omitted dimensions of the variable, starting from
+    ///   the current dimension (`cur_dim`) to the full dimension (`full_dim`).
+    ///
+    /// # Behavior
+    /// - If `component_name` is provided and corresponds to an existing component in the `components_store`,
+    ///   the dimensions are retrieved from the component-specific store.
+    /// - If `component_name` is not provided or does not exist in the `components_store`, the dimensions
+    ///   are retrieved from the global `id2dimensions` mapping.
+    /// - Iterates from `cur_dim` to `full_dim` and appends the corresponding dimensions to the result.
     fn recover_omitted_dims(
         &mut self,
         component_name: Option<&SymbolicName>,
