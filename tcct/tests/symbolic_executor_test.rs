@@ -2163,21 +2163,17 @@ fn test_unused_outputs() {
     let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
     execute(&mut sexe, &program_archive);
 
-    let mut main_template_id = "";
-    let mut template_param_names = Vec::new();
-    let mut template_param_values = Vec::new();
-    match &program_archive.initial_template_call {
-        Expression::Call { id, args, .. } => {
-            main_template_id = id;
-            let template = program_archive.templates[id].clone();
-            template_param_names = template.get_name_of_params().clone();
-            template_param_values = args.clone();
-        }
-        _ => unimplemented!(),
-    }
+    let (main_template_name, template_param_names, template_param_values) =
+        match &program_archive.initial_template_call {
+            Expression::Call { id, args, .. } => {
+                let template = &program_archive.templates[id];
+                (id, template.get_name_of_params().clone(), args.clone())
+            }
+            _ => unimplemented!(),
+        };
 
     let verification_setting = BaseVerificationConfig {
-        target_template_name: main_template_id.to_string(),
+        target_template_name: main_template_name.to_string(),
         prime: prime.clone(),
         range: range.clone(),
         quick_mode: false,
