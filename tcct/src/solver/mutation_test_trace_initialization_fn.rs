@@ -10,7 +10,7 @@ use crate::executor::symbolic_value::SymbolicValue;
 
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::mutation_test::Gene;
-use crate::solver::mutation_utils::draw_random_constant;
+use crate::solver::mutation_utils::draw_bigint_with_probabilities;
 use crate::solver::utils::BaseVerificationConfig;
 
 /// Initializes a population of `Gene` instances by replacing all symbolic trace positions
@@ -33,12 +33,12 @@ use crate::solver::utils::BaseVerificationConfig;
 ///
 /// # Details
 /// - For each position in the trace, a random constant value is generated using the
-///   `draw_random_constant` function and assigned as the symbolic value.
+///   `draw_bigint_with_probabilities` function and assigned as the symbolic value.
 /// - The size of the generated population is determined by `mutation_config.program_population_size`.
 pub fn initialize_population_with_random_constant_replacement(
     pos: &[usize],
     _symbolic_trace: &SymbolicTrace,
-    base_config: &BaseVerificationConfig,
+    _base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
@@ -48,7 +48,14 @@ pub fn initialize_population_with_random_constant_replacement(
                 .map(|p| {
                     (
                         p.clone(),
-                        SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
+                        SymbolicValue::ConstantInt(
+                            draw_bigint_with_probabilities(
+                                &mutation_config.random_value_ranges,
+                                &mutation_config.random_value_probs,
+                                rng,
+                            )
+                            .unwrap(),
+                        ),
                     )
                 })
                 .collect()
@@ -150,13 +157,27 @@ fn initialize_population_with_operator_mutation_and_random_constant_replacement(
                         } else {
                             (
                                 p.clone(),
-                                SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
+                                SymbolicValue::ConstantInt(
+                                    draw_bigint_with_probabilities(
+                                        &mutation_config.random_value_ranges,
+                                        &mutation_config.random_value_probs,
+                                        rng,
+                                    )
+                                    .unwrap(),
+                                ),
                             )
                         }
                     }
                     _ => (
                         p.clone(),
-                        SymbolicValue::ConstantInt(draw_random_constant(base_config, rng)),
+                        SymbolicValue::ConstantInt(
+                            draw_bigint_with_probabilities(
+                                &mutation_config.random_value_ranges,
+                                &mutation_config.random_value_probs,
+                                rng,
+                            )
+                            .unwrap(),
+                        ),
                     ),
                 })
                 .collect()
