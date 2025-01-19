@@ -68,9 +68,9 @@ or
 
 This tool also provides multiple verbosity levels for detailed analysis with the environmental variable `RUST_LOG`:
 
-- `warn`: Outputs warnings and basic statistics about the trace and side constraints.
-- `info`: Includes everything from `warn` and adds details about all possible finite states.
-- `debug`: Includes everything from `info` and adds the full AST (Abstract Syntax Tree).
+- `warn`: Outputs warnings and errors.
+- `info`: Includes everything from `warn` and adds the basic statistics about the trace and constraints.
+- `debug`: Includes everything from `info` and adds the trace of the final state.
 - `trace`: Includes everything from `debug` and outputs all intermediate trace states during execution.
 
 **Example Command with Verbosity:**
