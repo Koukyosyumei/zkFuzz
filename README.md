@@ -12,7 +12,7 @@ or
 cargo build --release
 ```
 
-## Usage
+## Basic Usage
 
 ```
 ZKP Circuit Debugger
@@ -66,60 +66,179 @@ or
 
 <img src="img/main_result.png" alt="Result" width=700>
 
+## Mutation Testing
+
+For the mutation testing, we can feed a detailed parameters from teh json file with `path_to_mutation_setting` option.
+
+**Example of Mutation Testing's Config**
+
+```json
+{
+    "max_generations": 5000,
+    "fitness_function": "error"
+}
+```
+
+### Schema Overview
+
+The configuration is represented as a JSON object with the following key-value pairs and default values:
+
+```json
+{
+    "seed": 0,
+    "program_population_size": 30,
+    "input_population_size": 30,
+    "max_generations": 300,
+    "input_initialization_method": "random",
+    "trace_mutation_method": "constant",
+    "fitness_function": "error",
+    "mutation_rate": 0.3,
+    "crossover_rate": 0.5,
+    "operator_mutation_rate": 0.2,
+    "input_update_interval": 1,
+    "input_generation_max_iteration": 30,
+    "input_generation_crossover_rate": 0.66,
+    "input_generation_mutation_rate": 0.5,
+    "input_generation_singlepoint_mutation_rate": 0.5,
+    "random_value_ranges": [
+        [   "-10", 
+            "10"
+        ],
+        [
+            "21888242871839275222246405745257275088548364400416034343698204186575808495517", 
+            "21888242871839275222246405745257275088548364400416034343698204186575808495617"
+        ]
+    ],
+    "random_value_probs": [
+        0.5,
+        0.5
+    ],
+    "save_fitness_scores": false
+}
+```
+
+### Field Descriptions
+
+**seed** (u64)
+- Purpose: Seed for random number generation to ensure reproducibility. If it is 0, the random seed is newly internernally generated with thread rng.
+- Default: `0`
+
+**program_population_size** (usize)
+- Purpose: Size of the program population in the genetic algorithm.
+- Default: `30`
+
+**input_population_size** (usize)
+- Purpose: Size of the input population in the genetic algorithm.
+- Default: `30`
+
+**max_generations** (usize)
+- Purpose: Maximum number of generations for the evolutionary process.
+- Default: `300`
+
+**input_initialization_method** (String)
+- Purpose: Method used to initialize inputs.
+- Default: `"random"`
+
+**trace_mutation_method** (String)
+- Purpose: Method used for trace mutation.
+- Default: `"constant"`
+
+**fitness_function** (String)
+- Purpose: Function used to evaluate fitness of solutions.
+- Default: `"error"`
+
+**mutation_rate** (f64)
+- Purpose: Rate at which mutations occur in the genetic algorithm.
+- Example: `0.3`
+
+**crossover_rate** (f64)
+- Purpose: Rate at which crossover occurs in the genetic algorithm.
+- Example: `0.5`
+
+**operator_mutation_rate** (f64)
+- Purpose: Rate of mutation for operators in the genetic algorithm.
+- Example: `0.2`
+
+**input_update_interval** (usize)
+- Purpose: Interval at which inputs are updated.
+- Example: `1`
+
+**input_generation_max_iteration** (usize)
+- Purpose: Maximum number of iterations for input generation.
+- Example: `30`
+
+**input_generation_crossover_rate** (f64)
+- Purpose: Crossover rate for input generation.
+- Example: `0.66`
+
+**input_generation_mutation_rate** (f64)
+- Purpose: Mutation rate for input generation.
+- Example: `0.5`
+
+**input_generation_singlepoint_mutation_rate** (f64)
+- Purpose: Single-point mutation rate for input generation.
+- Example: `0.5`
+
+**random_value_ranges** (Array of Arrays)
+- Purpose: Ranges for random value generation.
+- Format: Array of pairs of strings representing big integers.
+- Example: `[["-10", "10"], ["21888242871839275222246405745257275088548364400416034343698204186575808495517", "21888242871839275222246405745257275088548364400416034343698204186575808495617"]]`
+
+**random_value_probs** (Array of f64)
+- Purpose: Probabilities associated with random value ranges.
+- Example: `[0.5, 0.5]`
+
+**save_fitness_scores** (bool)
+- Purpose: Flag to determine if fitness scores should be saved.
+- Example: `false`
+
+## Tips
+
+### Saving Output
+
 If `--save_output` option is on, the counterexample is saved on the same directory when the counterexample is found.
 
 **Example Command with `--save_output`**
 
 ```bash
 ./target/release/tcct ./tests/sample/test_vuln_iszero.circom --search_mode="ga" --save_output
+# the name pattern of the output is <TARGET_FILE_NAME>_<RANDOM_SUFFIX>_counterexample.json
+cat tests/sample/test_vuln_iszero.circom_j9BXuA9k1j_counterexample.json
 ```
 
 **Example Output:**
 
-```s
-  ████████╗ ██████╗ ██████╗████████╗
-  ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝
-     ██║   ██║     ██║        ██║
-     ██║   ██║     ██║        ██║
-     ██║   ╚██████╗╚██████╗   ██║
-     ╚═╝    ╚═════╝ ╚═════╝   ╚═╝
- Trace-Constraint Consistency Test
-     ZKP Circuit Debugger v0.0
-
-Welcome to the TCCT Debugging Tool
-════════════════════════════════════════════════════════════════
-🧾 Loading Whitelists...
-🧩 Parsing Templates...
-⚙️ Parsing Function...
-🛒 Gathering Trace/Side Constraints...
-════════════════════════════════════════════════════════════════
-════════════════════════════════════════════════════════════════
-🩺 Scanning TCCT Instances...
-🎲 Random Seed: 13057132941229430025
-🧬 Generation: 7/300 (0)
-    └─ Solution found in generation 7
-💾 Saving the output to: ./tests/sample/test_vuln_iszero.circom_j9BXuA9k1j_counterexample.json
-╔══════════════════════════════════════════════════════════════╗
-║🚨 Counter Example:                                           ║
-║    🔥 UnderConstrained (Non-Deterministic) 🔥
-║           ➡️ `main.out` is expected to be `0`
-║    🔍 Assignment Details:
-║           ➡️ main.in = 21888242871839275222246405745257275088548364400416034343698204186575808495524
-║           ➡️ main.inv = 0
-║           ➡️ main.out = 1
-╚══════════════════════════════════════════════════════════════╝
-
-╔═══════════════════════════════════════════════════════════════╗
-║                        TCCT Report                            ║
-╚═══════════════════════════════════════════════════════════════╝
-📊 Execution Summary:
- ├─ Prime Number      : 21888242871839275222246405745257275088548364400416034343698204186575808495617
- ├─ Compression Rate  : 66.67% (2/3)
- ├─ Verification      : 💥 NOT SAFE 💥
- └─ Execution Time    : 36.4972ms
-════════════════════════════════════════════════════════════════
-Everything went okay
+```json
+{
+  "0_target_path": "./tests/sample/test_vuln_iszero.circom",
+  "1_main_template": "VulnerableIsZero",
+  "2_search_mode": "ga",
+  "3_execution_time": "36.3001ms",
+  "4_git_hash_of_tcct": "106b20ddad6431d0eee3cd73f9aac0153af4bbd9",
+  "5_flag": {
+    "1_type": "UnderConstrained-NonDeterministic",
+    "2_expected_output": {
+      "name": "main.out",
+      "value": "0"
+    }
+  },
+  "6_target_output": "main.out",
+  "7_assignment": {
+    "main.in": "21888242871839275222246405745257275088548364400416034343698204186575808495524",
+    "main.inv": "0",
+    "main.out": "1"
+  },
+  "8_auxiliary_result": {
+    "mutation_test_config": {
+      "crossover_rate": 0.5,
+      "fitness_function": "error",
+      "input_generation_crossover_rate": 0.66,
+    .
+    .
+    .
 ```
+
+### Logging
 
 This tool also provides multiple verbosity levels for detailed analysis with the environmental variable `RUST_LOG`:
 
