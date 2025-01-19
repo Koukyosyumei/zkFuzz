@@ -54,7 +54,7 @@ ARGS:
     <input>    Path to a circuit with a main component [default: ./circuit.circom]
 ```
 
-**Example command:**
+**Example Command:**
 
 ```bash
 ./target/debug/tcct ./tests/sample/iszero_vuln.circom --search_mode="ga"
@@ -62,9 +62,64 @@ or
 ./target/release/tcct ./tests/sample/iszero_vuln.circom --search_mode="ga"
 ```
 
-**Example output:**
+**Example Output:**
 
 <img src="img/main_result.png" alt="Result" width=700>
+
+If `--save_output` option is on, the counterexample is saved on the same directory when the counterexample is found.
+
+**Example Command with `--save_output`**
+
+```bash
+./target/release/tcct ./tests/sample/test_vuln_iszero.circom --search_mode="ga" --save_output
+```
+
+**Example Output:**
+
+```s
+  ████████╗ ██████╗ ██████╗████████╗
+  ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝
+     ██║   ██║     ██║        ██║
+     ██║   ██║     ██║        ██║
+     ██║   ╚██████╗╚██████╗   ██║
+     ╚═╝    ╚═════╝ ╚═════╝   ╚═╝
+ Trace-Constraint Consistency Test
+     ZKP Circuit Debugger v0.0
+
+Welcome to the TCCT Debugging Tool
+════════════════════════════════════════════════════════════════
+🧾 Loading Whitelists...
+🧩 Parsing Templates...
+⚙️ Parsing Function...
+🛒 Gathering Trace/Side Constraints...
+════════════════════════════════════════════════════════════════
+════════════════════════════════════════════════════════════════
+🩺 Scanning TCCT Instances...
+🎲 Random Seed: 13057132941229430025
+🧬 Generation: 7/300 (0)
+    └─ Solution found in generation 7
+💾 Saving the output to: ./tests/sample/test_vuln_iszero.circom_j9BXuA9k1j_counterexample.json
+╔══════════════════════════════════════════════════════════════╗
+║🚨 Counter Example:                                           ║
+║    🔥 UnderConstrained (Non-Deterministic) 🔥
+║           ➡️ `main.out` is expected to be `0`
+║    🔍 Assignment Details:
+║           ➡️ main.in = 21888242871839275222246405745257275088548364400416034343698204186575808495524
+║           ➡️ main.inv = 0
+║           ➡️ main.out = 1
+╚══════════════════════════════════════════════════════════════╝
+
+╔═══════════════════════════════════════════════════════════════╗
+║                        TCCT Report                            ║
+╚═══════════════════════════════════════════════════════════════╝
+📊 Execution Summary:
+ ├─ Prime Number      : 21888242871839275222246405745257275088548364400416034343698204186575808495617
+ ├─ Compression Rate  : 66.67% (2/3)
+ ├─ Verification      : 💥 NOT SAFE 💥
+ └─ Execution Time    : 36.4972ms
+════════════════════════════════════════════════════════════════
+Everything went okay
+```
 
 This tool also provides multiple verbosity levels for detailed analysis with the environmental variable `RUST_LOG`:
 
@@ -79,7 +134,7 @@ This tool also provides multiple verbosity levels for detailed analysis with the
 RUST_LOG=trace ./target/debug/tcct ../sample/lessthan3.circom --print_ast --print_stats
 ```
 
-**Example output:**
+**Example Output:**
 
 <div style="display: flex; align-items: flex-start; justify-content: space-around;">
   <img src="img/ast.png" alt="AST" style="width: 20%; margin-right: 5px;">
