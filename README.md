@@ -112,7 +112,7 @@ If the configuration json file ommites some keys, the default values are used fo
 
 ### Field Descriptions
 
-```
+```yaml
 - seed (u64)
     - Purpose: Seed for random number generation to ensure reproducibility. If it is 0, the random seed is newly internernally generated with thread rng.
     - Default: `0`
