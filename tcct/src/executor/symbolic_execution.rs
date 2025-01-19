@@ -272,16 +272,21 @@ impl<'a> SymbolicExecutor<'a> {
 
 // Evaluation and simplification methods
 impl<'a> SymbolicExecutor<'a> {
-    /// Evaluates a symbolic access expression, converting it into a `SymbolicAccess` value.
+    /// Evaluates a symbolic access from a debug access representation.
     ///
-    /// # Arguments
+    /// This function processes a given `DebugAccess` (such as accessing a component or an array)
+    /// and converts it into a `SymbolicAccess` by resolving symbolic expressions and simplifying variables.
     ///
-    /// * `access` - The `Access` to evaluate.
-    /// * `elem_id` - Unique element id
+    /// # Parameters
+    /// - `access`: A reference to the `DebugAccess` that specifies the access pattern to evaluate.
+    /// - `elem_id`: The element ID used for variable evaluation in the context of the access.
     ///
     /// # Returns
+    /// A `SymbolicAccess` representing the evaluated and potentially simplified access pattern.
     ///
-    /// A `SymbolicAccess` representing the evaluated access.
+    /// # Behavior
+    /// - For `ComponentAccess`, the symbolic name is directly cloned into the result.
+    /// - For `ArrayAccess`, the expression is evaluated and simplified before being returned as a symbolic access.
     fn evaluate_access(&mut self, access: &DebugAccess, elem_id: usize) -> SymbolicAccess {
         match &access {
             DebugAccess::ComponentAccess(sym_name) => {
@@ -294,6 +299,23 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Evaluates the dimensions of a symbolic expression list.
+    ///
+    /// This function resolves and simplifies a vector of symbolic expressions representing dimensions,
+    /// converting them into concrete `usize` values if possible.
+    ///
+    /// # Parameters
+    /// - `dims`: A reference to a vector of `DebuggableExpression` objects representing the dimensions.
+    /// - `elem_id`: The element ID used for variable evaluation in the context of the dimensions.
+    ///
+    /// # Returns
+    /// A vector of `usize` values representing the evaluated dimensions. If a dimension cannot be determined,
+    /// it defaults to `0`.
+    ///
+    /// # Behavior
+    /// - Each dimension expression is evaluated and simplified.
+    /// - If the simplified result is a constant integer, it is converted to `usize`.
+    /// - If the result cannot be determined (e.g., due to unresolved symbolic values), the dimension is set to `0`.
     pub fn evaluate_dimension(
         &mut self,
         dims: &Vec<DebuggableExpression>,
@@ -746,6 +768,20 @@ impl<'a> SymbolicExecutor<'a> {
 }
 
 impl<'a> SymbolicExecutor<'a> {
+    /// Handles the execution of an initialization block within a set of statements.
+    ///
+    /// This function identifies and processes an `InitializationBlock` from a list of statements.
+    /// All initializations within the block are executed sequentially before continuing with the rest
+    /// of the statements.
+    ///
+    /// # Parameters
+    /// - `statements`: A vector of `DebuggableStatement` containing the program statements to execute.
+    /// - `cur_bid`: The current statement index (block ID) to evaluate.
+    ///
+    /// # Behavior
+    /// - Sets the state flag to indicate that execution is within an initialization block.
+    /// - Executes each initialization statement in the block.
+    /// - Resets the state flag and proceeds to the next statement after the block.
     fn handle_initialization_block(
         &mut self,
         statements: &Vec<DebuggableStatement>,
@@ -766,6 +802,18 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Handles the execution of a generic code block within a set of statements.
+    ///
+    /// This function identifies a `Block` from a list of statements, traces its metadata if enabled,
+    /// and recursively executes the statements within the block.
+    ///
+    /// # Parameters
+    /// - `statements`: A vector of `DebuggableStatement` containing the program statements to execute.
+    /// - `cur_bid`: The current statement index (block ID) to evaluate.
+    ///
+    /// # Behavior
+    /// - Executes all statements within the block, starting at index 0.
+    /// - Continues execution with the next statement after the block.
     fn handle_block(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
         if let DebuggableStatement::Block { meta, stmts, .. } = &statements[cur_bid] {
             self.trace_if_enabled(&meta);
@@ -774,6 +822,22 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Handles the execution of an `if-then-else` statement within a set of statements.
+    ///
+    /// This function evaluates the condition of an `IfThenElse` statement and determines
+    /// which branch (if-case or else-case) to execute. It also tracks branch coverage if enabled.
+    ///
+    /// # Parameters
+    /// - `statements`: A vector of `DebuggableStatement` containing the program statements to execute.
+    /// - `cur_bid`: The current statement index (block ID) to evaluate.
+    ///
+    /// # Behavior
+    /// - Evaluates the condition and simplifies it.
+    /// - If the condition resolves to `true`, the if-case is executed.
+    /// - If the condition resolves to `false` and an else-case exists, the else-case is executed.
+    /// - If the condition cannot be simplified to a constant boolean, symbolic loops are flagged in the state.
+    /// - Branch coverage is recorded if enabled.
+    /// - Continues execution with the next statement after the `if-then-else`.
     fn handle_if_then_else(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
         if let DebuggableStatement::IfThenElse {
             meta,
@@ -812,6 +876,25 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Handles the substitution of a value to a variable or data structure within a set of statements.
+    ///
+    /// This function processes a `Substitution` statement, performing symbolic evaluation and updates
+    /// to maintain the current program state. It supports assignments to single variables, arrays,
+    /// bulk assignments, and function call results.
+    ///
+    /// # Parameters
+    /// - `statements`: A vector of `DebuggableStatement` representing the program statements to execute.
+    /// - `cur_bid`: The current statement index (block ID) to evaluate.
+    ///
+    /// # Behavior
+    /// - Evaluates the right-hand expression (RHE) symbolically and simplifies the result.
+    /// - Handles specific cases based on the RHE:
+    ///   - Updates uniform arrays if applicable.
+    ///   - Processes array or bulk assignments by propagating values to multiple variables or array elements.
+    /// - Sets the symbolic value of the assigned variables in the current state.
+    /// - Handles assignments resulting from function calls.
+    /// - If the left-hand side involves component access, it updates the relevant component variables.
+    /// - Executes the next statement after processing the substitution.
     fn handle_substitution(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
         if let DebuggableStatement::Substitution {
             meta,
@@ -966,6 +1049,23 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Handles the execution of a `While` loop statement during symbolic evaluation.
+    ///
+    /// This function evaluates the condition of a `While` loop and determines whether to execute the
+    /// loop body, exit the loop, or handle symbolic loops. It performs symbolic execution for each
+    /// iteration and ensures the current program state is updated appropriately.
+    ///
+    /// # Parameters
+    /// - `statements`: A vector of `DebuggableStatement` representing the program's statements.
+    /// - `cur_bid`: The current statement index (block ID) being evaluated.
+    ///
+    /// # Behavior
+    /// - Symbolically evaluates the loop condition (`cond`) and simplifies it.
+    /// - If the condition evaluates to a constant boolean:
+    ///   - `true`: Executes the loop body (`stmt`) and re-evaluates the `While` statement.
+    ///   - `false`: Skips the loop body and proceeds to the next statement.
+    /// - If the condition cannot be fully resolved (symbolic loop), marks the current state as containing
+    ///   a symbolic loop and skips the loop execution.
     fn handle_while(&mut self, statements: &Vec<DebuggableStatement>, cur_bid: usize) {
         if let DebuggableStatement::While {
             meta, cond, stmt, ..
@@ -1015,6 +1115,29 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Handles the declaration of a variable during symbolic execution.
+    ///
+    /// This function processes variable declarations by registering the variable's type,
+    /// dimensions, and initial symbolic value in the current program state. If the variable
+    /// is an input signal and input overwriting is disabled, its initial value is not modified.
+    ///
+    /// # Parameters
+    /// - `statements`: A vector of `DebuggableStatement` representing the program's statements.
+    /// - `cur_bid`: The current statement index (block ID) being evaluated.
+    /// - `elem_id`: The unique identifier for the current symbolic evaluation element.
+    ///
+    /// # Behavior
+    /// - Extracts the variable ID and type from the declaration statement.
+    /// - Constructs a `SymbolicName` for the variable using its ID and the current state's owner name.
+    /// - Stores the variable's type in the symbolic store's type registry.
+    /// - If the variable is not an input signal or input overwriting is not disabled:
+    ///   - Assigns an initial symbolic value to the variable.
+    /// - Evaluates the variable's dimensions using the current template or function library context
+    ///   and stores them in the `id2dimensions` map.
+    /// - Proceeds to execute the next statement in the program.
+    ///
+    /// # Panics
+    /// - If the dimension expressions for the variable cannot be found in the template or function library.
     fn handle_declaration(
         &mut self,
         statements: &Vec<DebuggableStatement>,
@@ -1067,6 +1190,37 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Handles the processing of an equality constraint during symbolic execution.
+    ///
+    /// This function evaluates and simplifies the left-hand expression (LHE) and right-hand expression (RHE)
+    /// of an equality constraint. It determines if the constraint holds or is violated, tracks the constraint
+    /// for debugging or analysis purposes, and updates the program's symbolic state accordingly.
+    ///
+    /// # Parameters
+    /// - `statements`: A vector of `DebuggableStatement` representing the program's statements.
+    /// - `cur_bid`: The current statement index (block ID) being evaluated.
+    ///
+    /// # Behavior
+    /// - Extracts the metadata, LHE, and RHE from the equality constraint statement.
+    /// - Evaluates and simplifies the LHE and RHE to their symbolic representations.
+    /// - Constructs a symbolic equality condition using the simplified LHE and RHE.
+    /// - Depending on the configuration:
+    ///   - If `keep_track_constraints` is enabled:
+    ///     - Records the constraint in the symbolic trace if assertions are not disabled.
+    ///     - Adds the constraint to the list of side constraints.
+    ///   - Otherwise:
+    ///     - Simplifies the equality condition to check its truth value.
+    ///     - Marks the program state as failed if the condition is found to be false.
+    ///     - Stores the violated condition and its associated metadata for debugging.
+    /// - Proceeds to execute the next statement in the program.
+    ///
+    /// # Configuration Options
+    /// - `keep_track_constraints`: If true, constraints are tracked for debugging or analysis.
+    /// - `constraint_assert_disabled`: If true, prevents constraints from being asserted into the symbolic trace.
+    ///
+    /// # State Updates
+    /// - If the condition evaluates to `false` and constraints are not tracked, the program state is marked
+    ///   as failed, and the violated condition is stored for later reporting.
     fn handle_constraint_equality(
         &mut self,
         statements: &Vec<DebuggableStatement>,
@@ -1163,20 +1317,32 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    /// Handles array substitution in symbolic execution.
+    /// Handles array substitution operations, updating symbolic bindings and resolving array elements.
     ///
-    /// This method processes the assignment of array values, updating the symbolic state
-    /// for each element of the array individually.
+    /// This function processes assignments or substitutions involving arrays, including:
+    /// - Enumerating array elements to perform substitutions.
+    /// - Handling bulk assignments when array dimensions are not fully specified.
+    /// - Updating symbolic state with the results of the substitutions.
     ///
-    /// # Arguments
+    /// # Parameters
+    /// - `op`: The assignment operation to perform (e.g., AssignSignal or AssignConstraintSignal).
+    /// - `left_var_name`: The symbolic name of the target variable where the substitution occurs.
+    /// - `arr`: The array being assigned or substituted.
+    /// - `elem_id`: The identifier of the current element, used for dimensional evaluations.
     ///
-    /// * `left_var_name` - The symbolic name of the array variable being assigned.
-    /// * `elements` - A vector of reference-counted symbolic values representing the array elements.
-    /// * `elem_id` - Unique element id
+    /// # Behavior
+    /// - Initializes a base array from the current symbolic binding if the target variable is already defined.
+    ///   - Converts uniform arrays to regular arrays if needed.
+    /// - Enumerates all elements in the input array (`arr`) and performs substitutions for each element:
+    ///   - Constructs new symbolic variable names for individual array elements based on their positions.
+    ///   - Determines the dimensionality of the target variable and handles bulk assignments when necessary.
+    ///   - Updates the symbolic binding map with new assignments for each element.
+    /// - Maintains consistency of nested arrays by updating them recursively, ensuring that the symbolic representation matches the logical structure of the array.
     ///
-    /// # Side Effects
-    ///
-    /// Updates the current symbolic state with individual array element assignments.
+    /// # Symbolic State Updates
+    /// - Updates the symbolic state with the modified array or individual elements.
+    /// - Handles non-call substitutions for each array element, applying the specified assignment operation.
+    /// - Updates the symbolic representation of the target variable in the current state.
     fn handle_array_substitution(
         &mut self,
         op: &DebuggableAssignOp,
@@ -1259,21 +1425,32 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
-    /// Handles call substitution in symbolic execution.
+    /// Handles the substitution of a function or component call in symbolic execution.
     ///
-    /// This method processes the assignment of a template call result,
-    /// potentially initializing a new component in the symbolic store.
+    /// This function processes symbolic substitutions involving calls to functions or components.
+    /// It determines if the `callee_id` corresponds to a known template in the symbolic library
+    /// and performs appropriate initialization or state updates.
     ///
-    /// # Arguments
+    /// # Parameters
+    /// - `op`: The assignment operation indicating mutability, such as assigning to a signal.
+    /// - `callee_id`: The identifier of the called function or component template.
+    /// - `args`: The arguments passed to the callee, represented as symbolic values.
+    /// - `component_or_return_name`: The symbolic name representing the callee's component or the result of the call.
+    /// - `right_call`: The symbolic representation of the call being processed.
     ///
-    /// * `callee_id` - The name of the called function or template.
-    /// * `args` - The arguments passed to the call.
-    /// * `component_or_return_name` - The symbolic name where the call result is being assigned.
-    /// * `right_call` - The symbolic call.
+    /// # Behavior
+    /// - **Template Initialization**:
+    ///   - If `callee_id` matches a known template in the symbolic library, the corresponding template component is initialized using the provided arguments (`args`).
+    ///   - Checks if the component is ready for execution after initialization.
+    ///   - If ready, executes the component using its identifier and dimensions derived from its symbolic access path.
+    /// - **Symbolic Trace Update**:
+    ///   - If `callee_id` does not correspond to a known template, creates a `SymbolicValue::AssignCall` object to represent the call.
+    ///   - Pushes the symbolic representation of the call to the current state's symbolic trace for further analysis.
     ///
-    /// # Side Effects
-    ///
-    /// May initialize a new component in the symbolic store or update
+    /// # Notes
+    /// - Assignments to signals (as indicated by `AssignOp::AssignSignal`) are treated as mutable operations.
+    /// - The function integrates symbolic call handling into the execution trace, ensuring that symbolic dependencies are tracked.
+    /// - Calls to known templates trigger initialization and execution in a structured manner.
     fn handle_call_substitution(
         &mut self,
         op: &DebuggableAssignOp,
@@ -1314,6 +1491,37 @@ impl<'a> SymbolicExecutor<'a> {
         }
     }
 
+    /// Initializes a symbolic template component by executing its initialization blocks and setting up its state.
+    ///
+    /// This function is responsible for creating an instance of a template component, executing its initialization logic,
+    /// and storing the resulting symbolic state, including variable bindings and dimensions.
+    ///
+    /// # Parameters
+    /// - `callee_template_id`: The identifier of the template to initialize.
+    /// - `args`: A vector of symbolic values representing the arguments passed to the template.
+    /// - `component_name`: The symbolic name of the component being initialized.
+    ///
+    /// # Behavior
+    /// - Creates a separate symbolic executor (`se_for_initialization`) with restricted settings for initialization:
+    ///   - Only initialization blocks are executed.
+    ///   - Tracing is turned off.
+    /// - Sets the owner and template ID for the initialization executor.
+    /// - Extracts the template definition from the symbolic library.
+    /// - Handles template parameter initialization:
+    ///   - Maps each template parameter name to the corresponding argument value.
+    ///   - Temporarily saves any existing variable bindings that overlap with template parameters and restores them after initialization.
+    /// - Executes the initialization blocks defined in the template.
+    /// - Pre-determines dimensions and input bindings based on the template's structure and stores these details in local maps.
+    /// - Restores any saved variables that were temporarily overridden during initialization.
+    /// - Creates a new `SymbolicComponent` to represent the initialized component and stores it in the symbolic component store.
+    ///
+    /// # Symbolic State Updates
+    /// - Adds the initialized component to the `components_store` with its name as the key.
+    /// - Updates the variable bindings in the current symbolic state to reflect the component's initialization.
+    ///
+    /// # Notes
+    /// - The initialization logic is separated from the main execution logic to ensure modularity and proper handling
+    ///   of escaped variables and dimensions.
     fn initialize_template_component(
         &mut self,
         callee_template_id: &usize,
