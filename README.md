@@ -68,20 +68,11 @@ or
 
 ## Mutation Testing
 
-For the mutation testing, we can feed a detailed parameters from teh json file with `path_to_mutation_setting` option.
-
-**Example of Mutation Testing's Config**
-
-```json
-{
-    "max_generations": 5000,
-    "fitness_function": "error"
-}
-```
+Mutation testing (`ga` mode) suppots a detailed configuration through the `path_to_mutation_setting` option. The configuration is specified as a JSON file.
 
 ### Schema Overview
 
-The configuration is represented as a JSON object with the following key-value pairs and default values:
+Here is an example of the JSON configuration schema:
 
 ```json
 {
@@ -116,6 +107,8 @@ The configuration is represented as a JSON object with the following key-value p
     "save_fitness_scores": false
 }
 ```
+
+If the configuration json file ommites some keys, the default values are used for those omiited keys.
 
 ### Field Descriptions
 
@@ -196,15 +189,15 @@ The configuration is represented as a JSON object with the following key-value p
 
 ### Saving Output
 
-If `--save_output` option is on, the counterexample is saved on the same directory when the counterexample is found.
+When the `--save_output` option is enabled, the counterexample is saved to the directory when found.
 
 **Example Command with `--save_output`**
 
 ```bash
 ./target/release/tcct ./tests/sample/test_vuln_iszero.circom --search_mode="ga" --save_output
-# the name pattern of the output is <TARGET_FILE_NAME>_<RANDOM_SUFFIX>_counterexample.json
-cat tests/sample/test_vuln_iszero.circom_j9BXuA9k1j_counterexample.json
 ```
+
+The output filename will follow the pattern `<TARGET_FILE_NAME>_<RANDOM_SUFFIX>_counterexample.json`.
 
 **Example Output:**
 
