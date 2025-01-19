@@ -675,7 +675,7 @@ mod input_processing {
                     .long("save_output")
                     .takes_value(false)
                     .display_order(1030)
-                    .help("(TCCT) Save the otuput when the counterexample is found"),
+                    .help("(TCCT) Save the output when the counterexample is found"),
             )
             .arg (
                 Arg::with_name("search_mode")
