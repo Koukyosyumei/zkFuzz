@@ -462,7 +462,7 @@ mod input_processing {
     pub fn view() -> ArgMatches<'static> {
         App::new("circom compiler")
             .version(VERSION)
-            .author("Hideaki Takhashi and Jihwan Kim")
+            .author("Anonymous Authors")
             .about("ZKP Circuit Debugger")
             .arg(
                 Arg::with_name("input")
