@@ -112,6 +112,7 @@ pub fn mutation_test_search<
 where
     TraceInitializationFn: Fn(
         &[usize],
+        usize,
         &SymbolicTrace,
         &BaseVerificationConfig,
         &MutationConfig,
@@ -199,6 +200,7 @@ where
     // Initial Pupulation of Mutated Inputs
     let mut trace_population = trace_initialization_fn(
         &assign_pos,
+        mutation_config.program_population_size,
         &symbolic_trace,
         base_config,
         mutation_config,
@@ -263,20 +265,18 @@ where
             })
             .collect();
 
+        let mut evaluation_indices: Vec<usize> = (0..evaluations.len()).collect();
+        evaluation_indices.sort_by(|&i, &j| evaluations[i].1.cmp(&evaluations[j].1));
+
         // Pick the best one
-        let best_idx = evaluations
-            .iter()
-            .enumerate()
-            .max_by_key(|&(_, value)| value.1.clone())
-            .map(|(index, _)| index)
-            .unwrap();
+        let best_idx = evaluation_indices.last().unwrap();
 
         // Extract the fitness scores
         if mutation_config.fitness_function != "const" {
             fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
         }
 
-        if evaluations[best_idx].1.is_zero() {
+        if evaluations[*best_idx].1.is_zero() {
             print!(
                 "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
                 generation, mutation_config.max_generations, 0
@@ -286,7 +286,7 @@ where
             return MutationTestResult {
                 random_seed: seed,
                 mutation_config: mutation_config.clone(),
-                counter_example: evaluations[best_idx].2.clone(),
+                counter_example: evaluations[*best_idx].2.clone(),
                 generation: generation,
                 fitness_score_log: fitness_score_log,
             };
@@ -294,12 +294,29 @@ where
 
         print!(
             "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
-            generation, mutation_config.max_generations, fitness_scores[best_idx]
+            generation, mutation_config.max_generations, fitness_scores[*best_idx]
         );
         io::stdout().flush().unwrap();
 
         if mutation_config.save_fitness_scores {
-            fitness_score_log.push(fitness_scores[best_idx].clone());
+            fitness_score_log.push(fitness_scores[*best_idx].clone());
+        }
+
+        // Reset individuals with poor fitness score
+        let new_trace_population = trace_initialization_fn(
+            &assign_pos,
+            mutation_config.num_eliminated_individuals,
+            &symbolic_trace,
+            base_config,
+            mutation_config,
+            &mut rng,
+        );
+        for (i, j) in evaluation_indices
+            .into_iter()
+            .take(mutation_config.num_eliminated_individuals)
+            .enumerate()
+        {
+            trace_population[j] = new_trace_population[i].clone();
         }
     }
 

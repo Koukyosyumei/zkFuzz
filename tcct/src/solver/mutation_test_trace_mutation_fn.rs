@@ -44,27 +44,20 @@ pub fn mutate_trace_with_random_constant_replacement(
     rng: &mut StdRng,
 ) {
     if !individual.is_empty() {
-        if rng.gen::<f64>() < mutation_config.individual_full_reset_probability {
-            let num_mutations =
-                rng.gen_range(1, max(pos.len(), mutation_config.max_num_mutation_points));
-            let selected_pos: Vec<_> = pos.choose_multiple(rng, num_mutations).cloned().collect();
-
-            individual.clear();
-            for p in selected_pos {
-                individual.insert(
-                    p,
-                    SymbolicValue::ConstantInt(
-                        draw_bigint_with_probabilities(
-                            &mutation_config.random_value_ranges,
-                            &mutation_config.random_value_probs,
-                            rng,
-                        )
-                        .unwrap(),
-                    ),
-                );
-            }
-        } else {
-            let var = individual.keys().choose(rng).unwrap();
+        let var = individual.keys().choose(rng).unwrap();
+        individual.insert(
+            var.clone(),
+            SymbolicValue::ConstantInt(
+                draw_bigint_with_probabilities(
+                    &mutation_config.random_value_ranges,
+                    &mutation_config.random_value_probs,
+                    rng,
+                )
+                .unwrap(),
+            ),
+        );
+        if individual.len() < mutation_config.max_num_mutation_points && rng.gen::<bool>() {
+            let var = pos.into_iter().choose(rng).unwrap();
             individual.insert(
                 var.clone(),
                 SymbolicValue::ConstantInt(
@@ -76,23 +69,9 @@ pub fn mutate_trace_with_random_constant_replacement(
                     .unwrap(),
                 ),
             );
-            if individual.len() < mutation_config.max_num_mutation_points && rng.gen::<bool>() {
-                let var = pos.into_iter().choose(rng).unwrap();
-                individual.insert(
-                    var.clone(),
-                    SymbolicValue::ConstantInt(
-                        draw_bigint_with_probabilities(
-                            &mutation_config.random_value_ranges,
-                            &mutation_config.random_value_probs,
-                            rng,
-                        )
-                        .unwrap(),
-                    ),
-                );
-            } else if individual.len() > 1 {
-                let var = pos.into_iter().choose(rng).unwrap();
-                individual.remove(&var);
-            }
+        } else if individual.len() > 1 {
+            let var = pos.into_iter().choose(rng).unwrap();
+            individual.remove(&var);
         }
     }
 }

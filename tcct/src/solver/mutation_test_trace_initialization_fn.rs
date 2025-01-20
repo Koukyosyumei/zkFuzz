@@ -40,12 +40,13 @@ use crate::solver::utils::BaseVerificationConfig;
 /// - The size of the generated population is determined by `mutation_config.program_population_size`.
 pub fn initialize_population_with_random_constant_replacement(
     pos: &[usize],
+    program_population_size: usize,
     _symbolic_trace: &SymbolicTrace,
     _base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
-    (0..mutation_config.program_population_size)
+    (0..program_population_size)
         .map(|_| {
             let num_mutations =
                 rng.gen_range(1, max(pos.len(), mutation_config.max_num_mutation_points));
@@ -130,12 +131,13 @@ lazy_static::lazy_static! {
 /// - Panics if the related operator group for a given opcode is empty.
 pub fn initialize_population_with_operator_mutation_and_random_constant_replacement(
     pos: &[usize],
+    program_population_size: usize,
     symbolic_trace: &SymbolicTrace,
     _base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) -> Vec<Gene> {
-    (0..mutation_config.program_population_size)
+    (0..program_population_size)
         .map(|_| {
             let num_mutations =
                 rng.gen_range(1, max(pos.len(), mutation_config.max_num_mutation_points));
