@@ -85,7 +85,6 @@ pub fn apply_trace_mutation(
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
 ) -> SymbolicTrace {
     let mut mutated_constraints = symbolic_trace.clone();
-    let mut i = 0;
     for (index, value) in trace_mutation {
         if let SymbolicValue::Assign(lv, _, is_safe) = mutated_constraints[*index].as_ref().clone()
         {
@@ -104,10 +103,6 @@ pub fn apply_trace_mutation(
             ));
         } else {
             panic!("We can only mutate SymbolicValue::Assign");
-        }
-        i += 1;
-        if i > 2 {
-            break;
         }
     }
     mutated_constraints
