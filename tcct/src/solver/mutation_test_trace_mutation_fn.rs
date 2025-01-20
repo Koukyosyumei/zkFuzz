@@ -1,7 +1,5 @@
-use std::cmp::max;
-
 use rand::rngs::StdRng;
-use rand::seq::{IteratorRandom, SliceRandom};
+use rand::seq::IteratorRandom;
 use rand::Rng;
 
 use crate::executor::symbolic_value::SymbolicValue;
