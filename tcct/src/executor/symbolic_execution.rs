@@ -67,6 +67,7 @@ pub struct SymbolicExecutor<'a> {
     pub id2dimensions: FxHashMap<usize, Vec<usize>>,
     coverage_tracker: CoverageTracker,
     enable_coverage_tracking: bool,
+    is_concrete_mode: bool,
 }
 
 impl<'a> SymbolicExecutor<'a> {
@@ -99,6 +100,7 @@ impl<'a> SymbolicExecutor<'a> {
             coverage_tracker: CoverageTracker::new(),
             setting: setting,
             enable_coverage_tracking: false,
+            is_concrete_mode: false,
         }
     }
 
@@ -253,6 +255,8 @@ impl<'a> SymbolicExecutor<'a> {
         name: &String,
         assignment: &FxHashMap<SymbolicName, BigInt>,
     ) {
+        self.is_concrete_mode = true;
+
         self.cur_state.template_id = self.symbolic_library.name2id[name];
         for (sym_name, sym_value) in assignment.into_iter() {
             self.cur_state.set_sym_val(
@@ -433,12 +437,16 @@ impl<'a> SymbolicExecutor<'a> {
                         _ => sym_val.clone(),
                     }
                 } else {
-                    self.simplify_variables(
-                        &self.cur_state.get_sym_val_or_make_symvar(&sym_name),
-                        elem_id,
-                        only_constatant_simplification,
-                        only_variable_simplification,
-                    )
+                    if self.is_concrete_mode {
+                        self.simplify_variables(
+                            &self.cur_state.get_sym_val_or_make_symvar(&sym_name),
+                            elem_id,
+                            only_constatant_simplification,
+                            only_variable_simplification,
+                        )
+                    } else {
+                        self.cur_state.get_sym_val_or_make_symvar(&sym_name)
+                    }
                 }
             }
             SymbolicValue::BinaryOp(lv, infix_op, rv) => {
