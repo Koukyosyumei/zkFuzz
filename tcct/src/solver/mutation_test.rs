@@ -134,6 +134,7 @@ where
         &Vec<FxHashMap<SymbolicName, BigInt>>,
     ) -> (usize, BigInt, Option<CounterExample>),
     TraceEvolutionFn: Fn(
+        &[usize],
         &[Gene],
         &[BigInt],
         &BaseVerificationConfig,
@@ -143,7 +144,7 @@ where
         &TraceCrossoverFn,
         &TraceSelectionFn,
     ) -> Vec<Gene>,
-    TraceMutationFn: Fn(&mut Gene, &BaseVerificationConfig, &MutationConfig, &mut StdRng),
+    TraceMutationFn: Fn(&[usize], &mut Gene, &BaseVerificationConfig, &MutationConfig, &mut StdRng),
     TraceCrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
     TraceSelectionFn: for<'a> Fn(&'a [Gene], &[BigInt], &mut StdRng) -> &'a Gene,
 {
@@ -234,6 +235,7 @@ where
         // Evolve the trace population
         if !trace_population.is_empty() {
             trace_population = trace_evolution_fn(
+                &assign_pos,
                 &trace_population,
                 &fitness_scores,
                 base_config,

@@ -1,5 +1,6 @@
 use rand::rngs::StdRng;
 use rand::seq::IteratorRandom;
+use rand::Rng;
 
 use crate::executor::symbolic_value::SymbolicValue;
 use crate::solver::mutation_config::MutationConfig;
@@ -34,6 +35,7 @@ use crate::solver::utils::BaseVerificationConfig;
 /// # Future Considerations
 /// - `_base_config` could be leveraged to introduce additional constraints or behaviors during mutation.
 pub fn mutate_trace_with_random_constant_replacement(
+    pos: &[usize],
     individual: &mut Gene,
     _base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
@@ -52,5 +54,22 @@ pub fn mutate_trace_with_random_constant_replacement(
                 .unwrap(),
             ),
         );
+        if individual.len() < mutation_config.max_num_mutation_points && rng.gen::<bool>() {
+            let var = pos.into_iter().choose(rng).unwrap();
+            individual.insert(
+                var.clone(),
+                SymbolicValue::ConstantInt(
+                    draw_bigint_with_probabilities(
+                        &mutation_config.random_value_ranges,
+                        &mutation_config.random_value_probs,
+                        rng,
+                    )
+                    .unwrap(),
+                ),
+            );
+        } else if individual.len() > 1 {
+            let var = pos.into_iter().choose(rng).unwrap();
+            individual.remove(&var);
+        }
     }
 }
