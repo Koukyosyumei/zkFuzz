@@ -470,17 +470,19 @@ pub fn emulate_symbolic_trace(
                 }
             }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
-                let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library, &mut used_variables);
-                let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library, &mut used_variables);
+                let mut lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library, &mut used_variables);
+                let mut rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library, &mut used_variables);
                 
                 if let ExpressionInfixOpcode::Eq = op.0 {
                     if let SymbolicValue::Variable(var_name) = &**lhs {
                         if let SymbolicValue::ConstantInt(ref num) = rhs_val {
                             assignment.insert(var_name.clone(), num.clone());
+                            lhs_val = rhs_val.clone();
                         }
                     } else if let SymbolicValue::Variable(var_name) = &**rhs {
                         if let SymbolicValue::ConstantInt(ref num) = lhs_val {
                             assignment.insert(var_name.clone(), num.clone());
+                            rhs_val = lhs_val.clone();
                         }
                     }
                 }
@@ -1065,7 +1067,7 @@ pub fn verify_assignment(
             {
                 let original_sym_value = sexe.cur_state.symbol_binding_map[&k].clone();
                 let simplified_sym_value =
-                    sexe.simplify_variables(&original_sym_value, std::usize::MAX, false, false);
+                    sexe.simplify_variables(&original_sym_value, std::usize::MAX, false, false, 2);
                 let original_int_value = match simplified_sym_value {
                     SymbolicValue::ConstantInt(num) => num.clone(),
                     SymbolicValue::ConstantBool(b) => {
