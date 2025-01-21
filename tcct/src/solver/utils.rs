@@ -495,10 +495,11 @@ pub fn emulate_symbolic_trace(
                         }
                     } else if let SymbolicValue::Variable(var_name) = &**rhs {
                         if is_right_unused {
-                        if let SymbolicValue::ConstantInt(ref num) = lhs_val {
+                            if let SymbolicValue::ConstantInt(ref num) = lhs_val {
                                 assignment.insert(var_name.clone(), num.clone());
                                 rhs_val = lhs_val.clone();
-                        }}
+                            }
+                        }
                     }
                 }
                 
