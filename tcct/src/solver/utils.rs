@@ -433,6 +433,7 @@ pub fn emulate_symbolic_trace(
 ) -> (bool, usize) {
     let mut success = true;
     let mut failure_pos = 0;
+    let input_variables: FxHashSet<SymbolicName> = assignment.keys().cloned().collect();
     let mut used_variables = FxHashSet::default();
     for (i, inst) in trace.iter().enumerate() {
         match inst.as_ref() {
@@ -470,20 +471,34 @@ pub fn emulate_symbolic_trace(
                 }
             }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
+                let is_left_unused = if let SymbolicValue::Variable(var_name) = &**lhs {
+                    !used_variables.contains(var_name) && input_variables.contains(var_name)
+                } else {
+                    false
+                };
+                let is_right_unused = if let SymbolicValue::Variable(var_name) = &**rhs {
+                    !used_variables.contains(var_name) && input_variables.contains(var_name)
+                } else {
+                    false
+                };
+
                 let mut lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library, &mut used_variables);
                 let mut rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library, &mut used_variables);
                 
                 if let ExpressionInfixOpcode::Eq = op.0 {
                     if let SymbolicValue::Variable(var_name) = &**lhs {
-                        if let SymbolicValue::ConstantInt(ref num) = rhs_val {
-                            assignment.insert(var_name.clone(), num.clone());
-                            lhs_val = rhs_val.clone();
+                        if is_left_unused {
+                            if let SymbolicValue::ConstantInt(ref num) = rhs_val {
+                                assignment.insert(var_name.clone(), num.clone());
+                                lhs_val = rhs_val.clone();
+                            }
                         }
                     } else if let SymbolicValue::Variable(var_name) = &**rhs {
+                        if is_right_unused {
                         if let SymbolicValue::ConstantInt(ref num) = lhs_val {
-                            assignment.insert(var_name.clone(), num.clone());
-                            rhs_val = lhs_val.clone();
-                        }
+                                assignment.insert(var_name.clone(), num.clone());
+                                rhs_val = lhs_val.clone();
+                        }}
                     }
                 }
                 
