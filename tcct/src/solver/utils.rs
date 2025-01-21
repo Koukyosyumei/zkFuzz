@@ -472,6 +472,19 @@ pub fn emulate_symbolic_trace(
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
                 let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library, &mut used_variables);
                 let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library, &mut used_variables);
+                
+                if let ExpressionInfixOpcode::Eq = op.0 {
+                    if let SymbolicValue::Variable(var_name) = &**lhs {
+                        if let SymbolicValue::ConstantInt(ref num) = rhs_val {
+                            assignment.insert(var_name.clone(), num.clone());
+                        }
+                    } else if let SymbolicValue::Variable(var_name) = &**rhs {
+                        if let SymbolicValue::ConstantInt(ref num) = lhs_val {
+                            assignment.insert(var_name.clone(), num.clone());
+                        }
+                    }
+                }
+                
                 let flag = match (&lhs_val, &rhs_val) {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                         match op.0 {
