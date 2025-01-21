@@ -87,6 +87,8 @@ Here is an example of the JSON configuration schema:
     "mutation_rate": 0.3,
     "crossover_rate": 0.5,
     "operator_mutation_rate": 0.2,
+    "num_eliminated_individuals": 5,
+    "max_num_mutation_points": 10,
     "input_update_interval": 1,
     "input_generation_max_iteration": 30,
     "input_generation_crossover_rate": 0.66,
@@ -153,6 +155,14 @@ If the configuration json file ommites some keys, the default values are used fo
 - operator_mutation_rate (f64)
     - Purpose: Rate of mutation for operators in the genetic algorithm.
     - Default: `0.2`
+
+- num_eliminated_individuals (usize)
+    - Purpose: The number of individuals with poor fitness eliminated in each generation.
+    - Default: `5`
+
+- max_num_mutation_points (usize)
+    - Purpose: The maximum number of mutation points allowed in the symbolic trace.
+    - Default: `10`
 
 - input_update_interval (usize)
     - Purpose: Interval at which inputs are updated.
