@@ -14,6 +14,7 @@ use crate::solver::utils::BaseVerificationConfig;
 /// its value with a newly generated constant, based on configurable probabilities and value ranges.
 ///
 /// # Parameters
+/// - `pos`: A slice of indices representing mutable positions in the symbolic trace.
 /// - `individual`: A mutable reference to a `Gene` (a mapping of position in a trace to symbolic values),
 ///   representing the mutation of the trace.
 /// - `_base_config`: A reference to the `BaseVerificationConfig`, which is currently unused in this function
@@ -25,8 +26,12 @@ use crate::solver::utils::BaseVerificationConfig;
 /// # Behavior
 /// - If the `individual` is not empty:
 ///   - A position is selected randomly from its keys.
-///   - The selected position's value is replaced with a new `SymbolicValue::ConstantInt`,
-///     generated using `mutation_config.random_value_ranges` and `mutation_config.random_value_probs`.
+///     - The selected position's value is replaced with a new `SymbolicValue::ConstantInt`,
+///       generated using `mutation_config.random_value_ranges` and `mutation_config.random_value_probs`.
+///   - If the size of `individual` is smaller than `max_num_mutation_points`:
+///     - There is a 50% chance to add one more mutation at a new position.
+///   - If the size of `individual` is larger than 1 and no mutation was added in the previous step:
+///     - Remove one existing mutation point.
 /// - If the `individual` is empty, the function does nothing.
 ///
 /// # Notes
@@ -67,7 +72,7 @@ pub fn mutate_trace_with_random_constant_replacement(
                     .unwrap(),
                 ),
             );
-        } else if individual.len() > 1 {
+        } else if individual.len() > 1 && rng.gen::<bool>() {
             let var = pos.into_iter().choose(rng).unwrap();
             individual.remove(&var);
         }

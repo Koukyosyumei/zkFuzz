@@ -12,6 +12,7 @@ use crate::solver::utils::BaseVerificationConfig;
 /// for population evolution processes.
 ///
 /// # Parameters
+/// - `assign_pos`: A slice of indices representing mutable positions in the symbolic trace.
 /// - `prev_population`: A slice of the current population of individuals.
 /// - `prev_evaluations`: A slice of evaluation scores corresponding to the individuals
 ///   in the population. Higher scores typically indicate better fitness.
