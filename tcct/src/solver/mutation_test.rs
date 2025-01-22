@@ -272,7 +272,6 @@ where
         let best_idx = evaluation_indices.last().unwrap();
 
         if evaluations[*best_idx].1.is_zero() {
-            println!("4444");
             print!(
                 "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
                 generation, mutation_config.max_generations, 0
