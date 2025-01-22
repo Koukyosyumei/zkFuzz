@@ -271,12 +271,8 @@ where
         // Pick the best one
         let best_idx = evaluation_indices.last().unwrap();
 
-        // Extract the fitness scores
-        if mutation_config.fitness_function != "const" {
-            fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
-        }
-
         if evaluations[*best_idx].1.is_zero() {
+            println!("4444");
             print!(
                 "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
                 generation, mutation_config.max_generations, 0
@@ -290,6 +286,11 @@ where
                 generation: generation,
                 fitness_score_log: fitness_score_log,
             };
+        }
+
+        // Extract the fitness scores
+        if mutation_config.fitness_function != "const" {
+            fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
         }
 
         print!(

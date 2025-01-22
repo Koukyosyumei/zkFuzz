@@ -980,7 +980,7 @@ pub fn accumulate_error_of_constraints(
 ///
 /// # Returns
 /// `true` if `a ≡ b (mod p)`, otherwise `false`.
-fn is_equal_mod(a: &BigInt, b: &BigInt, p: &BigInt) -> bool {
+pub fn is_equal_mod(a: &BigInt, b: &BigInt, p: &BigInt) -> bool {
     let mut a_mod_p = a % p;
     let mut b_mod_p = b % p;
     if a_mod_p.is_negative() {
