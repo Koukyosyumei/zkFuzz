@@ -110,6 +110,7 @@ pub fn evaluate_trace_fitness_by_error(
             break;
         }
 
+        // We can view that asserts are removed from the mutated program.
         let (is_mutated_program_success, _mutated_program_failure_pos) = emulate_symbolic_trace(
             &base_config.prime,
             &mutated_symbolic_trace,
