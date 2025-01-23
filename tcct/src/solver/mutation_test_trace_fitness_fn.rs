@@ -64,7 +64,6 @@ pub fn evaluate_trace_fitness_by_error(
     for (i, inp) in inputs_assignment.iter().enumerate() {
         // Run the original program on `inp`
         let mut assignment_for_original = inp.clone();
-        let mut assignment_for_mutation = inp.clone();
 
         // Note: Even if the assert condition is violated, `emulate_symbolic_trace` continues the execution,
         // and we can view it as a mutated program where all asserts are removed.
@@ -110,8 +109,10 @@ pub fn evaluate_trace_fitness_by_error(
             break;
         }
 
+        let mut assignment_for_mutation = inp.clone();
+
         // We can view that asserts are removed from the mutated program.
-        let (is_mutated_program_success, _mutated_program_failure_pos) = emulate_symbolic_trace(
+        let (_is_mutated_program_success, _mutated_program_failure_pos) = emulate_symbolic_trace(
             &base_config.prime,
             &mutated_symbolic_trace,
             &mut assignment_for_mutation,
