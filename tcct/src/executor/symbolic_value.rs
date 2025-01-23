@@ -840,7 +840,7 @@ pub fn evaluate_binary_op(
     }
 }
 
-fn normalize_to_int(val: &SymbolicValue, prime: &BigInt) -> SymbolicValue {
+pub fn normalize_to_int(val: &SymbolicValue, prime: &BigInt) -> SymbolicValue {
     match val {
         SymbolicValue::ConstantBool(b) => {
             SymbolicValue::ConstantInt(if *b { BigInt::one() } else { BigInt::zero() })
@@ -856,7 +856,7 @@ fn normalize_to_int(val: &SymbolicValue, prime: &BigInt) -> SymbolicValue {
     }
 }
 
-fn normalize_to_bool(val: &SymbolicValue, prime: &BigInt) -> SymbolicValue {
+pub fn normalize_to_bool(val: &SymbolicValue, prime: &BigInt) -> SymbolicValue {
     match val {
         SymbolicValue::ConstantInt(v) => SymbolicValue::ConstantBool(!(v % prime).is_zero()),
         _ => val.clone(),

@@ -127,6 +127,7 @@ pub fn evaluate_trace_fitness_by_error(
                 // mutated program does not crash on the input, and its witness satisfies all the
                 // side-constraints
                 if !is_original_program_success {
+                    println!("111");
                     counter_example = Some(CounterExample {
                         flag: VerificationResult::UnderConstrained(
                             UnderConstrainedType::UnexpectedInput(

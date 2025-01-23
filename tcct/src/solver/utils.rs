@@ -18,7 +18,7 @@ use crate::executor::debug_ast::{
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_value::{
-    evaluate_binary_op, OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
+    evaluate_binary_op, OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,normalize_to_bool,normalize_to_int
 };
 
 #[derive(Clone)]
@@ -503,8 +503,36 @@ pub fn emulate_symbolic_trace(
                         }
                     }
                 }*/
+
+                let (normalized_lhs, normalized_rhs) = match &op.0 {
+                    // Convert booleans to integers for arithmetic or bitwise operators
+                    ExpressionInfixOpcode::Add
+                    | ExpressionInfixOpcode::Sub
+                    | ExpressionInfixOpcode::Mul
+                    | ExpressionInfixOpcode::Pow
+                    | ExpressionInfixOpcode::Div
+                    | ExpressionInfixOpcode::IntDiv
+                    | ExpressionInfixOpcode::Mod
+                    | ExpressionInfixOpcode::BitOr
+                    | ExpressionInfixOpcode::BitAnd
+                    | ExpressionInfixOpcode::BitXor
+                    | ExpressionInfixOpcode::ShiftL
+                    | ExpressionInfixOpcode::ShiftR
+                    | ExpressionInfixOpcode::Lesser
+                    | ExpressionInfixOpcode::Greater
+                    | ExpressionInfixOpcode::LesserEq
+                    | ExpressionInfixOpcode::GreaterEq
+                    | ExpressionInfixOpcode::Eq
+                    | ExpressionInfixOpcode::NotEq => {
+                        (normalize_to_int(&lhs_val, prime), normalize_to_int(&rhs_val, prime))
+                    }
+                    // Keep booleans as they are for logical operators
+                    ExpressionInfixOpcode::BoolAnd | ExpressionInfixOpcode::BoolOr => {
+                        (normalize_to_bool(&lhs_val, prime), normalize_to_bool(&rhs_val, prime))
+                    } //_ => (lhs.clone(), rhs.clone()), // Default case
+                };
                 
-                let flag = match (&lhs_val, &rhs_val) {
+                let flag = match (&normalized_lhs, &normalized_rhs) {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                         match op.0 {
                             ExpressionInfixOpcode::Lesser => lv % prime < rv % prime,
