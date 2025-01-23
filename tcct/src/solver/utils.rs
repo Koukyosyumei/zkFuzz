@@ -485,6 +485,7 @@ pub fn emulate_symbolic_trace(
                 let mut lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library, &mut used_variables);
                 let mut rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library, &mut used_variables);
                 
+                /* 
                 if let ExpressionInfixOpcode::Eq = op.0 {
                     if let SymbolicValue::Variable(var_name) = &**lhs {
                         if is_left_unused {
@@ -501,7 +502,7 @@ pub fn emulate_symbolic_trace(
                             }
                         }
                     }
-                }
+                }*/
                 
                 let flag = match (&lhs_val, &rhs_val) {
                     (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
@@ -878,6 +879,15 @@ pub fn evaluate_error_of_symbolic_value(
             match (&lhs_val, &rhs_val) {
                 (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                     (lv % prime - rv % prime).abs()
+                }
+                (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantBool(flag)) => {
+                    (lv % prime - if *flag {BigInt::one()} else {BigInt::zero()}).abs()
+                }
+                (SymbolicValue::ConstantBool(flag), SymbolicValue::ConstantInt(rv)) => {
+                    (rv % prime - if *flag {BigInt::one()} else {BigInt::zero()}).abs()
+                }
+                (SymbolicValue::ConstantBool(lflag), SymbolicValue::ConstantBool(rflag)) => {
+                    if *lflag == *rflag {BigInt::zero()} else {BigInt::one()}
                 }
                 _ => panic!("Unassigned variables exist"),
             }

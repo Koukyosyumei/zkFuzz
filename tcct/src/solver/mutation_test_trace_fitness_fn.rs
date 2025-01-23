@@ -64,6 +64,8 @@ pub fn evaluate_trace_fitness_by_error(
     for (i, inp) in inputs_assignment.iter().enumerate() {
         // Run the original program on `inp`
         let mut assignment_for_original = inp.clone();
+        let mut assignment_for_mutation = inp.clone();
+
         let (is_original_program_success, original_program_failure_pos) = emulate_symbolic_trace(
             &base_config.prime,
             &symbolic_trace,
@@ -106,77 +108,69 @@ pub fn evaluate_trace_fitness_by_error(
             break;
         }
 
-        let mut assignment_for_mutation = inp.clone();
         let (is_mutated_program_success, _mutated_program_failure_pos) = emulate_symbolic_trace(
             &base_config.prime,
             &mutated_symbolic_trace,
             &mut assignment_for_mutation,
             &mut sexe.symbolic_library,
         );
-        let error_of_side_constraints_for_mutated_trace = accumulate_error_of_constraints(
+        let error_of_side_constraints_for_mutated_assignment = accumulate_error_of_constraints(
             &base_config.prime,
             side_constraints,
             &assignment_for_mutation,
             &mut sexe.symbolic_library,
         );
-        let mut score = -error_of_side_constraints_for_mutated_trace.clone();
+        let mut score = -error_of_side_constraints_for_mutated_assignment.clone();
 
-        if error_of_side_constraints_for_mutated_trace.is_zero() {
+        if error_of_side_constraints_for_mutated_assignment.is_zero() {
             if is_mutated_program_success {
-                if is_original_program_success {
-                    if is_original_satisfy_sc {
-                        for (k, v) in assignment_for_original {
-                            if k.owner.len() == 1
-                                && sexe.symbolic_library.template_library[&sexe
-                                    .symbolic_library
-                                    .name2id[&base_config.target_template_name]]
-                                    .output_ids
-                                    .contains(&k.id)
-                            {
-                                if !is_equal_mod(
-                                    &v,
-                                    &assignment_for_mutation[&k],
-                                    &base_config.prime,
-                                ) {
-                                    counter_example = Some(CounterExample {
-                                        flag: VerificationResult::UnderConstrained(
-                                            UnderConstrainedType::NonDeterministic(
-                                                k.clone(),
-                                                k.lookup_fmt(&sexe.symbolic_library.id2name),
-                                                v.clone(),
-                                            ),
+                // mutated program does not crash on the input, and its witness satisfies all the
+                // side-constraints
+                if !is_original_program_success {
+                    counter_example = Some(CounterExample {
+                        flag: VerificationResult::UnderConstrained(
+                            UnderConstrainedType::UnexpectedInput(
+                                original_program_failure_pos,
+                                symbolic_trace[original_program_failure_pos]
+                                    .lookup_fmt(&sexe.symbolic_library.id2name),
+                            ),
+                        ),
+                        target_output: None,
+                        assignment: assignment_for_mutation.clone(),
+                    });
+                    max_idx = i;
+                    max_score = BigInt::zero();
+                    break;
+                } else {
+                    for (k, v) in assignment_for_original {
+                        if k.owner.len() == 1
+                            && sexe.symbolic_library.template_library
+                                [&sexe.symbolic_library.name2id[&base_config.target_template_name]]
+                                .output_ids
+                                .contains(&k.id)
+                        {
+                            if !is_equal_mod(&v, &assignment_for_mutation[&k], &base_config.prime) {
+                                counter_example = Some(CounterExample {
+                                    flag: VerificationResult::UnderConstrained(
+                                        UnderConstrainedType::NonDeterministic(
+                                            k.clone(),
+                                            k.lookup_fmt(&sexe.symbolic_library.id2name),
+                                            v.clone(),
                                         ),
-                                        target_output: Some(k.clone()),
-                                        assignment: assignment_for_mutation,
-                                    });
-                                    break;
-                                }
+                                    ),
+                                    target_output: Some(k.clone()),
+                                    assignment: assignment_for_mutation,
+                                });
+                                break;
                             }
                         }
-                        if counter_example.is_some() {
-                            max_idx = i;
-                            max_score = BigInt::zero();
-                            break;
-                        }
+                    }
+                    if counter_example.is_some() {
+                        max_idx = i;
+                        max_score = BigInt::zero();
+                        break;
                     }
                 }
-            } else {
-                //println!("aaaaaaaaaa: {}", is_mutated_program_success);
-                // The original program crashes on `inp`, while there exists an assignment for `inp` satisfying the side constraints.
-                counter_example = Some(CounterExample {
-                    flag: VerificationResult::UnderConstrained(
-                        UnderConstrainedType::UnexpectedInput(
-                            original_program_failure_pos,
-                            symbolic_trace[original_program_failure_pos]
-                                .lookup_fmt(&sexe.symbolic_library.id2name),
-                        ),
-                    ),
-                    target_output: None,
-                    assignment: assignment_for_mutation.clone(),
-                });
-                max_idx = i;
-                max_score = BigInt::zero();
-                break;
             }
             score = -base_config.prime.clone();
         }
