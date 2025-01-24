@@ -23,6 +23,7 @@ use crate::solver::utils::{
 /// - `base_config`: The base verification configuration, containing the prime modulus and other verification parameters.
 /// - `symbolic_trace`: A vector of references to symbolic values representing the trace to be evaluated.
 /// - `side_constraints`: A vector of references to symbolic values representing additional constraints for the evaluation.
+/// - `runtime_mutable_positions`: A map of runtime mutable positions.
 /// - `trace_mutation`: A mapping of indices to mutated symbolic values applied to the trace.
 /// - `inputs_assignment`: A vector of potential input assignments, where each assignment is a mapping of symbolic names to `BigInt` values.
 ///

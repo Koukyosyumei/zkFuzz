@@ -401,6 +401,27 @@ pub enum Direction {
     Right
 }
 
+/// Gathers runtime mutable inputs from a symbolic execution trace.
+///
+/// This function analyzes a symbolic execution trace to identify inputs that are mutable during runtime.
+/// It inspects symbolic values to determine whether specific input variables are directly or indirectly
+/// influenced by runtime computations. The function returns a mapping of instruction indices to their
+/// associated mutation directions (`Left` or `Right`), indicating how the inputs are used in binary
+/// operations.
+///
+/// # Parameters
+/// - `trace`: A slice of symbolic values representing the execution trace to be analyzed. Each symbolic
+///   value corresponds to a step in the trace.
+/// - `symbolic_library`: A mutable reference to the symbolic library, which provides metadata (e.g., mappings
+///   for symbolic names) used for interpreting the trace.
+/// - `input_variables`: A set of symbolic names corresponding to the input variables that should be monitored
+///   for runtime mutability.
+///
+/// # Returns
+/// A map where:
+/// - The key is the index of an instruction in the `trace`.
+/// - The value is a `Direction` indicating whether the mutable input is on the left-hand side (`Left`) or
+///   right-hand side (`Right`) of a binary operation.
 pub fn gather_runtime_mutable_inputs(
     trace: &[SymbolicValueRef],
     symbolic_library: &mut SymbolicLibrary,
@@ -467,6 +488,7 @@ pub fn gather_runtime_mutable_inputs(
 /// # Parameters
 /// - `prime`: A reference to the prime modulus used for modular arithmetic.
 /// - `trace`: A slice of references to symbolic values representing the symbolic trace to be simulated.
+/// - `runtime_mutable_positions`: A map of runtime mutable positions.
 /// - `assignment`: A mutable hash map of symbolic variable names to their corresponding `BigInt` values.
 /// - `symbolic_library`: A mutable reference to a symbolic library containing the definitions of symbolic values.
 ///
