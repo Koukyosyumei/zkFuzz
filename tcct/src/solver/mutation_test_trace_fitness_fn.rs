@@ -45,7 +45,6 @@ use crate::solver::utils::{
 /// - A score of zero indicates either an over-constrained or under-constrained trace with a corresponding counterexample.
 ///
 /// # Notes
-/// - If the provided `trace_mutation` is empty, the function evaluates the original trace directly.
 /// - This function terminates early if a valid counterexample is found.
 pub fn evaluate_trace_fitness_by_error(
     sexe: &mut SymbolicExecutor,
@@ -55,6 +54,7 @@ pub fn evaluate_trace_fitness_by_error(
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
     inputs_assignment: &Vec<FxHashMap<SymbolicName, BigInt>>,
 ) -> (usize, BigInt, Option<CounterExample>) {
+    // Apply the given mutations to the symbolic trace.
     let mutated_symbolic_trace = apply_trace_mutation(symbolic_trace, trace_mutation);
 
     let mut max_idx = 0_usize;
@@ -62,27 +62,26 @@ pub fn evaluate_trace_fitness_by_error(
     let mut counter_example = None;
 
     for (i, inp) in inputs_assignment.iter().enumerate() {
-        // Run the original program on `inp`
+        // Clone the input assignment for evaluation with the original program.
         let mut assignment_for_original = inp.clone();
 
-        // Note: Even if the assert condition is violated, `emulate_symbolic_trace` continues the execution,
-        // and we can view it as a mutated program where all asserts are removed.
+        // Emulate the original trace to evaluate its behavior on the given input.
+        // Even if an assertion fails, the function proceeds, treating it as a modified trace with no assertions.
         let (is_original_program_success, original_program_failure_pos) = emulate_symbolic_trace(
             &base_config.prime,
             &symbolic_trace,
             &mut assignment_for_original,
             &mut sexe.symbolic_library,
         );
+        // Check if the original trace satisfies the side constraints.
         let is_original_satisfy_sc = evaluate_constraints(
             &base_config.prime,
             side_constraints,
             &assignment_for_original,
             &mut sexe.symbolic_library,
         );
-
+        // The original program succeeds, but the side constraints fail.
         if is_original_program_success && !is_original_satisfy_sc {
-            // The original program does not fail on this input, while the side-constraints
-            // does not accept its witness.
             counter_example = Some(CounterExample {
                 flag: VerificationResult::OverConstrained,
                 target_output: None,
@@ -92,9 +91,10 @@ pub fn evaluate_trace_fitness_by_error(
             max_score = BigInt::zero();
             break;
         }
+
+        // The original program fails, but the mutated program, where all assertions are removed,
+        // satisfies the side constraints.
         if !is_original_program_success && is_original_satisfy_sc {
-            // The original program crashes on this input, while the witness from the
-            // mutated program, where all asserts are removed, satisfies the side-constraints.
             counter_example = Some(CounterExample {
                 flag: VerificationResult::UnderConstrained(UnderConstrainedType::UnexpectedInput(
                     original_program_failure_pos,
@@ -109,15 +109,17 @@ pub fn evaluate_trace_fitness_by_error(
             break;
         }
 
+        // Clone the input assignment for evaluating the mutated trace.
         let mut assignment_for_mutation = inp.clone();
 
-        // We can view that asserts are removed from the mutated program.
+        // Emulate the mutated trace and evaluate the error in side constraints.
         let (_is_mutated_program_success, _mutated_program_failure_pos) = emulate_symbolic_trace(
             &base_config.prime,
             &mutated_symbolic_trace,
             &mut assignment_for_mutation,
             &mut sexe.symbolic_library,
         );
+        // Calculate the error in side constraints for the mutated trace.
         let error_of_side_constraints_for_mutated_assignment = accumulate_error_of_constraints(
             &base_config.prime,
             side_constraints,
@@ -126,11 +128,10 @@ pub fn evaluate_trace_fitness_by_error(
         );
         let mut score = -error_of_side_constraints_for_mutated_assignment.clone();
 
+        // Check for valid solutions that satisfy all side constraints.
         if error_of_side_constraints_for_mutated_assignment.is_zero() {
-            // the witness from the mutated program satisfies all the side-constraints
             if !is_original_program_success {
-                // the original program is supposed to crash on this input, while there
-                // exists an assignment for this input that satisfies the side-constraints
+                // the original fails but the mutated satisfies constraints.
                 counter_example = Some(CounterExample {
                     flag: VerificationResult::UnderConstrained(
                         UnderConstrainedType::UnexpectedInput(
@@ -146,7 +147,7 @@ pub fn evaluate_trace_fitness_by_error(
                 max_score = BigInt::zero();
                 break;
             } else {
-                // check the consistency of the outputs
+                // Verify consistency of outputs for valid solutions.
                 for (k, v) in assignment_for_original {
                     if k.owner.len() == 1
                         && sexe.symbolic_library.template_library
@@ -154,6 +155,7 @@ pub fn evaluate_trace_fitness_by_error(
                             .output_ids
                             .contains(&k.id)
                     {
+                        // If outputs differ, mark as a non-deterministic under-constrained issue.
                         if !is_equal_mod(&v, &assignment_for_mutation[&k], &base_config.prime) {
                             counter_example = Some(CounterExample {
                                 flag: VerificationResult::UnderConstrained(
@@ -176,6 +178,7 @@ pub fn evaluate_trace_fitness_by_error(
                     break;
                 }
             }
+            // Penalize valid solutions by setting their score to the worst possible value.
             score = -base_config.prime.clone();
         }
 
