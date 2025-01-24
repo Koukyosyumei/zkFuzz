@@ -11,7 +11,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use tcct::executor::symbolic_execution::SymbolicExecutor;
 use tcct::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
 use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
-use tcct::solver::utils::emulate_symbolic_trace;
+use tcct::solver::utils::{emulate_symbolic_trace, gather_runtime_mutable_inputs, Direction};
 
 use crate::utils::{execute, prepare_symbolic_library};
 
@@ -178,4 +178,57 @@ fn test_call_const_template() {
         &mut sexe.symbolic_library,
     );
     assert_eq!(assignment[&main_c], BigInt::from(8));
+}
+
+#[test]
+fn test_hash_break() {
+    let path = "./tests/sample/test_hash_break.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = get_default_setting_for_symbolic_execution(prime.clone(), false);
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    let main_x = SymbolicName::new(
+        sexe.symbolic_library.name2id["x"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        None,
+    );
+    let main_y = SymbolicName::new(
+        sexe.symbolic_library.name2id["y"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        None,
+    );
+    let main_z = SymbolicName::new(
+        sexe.symbolic_library.name2id["z"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        None,
+    );
+
+    let input_variables = FxHashSet::from_iter([main_x, main_y, main_z]);
+
+    let runtime_mutable_positions = gather_runtime_mutable_inputs(
+        &sexe.cur_state.symbolic_trace,
+        sexe.symbolic_library,
+        &input_variables,
+    );
+    assert_eq!(runtime_mutable_positions.len(), 1);
+    assert_eq!(*runtime_mutable_positions.get(&2).unwrap(), Direction::Left);
 }

@@ -192,7 +192,7 @@ where
     let runtime_mutable_positions = gather_runtime_mutable_inputs(
         symbolic_trace,
         sexe.symbolic_library,
-        input_variables.iter().cloned().collect(),
+        &input_variables.iter().cloned().collect(),
     );
 
     info!(

@@ -404,7 +404,7 @@ pub enum Direction {
 pub fn gather_runtime_mutable_inputs(
     trace: &[SymbolicValueRef],
     symbolic_library: &mut SymbolicLibrary,
-    input_variables: FxHashSet<SymbolicName>,
+    input_variables: &FxHashSet<SymbolicName>,
 ) -> FxHashMap<usize, Direction> {
     let mut used_variables= FxHashSet::default();
     let mut result = FxHashMap::default();
