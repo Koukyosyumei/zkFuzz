@@ -15,7 +15,10 @@ use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue};
 
 use crate::solver::mutation_config::MutationConfig;
-use crate::solver::utils::{extract_variables, BaseVerificationConfig, CounterExample};
+use crate::solver::utils::{
+    extract_variables, gather_runtime_mutable_inputs, BaseVerificationConfig, CounterExample,
+    Direction,
+};
 
 pub struct MutationTestResult {
     pub random_seed: u64,
@@ -131,6 +134,7 @@ where
         &BaseVerificationConfig,
         &SymbolicTrace,
         &SymbolicConstraints,
+        &FxHashMap<usize, Direction>,
         &Gene,
         &Vec<FxHashMap<SymbolicName, BigInt>>,
     ) -> (usize, BigInt, Option<CounterExample>),
@@ -184,6 +188,12 @@ where
             input_variables.push(v.clone());
         }
     }
+
+    let runtime_mutable_positions = gather_runtime_mutable_inputs(
+        symbolic_trace,
+        sexe.symbolic_library,
+        input_variables.iter().cloned().collect(),
+    );
 
     info!(
         "\n⚖️ Constraints Summary:
@@ -259,6 +269,7 @@ where
                     &base_config,
                     symbolic_trace,
                     side_constraints,
+                    &runtime_mutable_positions,
                     a,
                     &input_population,
                 )

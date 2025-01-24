@@ -395,6 +395,68 @@ pub fn count_satisfied_constraints(
         .count()
 }
 
+#[derive(Clone,PartialEq,Eq,Debug)]
+pub enum Direction {
+    Left,
+    Right
+}
+
+pub fn gather_runtime_mutable_inputs(
+    trace: &[SymbolicValueRef],
+    symbolic_library: &mut SymbolicLibrary,
+    input_variables: FxHashSet<SymbolicName>,
+) -> FxHashMap<usize, Direction> {
+    let mut used_variables= FxHashSet::default();
+    let mut result = FxHashMap::default();
+    for (i, inst) in trace.iter().enumerate() {
+        match inst.as_ref() {
+            SymbolicValue::ConstantBool(..) => {}
+            SymbolicValue::Assign(lhs, rhs, _)
+            | SymbolicValue::AssignEq(lhs, rhs)
+            | SymbolicValue::AssignCall(lhs, rhs, _) => {
+                if let SymbolicValue::Variable(_sym_name) = lhs.as_ref() {
+                    extract_variables_from_symbolic_value(&rhs, &mut used_variables);
+                } else {
+                    panic!(
+                        "Left hand of the assignment is not a variable: {}",
+                        inst.lookup_fmt(&symbolic_library.id2name)
+                    );
+                }
+            }
+            SymbolicValue::BinaryOp(lhs, op, rhs) => {
+                if let ExpressionInfixOpcode::Eq = op.0  {
+                    if let SymbolicValue::Variable(var_name) = &**lhs {
+                        if input_variables.contains(var_name) {
+                            extract_variables_from_symbolic_value(&rhs, &mut used_variables);
+                            if !used_variables.contains(var_name) {
+                                result.insert(i, Direction::Left);
+                            }
+                        }
+                    }else if let SymbolicValue::Variable(var_name) = &**rhs {
+                        if input_variables.contains(var_name) {
+                            extract_variables_from_symbolic_value(&lhs, &mut used_variables);
+                            if !used_variables.contains(var_name) {
+                                result.insert(i, Direction::Right);
+                            }
+                        }
+                    }
+                }
+
+                extract_variables_from_symbolic_value(&lhs, &mut used_variables);
+                extract_variables_from_symbolic_value(&rhs, &mut used_variables);
+            }
+            SymbolicValue::UnaryOp(_op, expr) => {
+                extract_variables_from_symbolic_value(&expr, &mut used_variables);
+            }
+            _ => panic!(
+                "A constraint should be one of `ConstantBool`, `Assign`, `AssignEq`, `AssignCall`, `BinaryOp` and `UnaryOp`. Found: {}",
+                inst.lookup_fmt(&symbolic_library.id2name)
+            ),
+        }
+    }
+    result
+}
+
 /// Simulates the execution of a symbolic trace, evaluating the values of symbolic variables.
 ///
 /// This function processes a symbolic trace step by step, updating the provided `assignment` with the values
@@ -427,12 +489,13 @@ pub fn count_satisfied_constraints(
 pub fn emulate_symbolic_trace(
     prime: &BigInt,
     trace: &[SymbolicValueRef],
+    runtime_mutable_positions: &FxHashMap<usize, Direction>,
     assignment: &mut FxHashMap<SymbolicName, BigInt>,
     symbolic_library: &mut SymbolicLibrary,
 ) -> (bool, usize) {
     let mut success = true;
     let mut failure_pos = 0;
-    let input_variables: FxHashSet<SymbolicName> = assignment.keys().cloned().collect();
+    // let input_variables: FxHashSet<SymbolicName> = assignment.keys().cloned().collect();
     for (i, inst) in trace.iter().enumerate() {
         match inst.as_ref() {
             SymbolicValue::ConstantBool(b) => {
@@ -469,39 +532,29 @@ pub fn emulate_symbolic_trace(
                 }
             }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
-                /* 
-                let is_left_unused = if let SymbolicValue::Variable(var_name) = &**lhs {
-                    !used_variables.contains(var_name) && input_variables.contains(var_name)
-                } else {
-                    false
-                };
-                let is_right_unused = if let SymbolicValue::Variable(var_name) = &**rhs {
-                    !used_variables.contains(var_name) && input_variables.contains(var_name)
-                } else {
-                    false
-                };*/
-
                 let mut lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
                 let mut rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
                 
-                /* 
-                if let ExpressionInfixOpcode::Eq = op.0 {
-                    if let SymbolicValue::Variable(var_name) = &**lhs {
-                        if is_left_unused {
-                            if let SymbolicValue::ConstantInt(ref num) = rhs_val {
-                                assignment.insert(var_name.clone(), num.clone());
-                                lhs_val = rhs_val.clone();
-                            }
+                if let Some(dir) = runtime_mutable_positions.get(&i) {
+                    match dir {
+                        Direction::Left => {
+                            if let SymbolicValue::Variable(var_name) = &**lhs {
+                                    if let SymbolicValue::ConstantInt(ref num) = rhs_val {
+                                        assignment.insert(var_name.clone(), num.clone());
+                                        lhs_val = rhs_val.clone();
+                                    }
+                                }
                         }
-                    } else if let SymbolicValue::Variable(var_name) = &**rhs {
-                        if is_right_unused {
-                            if let SymbolicValue::ConstantInt(ref num) = lhs_val {
-                                assignment.insert(var_name.clone(), num.clone());
-                                rhs_val = lhs_val.clone();
+                        Direction::Right => {
+                            if let SymbolicValue::Variable(var_name) = &**rhs {
+                                    if let SymbolicValue::ConstantInt(ref num) = lhs_val {
+                                        assignment.insert(var_name.clone(), num.clone());
+                                        rhs_val = lhs_val.clone();
+                                    }
                             }
                         }
                     }
-                }*/
+                }
 
                 let (normalized_lhs, normalized_rhs) = match &op.0 {
                     // Convert booleans to integers for arithmetic or bitwise operators
