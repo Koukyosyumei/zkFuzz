@@ -22,6 +22,7 @@ pub struct MutationConfig {
     pub mutation_rate: f64,
     pub crossover_rate: f64,
     pub operator_mutation_rate: f64,
+    pub runtime_mutation_rate: f64,
     pub num_eliminated_individuals: usize,
     pub max_num_mutation_points: usize,
     pub input_update_interval: usize,
@@ -48,6 +49,7 @@ impl Default for MutationConfig {
             mutation_rate: 0.3,
             crossover_rate: 0.5,
             operator_mutation_rate:0.2,
+            runtime_mutation_rate:0.3,
             num_eliminated_individuals:5,
             max_num_mutation_points:10,
             input_update_interval: 1,
@@ -78,6 +80,8 @@ impl fmt::Display for MutationConfig {
     ├─ Fitness Function                           : {} 
     ├─ Trace Mutation Rate                        : {}
     ├─ Trace Crossover Rate                       : {}
+    ├─ Operator Mutation Rate                     : {}
+    ├─ Runimte Mutation Rate                      : {}
     ├─ Maximum Number of Mutated Points           : {}
     ├─ Input Generation Interval                  : {} 
     ├─ Input Generation Maximum Iteration         : {} 
@@ -91,6 +95,8 @@ impl fmt::Display for MutationConfig {
             self.fitness_function.bright_yellow(),
             self.mutation_rate.to_string().bright_yellow(),
             self.crossover_rate.to_string().bright_yellow(),
+            self.operator_mutation_rate.to_string().bright_yellow(),
+            self.runtime_mutation_rate.to_string().bright_yellow(),
             self.max_num_mutation_points.to_string().bright_yellow(),
             self.input_update_interval.to_string().bright_yellow(),
             self.input_generation_max_iteration

@@ -189,6 +189,7 @@ where
         }
     }
 
+    let dummy_runtime_mutable_positions = FxHashMap::default();
     let runtime_mutable_positions = gather_runtime_mutable_inputs(
         symbolic_trace,
         sexe.symbolic_library,
@@ -261,20 +262,27 @@ where
         trace_population.push(FxHashMap::default());
 
         // Evaluate the trace population
-        let evaluations: Vec<_> = trace_population
-            .iter()
-            .map(|a| {
-                trace_fitness_fn(
-                    sexe,
-                    &base_config,
-                    symbolic_trace,
-                    side_constraints,
-                    &runtime_mutable_positions,
-                    a,
-                    &input_population,
-                )
-            })
-            .collect();
+        let mut evaluations = Vec::new();
+        for individual in &trace_population {
+            let fitness = trace_fitness_fn(
+                sexe,
+                &base_config,
+                symbolic_trace,
+                side_constraints,
+                if rng.gen::<f64>() < mutation_config.runtime_mutation_rate {
+                    &dummy_runtime_mutable_positions
+                } else {
+                    &runtime_mutable_positions
+                },
+                individual,
+                &input_population,
+            );
+            if fitness.1.is_zero() {
+                evaluations.push(fitness);
+                break;
+            }
+            evaluations.push(fitness);
+        }
 
         let mut evaluation_indices: Vec<usize> = (0..evaluations.len()).collect();
         evaluation_indices.sort_by(|&i, &j| evaluations[i].1.cmp(&evaluations[j].1));
