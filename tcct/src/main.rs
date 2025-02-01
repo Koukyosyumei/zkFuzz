@@ -74,10 +74,7 @@ fn display_tcct_logo() {
 
     eprintln!("{}", logo.bright_cyan().bold());
     eprintln!("{}", "Welcome to the TCCT Debugging Tool".green().bold());
-    eprintln!(
-        "{}",
-        "════════════════════════════════════════════════════════════════".green()
-    );
+    eprintln!("{}", "══════════════════════════════════".green());
 }
 
 fn read_file_to_lines(file_path: &str) -> io::Result<Vec<String>> {
@@ -236,10 +233,7 @@ fn start() -> Result<(), ()> {
                 .clone();
             sym_executor.execute(&body, 0);
 
-            println!(
-                "{}",
-                "════════════════════════════════════════════════════════════════".green()
-            );
+            println!("{}", "══════════════════════════════════".green());
             let mut ts = ConstraintStatistics::new();
             let mut ss = ConstraintStatistics::new();
             for c in &sym_executor.cur_state.symbolic_trace {
@@ -257,10 +251,7 @@ fn start() -> Result<(), ()> {
 
             let mut is_safe = true;
             if user_input.search_mode != "none" {
-                println!(
-                    "{}",
-                    "════════════════════════════════════════════════════════════════".green()
-                );
+                println!("{}", "══════════════════════════════════".green());
                 println!("{}", "🩺 Scanning TCCT Instances...".green());
 
                 let (main_template_name, template_param_names, template_param_values) =
@@ -474,10 +465,7 @@ fn start() -> Result<(), ()> {
                 print_constraint_summary_statistics_csv(&ts);
                 print_constraint_summary_statistics_csv(&ss);
             }
-            println!(
-                "{}",
-                "════════════════════════════════════════════════════════════════".green()
-            );
+            println!("{}", "══════════════════════════════════".green());
         }
         _ => {
             warn!("Cannot Find Main Call");
