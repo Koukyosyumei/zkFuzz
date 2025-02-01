@@ -1191,8 +1191,9 @@ pub fn verify_assignment(
                 .contains(&k.id)
             {
                 let original_sym_value = sexe.cur_state.symbol_binding_map[&k].clone();
+                let mut memo = FxHashSet::default();
                 let simplified_sym_value =
-                    sexe.simplify_variables(&original_sym_value, std::usize::MAX, false, false, 2);
+                    sexe.simplify_variables(&original_sym_value, std::usize::MAX, false, false, &mut memo);
                 let original_int_value = match simplified_sym_value {
                     SymbolicValue::ConstantInt(num) => num.clone(),
                     SymbolicValue::ConstantBool(b) => {
