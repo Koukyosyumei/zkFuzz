@@ -465,7 +465,10 @@ fn start() -> Result<(), ()> {
                 print_constraint_summary_statistics_csv(&ts);
                 print_constraint_summary_statistics_csv(&ss);
             }
-            println!("{}", "══════════════════════════════════".green());
+            println!(
+                "{}",
+                "════════════════════════════════════════════════════════════════".green()
+            );
         }
         _ => {
             warn!("Cannot Find Main Call");
