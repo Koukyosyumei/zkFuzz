@@ -529,7 +529,7 @@ impl SymbolicLibrary {
 pub fn access_multidimensional_array(
     values: &Vec<SymbolicValueRef>,
     dims: &[SymbolicAccess],
-) -> SymbolicValue {
+) -> Option<SymbolicValue> {
     let mut current_values = values;
     for dim in dims {
         if let SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(a)) = dim {
@@ -539,17 +539,18 @@ pub fn access_multidimensional_array(
                     SymbolicValue::Array(inner_values) => {
                         current_values = &inner_values;
                     }
-                    value => return value.clone(),
+                    value => return Some(value.clone()),
                 };
             } else {
                 panic!("Out of range");
             }
         } else {
             //panic!("dims should be a list of SymbolicAccess::ArrayAccess");
-            return SymbolicValue::Array(current_values.to_vec());
+            return None;
         }
     }
-    panic!("Incomplete dimensions");
+    //panic!("Incomplete dimensions");
+    Some(SymbolicValue::Array(current_values.to_vec()))
 }
 
 /// Registers all elements of a multi-dimensional array in a component's map.

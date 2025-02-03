@@ -669,7 +669,9 @@ impl<'a> SymbolicExecutor<'a> {
                     if sv.is_some() && component_name.is_none() {
                         match &*sv.unwrap() {
                             SymbolicValue::Array(values) => {
-                                return access_multidimensional_array(&values, &dims);
+                                if let Some(v) = access_multidimensional_array(&values, &dims) {
+                                    return v;
+                                }
                             }
                             _ => {}
                         }
