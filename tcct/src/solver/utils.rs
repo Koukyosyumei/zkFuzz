@@ -825,7 +825,7 @@ pub fn evaluate_symbolic_value(
                 symbolic_library,
                 
             );
-            match &cond_val.clone().unwrap() {
+            match &cond_val.as_ref().unwrap() {
                 SymbolicValue::ConstantBool(true) => then_val,
                 SymbolicValue::ConstantBool(false) => else_val,
                 SymbolicValue::ConstantInt(num) => {
