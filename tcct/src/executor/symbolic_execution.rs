@@ -29,6 +29,8 @@ use crate::executor::symbolic_value::{
 };
 use crate::executor::utils::generate_cartesian_product_indices;
 
+use super::symbolic_value::ExecutionResult;
+
 pub struct SymbolicStore {
     pub components_store: FxHashMap<SymbolicName, SymbolicComponent>,
     pub variable_types: FxHashMap<usize, DebuggableVariableType>,
@@ -65,6 +67,7 @@ pub struct SymbolicExecutor<'a> {
     pub cur_state: SymbolicState,
     pub violated_condition: Option<(usize, SymbolicValue)>,
     pub id2dimensions: FxHashMap<usize, Vec<usize>>,
+    pub execution_failed: bool,
     coverage_tracker: CoverageTracker,
     enable_coverage_tracking: bool,
     is_concrete_mode: bool,
@@ -97,6 +100,7 @@ impl<'a> SymbolicExecutor<'a> {
             cur_state: SymbolicState::new(),
             violated_condition: None,
             id2dimensions: FxHashMap::default(),
+            execution_failed: false,
             coverage_tracker: CoverageTracker::new(),
             setting: setting,
             enable_coverage_tracking: false,
@@ -669,8 +673,12 @@ impl<'a> SymbolicExecutor<'a> {
                     if sv.is_some() && component_name.is_none() {
                         match &*sv.unwrap() {
                             SymbolicValue::Array(values) => {
-                                if let Some(v) = access_multidimensional_array(&values, &dims) {
+                                let ama = access_multidimensional_array(&values, &dims);
+                                if let ExecutionResult::Success(v) = ama {
                                     return v;
+                                }
+                                if let ExecutionResult::Failure = ama {
+                                    self.execution_failed = true;
                                 }
                             }
                             _ => {}
@@ -787,6 +795,7 @@ impl<'a> SymbolicExecutor<'a> {
                         self.cur_state
                             .symbolic_trace
                             .append(&mut subse.cur_state.symbolic_trace);
+                        self.execution_failed = subse.execution_failed;
 
                         let return_sym_name =
                             SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
@@ -2072,6 +2081,7 @@ impl<'a> SymbolicExecutor<'a> {
             self.cur_state
                 .side_constraints
                 .append(&mut subse.cur_state.side_constraints);
+            self.execution_failed = subse.execution_failed;
             if self.setting.propagate_assignments {
                 for (k, v) in subse.cur_state.symbol_binding_map.iter() {
                     self.cur_state.set_rc_sym_val(k.clone(), v.clone());

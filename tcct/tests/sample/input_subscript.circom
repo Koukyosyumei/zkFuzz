@@ -6,10 +6,12 @@ function get_elem(i) {
 }
 
 template Test() {
-    signal input in;
-    signal output out;
+    signal input x;
+    signal output y1;
+    signal output y2;
 
-    out <-- get_elem(in);
+    y1 <== get_elem(x);
+    y2 <== x + y1;
 }
 
 component main = Test();

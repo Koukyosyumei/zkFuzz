@@ -63,6 +63,13 @@ pub struct OwnerName {
     pub counter: usize,
 }
 
+#[derive(Clone)]
+pub enum ExecutionResult<T> {
+    Success(T),
+    Unkonwn,
+    Failure,
+}
+
 #[derive(Clone, Debug)]
 pub struct SymbolicName {
     pub id: usize,
@@ -529,28 +536,31 @@ impl SymbolicLibrary {
 pub fn access_multidimensional_array(
     values: &Vec<SymbolicValueRef>,
     dims: &[SymbolicAccess],
-) -> Option<SymbolicValue> {
+) -> ExecutionResult<SymbolicValue> {
     let mut current_values = values;
     for dim in dims {
         if let SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(a)) = dim {
-            let index = a.to_usize().unwrap();
-            if index < current_values.len() {
-                match &*current_values[index] {
-                    SymbolicValue::Array(inner_values) => {
-                        current_values = &inner_values;
-                    }
-                    value => return Some(value.clone()),
-                };
+            if let Some(index) = a.to_usize() {
+                if index < current_values.len() {
+                    match &*current_values[index] {
+                        SymbolicValue::Array(inner_values) => {
+                            current_values = &inner_values;
+                        }
+                        value => return ExecutionResult::Success(value.clone()),
+                    };
+                } else {
+                    return ExecutionResult::Failure;
+                }
             } else {
-                panic!("Out of range");
+                return ExecutionResult::Failure;
             }
         } else {
             //panic!("dims should be a list of SymbolicAccess::ArrayAccess");
-            return None;
+            return ExecutionResult::Unkonwn;
         }
     }
     //panic!("Incomplete dimensions");
-    Some(SymbolicValue::Array(current_values.to_vec()))
+    ExecutionResult::Success(SymbolicValue::Array(current_values.to_vec()))
 }
 
 /// Registers all elements of a multi-dimensional array in a component's map.

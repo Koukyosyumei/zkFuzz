@@ -69,13 +69,17 @@ pub fn evaluate_trace_fitness_by_error(
 
         // Emulate the original trace to evaluate its behavior on the given input.
         // Even if an assertion fails, the function proceeds, treating it as a modified trace with no assertions.
-        let (is_original_program_success, original_program_failure_pos) = emulate_symbolic_trace(
+        let emulation_result = emulate_symbolic_trace(
             &base_config.prime,
             &symbolic_trace,
             runtime_mutable_positions,
             &mut assignment_for_original,
             &mut sexe.symbolic_library,
         );
+        if emulation_result.is_none() {
+            break;
+        }
+        let (is_original_program_success, original_program_failure_pos) = emulation_result.unwrap();
         // Check if the original trace satisfies the side constraints.
         let is_original_satisfy_sc = evaluate_constraints(
             &base_config.prime,
@@ -116,13 +120,18 @@ pub fn evaluate_trace_fitness_by_error(
         let mut assignment_for_mutation = inp.clone();
 
         // Emulate the mutated trace and evaluate the error in side constraints.
-        let (_is_mutated_program_success, _mutated_program_failure_pos) = emulate_symbolic_trace(
+        let mutated_emulation_result = emulate_symbolic_trace(
             &base_config.prime,
             &mutated_symbolic_trace,
             runtime_mutable_positions,
             &mut assignment_for_mutation,
             &mut sexe.symbolic_library,
         );
+        if mutated_emulation_result.is_none() {
+            break;
+        }
+        let (_is_mutated_program_success, _mutated_program_failure_pos) =
+            mutated_emulation_result.unwrap();
         // Calculate the error in side constraints for the mutated trace.
         let error_of_side_constraints_for_mutated_assignment = accumulate_error_of_constraints(
             &base_config.prime,
