@@ -613,7 +613,7 @@ mod input_processing {
                 Arg::with_name("search_mode")
                     .long("search_mode")
                     .takes_value(true)
-                    .default_value("none")
+                    .default_value("ga")
                     .display_order(320)
                     .help("(TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained"),
             )
