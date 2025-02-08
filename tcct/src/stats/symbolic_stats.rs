@@ -190,41 +190,6 @@ pub fn print_constraint_summary_statistics_pretty(stats: &ConstraintStatistics) 
 }
 
 pub fn print_constraint_summary_statistics_csv(constraint_stats: &ConstraintStatistics) {
-    let headers = vec![
-        "Total_Constraints",
-        "Constant_Counts",
-        "Conditional_Counts",
-        "Array_Counts",
-        "Avg_Depth",
-        "Max_Depth",
-        "Count_Mul",
-        "Count_Div",
-        "Count_Add",
-        "Count_Sub",
-        "Count_Pow",
-        "Count_IntDiv",
-        "Count_Mod",
-        "Count_ShiftL",
-        "Count_ShiftR",
-        "Count_LesserEq",
-        "Count_GreaterEq",
-        "Count_Lesser",
-        "Count_Greater",
-        "Count_Eq",
-        "Count_NotEq",
-        "Count_BoolOr",
-        "Count_BoolAnd",
-        "Count_BitOr",
-        "Count_BitAnd",
-        "Count_BitXor",
-        "Number_of_Variable",
-        "Variable_Avg_Count",
-        "Variable_Max_Count",
-        "Function_Avg_Count",
-        "Function_Max_Count",
-    ];
-    println!("{}", headers.join(","));
-
     let mut values = Vec::new();
     values.push(constraint_stats.total_constraints.to_string());
     values.push(constraint_stats.constant_counts.to_string());

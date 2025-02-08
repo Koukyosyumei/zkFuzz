@@ -447,7 +447,7 @@ mod input_processing {
     pub fn get_search_mode(matches: &ArgMatches) -> Result<String, ()> {
         match matches.is_present("search_mode") {
             true => Ok(String::from(matches.value_of("search_mode").unwrap())),
-            false => Ok(String::from("none"))
+            false => Ok(String::from("ga"))
         }
     }
 

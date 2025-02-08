@@ -250,7 +250,7 @@ fn start() -> Result<(), ()> {
             );
 
             let mut is_safe = true;
-            if user_input.search_mode != "none" {
+            if user_input.search_mode != "off" {
                 println!("{}", "══════════════════════════════════".green());
                 println!("{}", "🩺 Scanning TCCT Instances...".green());
 
@@ -462,6 +462,40 @@ fn start() -> Result<(), ()> {
                 );
                 print_constraint_summary_statistics_pretty(&ss);
             } else if user_input.flag_printout_stats_csv {
+                let headers = vec![
+                    "Total_Constraints",
+                    "Constant_Counts",
+                    "Conditional_Counts",
+                    "Array_Counts",
+                    "Avg_Depth",
+                    "Max_Depth",
+                    "Count_Mul",
+                    "Count_Div",
+                    "Count_Add",
+                    "Count_Sub",
+                    "Count_Pow",
+                    "Count_IntDiv",
+                    "Count_Mod",
+                    "Count_ShiftL",
+                    "Count_ShiftR",
+                    "Count_LesserEq",
+                    "Count_GreaterEq",
+                    "Count_Lesser",
+                    "Count_Greater",
+                    "Count_Eq",
+                    "Count_NotEq",
+                    "Count_BoolOr",
+                    "Count_BoolAnd",
+                    "Count_BitOr",
+                    "Count_BitAnd",
+                    "Count_BitXor",
+                    "Number_of_Variable",
+                    "Variable_Avg_Count",
+                    "Variable_Max_Count",
+                    "Function_Avg_Count",
+                    "Function_Max_Count",
+                ];
+                println!("{}", headers.join(","));
                 print_constraint_summary_statistics_csv(&ts);
                 print_constraint_summary_statistics_csv(&ss);
             }
