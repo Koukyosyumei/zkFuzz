@@ -42,7 +42,7 @@ OPTIONS:
             21888242871839275222246405745257275088548364400416034343698204186575808495617]
         --search_mode <search_mode>
             (TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained
-            [default: none]
+            [default: ga]
         --heuristics_range <heuristics_range>
             (TCCT) Heuristics range for TCCT debugging [default: 100]
 
