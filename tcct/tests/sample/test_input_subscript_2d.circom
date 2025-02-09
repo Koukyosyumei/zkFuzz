@@ -13,7 +13,7 @@ template Test() {
     signal output y1;
     signal output y2;
 
-    y1 <== get_elem(x, y);
+    y1 <-- get_elem(x, y);
     y2 <== x + y1;
 }
 

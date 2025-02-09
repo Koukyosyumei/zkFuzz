@@ -10,7 +10,7 @@ template Test() {
     signal output y1;
     signal output y2;
 
-    y1 <== get_elem(x);
+    y1 <-- get_elem(x);
     y2 <== x + y1;
 }
 

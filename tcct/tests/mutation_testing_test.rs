@@ -151,7 +151,8 @@ fn test_lessthan() {
 
 #[test]
 fn test_input_subscript_1d() {
-    let result = conduct_mutation_testing("./tests/sample/test_input_subscript_1d".to_string());
+    let result =
+        conduct_mutation_testing("./tests/sample/test_input_subscript_1d.circom".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -164,7 +165,8 @@ fn test_input_subscript_1d() {
 
 #[test]
 fn test_input_subscript_2d() {
-    let result = conduct_mutation_testing("./tests/sample/test_input_subscript_2d".to_string());
+    let result =
+        conduct_mutation_testing("./tests/sample/test_input_subscript_2d.circom".to_string());
 
     assert!(matches!(
         result.counter_example,
