@@ -58,11 +58,12 @@ impl Default for MutationConfig {
             input_generation_mutation_rate: 0.5,
             input_generation_singlepoint_mutation_rate: 0.5,
             random_value_ranges: vec![
-                (BigInt::from(-10), BigInt::from(10)),
+                (BigInt::from(0), BigInt::from(2)),
+                (BigInt::from(-10), BigInt::from(11)),
                 (BigInt::from_str("21888242871839275222246405745257275088548364400416034343698204186575808495517").unwrap(),
                  BigInt::from_str("21888242871839275222246405745257275088548364400416034343698204186575808495617").unwrap()),
             ],
-            random_value_probs: vec![0.5, 0.5],
+            random_value_probs: vec![0.1, 0.45, 0.45],
             save_fitness_scores: false,
         }
     }

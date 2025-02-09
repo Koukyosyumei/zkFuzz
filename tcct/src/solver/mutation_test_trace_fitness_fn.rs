@@ -32,6 +32,7 @@ use crate::solver::utils::{
 /// - `usize`: The index of the input assignment with the best fitness score.
 /// - `BigInt`: The maximum fitness score achieved.
 /// - `Option<CounterExample>`: An optional counterexample, if the trace is found to be under-constrained or over-constrained.
+/// - `usize`: The number of invalid input assignment causing out-of-range subscript
 ///
 /// # Behavior
 /// 1. Applies the provided mutation to the symbolic trace.
@@ -55,13 +56,14 @@ pub fn evaluate_trace_fitness_by_error(
     runtime_mutable_positions: &FxHashMap<usize, Direction>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
     inputs_assignment: &Vec<FxHashMap<SymbolicName, BigInt>>,
-) -> (usize, BigInt, Option<CounterExample>) {
+) -> (usize, BigInt, Option<CounterExample>, usize) {
     // Apply the given mutations to the symbolic trace.
     let mutated_symbolic_trace = apply_trace_mutation(symbolic_trace, trace_mutation);
 
     let mut max_idx = 0_usize;
     let mut max_score = -base_config.prime.clone();
     let mut counter_example = None;
+    let mut num_invalida_assignments = 0; // invalid assignments causing out-of-range subscript
 
     for (i, inp) in inputs_assignment.iter().enumerate() {
         // Clone the input assignment for evaluation with the original program.
@@ -77,7 +79,8 @@ pub fn evaluate_trace_fitness_by_error(
             &mut sexe.symbolic_library,
         );
         if emulation_result.is_none() {
-            break;
+            num_invalida_assignments += 1;
+            continue;
         }
         let (is_original_program_success, original_program_failure_pos) = emulation_result.unwrap();
         // Check if the original trace satisfies the side constraints.
@@ -201,5 +204,10 @@ pub fn evaluate_trace_fitness_by_error(
         }
     }
 
-    (max_idx, max_score, counter_example)
+    (
+        max_idx,
+        max_score,
+        counter_example,
+        num_invalida_assignments,
+    )
 }

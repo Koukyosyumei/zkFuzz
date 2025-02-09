@@ -103,7 +103,7 @@ pub fn mutation_test_search<
     symbolic_trace: &SymbolicTrace,
     side_constraints: &SymbolicConstraints,
     base_config: &BaseVerificationConfig,
-    mutation_config: &MutationConfig,
+    base_mutation_config: &MutationConfig,
     trace_initialization_fn: TraceInitializationFn,
     update_input_fn: UpdateInputFn,
     trace_fitness_fn: TraceFitnessFn,
@@ -137,7 +137,7 @@ where
         &FxHashMap<usize, Direction>,
         &Gene,
         &Vec<FxHashMap<SymbolicName, BigInt>>,
-    ) -> (usize, BigInt, Option<CounterExample>),
+    ) -> (usize, BigInt, Option<CounterExample>, usize),
     TraceEvolutionFn: Fn(
         &[usize],
         &[Gene],
@@ -153,6 +153,8 @@ where
     TraceCrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
     TraceSelectionFn: for<'a> Fn(&'a [Gene], &[BigInt], &mut StdRng) -> &'a Gene,
 {
+    let mut mutation_config = base_mutation_config.clone();
+
     // Set random seed
     let seed = if mutation_config.seed.is_zero() {
         let mut seed_rng = rand::thread_rng();
@@ -214,7 +216,7 @@ where
         mutation_config.program_population_size,
         &symbolic_trace,
         base_config,
-        mutation_config,
+        &mutation_config,
         &mut rng,
     );
     let mut fitness_scores =
@@ -231,6 +233,8 @@ where
         "🎲 Random Seed:",
         seed.to_string().bold().bright_yellow(),
     );
+
+    let mut binary_input_mode = false;
 
     for generation in 0..mutation_config.max_generations {
         // Generate input population for this generation
@@ -263,6 +267,7 @@ where
 
         // Evaluate the trace population
         let mut evaluations = Vec::new();
+        let mut is_extincted_due_to_illegal_subscript = true;
         for individual in &trace_population {
             let fitness = trace_fitness_fn(
                 sexe,
@@ -281,7 +286,15 @@ where
                 evaluations.push(fitness);
                 break;
             }
+            is_extincted_due_to_illegal_subscript =
+                is_extincted_due_to_illegal_subscript && fitness.3 == input_population.len();
             evaluations.push(fitness);
+        }
+
+        if !binary_input_mode && is_extincted_due_to_illegal_subscript {
+            binary_input_mode = true;
+            mutation_config.random_value_ranges = vec![(BigInt::from(0), BigInt::from(2))];
+            mutation_config.random_value_probs = vec![1.0];
         }
 
         let mut evaluation_indices: Vec<usize> = (0..evaluations.len()).collect();
@@ -327,7 +340,7 @@ where
             mutation_config.num_eliminated_individuals,
             &symbolic_trace,
             base_config,
-            mutation_config,
+            &mutation_config,
             &mut rng,
         );
         for (i, j) in evaluation_indices
