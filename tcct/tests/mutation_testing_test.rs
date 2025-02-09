@@ -148,3 +148,29 @@ fn test_lessthan() {
         })
     ));
 }
+
+#[test]
+fn test_input_subscript_1d() {
+    let result = conduct_mutation_testing("./tests/sample/test_input_subscript_1d".to_string());
+
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic(..)),
+            ..
+        })
+    ));
+}
+
+#[test]
+fn test_input_subscript_2d() {
+    let result = conduct_mutation_testing("./tests/sample/test_input_subscript_2d".to_string());
+
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic(..)),
+            ..
+        })
+    ));
+}
