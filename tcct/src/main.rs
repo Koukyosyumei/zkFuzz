@@ -278,15 +278,11 @@ fn start() -> Result<(), ()> {
                 new_base_config.off_trace = true;
                 sym_executor.setting = &new_base_config;
 
-                if let Some(counter_example_for_unused_outputs) =
-                    check_unused_outputs(&mut sym_executor, &verification_base_config)
-                {
+                let mut counter_example =
+                    check_unused_outputs(&mut sym_executor, &verification_base_config);
+                let mut auxiliary_result = json!({});
+                if let Some(_) = &counter_example {
                     is_safe = false;
-                    println!(
-                        "{}",
-                        counter_example_for_unused_outputs
-                            .lookup_fmt(&sym_executor.symbolic_library.id2name)
-                    );
                 } else {
                     let subse_base_config = get_default_setting_for_concrete_execution(
                         BigInt::from_str(&user_input.debug_prime()).unwrap(),
@@ -301,8 +297,7 @@ fn start() -> Result<(), ()> {
                         &verification_base_config.template_param_values,
                     );
 
-                    let mut auxiliary_result = json!({});
-                    let counterexample = match &*user_input.search_mode() {
+                    counter_example = match &*user_input.search_mode() {
                         "quick" => brute_force_search(
                             &mut conc_executor,
                             &sym_executor.cur_state.symbolic_trace.clone(),
@@ -367,52 +362,50 @@ fn start() -> Result<(), ()> {
                             user_input.search_mode.to_string()
                         ),
                     };
-                    if let Some(ce) = counterexample {
-                        is_safe = false;
-                        if user_input.flag_save_output {
-                            // Save the output as JSON
-                            let ce_meta = FxHashMap::from_iter([
-                                (
-                                    "0_target_path".to_string(),
-                                    user_input.input_file().to_string(),
-                                ),
-                                ("1_main_template".to_string(), id.to_string()),
-                                ("2_search_mode".to_string(), user_input.search_mode()),
-                                (
-                                    "3_execution_time".to_string(),
-                                    format!("{:?}", start_time.elapsed()),
-                                ),
-                                (
-                                    "4_git_hash_of_tcct".to_string(),
-                                    format!("{}", option_env!("GIT_HASH").unwrap_or("unknown")),
-                                ),
-                            ]);
+                }
+                if let Some(ce) = &counter_example {
+                    is_safe = false;
+                    if user_input.flag_save_output {
+                        // Save the output as JSON
+                        let ce_meta = FxHashMap::from_iter([
+                            (
+                                "0_target_path".to_string(),
+                                user_input.input_file().to_string(),
+                            ),
+                            ("1_main_template".to_string(), id.to_string()),
+                            ("2_search_mode".to_string(), user_input.search_mode()),
+                            (
+                                "3_execution_time".to_string(),
+                                format!("{:?}", start_time.elapsed()),
+                            ),
+                            (
+                                "4_git_hash_of_tcct".to_string(),
+                                format!("{}", option_env!("GIT_HASH").unwrap_or("unknown")),
+                            ),
+                        ]);
 
-                            let mut json_output = ce.to_json_with_meta(
-                                &conc_executor.symbolic_library.id2name,
-                                &ce_meta,
-                            );
-                            json_output["8_auxiliary_result"] = auxiliary_result;
+                        let mut json_output =
+                            ce.to_json_with_meta(&sym_executor.symbolic_library.id2name, &ce_meta);
+                        json_output["8_auxiliary_result"] = auxiliary_result;
 
-                            let mut file_path = user_input.input_file().to_string();
-                            file_path.push('_');
-                            let random_string: String = thread_rng()
-                                .sample_iter(&Alphanumeric)
-                                .take(10)
-                                .map(char::from)
-                                .collect();
-                            file_path.push_str(&random_string);
-                            file_path.push_str("_counterexample.json");
-                            println!("{} {}", "💾 Saving the output to:", file_path.cyan(),);
+                        let mut file_path = user_input.input_file().to_string();
+                        file_path.push('_');
+                        let random_string: String = thread_rng()
+                            .sample_iter(&Alphanumeric)
+                            .take(10)
+                            .map(char::from)
+                            .collect();
+                        file_path.push_str(&random_string);
+                        file_path.push_str("_counterexample.json");
+                        println!("{} {}", "💾 Saving the output to:", file_path.cyan(),);
 
-                            let mut file = File::create(file_path).expect("Unable to create file");
-                            let json_string = serde_json::to_string_pretty(&json_output).unwrap();
-                            file.write_all(json_string.as_bytes())
-                                .expect("Unable to write data");
-                        }
-
-                        println!("{}", ce.lookup_fmt(&conc_executor.symbolic_library.id2name));
+                        let mut file = File::create(file_path).expect("Unable to create file");
+                        let json_string = serde_json::to_string_pretty(&json_output).unwrap();
+                        file.write_all(json_string.as_bytes())
+                            .expect("Unable to write data");
                     }
+
+                    println!("{}", ce.lookup_fmt(&sym_executor.symbolic_library.id2name));
                 }
             }
 
