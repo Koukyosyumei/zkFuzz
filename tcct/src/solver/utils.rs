@@ -880,7 +880,11 @@ pub fn evaluate_symbolic_value(
             let return_name =
                 SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
             let return_value = (*subse.cur_state.symbol_binding_map[&return_name].clone()).clone();
-            Some(return_value)
+            if let SymbolicValue::ConstantInt(_) = &return_value{
+                Some(return_value)
+            } else {
+                None
+            }
             }
         }
     }
