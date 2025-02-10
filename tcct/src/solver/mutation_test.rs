@@ -8,7 +8,7 @@ use num_bigint_dig::BigInt;
 use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
@@ -16,8 +16,8 @@ use crate::executor::symbolic_value::{SymbolicName, SymbolicValue};
 
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::utils::{
-    extract_variables, gather_runtime_mutable_inputs, BaseVerificationConfig, CounterExample,
-    Direction,
+    extract_variables, gather_runtime_mutable_inputs, get_dependencies, get_slice,
+    BaseVerificationConfig, CounterExample, Direction,
 };
 
 pub struct MutationTestResult {
@@ -180,6 +180,7 @@ where
     variables.append(&mut extract_variables(side_constraints));
     let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
     let mut input_variables = Vec::new();
+    let mut output_variables = Vec::new();
     for v in variables_set.iter() {
         if v.owner.len() == 1
             && sexe.symbolic_library.template_library
@@ -188,6 +189,14 @@ where
                 .contains(&v.id)
         {
             input_variables.push(v.clone());
+        }
+        if v.owner.len() == 1
+            && sexe.symbolic_library.template_library
+                [&sexe.symbolic_library.name2id[&base_config.target_template_name]]
+                .output_ids
+                .contains(&v.id)
+        {
+            output_variables.push(v.clone());
         }
     }
 
@@ -210,11 +219,51 @@ where
         assign_pos.len().to_string().bright_yellow()
     );
 
+    let mut sliced_symbolic_trace = Vec::new();
+    let mut sliced_side_constraint = Vec::new();
+
+    for slice_target in output_variables {
+        let mut slice_target_dependencies = FxHashSet::default();
+        println!(
+            "a: {}",
+            slice_target.lookup_fmt(&sexe.symbolic_library.id2name)
+        );
+        get_dependencies(
+            &symbolic_trace,
+            slice_target,
+            &mut slice_target_dependencies,
+        );
+        for s in &slice_target_dependencies {
+            println!("s: {}", s.lookup_fmt(&sexe.symbolic_library.id2name));
+        }
+        assign_pos.clear();
+        sliced_symbolic_trace =
+            get_slice(&symbolic_trace, &slice_target_dependencies, &mut assign_pos);
+        let mut dummy_assign_pos = Vec::default();
+        sliced_side_constraint = get_slice(
+            &side_constraints,
+            &slice_target_dependencies,
+            &mut dummy_assign_pos,
+        );
+        println!("##################### {}", sliced_symbolic_trace.len());
+    }
+
+    let target_symbolic_trace = sliced_symbolic_trace;
+    let target_side_constraint = sliced_side_constraint;
+
+    for t in &target_symbolic_trace {
+        println!("{}", t.lookup_fmt(&sexe.symbolic_library.id2name));
+    }
+
+    for t in &target_side_constraint {
+        println!("{}", t.lookup_fmt(&sexe.symbolic_library.id2name));
+    }
+
     // Initial Pupulation of Mutated Inputs
     let mut trace_population = trace_initialization_fn(
         &assign_pos,
         mutation_config.program_population_size,
-        &symbolic_trace,
+        &target_symbolic_trace,
         base_config,
         &mutation_config,
         &mut rng,
@@ -272,8 +321,8 @@ where
             let fitness = trace_fitness_fn(
                 sexe,
                 &base_config,
-                symbolic_trace,
-                side_constraints,
+                &target_symbolic_trace,
+                &target_side_constraint,
                 if rng.gen::<f64>() < mutation_config.runtime_mutation_rate {
                     &dummy_runtime_mutable_positions
                 } else {
@@ -338,7 +387,7 @@ where
         let new_trace_population = trace_initialization_fn(
             &assign_pos,
             mutation_config.num_eliminated_individuals,
-            &symbolic_trace,
+            &target_symbolic_trace,
             base_config,
             &mutation_config,
             &mut rng,

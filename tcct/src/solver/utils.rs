@@ -280,51 +280,65 @@ pub fn extract_variables_from_symbolic_value(
     }
 }
 
-pub fn get_dependency_graph(
-    values: &[SymbolicValueRef],
-    graph: &mut FxHashMap<SymbolicName, FxHashSet<SymbolicName>>,
-) {
-    for value in values {
-        match value.as_ref() {
-            SymbolicValue::Assign(lhs, rhs, _)
-            | SymbolicValue::AssignEq(lhs, rhs)
-            | SymbolicValue::AssignCall(lhs, rhs, _) => {
-                if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
-                    graph.entry(sym_name.clone()).or_default();
-                    extract_variables_from_symbolic_value(&rhs, graph.get_mut(&sym_name).unwrap());
-                } else {
-                    panic!("Left hand of the assignment is not a variable");
+pub fn get_dependencies(sym_trace: &[SymbolicValueRef], target_name: SymbolicName, dependencies: &mut FxHashSet<SymbolicName>) {
+    let mut prev_size_of_result = 0;
+    dependencies.insert(target_name.clone());
+    while dependencies.len() != prev_size_of_result{
+        prev_size_of_result = dependencies.len();
+        for inst in sym_trace.into_iter().rev() {
+            match inst.as_ref() {
+                SymbolicValue::Assign(lhs, rhs, _)
+                | SymbolicValue::AssignEq(lhs, rhs)
+                | SymbolicValue::AssignCall(lhs, rhs, _) => {
+                    if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
+                        if dependencies.contains(sym_name){
+                            extract_variables_from_symbolic_value(&rhs, dependencies);
+                        }
+                    } else {
+                        panic!("Left hand of the assignment is not a variable");
+                    }
                 }
-            }
-            SymbolicValue::BinaryOp(lhs, _op, rhs) => {
-                let mut variables = FxHashSet::default();
-                extract_variables_from_symbolic_value(&lhs, &mut variables);
-                extract_variables_from_symbolic_value(&rhs, &mut variables);
-
-                for v1 in &variables {
-                    for v2 in &variables {
-                        if v1 != v2 {
-                            graph.entry(v1.clone()).or_default().insert(v2.clone());
-                            graph.entry(v2.clone()).or_default().insert(v1.clone());
+                SymbolicValue::BinaryOp(lhs, _op, rhs) => {
+                    let mut variables = FxHashSet::default();
+                    extract_variables_from_symbolic_value(&lhs, &mut variables);
+                    extract_variables_from_symbolic_value(&rhs, &mut variables);
+                    if dependencies.intersection(&variables).next().is_some(){
+                        for v in variables {
+                            dependencies.insert(v);
                         }
                     }
                 }
-            }
-            SymbolicValue::UnaryOp(_op, expr) => {
-                let mut variables = FxHashSet::default();
-                extract_variables_from_symbolic_value(&expr, &mut variables);
-                for v1 in &variables {
-                    for v2 in &variables {
-                        if v1 != v2 {
-                            graph.entry(v1.clone()).or_default().insert(v2.clone());
-                            graph.entry(v2.clone()).or_default().insert(v1.clone());
+                SymbolicValue::UnaryOp(_op, expr) => {
+                    let mut variables = FxHashSet::default();
+                    extract_variables_from_symbolic_value(&expr, &mut variables);
+                    if dependencies.intersection(&variables).next().is_some(){
+                        for v in variables {
+                            dependencies.insert(v);
                         }
                     }
                 }
+                _ => todo!(),
             }
-            _ => todo!(),
         }
     }
+}
+
+pub fn get_slice(sym_vals: &[SymbolicValueRef], target_names: &FxHashSet<SymbolicName>, assign_pos: &mut Vec<usize>) -> Vec<SymbolicValueRef> {
+    let mut slice = Vec::default();
+    for sv in sym_vals.into_iter() {
+        let mut names_used_in_inst = FxHashSet::default();
+        extract_variables_from_symbolic_value(sv, &mut names_used_in_inst);
+        if target_names.intersection(&names_used_in_inst).next().is_some(){
+            match *sv.as_ref() {
+                SymbolicValue::Assign(_, _, false) | SymbolicValue::AssignCall(_, _, true) => {
+                    assign_pos.push(slice.len());
+                }
+                _ => {}
+            }
+            slice.push(sv.clone());
+        }
+    }
+    slice
 }
 
 /// Evaluates a set of constraints given a variable assignment.
