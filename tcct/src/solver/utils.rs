@@ -280,7 +280,45 @@ pub fn extract_variables_from_symbolic_value(
     }
 }
 
-pub fn get_dependencies(sym_trace: &[SymbolicValueRef], target_name: &SymbolicName, dependencies: &mut FxHashSet<SymbolicName>) {
+pub fn get_complete_dependencies(sym_trace: &[SymbolicValueRef], 
+                            target_name: &SymbolicName, 
+                            dependencies: &mut FxHashSet<SymbolicName>, 
+                            dependencies_cache: &mut FxHashMap<SymbolicName, FxHashSet<SymbolicName>>,
+                            symbolic_library: &SymbolicLibrary) {
+    get_incoming_dependencies(sym_trace, target_name, dependencies);
+
+    for inst in sym_trace.into_iter().rev() {
+        let mut constraint_variables = FxHashSet::default();
+        match inst.as_ref() {
+            SymbolicValue::BinaryOp(lhs, _op, rhs) => {
+                extract_variables_from_symbolic_value(&lhs, &mut constraint_variables);
+                extract_variables_from_symbolic_value(&rhs, &mut constraint_variables);
+            }
+            SymbolicValue::UnaryOp(_op, expr) => {
+                extract_variables_from_symbolic_value(&expr, &mut constraint_variables);
+            }
+            _ => {},
+        }
+
+        for v in &constraint_variables {
+            if !dependencies_cache.contains_key(&v) {
+                let mut tmp = FxHashSet::default();
+                get_incoming_dependencies(sym_trace, &v, &mut tmp);
+                dependencies_cache.insert(v.clone(), tmp);
+            }
+            if let Some(dependencies_of_v) = dependencies_cache.get(&v) {
+                if dependencies_of_v.intersection(dependencies).next().is_some() {
+                    for u in dependencies_of_v {
+                        dependencies.insert(u.clone());
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
+
+pub fn get_incoming_dependencies(sym_trace: &[SymbolicValueRef], target_name: &SymbolicName, dependencies: &mut FxHashSet<SymbolicName>) {
     let mut prev_size_of_result = 0;
     dependencies.insert(target_name.clone());
     while dependencies.len() != prev_size_of_result{

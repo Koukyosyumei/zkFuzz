@@ -16,7 +16,7 @@ use crate::executor::symbolic_value::{SymbolicName, SymbolicValue};
 
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::utils::{
-    extract_variables, gather_runtime_mutable_inputs, get_dependencies, get_slice,
+    extract_variables, gather_runtime_mutable_inputs, get_complete_dependencies, get_slice,
     BaseVerificationConfig, CounterExample, Direction,
 };
 
@@ -226,12 +226,15 @@ where
     );
 
     let mut targets = Vec::new();
+    let mut dependencies_cache = FxHashMap::default();
     for slice_target in output_variables {
         let mut slice_target_dependencies = FxHashSet::default();
-        get_dependencies(
+        get_complete_dependencies(
             &symbolic_trace,
             &slice_target,
             &mut slice_target_dependencies,
+            &mut dependencies_cache,
+            &sexe.symbolic_library,
         );
 
         let mut sliced_assign_pos = Vec::new();
