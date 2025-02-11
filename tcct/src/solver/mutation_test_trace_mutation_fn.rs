@@ -73,7 +73,7 @@ pub fn mutate_trace_with_random_constant_replacement(
                 ),
             );
         } else if individual.len() > 1 && rng.gen::<bool>() {
-            let var = pos.into_iter().choose(rng).unwrap();
+            let var = individual.keys().cloned().choose(rng).unwrap();
             individual.remove(&var);
         }
     }
