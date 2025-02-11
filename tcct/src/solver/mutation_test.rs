@@ -236,7 +236,7 @@ where
 
     if is_containing_binary_check(&symbolic_trace, 5) {
         info!("⚡ Binary check detected!");
-        mutation_config.binary_mode_prob = 1.0;
+        mutation_config.binary_mode_prob = 0.0;
     }
 
     let mut binary_input_mode = false;

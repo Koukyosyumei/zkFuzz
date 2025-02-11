@@ -58,6 +58,7 @@ pub fn evaluate_trace_fitness_by_error(
     inputs_assignment: &Vec<FxHashMap<SymbolicName, BigInt>>,
 ) -> (usize, BigInt, Option<CounterExample>, usize) {
     // Apply the given mutations to the symbolic trace.
+    println!("a: {}", trace_mutation.len());
     let mutated_symbolic_trace = apply_trace_mutation(symbolic_trace, trace_mutation);
 
     let mut max_idx = 0_usize;
