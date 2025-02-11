@@ -224,18 +224,11 @@ where
 
     for slice_target in output_variables {
         let mut slice_target_dependencies = FxHashSet::default();
-        println!(
-            "a: {}",
-            slice_target.lookup_fmt(&sexe.symbolic_library.id2name)
-        );
         get_dependencies(
             &symbolic_trace,
             slice_target,
             &mut slice_target_dependencies,
         );
-        for s in &slice_target_dependencies {
-            println!("s: {}", s.lookup_fmt(&sexe.symbolic_library.id2name));
-        }
         assign_pos.clear();
         sliced_symbolic_trace =
             get_slice(&symbolic_trace, &slice_target_dependencies, &mut assign_pos);
@@ -245,19 +238,10 @@ where
             &slice_target_dependencies,
             &mut dummy_assign_pos,
         );
-        println!("##################### {}", sliced_symbolic_trace.len());
     }
 
     let target_symbolic_trace = sliced_symbolic_trace;
     let target_side_constraint = sliced_side_constraint;
-
-    for t in &target_symbolic_trace {
-        println!("{}", t.lookup_fmt(&sexe.symbolic_library.id2name));
-    }
-
-    for t in &target_side_constraint {
-        println!("{}", t.lookup_fmt(&sexe.symbolic_library.id2name));
-    }
 
     // Initial Pupulation of Mutated Inputs
     let mut trace_population = trace_initialization_fn(
