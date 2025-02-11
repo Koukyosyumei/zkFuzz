@@ -280,7 +280,7 @@ pub fn extract_variables_from_symbolic_value(
     }
 }
 
-pub fn get_dependencies(sym_trace: &[SymbolicValueRef], target_name: SymbolicName, dependencies: &mut FxHashSet<SymbolicName>) {
+pub fn get_dependencies(sym_trace: &[SymbolicValueRef], target_name: &SymbolicName, dependencies: &mut FxHashSet<SymbolicName>) {
     let mut prev_size_of_result = 0;
     dependencies.insert(target_name.clone());
     while dependencies.len() != prev_size_of_result{
@@ -294,13 +294,6 @@ pub fn get_dependencies(sym_trace: &[SymbolicValueRef], target_name: SymbolicNam
                     if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
                         if dependencies.contains(sym_name){
                             extract_variables_from_symbolic_value(&rhs, dependencies);
-                        }
-                        let mut right_variables = FxHashSet::default();
-                        extract_variables_from_symbolic_value(&rhs, &mut right_variables);
-                        if dependencies.intersection(&right_variables).next().is_some() {
-                            for v in right_variables {
-                                dependencies.insert(v);
-                            }
                         }
                     } else {
                         panic!("Left hand of the assignment is not a variable");

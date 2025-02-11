@@ -230,7 +230,7 @@ where
         let mut slice_target_dependencies = FxHashSet::default();
         get_dependencies(
             &symbolic_trace,
-            slice_target,
+            &slice_target,
             &mut slice_target_dependencies,
         );
 
