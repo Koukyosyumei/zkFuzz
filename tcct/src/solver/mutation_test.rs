@@ -254,8 +254,13 @@ where
         ));
     }
     targets.sort_by(|i, j| i.0.cmp(&j.0));
-    if targets[0].0 == symbolic_trace.len() {
-        targets = vec![targets[0].clone()];
+    if targets.is_empty() || targets[0].0 == symbolic_trace.len() {
+        targets = vec![(
+            0,
+            assign_pos,
+            symbolic_trace.to_vec(),
+            side_constraints.to_vec(),
+        )];
     }
 
     for (_, target_assign_pos, target_symbolic_trace, target_side_constraints) in targets {

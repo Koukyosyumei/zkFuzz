@@ -295,6 +295,13 @@ pub fn get_dependencies(sym_trace: &[SymbolicValueRef], target_name: SymbolicNam
                         if dependencies.contains(sym_name){
                             extract_variables_from_symbolic_value(&rhs, dependencies);
                         }
+                        let mut right_variables = FxHashSet::default();
+                        extract_variables_from_symbolic_value(&rhs, &mut right_variables);
+                        if dependencies.intersection(&right_variables).next().is_some() {
+                            for v in right_variables {
+                                dependencies.insert(v);
+                            }
+                        }
                     } else {
                         panic!("Left hand of the assignment is not a variable");
                     }
