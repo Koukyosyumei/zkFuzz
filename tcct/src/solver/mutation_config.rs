@@ -33,6 +33,7 @@ pub struct MutationConfig {
     #[serde_as(as = "Vec<(DisplayFromStr, DisplayFromStr)>")]
     pub random_value_ranges: Vec<(BigInt, BigInt)>,
     pub random_value_probs: Vec<f64>,
+    pub binary_mode_prob: f64,
     pub save_fitness_scores: bool,
 }
 
@@ -64,6 +65,7 @@ impl Default for MutationConfig {
                  BigInt::from_str("21888242871839275222246405745257275088548364400416034343698204186575808495617").unwrap()),
             ],
             random_value_probs: vec![0.1, 0.45, 0.45],
+            binary_mode_prob: 0.0,
             save_fitness_scores: false,
         }
     }

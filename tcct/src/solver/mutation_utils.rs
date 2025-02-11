@@ -2,12 +2,14 @@ use std::rc::Rc;
 
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
+use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_state::SymbolicTrace;
 use crate::executor::symbolic_value::SymbolicValue;
+use crate::solver::mutation_config::MutationConfig;
 
 /// Draws a random BigInt from specified ranges based on given probabilities.
 ///
@@ -19,37 +21,36 @@ use crate::executor::symbolic_value::SymbolicValue;
 /// A random BigInt drawn from one of the specified ranges based on the probabilities,
 /// or `None` if the input is invalid (e.g., mismatched lengths of ranges and probabilities).
 pub fn draw_bigint_with_probabilities(
-    ranges: &[(BigInt, BigInt)],
-    probabilities: &[f64],
+    mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) -> Option<BigInt> {
-    // Ensure the number of ranges matches the number of probabilities
-    if ranges.len() != probabilities.len() {
-        return None;
-    }
-
-    // Normalize the probabilities to sum to 1
-    // let total_prob: f64 = probabilities.iter().sum();
-    // let normalized_probabilities: Vec<f64> = probabilities.iter().map(|p| p / total_prob).collect();
-
-    // Roulette selection to choose a range based on probabilities
-    let mut cumulative_prob = 0.0;
-    let random_value: f64 = rng.gen();
-    let mut selected_range = None;
-
-    for (i, range) in ranges.iter().enumerate() {
-        cumulative_prob += probabilities[i];
-        if random_value <= cumulative_prob {
-            selected_range = Some(range);
-            break;
-        }
-    }
-
-    if let Some((start, end)) = selected_range {
-        // Generate a random BigInt within the selected range
-        Some(rng.gen_bigint_range(&start, &end))
+    if rng.gen::<f64>() < mutation_config.binary_mode_prob {
+        Some(rng.gen_bigint_range(&BigInt::zero(), &BigInt::from(2)))
     } else {
-        None
+        // Ensure the number of ranges matches the number of probabilities
+        if mutation_config.random_value_ranges.len() != mutation_config.random_value_probs.len() {
+            return None;
+        }
+
+        // Roulette selection to choose a range based on probabilities
+        let mut cumulative_prob = 0.0;
+        let random_value: f64 = rng.gen();
+        let mut selected_range = None;
+
+        for (i, range) in mutation_config.random_value_ranges.iter().enumerate() {
+            cumulative_prob += mutation_config.random_value_probs[i];
+            if random_value <= cumulative_prob {
+                selected_range = Some(range);
+                break;
+            }
+        }
+
+        if let Some((start, end)) = selected_range {
+            // Generate a random BigInt within the selected range
+            Some(rng.gen_bigint_range(&start, &end))
+        } else {
+            None
+        }
     }
 }
 

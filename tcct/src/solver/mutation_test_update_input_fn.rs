@@ -46,12 +46,7 @@ pub fn update_input_population_with_random_sampling(
                 .map(|var| {
                     (
                         var.clone(),
-                        draw_bigint_with_probabilities(
-                            &mutation_config.random_value_ranges,
-                            &mutation_config.random_value_probs,
-                            rng,
-                        )
-                        .unwrap(),
+                        draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
                     )
                 })
                 .collect::<FxHashMap<SymbolicName, BigInt>>()
@@ -168,24 +163,15 @@ pub fn update_input_population_with_coverage_maximization(
                 if rng.gen::<f64>() < mutation_config.input_generation_singlepoint_mutation_rate {
                     // Mutate only one input variable
                     let var = &input_variables[rng.gen_range(0, input_variables.len())];
-                    let mutation = draw_bigint_with_probabilities(
-                        &mutation_config.random_value_ranges,
-                        &mutation_config.random_value_probs,
-                        rng,
-                    )
-                    .unwrap();
+                    let mutation = draw_bigint_with_probabilities(&mutation_config, rng).unwrap();
                     new_input.insert(var.clone(), mutation);
                 } else {
                     // Mutate each input variable with a small probability
                     for var in input_variables {
                         // rng.gen_bool(0.2)
                         if rng.gen::<bool>() {
-                            let mutation = draw_bigint_with_probabilities(
-                                &mutation_config.random_value_ranges,
-                                &mutation_config.random_value_probs,
-                                rng,
-                            )
-                            .unwrap();
+                            let mutation =
+                                draw_bigint_with_probabilities(&mutation_config, rng).unwrap();
                             new_input.insert(var.clone(), mutation);
                         }
                     }

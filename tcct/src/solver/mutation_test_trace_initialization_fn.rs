@@ -57,12 +57,7 @@ pub fn initialize_population_with_random_constant_replacement(
                     (
                         p.clone(),
                         SymbolicValue::ConstantInt(
-                            draw_bigint_with_probabilities(
-                                &mutation_config.random_value_ranges,
-                                &mutation_config.random_value_probs,
-                                rng,
-                            )
-                            .unwrap(),
+                            draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
                         ),
                     )
                 })
@@ -172,12 +167,7 @@ pub fn initialize_population_with_operator_mutation_and_random_constant_replacem
                             (
                                 p.clone(),
                                 SymbolicValue::ConstantInt(
-                                    draw_bigint_with_probabilities(
-                                        &mutation_config.random_value_ranges,
-                                        &mutation_config.random_value_probs,
-                                        rng,
-                                    )
-                                    .unwrap(),
+                                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
                                 ),
                             )
                         }
@@ -185,12 +175,7 @@ pub fn initialize_population_with_operator_mutation_and_random_constant_replacem
                     _ => (
                         p.clone(),
                         SymbolicValue::ConstantInt(
-                            draw_bigint_with_probabilities(
-                                &mutation_config.random_value_ranges,
-                                &mutation_config.random_value_probs,
-                                rng,
-                            )
-                            .unwrap(),
+                            draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
                         ),
                     ),
                 })

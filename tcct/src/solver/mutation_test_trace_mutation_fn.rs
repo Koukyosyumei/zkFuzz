@@ -51,12 +51,7 @@ pub fn mutate_trace_with_random_constant_replacement(
         individual.insert(
             var.clone(),
             SymbolicValue::ConstantInt(
-                draw_bigint_with_probabilities(
-                    &mutation_config.random_value_ranges,
-                    &mutation_config.random_value_probs,
-                    rng,
-                )
-                .unwrap(),
+                draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
             ),
         );
         if individual.len() < mutation_config.max_num_mutation_points && rng.gen::<bool>() {
@@ -64,12 +59,7 @@ pub fn mutate_trace_with_random_constant_replacement(
             individual.insert(
                 var.clone(),
                 SymbolicValue::ConstantInt(
-                    draw_bigint_with_probabilities(
-                        &mutation_config.random_value_ranges,
-                        &mutation_config.random_value_probs,
-                        rng,
-                    )
-                    .unwrap(),
+                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
                 ),
             );
         } else if individual.len() > 1 && rng.gen::<bool>() {

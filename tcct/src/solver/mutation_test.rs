@@ -16,8 +16,8 @@ use crate::executor::symbolic_value::{SymbolicName, SymbolicValue};
 
 use crate::solver::mutation_config::MutationConfig;
 use crate::solver::utils::{
-    extract_variables, gather_runtime_mutable_inputs, BaseVerificationConfig, CounterExample,
-    Direction,
+    extract_variables, gather_runtime_mutable_inputs, is_containing_binary_check,
+    BaseVerificationConfig, CounterExample, Direction,
 };
 
 pub struct MutationTestResult {
@@ -233,6 +233,11 @@ where
         "🎲 Random Seed:",
         seed.to_string().bold().bright_yellow(),
     );
+
+    if is_containing_binary_check(&symbolic_trace, 5) {
+        info!("⚡ Binary check detected!");
+        mutation_config.binary_mode_prob = 1.0;
+    }
 
     let mut binary_input_mode = false;
 

@@ -280,6 +280,49 @@ pub fn extract_variables_from_symbolic_value(
     }
 }
 
+pub fn is_containing_binary_check(sym_vals: &[SymbolicValueRef], max_level: usize) -> bool {
+    for sv in sym_vals {
+        if let SymbolicValue::BinaryOp(lhs, DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq), rhs) = sv.as_ref() {
+            if let SymbolicValue::ConstantInt(rv) = rhs.as_ref() {
+                if rv.is_zero() && is_binary_check(lhs, max_level) {
+                    return true;
+                }
+            } else if let SymbolicValue::ConstantInt(lv) = lhs.as_ref() {
+                if lv.is_zero() && is_binary_check(rhs, max_level) {
+                    return true;
+                }
+            }
+        }
+    }
+    false
+}
+
+fn is_binary_check(expr: &SymbolicValueRef, max_level: usize) -> bool {
+    if let SymbolicValue::BinaryOp(sub_lhs, DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul), sub_rhs) = expr.as_ref() {
+        return matches_binary_pattern(sub_lhs, sub_rhs, max_level) || matches_binary_pattern(sub_rhs, sub_lhs, max_level);
+    }
+    false
+}
+
+fn matches_binary_pattern(var: &SymbolicValueRef, expr: &SymbolicValueRef, max_level: usize) -> bool {
+    if let SymbolicValue::Variable(left_name) = var.as_ref() {
+        if left_name.owner.len() <= max_level {
+            if let SymbolicValue::BinaryOp(sub_lhs, DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub), sub_rhs) = expr.as_ref() {
+                match (sub_lhs.as_ref(), sub_rhs.as_ref()) {
+                    (SymbolicValue::Variable(right_name), SymbolicValue::ConstantInt(rv))
+                    | (SymbolicValue::ConstantInt(rv), SymbolicValue::Variable(right_name)) => {
+                        if left_name == right_name && rv.is_one() {
+                            return true;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    false
+}
+
 pub fn get_dependency_graph(
     values: &[SymbolicValueRef],
     graph: &mut FxHashMap<SymbolicName, FxHashSet<SymbolicName>>,
