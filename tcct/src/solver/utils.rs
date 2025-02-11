@@ -287,6 +287,7 @@ pub fn get_dependencies(sym_trace: &[SymbolicValueRef], target_name: SymbolicNam
         prev_size_of_result = dependencies.len();
         for inst in sym_trace.into_iter().rev() {
             match inst.as_ref() {
+                SymbolicValue::ConstantBool(_) => {} 
                 SymbolicValue::Assign(lhs, rhs, _)
                 | SymbolicValue::AssignEq(lhs, rhs)
                 | SymbolicValue::AssignCall(lhs, rhs, _) => {
@@ -328,7 +329,7 @@ pub fn get_slice(sym_vals: &[SymbolicValueRef], target_names: &FxHashSet<Symboli
     for sv in sym_vals.into_iter() {
         let mut names_used_in_inst = FxHashSet::default();
         extract_variables_from_symbolic_value(sv, &mut names_used_in_inst);
-        if target_names.intersection(&names_used_in_inst).next().is_some(){
+        if names_used_in_inst.difference(target_names).collect::<Vec<_>>().is_empty() {
             match *sv.as_ref() {
                 SymbolicValue::Assign(_, _, false) | SymbolicValue::AssignCall(_, _, true) => {
                     assign_pos.push(slice.len());

@@ -219,9 +219,13 @@ where
         assign_pos.len().to_string().bright_yellow()
     );
 
-    let mut sliced_symbolic_trace = Vec::new();
-    let mut sliced_side_constraint = Vec::new();
+    println!(
+        "{} {}",
+        "🎲 Random Seed:",
+        seed.to_string().bold().bright_yellow(),
+    );
 
+    let mut targets = Vec::new();
     for slice_target in output_variables {
         let mut slice_target_dependencies = FxHashSet::default();
         get_dependencies(
@@ -229,172 +233,179 @@ where
             slice_target,
             &mut slice_target_dependencies,
         );
-        assign_pos.clear();
-        sliced_symbolic_trace =
-            get_slice(&symbolic_trace, &slice_target_dependencies, &mut assign_pos);
+
+        let mut sliced_assign_pos = Vec::new();
+        let sliced_symbolic_trace = get_slice(
+            &symbolic_trace,
+            &slice_target_dependencies,
+            &mut sliced_assign_pos,
+        );
         let mut dummy_assign_pos = Vec::default();
-        sliced_side_constraint = get_slice(
+        let sliced_side_constraint = get_slice(
             &side_constraints,
             &slice_target_dependencies,
             &mut dummy_assign_pos,
         );
+        targets.push((
+            sliced_symbolic_trace.len(),
+            sliced_assign_pos,
+            sliced_symbolic_trace,
+            sliced_side_constraint,
+        ));
+    }
+    targets.sort_by(|i, j| i.0.cmp(&j.0));
+    if targets[0].0 == symbolic_trace.len() {
+        targets = vec![targets[0].clone()];
     }
 
-    let target_symbolic_trace = sliced_symbolic_trace;
-    let target_side_constraint = sliced_side_constraint;
-
-    // Initial Pupulation of Mutated Inputs
-    let mut trace_population = trace_initialization_fn(
-        &assign_pos,
-        mutation_config.program_population_size,
-        &target_symbolic_trace,
-        base_config,
-        &mutation_config,
-        &mut rng,
-    );
-    let mut fitness_scores =
-        vec![-base_config.prime.clone(); mutation_config.input_population_size];
-    let mut input_population = Vec::new();
-    let mut fitness_score_log = if mutation_config.save_fitness_scores {
-        Vec::with_capacity(mutation_config.max_generations)
-    } else {
-        Vec::new()
-    };
-
-    println!(
-        "{} {}",
-        "🎲 Random Seed:",
-        seed.to_string().bold().bright_yellow(),
-    );
-
-    let mut binary_input_mode = false;
-
-    for generation in 0..mutation_config.max_generations {
-        // Generate input population for this generation
-        if generation % mutation_config.input_update_interval == 0 {
-            update_input_fn(
-                sexe,
-                &input_variables,
-                &mut input_population,
-                &base_config,
-                &mutation_config,
-                &mut rng,
-            );
-        }
-
-        // Evolve the trace population
-        if !trace_population.is_empty() {
-            trace_population = trace_evolution_fn(
-                &assign_pos,
-                &trace_population,
-                &fitness_scores,
-                base_config,
-                &mutation_config,
-                &mut rng,
-                &trace_mutation_fn,
-                &trace_crossover_fn,
-                &trace_selection_fn,
-            );
-        }
-        trace_population.push(FxHashMap::default());
-
-        // Evaluate the trace population
-        let mut evaluations = Vec::new();
-        let mut is_extincted_due_to_illegal_subscript = true;
-        for individual in &trace_population {
-            let fitness = trace_fitness_fn(
-                sexe,
-                &base_config,
-                &target_symbolic_trace,
-                &target_side_constraint,
-                if rng.gen::<f64>() < mutation_config.runtime_mutation_rate {
-                    &dummy_runtime_mutable_positions
-                } else {
-                    &runtime_mutable_positions
-                },
-                individual,
-                &input_population,
-            );
-            if fitness.1.is_zero() {
-                evaluations.push(fitness);
-                break;
-            }
-            is_extincted_due_to_illegal_subscript =
-                is_extincted_due_to_illegal_subscript && fitness.3 == input_population.len();
-            evaluations.push(fitness);
-        }
-
-        if !binary_input_mode && is_extincted_due_to_illegal_subscript {
-            binary_input_mode = true;
-            mutation_config.random_value_ranges = vec![(BigInt::from(0), BigInt::from(2))];
-            mutation_config.random_value_probs = vec![1.0];
-        }
-
-        let mut evaluation_indices: Vec<usize> = (0..evaluations.len()).collect();
-        evaluation_indices.sort_by(|&i, &j| evaluations[i].1.cmp(&evaluations[j].1));
-
-        // Pick the best one
-        let best_idx = evaluation_indices.last().unwrap();
-
-        if evaluations[*best_idx].1.is_zero() {
-            print!(
-                "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
-                generation, mutation_config.max_generations, 0
-            );
-            println!("\n    └─ Solution found in generation {}", generation);
-
-            return MutationTestResult {
-                random_seed: seed,
-                mutation_config: mutation_config.clone(),
-                counter_example: evaluations[*best_idx].2.clone(),
-                generation: generation,
-                fitness_score_log: fitness_score_log,
-            };
-        }
-
-        // Extract the fitness scores
-        if mutation_config.fitness_function != "const" {
-            fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
-        }
-
-        print!(
-            "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
-            generation, mutation_config.max_generations, fitness_scores[*best_idx]
-        );
-        io::stdout().flush().unwrap();
-
-        if mutation_config.save_fitness_scores {
-            fitness_score_log.push(fitness_scores[*best_idx].clone());
-        }
-
-        // Reset individuals with poor fitness score
-        let new_trace_population = trace_initialization_fn(
-            &assign_pos,
-            mutation_config.num_eliminated_individuals,
+    for (_, target_assign_pos, target_symbolic_trace, target_side_constraints) in targets {
+        // Initial Pupulation of Mutated Inputs
+        let mut trace_population = trace_initialization_fn(
+            &target_assign_pos,
+            mutation_config.program_population_size,
             &target_symbolic_trace,
             base_config,
             &mutation_config,
             &mut rng,
         );
-        for (i, j) in evaluation_indices
-            .into_iter()
-            .take(mutation_config.num_eliminated_individuals)
-            .enumerate()
-        {
-            trace_population[j] = new_trace_population[i].clone();
-        }
-    }
+        let mut fitness_scores =
+            vec![-base_config.prime.clone(); mutation_config.input_population_size];
+        let mut input_population = Vec::new();
+        let mut fitness_score_log = if mutation_config.save_fitness_scores {
+            Vec::with_capacity(mutation_config.max_generations)
+        } else {
+            Vec::new()
+        };
 
-    println!(
-        "\n └─ No solution found after {} generations",
-        mutation_config.max_generations
-    );
+        let mut binary_input_mode = false;
+
+        for generation in 0..mutation_config.max_generations {
+            // Generate input population for this generation
+            if generation % mutation_config.input_update_interval == 0 {
+                update_input_fn(
+                    sexe,
+                    &input_variables,
+                    &mut input_population,
+                    &base_config,
+                    &mutation_config,
+                    &mut rng,
+                );
+            }
+
+            // Evolve the trace population
+            if !trace_population.is_empty() {
+                trace_population = trace_evolution_fn(
+                    &target_assign_pos,
+                    &trace_population,
+                    &fitness_scores,
+                    base_config,
+                    &mutation_config,
+                    &mut rng,
+                    &trace_mutation_fn,
+                    &trace_crossover_fn,
+                    &trace_selection_fn,
+                );
+            }
+            trace_population.push(FxHashMap::default());
+
+            // Evaluate the trace population
+            let mut evaluations = Vec::new();
+            let mut is_extincted_due_to_illegal_subscript = true;
+            for individual in &trace_population {
+                let fitness = trace_fitness_fn(
+                    sexe,
+                    &base_config,
+                    &target_symbolic_trace,
+                    &target_side_constraints,
+                    if rng.gen::<f64>() < mutation_config.runtime_mutation_rate {
+                        &dummy_runtime_mutable_positions
+                    } else {
+                        &runtime_mutable_positions
+                    },
+                    individual,
+                    &input_population,
+                );
+                if fitness.1.is_zero() {
+                    evaluations.push(fitness);
+                    break;
+                }
+                is_extincted_due_to_illegal_subscript =
+                    is_extincted_due_to_illegal_subscript && fitness.3 == input_population.len();
+                evaluations.push(fitness);
+            }
+
+            if !binary_input_mode && is_extincted_due_to_illegal_subscript {
+                binary_input_mode = true;
+                mutation_config.random_value_ranges = vec![(BigInt::from(0), BigInt::from(2))];
+                mutation_config.random_value_probs = vec![1.0];
+            }
+
+            let mut evaluation_indices: Vec<usize> = (0..evaluations.len()).collect();
+            evaluation_indices.sort_by(|&i, &j| evaluations[i].1.cmp(&evaluations[j].1));
+
+            // Pick the best one
+            let best_idx = evaluation_indices.last().unwrap();
+
+            if evaluations[*best_idx].1.is_zero() {
+                print!(
+                    "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
+                    generation, mutation_config.max_generations, 0
+                );
+                println!("\n    └─ Solution found in generation {}", generation);
+
+                return MutationTestResult {
+                    random_seed: seed,
+                    mutation_config: mutation_config.clone(),
+                    counter_example: evaluations[*best_idx].2.clone(),
+                    generation: generation,
+                    fitness_score_log: fitness_score_log,
+                };
+            }
+
+            // Extract the fitness scores
+            if mutation_config.fitness_function != "const" {
+                fitness_scores = evaluations.iter().map(|v| v.1.clone()).collect();
+            }
+
+            print!(
+                "\r\x1b[2K🧬 Generation: {}/{} ({:.3})",
+                generation, mutation_config.max_generations, fitness_scores[*best_idx]
+            );
+            io::stdout().flush().unwrap();
+
+            if mutation_config.save_fitness_scores {
+                fitness_score_log.push(fitness_scores[*best_idx].clone());
+            }
+
+            // Reset individuals with poor fitness score
+            let new_trace_population = trace_initialization_fn(
+                &target_assign_pos,
+                mutation_config.num_eliminated_individuals,
+                &target_symbolic_trace,
+                base_config,
+                &mutation_config,
+                &mut rng,
+            );
+            for (i, j) in evaluation_indices
+                .into_iter()
+                .take(mutation_config.num_eliminated_individuals)
+                .enumerate()
+            {
+                trace_population[j] = new_trace_population[i].clone();
+            }
+        }
+
+        println!(
+            "\n └─ No solution found after {} generations",
+            mutation_config.max_generations
+        );
+    }
 
     MutationTestResult {
         random_seed: seed,
         mutation_config: mutation_config.clone(),
         counter_example: None,
         generation: mutation_config.max_generations,
-        fitness_score_log: fitness_score_log,
+        fitness_score_log: Vec::new(),
     }
 }
