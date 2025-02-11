@@ -34,6 +34,8 @@ pub struct MutationConfig {
     pub random_value_ranges: Vec<(BigInt, BigInt)>,
     pub random_value_probs: Vec<f64>,
     pub binary_mode_prob: f64,
+    pub binary_mode_search_level: usize,
+    pub binary_mode_partial_mode_round: f64,
     pub save_fitness_scores: bool,
 }
 
@@ -66,6 +68,8 @@ impl Default for MutationConfig {
             ],
             random_value_probs: vec![0.1, 0.45, 0.45],
             binary_mode_prob: 0.0,
+            binary_mode_search_level: 3,
+            binary_mode_partial_mode_round: 0.1,
             save_fitness_scores: false,
         }
     }

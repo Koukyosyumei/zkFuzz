@@ -1,4 +1,4 @@
-use std::cmp::max;
+use std::cmp::{max, min};
 
 use rand::rngs::StdRng;
 use rand::seq::{IteratorRandom, SliceRandom};
@@ -48,8 +48,11 @@ pub fn initialize_population_with_random_constant_replacement(
 ) -> Vec<Gene> {
     (0..program_population_size)
         .map(|_| {
-            let num_mutations =
-                rng.gen_range(1, max(pos.len(), mutation_config.max_num_mutation_points));
+            let num_mutations = if pos.len() > 1 {
+                rng.gen_range(1, min(pos.len(), mutation_config.max_num_mutation_points))
+            } else {
+                1
+            };
             let selected_pos: Vec<_> = pos.choose_multiple(rng, num_mutations).cloned().collect();
             selected_pos
                 .iter()
@@ -134,8 +137,11 @@ pub fn initialize_population_with_operator_mutation_and_random_constant_replacem
 ) -> Vec<Gene> {
     (0..program_population_size)
         .map(|_| {
-            let num_mutations =
-                rng.gen_range(1, max(pos.len(), mutation_config.max_num_mutation_points));
+            let num_mutations = if pos.len() > 1 {
+                rng.gen_range(1, min(pos.len(), mutation_config.max_num_mutation_points))
+            } else {
+                1
+            };
             let selected_pos: Vec<_> = pos.choose_multiple(rng, num_mutations).cloned().collect();
             selected_pos
                 .iter()

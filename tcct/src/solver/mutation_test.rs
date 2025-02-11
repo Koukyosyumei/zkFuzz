@@ -234,14 +234,27 @@ where
         seed.to_string().bold().bright_yellow(),
     );
 
-    if is_containing_binary_check(&symbolic_trace, 5) {
+    let mut binary_input_mode = false;
+    let mut partial_binary_mode = false;
+    let original_binary_mode_prob = mutation_config.binary_mode_prob;
+
+    if is_containing_binary_check(&symbolic_trace, mutation_config.binary_mode_search_level) {
         info!("⚡ Binary check detected!");
-        mutation_config.binary_mode_prob = 0.0;
+        partial_binary_mode = true;
     }
 
-    let mut binary_input_mode = false;
-
     for generation in 0..mutation_config.max_generations {
+        if partial_binary_mode
+            && 1 < generation
+            && generation
+                < (mutation_config.max_generations as f64
+                    * mutation_config.binary_mode_partial_mode_round) as usize
+        {
+            mutation_config.binary_mode_prob = 1.0;
+        } else {
+            mutation_config.binary_mode_prob = original_binary_mode_prob;
+        }
+
         // Generate input population for this generation
         if generation % mutation_config.input_update_interval == 0 {
             update_input_fn(
