@@ -3,10 +3,10 @@ use rand::seq::IteratorRandom;
 use rand::Rng;
 
 use crate::executor::symbolic_value::SymbolicValue;
-use crate::solver::mutation_config::MutationConfig;
-use crate::solver::mutation_test::Gene;
-use crate::solver::mutation_utils::draw_bigint_with_probabilities;
-use crate::solver::utils::BaseVerificationConfig;
+use crate::mutator::mutation_config::MutationConfig;
+use crate::mutator::mutation_test::Gene;
+use crate::mutator::mutation_utils::draw_bigint_with_probabilities;
+use crate::mutator::utils::BaseVerificationConfig;
 
 /// Mutates a trace by replacing a randomly selected position with a new random constant value.
 ///

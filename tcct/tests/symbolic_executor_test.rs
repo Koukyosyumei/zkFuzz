@@ -15,8 +15,8 @@ use tcct::executor::debug_ast::{
 use tcct::executor::symbolic_execution::SymbolicExecutor;
 use tcct::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
 use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
-use tcct::solver::unused_outputs::check_unused_outputs;
-use tcct::solver::utils::BaseVerificationConfig;
+use tcct::mutator::unused_outputs::check_unused_outputs;
+use tcct::mutator::utils::BaseVerificationConfig;
 
 use crate::utils::{execute, prepare_symbolic_library};
 

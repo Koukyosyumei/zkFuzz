@@ -1,8 +1,9 @@
 mod executor;
+mod mutator;
+mod stats;
+
 mod input_user;
 mod parser_user;
-mod solver;
-mod stats;
 mod type_analysis_user;
 
 use std::env;
@@ -31,21 +32,21 @@ use executor::symbolic_setting::{
 };
 use executor::symbolic_value::{OwnerName, SymbolicLibrary};
 
-use solver::mutation_config::load_config_from_json;
-use solver::mutation_test_crossover_fn::random_crossover;
-use solver::mutation_test_evolution_fn::simple_evolution;
-use solver::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
-use solver::mutation_test_trace_initialization_fn::{
+use mutator::mutation_config::load_config_from_json;
+use mutator::mutation_test_crossover_fn::random_crossover;
+use mutator::mutation_test_evolution_fn::simple_evolution;
+use mutator::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
+use mutator::mutation_test_trace_initialization_fn::{
     initialize_population_with_operator_mutation_and_random_constant_replacement,
     initialize_population_with_random_constant_replacement,
 };
-use solver::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
-use solver::mutation_test_trace_selection_fn::roulette_selection;
-use solver::mutation_test_update_input_fn::{
+use mutator::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
+use mutator::mutation_test_trace_selection_fn::roulette_selection;
+use mutator::mutation_test_update_input_fn::{
     update_input_population_with_coverage_maximization,
     update_input_population_with_random_sampling,
 };
-use solver::{
+use mutator::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
     unused_outputs::check_unused_outputs, utils::BaseVerificationConfig,
 };

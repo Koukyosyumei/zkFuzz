@@ -14,8 +14,8 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue};
 
-use crate::solver::mutation_config::MutationConfig;
-use crate::solver::utils::{
+use crate::mutator::mutation_config::MutationConfig;
+use crate::mutator::utils::{
     extract_variables, gather_runtime_mutable_inputs, is_containing_binary_check,
     BaseVerificationConfig, CounterExample, Direction,
 };

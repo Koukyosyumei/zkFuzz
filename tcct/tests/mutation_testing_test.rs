@@ -10,19 +10,19 @@ use tcct::executor::symbolic_execution::SymbolicExecutor;
 use tcct::executor::symbolic_setting::{
     get_default_setting_for_concrete_execution, get_default_setting_for_symbolic_execution,
 };
-use tcct::solver::utils::{
+use tcct::mutator::utils::{
     BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
 };
 
-use tcct::solver::mutation_config::load_config_from_json;
-use tcct::solver::mutation_test::{mutation_test_search, MutationTestResult};
-use tcct::solver::mutation_test_crossover_fn::random_crossover;
-use tcct::solver::mutation_test_evolution_fn::simple_evolution;
-use tcct::solver::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
-use tcct::solver::mutation_test_trace_initialization_fn::initialize_population_with_random_constant_replacement;
-use tcct::solver::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
-use tcct::solver::mutation_test_trace_selection_fn::roulette_selection;
-use tcct::solver::mutation_test_update_input_fn::update_input_population_with_random_sampling;
+use tcct::mutator::mutation_config::load_config_from_json;
+use tcct::mutator::mutation_test::{mutation_test_search, MutationTestResult};
+use tcct::mutator::mutation_test_crossover_fn::random_crossover;
+use tcct::mutator::mutation_test_evolution_fn::simple_evolution;
+use tcct::mutator::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
+use tcct::mutator::mutation_test_trace_initialization_fn::initialize_population_with_random_constant_replacement;
+use tcct::mutator::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
+use tcct::mutator::mutation_test_trace_selection_fn::roulette_selection;
+use tcct::mutator::mutation_test_update_input_fn::update_input_population_with_random_sampling;
 
 use crate::utils::{execute, prepare_symbolic_library};
 

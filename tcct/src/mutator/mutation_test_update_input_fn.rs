@@ -6,10 +6,10 @@ use rustc_hash::FxHashMap;
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{OwnerName, SymbolicName};
 
-use crate::solver::mutation_config::MutationConfig;
-use crate::solver::mutation_test_crossover_fn::random_crossover;
-use crate::solver::mutation_utils::draw_bigint_with_probabilities;
-use crate::solver::utils::BaseVerificationConfig;
+use crate::mutator::mutation_config::MutationConfig;
+use crate::mutator::mutation_test_crossover_fn::random_crossover;
+use crate::mutator::mutation_utils::draw_bigint_with_probabilities;
+use crate::mutator::utils::BaseVerificationConfig;
 
 /// Updates the input population with randomly generated samples.
 ///

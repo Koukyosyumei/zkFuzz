@@ -10,10 +10,10 @@ use crate::executor::debug_ast::DebuggableExpressionInfixOpcode;
 use crate::executor::symbolic_state::SymbolicTrace;
 use crate::executor::symbolic_value::SymbolicValue;
 
-use crate::solver::mutation_config::MutationConfig;
-use crate::solver::mutation_test::Gene;
-use crate::solver::mutation_utils::draw_bigint_with_probabilities;
-use crate::solver::utils::BaseVerificationConfig;
+use crate::mutator::mutation_config::MutationConfig;
+use crate::mutator::mutation_test::Gene;
+use crate::mutator::mutation_utils::draw_bigint_with_probabilities;
+use crate::mutator::utils::BaseVerificationConfig;
 
 /// Initializes a population of `Gene` instances by replacing all symbolic trace positions
 /// with random constant values.

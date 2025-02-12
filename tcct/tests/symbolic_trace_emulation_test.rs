@@ -11,7 +11,7 @@ use rustc_hash::{FxHashMap, FxHashSet};
 use tcct::executor::symbolic_execution::SymbolicExecutor;
 use tcct::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
 use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
-use tcct::solver::utils::{emulate_symbolic_trace, gather_runtime_mutable_inputs, Direction};
+use tcct::mutator::utils::{emulate_symbolic_trace, gather_runtime_mutable_inputs, Direction};
 
 use crate::utils::{execute, prepare_symbolic_library};
 

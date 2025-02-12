@@ -2,8 +2,8 @@ use num_bigint_dig::BigInt;
 use rand::rngs::StdRng;
 use rand::Rng;
 
-use crate::solver::mutation_config::MutationConfig;
-use crate::solver::utils::BaseVerificationConfig;
+use crate::mutator::mutation_config::MutationConfig;
+use crate::mutator::utils::BaseVerificationConfig;
 
 /// Performs a basic evolutionary step to generate the next population of individuals.
 ///

@@ -11,7 +11,7 @@ use rustc_hash::FxHashMap;
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValueRef};
 
-use crate::solver::utils::{
+use crate::mutator::utils::{
     extract_variables, is_vulnerable, verify_assignment, BaseVerificationConfig, CounterExample,
     VerificationResult,
 };

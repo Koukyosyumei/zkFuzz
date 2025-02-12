@@ -7,7 +7,7 @@ use rustc_hash::FxHashMap;
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{register_array_elements, SymbolicName};
 
-use crate::solver::utils::{
+use crate::mutator::utils::{
     extract_variables, BaseVerificationConfig, CounterExample, UnderConstrainedType,
     VerificationResult,
 };
