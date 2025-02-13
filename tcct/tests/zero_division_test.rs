@@ -440,6 +440,11 @@ fn test_linear_zero_constant() {
     );
 }
 
+/// Test a quadratic equation that has a solution.
+/// For example, consider the equation: x² – 1 ≡ 0 (mod 17).
+/// Written as: 1·x² + 0·x + (-1) ≡ 0 (mod 17), i.e. coeffs = [-1, 0, 1].
+/// The discriminant is D = 0² – 4×1×(-1) = 4, and √4 ≡ 2 mod 17.
+/// Thus, one candidate solution is x ≡ (–0 + 2) / 2 ≡ 1 (mod 17).
 #[test]
 fn test_quadratic_with_solution_mod17() {
     let coeffs = [BigInt::from(-1), BigInt::zero(), BigInt::one()];
@@ -450,6 +455,12 @@ fn test_quadratic_with_solution_mod17() {
     );
 }
 
+/// Test another quadratic equation with a solution.
+/// For example, the equation: x² + x + 1 ≡ 0 (mod 7).
+/// Here, coeffs = [1, 1, 1]. The discriminant is D = 1 – 4 = -3 ≡ 4 mod 7,
+/// and √4 ≡ 2 mod 7. Hence, the candidate solution is:
+/// x ≡ (–1 + 2) / 2 ≡ 1/2 mod 7, and since the inverse of 2 mod 7 is 4,
+/// we get x ≡ 1×4 = 4 mod 7.
 #[test]
 fn test_quadratic_with_solution_mod7() {
     let coeffs = [BigInt::one(), BigInt::one(), BigInt::one()];
@@ -460,6 +471,11 @@ fn test_quadratic_with_solution_mod7() {
     );
 }
 
+/// Test a quadratic equation for which no solution exists.
+/// For example, consider: 2*x² + 3*x + 4 ≡ 0 (mod 11).
+/// Here, coeffs = [4, 3, 2] and the discriminant is
+/// D = 3² – 4×2×4 = 9 – 32 = -23 ≡ 10 mod 11.
+/// Since 10 is not a quadratic residue modulo 11, no solution exists.
 #[test]
 fn test_quadratic_no_solution() {
     let coeffs = [BigInt::from(4), BigInt::from(3), BigInt::from(2)];
