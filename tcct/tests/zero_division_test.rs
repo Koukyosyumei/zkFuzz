@@ -11,6 +11,7 @@ use tcct::executor::symbolic_value::{
     enumerate_array, evaluate_binary_op, initialize_symbolic_nested_array_with_name, OwnerName,
     SymbolicAccess, SymbolicName, SymbolicValue,
 };
+use tcct::executor::utils::solve_quadratic_modulus_equation;
 use tcct::mutator::utils::{get_coefficient_of_polynomials, get_degree_polynomial};
 
 // A dummy owner to use for creating SymbolicNames.
@@ -401,4 +402,67 @@ fn test_get_coefficient_unknown_operator() {
 
     let expected = [Rc::new(expr.clone()), zero.clone(), zero.clone()];
     assert_eq!(result, expected);
+}
+
+#[test]
+fn test_degenerate() {
+    // Equation: 5 ≡ 0 (mod 7)  i.e. coefficients: c = 5, b = 0, a = 0.
+    let coeffs = [BigInt::from(5), BigInt::zero(), BigInt::zero()];
+    let modulus = BigInt::from(7);
+    assert_eq!(solve_quadratic_modulus_equation(coeffs, &modulus), None);
+}
+
+#[test]
+fn test_linear_equation() {
+    // Equation: 2*x + 3 ≡ 0 (mod 7)
+    // Coeffs: [c, b, a] = [3, 2, 0].
+    // In mod 7: -3 mod 7 is 4. Since the inverse of 2 mod 7 is 4 (because 2×4 = 8 ≡ 1 mod 7),
+    // we expect x ≡ 4×4 = 16 ≡ 2 mod 7.
+    let coeffs = [BigInt::from(3), BigInt::from(2), BigInt::zero()];
+    let modulus = BigInt::from(7);
+    assert_eq!(
+        solve_quadratic_modulus_equation(coeffs, &modulus),
+        Some(BigInt::from(2))
+    );
+}
+
+/// Test a linear equation with zero constant term.
+/// For example: 2*x ≡ 0 (mod 7) should have the unique solution x ≡ 0.
+#[test]
+fn test_linear_zero_constant() {
+    // Equation: 2*x ≡ 0 (mod 7)
+    // Coeffs: [0, 2, 0].
+    let coeffs = [BigInt::zero(), BigInt::from(2), BigInt::zero()];
+    let modulus = BigInt::from(7);
+    assert_eq!(
+        solve_quadratic_modulus_equation(coeffs, &modulus),
+        Some(BigInt::zero())
+    );
+}
+
+#[test]
+fn test_quadratic_with_solution_mod17() {
+    let coeffs = [BigInt::from(-1), BigInt::zero(), BigInt::one()];
+    let modulus = BigInt::from(17);
+    assert_eq!(
+        solve_quadratic_modulus_equation(coeffs, &modulus),
+        Some(BigInt::one())
+    );
+}
+
+#[test]
+fn test_quadratic_with_solution_mod7() {
+    let coeffs = [BigInt::one(), BigInt::one(), BigInt::one()];
+    let modulus = BigInt::from(7);
+    assert_eq!(
+        solve_quadratic_modulus_equation(coeffs, &modulus),
+        Some(BigInt::from(4))
+    );
+}
+
+#[test]
+fn test_quadratic_no_solution() {
+    let coeffs = [BigInt::from(4), BigInt::from(3), BigInt::from(2)];
+    let modulus = BigInt::from(11);
+    assert_eq!(solve_quadratic_modulus_equation(coeffs, &modulus), None);
 }

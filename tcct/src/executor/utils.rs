@@ -66,7 +66,11 @@ pub fn moddiv(lv: &BigInt, rv: &BigInt, modulus: &BigInt) -> BigInt {
         rv_inv += modulus;
     }
 
-    (lv * rv_inv) % modulus
+    let mut result = (lv * rv_inv) % modulus;
+    if result.is_negative() {
+        result += modulus;
+    }
+    result
 }
 
 /// Returns Some(x) such that x² ≡ n (mod p), or None if no solution exists.
@@ -152,7 +156,7 @@ pub fn tonelli_shanks(n_original: &BigInt, p: &BigInt) -> Option<BigInt> {
     Some(r)
 }
 
-pub fn solve_quadratic_equation(coeffs: [BigInt; 3], modulus: &BigInt) -> Option<BigInt> {
+pub fn solve_quadratic_modulus_equation(coeffs: [BigInt; 3], modulus: &BigInt) -> Option<BigInt> {
     if coeffs[2].is_zero() && coeffs[1].is_zero() {
         None
     } else if coeffs[2].is_zero() {
