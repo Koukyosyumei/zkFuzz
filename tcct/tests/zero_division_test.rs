@@ -11,7 +11,7 @@ use tcct::executor::symbolic_value::{
     enumerate_array, evaluate_binary_op, initialize_symbolic_nested_array_with_name, OwnerName,
     SymbolicAccess, SymbolicName, SymbolicValue,
 };
-use tcct::mutator::utils::get_coefficient_of_polynomials;
+use tcct::mutator::utils::{get_coefficient_of_polynomials, get_degree_polynomial};
 
 // A dummy owner to use for creating SymbolicNames.
 fn dummy_owner() -> OwnerName {
@@ -26,6 +26,101 @@ fn dummy_owner() -> OwnerName {
 // (Use different ids to simulate different variable names.)
 fn make_symbolic_name(id: usize) -> SymbolicName {
     SymbolicName::new(id, Rc::new(vec![dummy_owner()]), None)
+}
+
+#[test]
+fn test_get_degree_constant() {
+    // A constant integer should have degree 0.
+    let expr = SymbolicValue::ConstantInt(BigInt::from(42));
+    let target = make_symbolic_name(1);
+    let degree = get_degree_polynomial(&expr, &target);
+    assert_eq!(degree, 0);
+}
+
+#[test]
+fn test_get_degree_variable_match() {
+    // A variable that matches the target has degree 1.
+    let target = make_symbolic_name(1);
+    let expr = SymbolicValue::Variable(target.clone());
+    let degree = get_degree_polynomial(&expr, &target);
+    assert_eq!(degree, 1);
+}
+
+#[test]
+fn test_get_degree_addition() {
+    // For addition the degree is the max of the degrees of the operands.
+    // Expression: (x + 5) where x is the target variable (degree 1).
+    // Expected degree is max(1, 0) = 1.
+    let target = make_symbolic_name(1);
+    let expr_left = SymbolicValue::Variable(target.clone()); // degree 1
+    let expr_right = SymbolicValue::ConstantInt(BigInt::from(5)); // degree 0
+    let expr = SymbolicValue::BinaryOp(
+        Rc::new(expr_left),
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+        Rc::new(expr_right),
+    );
+    let degree = get_degree_polynomial(&expr, &target);
+    assert_eq!(degree, 1);
+}
+
+#[test]
+fn test_get_degree_subtraction() {
+    // For subtraction the degree is the max of the degrees of the operands.
+    // Expression: (5 - x) where x is the target variable (degree 1).
+    // Expected degree is max(0, 1) = 1.
+    let target = make_symbolic_name(1);
+    let expr_left = SymbolicValue::ConstantInt(BigInt::from(5)); // degree 0
+    let expr_right = SymbolicValue::Variable(target.clone()); // degree 1
+    let expr = SymbolicValue::BinaryOp(
+        Rc::new(expr_left),
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
+        Rc::new(expr_right),
+    );
+    let degree = get_degree_polynomial(&expr, &target);
+    assert_eq!(degree, 1);
+}
+
+#[test]
+fn test_get_degree_multiplication() {
+    // For multiplication the degree is the sum of the degrees of the operands.
+    // Expression: x * x where each x has degree 1 → total degree = 1 + 1 = 2.
+    let target = make_symbolic_name(1);
+    let expr_left = SymbolicValue::Variable(target.clone());
+    let expr_right = SymbolicValue::Variable(target.clone());
+    let expr = SymbolicValue::BinaryOp(
+        Rc::new(expr_left),
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+        Rc::new(expr_right),
+    );
+    let degree = get_degree_polynomial(&expr, &target);
+    assert_eq!(degree, 2);
+}
+
+#[test]
+fn test_get_degree_unknown_operator_non_zero() {
+    // For an operator not handled (e.g., Div) if any operand has nonzero degree,
+    // the result should be std::usize::MAX.
+    // Expression: (x / 5) where x (degree 1) / constant (degree 0)
+    let target = make_symbolic_name(1);
+    let expr_left = SymbolicValue::Variable(target.clone()); // degree 1
+    let expr_right = SymbolicValue::ConstantInt(BigInt::from(5)); // degree 0
+    let expr = SymbolicValue::BinaryOp(
+        Rc::new(expr_left),
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div),
+        Rc::new(expr_right),
+    );
+    let degree = get_degree_polynomial(&expr, &target);
+    assert_eq!(degree, std::usize::MAX);
+}
+
+#[test]
+fn test_get_degree_variable_no_match() {
+    // A variable that does not match the target is considered degree 0.
+    let target = make_symbolic_name(1);
+    let other = make_symbolic_name(2);
+    let expr = SymbolicValue::Variable(other);
+    let degree = get_degree_polynomial(&expr, &target);
+    assert_eq!(degree, 0);
 }
 
 #[test]
