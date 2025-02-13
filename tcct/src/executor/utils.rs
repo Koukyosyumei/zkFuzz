@@ -1,6 +1,6 @@
 use num_bigint_dig::BigInt;
-use num_traits::{One, Zero};
-use std::ops::{Div, Rem, Sub};
+use num_traits::{One, Signed, Zero};
+use std::ops::{BitAnd, Div, Rem, Shl, Sub};
 
 pub fn extended_euclidean<F>(a: F, b: F) -> (F, F, F)
 where
@@ -44,6 +44,89 @@ pub fn modpow(base: &BigInt, exp: &BigInt, modulus: &BigInt) -> BigInt {
         exp /= 2;
     }
     result
+}
+
+/// Returns Some(x) such that x² ≡ n (mod p), or None if no solution exists.
+/// Assumes that `p` is an odd prime.
+/// # Examples
+/// ```
+/// use num_bigint_dig::BigInt;
+/// use tcct::executor::utils::tonelli_shanks;
+///
+/// let n = BigInt::from(5);
+/// let p = BigInt::from(41);
+/// let n_square = tonelli_shanks(&n, &p).unwrap();
+/// let answer = BigInt::from(28);
+/// assert_eq!(n_square, answer);
+/// ```
+pub fn tonelli_shanks(n_original: &BigInt, p: &BigInt) -> Option<BigInt> {
+    let one = BigInt::one();
+    let two = BigInt::from(2u32);
+
+    let n = if n_original.is_negative() {
+        n_original + p
+    } else {
+        n_original.clone()
+    };
+
+    // Handle trivial cases.
+    if n.is_zero() {
+        return Some(BigInt::zero());
+    }
+    if p == &two {
+        return Some(n % p);
+    }
+
+    // Check if n is a quadratic residue mod p using Euler's criterion:
+    // n^((p-1)/2) mod p should be 1.
+    let exp = (p - &one) >> 1; // (p - 1) / 2
+    if n.modpow(&exp, p) != one {
+        return None;
+    }
+
+    // Factor p - 1 as q * 2^s with q odd.
+    let mut q = p - &one;
+    let mut s = 0;
+    while (&q & &one) == BigInt::zero() {
+        q >>= 1;
+        s += 1;
+    }
+
+    // Find a quadratic non-residue z modulo p.
+    let mut z = BigInt::from(2u32);
+    while z.modpow(&exp, p) == one {
+        z += &one;
+    }
+
+    let mut m = s;
+    let mut c = z.modpow(&q, p);
+    let mut t = n.modpow(&q, p);
+    let mut r = n.modpow(&((&q + &one) >> 1), p);
+
+    // Main loop: repeat until t ≡ 1 (mod p).
+    while t != one {
+        // Find the smallest i (0 < i < m) such that t^(2^i) ≡ 1 mod p.
+        let mut i = 0;
+        let mut temp = t.clone();
+        while temp != one {
+            temp = temp.modpow(&two, p);
+            i += 1;
+            if i == m {
+                return None; // Should not happen if n is a residue.
+            }
+        }
+
+        // Compute b = c^(2^(m-i-1)) mod p.
+        let exponent = BigInt::from(1u32) << (m - i - 1);
+        let b = c.modpow(&exponent, p);
+
+        m = i;
+        c = b.modpow(&two, p);
+        t = (t * &c) % p;
+        r = (r * b) % p;
+    }
+
+    Some(r)
 }
 
 /// Generates all combinations of indices for a given set of dimensions.
