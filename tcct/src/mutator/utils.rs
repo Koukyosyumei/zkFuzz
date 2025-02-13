@@ -1151,26 +1151,19 @@ pub fn is_equal_mod(a: &BigInt, b: &BigInt, p: &BigInt) -> bool {
 pub fn get_coefficient_of_polynomials(
     expr: &SymbolicValue,
     target_name: &SymbolicName,
-) -> [SymbolicValue; 3] {
+) -> [SymbolicValueRef; 3] {
     match &expr {
-        SymbolicValue::ConstantInt(v) => [
-            SymbolicValue::ConstantInt(v.clone()),
-            SymbolicValue::ConstantInt(BigInt::zero()),
-            SymbolicValue::ConstantInt(BigInt::zero()),
-        ],
+        SymbolicValue::ConstantInt(v) => {
+            let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
+            [Rc::new(expr.clone()), zero.clone(), zero]
+        }
         SymbolicValue::Variable(name) => {
+            let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
             if name == target_name {
-                [
-                    SymbolicValue::ConstantInt(BigInt::zero()),
-                    SymbolicValue::ConstantInt(BigInt::one()),
-                    SymbolicValue::ConstantInt(BigInt::zero()),
-                ]
+                let one = Rc::new(SymbolicValue::ConstantInt(BigInt::one()));
+                [zero.clone(), one, zero]
             } else {
-                [
-                    SymbolicValue::ConstantInt(BigInt::zero()),
-                    SymbolicValue::ConstantInt(BigInt::zero()),
-                    SymbolicValue::ConstantInt(BigInt::zero()),
-                ]
+                [zero.clone(), zero.clone(), zero]
             }
         }
         SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
@@ -1178,86 +1171,86 @@ pub fn get_coefficient_of_polynomials(
                 let left = get_coefficient_of_polynomials(lhs, target_name);
                 let right = get_coefficient_of_polynomials(rhs, target_name);
                 [
-                    SymbolicValue::BinaryOp(
-                        Rc::new(left[0].clone()),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[0].clone(),
                         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-                        Rc::new(right[0].clone()),
-                    ),
-                    SymbolicValue::BinaryOp(
-                        Rc::new(left[1].clone()),
+                        right[0].clone(),
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[1].clone(),
                         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-                        Rc::new(right[1].clone()),
-                    ),
-                    SymbolicValue::BinaryOp(
-                        Rc::new(left[2].clone()),
+                        right[1].clone(),
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[2].clone(),
                         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-                        Rc::new(right[2].clone()),
-                    ),
+                        right[2].clone(),
+                    )),
                 ]
             }
             ExpressionInfixOpcode::Sub => {
                 let left = get_coefficient_of_polynomials(lhs, target_name);
                 let right = get_coefficient_of_polynomials(rhs, target_name);
                 [
-                    SymbolicValue::BinaryOp(
-                        Rc::new(left[0].clone()),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[0].clone(),
                         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
-                        Rc::new(right[0].clone()),
-                    ),
-                    SymbolicValue::BinaryOp(
-                        Rc::new(left[1].clone()),
+                        right[0].clone(),
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[1].clone(),
                         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
-                        Rc::new(right[1].clone()),
-                    ),
-                    SymbolicValue::BinaryOp(
-                        Rc::new(left[2].clone()),
+                        right[1].clone(),
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[2].clone(),
                         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
-                        Rc::new(right[2].clone()),
-                    ),
+                        right[2].clone(),
+                    )),
                 ]
             }
             ExpressionInfixOpcode::Mul => {
                 let left = get_coefficient_of_polynomials(lhs, target_name);
                 let right = get_coefficient_of_polynomials(rhs, target_name);
                 let c0 = SymbolicValue::BinaryOp(
-                    Rc::new(left[0].clone()),
+                    left[0].clone(),
                     DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    Rc::new(right[0].clone()),
+                    right[0].clone(),
                 );
                 let c1 = SymbolicValue::BinaryOp(
-                    Rc::new(left[0].clone()),
+                    left[0].clone(),
                     DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    Rc::new(right[1].clone()),
+                    right[1].clone(),
                 );
                 let c2 = SymbolicValue::BinaryOp(
-                    Rc::new(left[1].clone()),
+                    left[1].clone(),
                     DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    Rc::new(right[0].clone()),
+                    right[0].clone(),
                 );
                 let c3 = SymbolicValue::BinaryOp(
-                    Rc::new(left[0].clone()),
+                    left[0].clone(),
                     DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    Rc::new(right[2].clone()),
+                    right[2].clone(),
                 );
                 let c4 = SymbolicValue::BinaryOp(
-                    Rc::new(left[0].clone()),
+                    left[0].clone(),
                     DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    Rc::new(right[2].clone()),
+                    right[2].clone(),
                 );
                 let c5 = SymbolicValue::BinaryOp(
-                    Rc::new(left[1].clone()),
+                    left[1].clone(),
                     DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    Rc::new(right[1].clone()),
+                    right[1].clone(),
                 );
 
                 [
-                    c0,
-                    SymbolicValue::BinaryOp(
+                    Rc::new(c0),
+                    Rc::new(SymbolicValue::BinaryOp(
                         Rc::new(c1.clone()),
                         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
                         Rc::new(c2.clone()),
-                    ),
-                    SymbolicValue::BinaryOp(
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
                         Rc::new(SymbolicValue::BinaryOp(
                             Rc::new(c3.clone()),
                             DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
@@ -1265,20 +1258,18 @@ pub fn get_coefficient_of_polynomials(
                         )),
                         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
                         Rc::new(c5.clone()),
-                    ),
+                    )),
                 ]
             }
-            _ => [
-                expr.clone(),
-                SymbolicValue::ConstantInt(BigInt::zero()),
-                SymbolicValue::ConstantInt(BigInt::zero()),
-            ],
+            _ => {
+                let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
+                [Rc::new(expr.clone()), zero.clone(), zero]
+            }
         },
-        _ => [
-            expr.clone(),
-            SymbolicValue::ConstantInt(BigInt::zero()),
-            SymbolicValue::ConstantInt(BigInt::zero()),
-        ],
+        _ => {
+            let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
+            [Rc::new(expr.clone()), zero.clone(), zero]
+        }
     }
 }
 
