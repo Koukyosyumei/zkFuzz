@@ -46,6 +46,29 @@ pub fn modpow(base: &BigInt, exp: &BigInt, modulus: &BigInt) -> BigInt {
     result
 }
 
+pub fn moddiv(lv: &BigInt, rv: &BigInt, modulus: &BigInt) -> BigInt {
+    if lv.is_zero() || rv.is_zero() {
+        return BigInt::zero();
+    }
+
+    let mut r = modulus.clone();
+    let mut new_r = rv.clone();
+    if r.is_negative() {
+        r += modulus;
+    }
+    if new_r.is_negative() {
+        new_r += modulus;
+    }
+
+    let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
+    rv_inv %= modulus;
+    if rv_inv.is_negative() {
+        rv_inv += modulus;
+    }
+
+    (lv * rv_inv) % modulus
+}
+
 /// Returns Some(x) such that x² ≡ n (mod p), or None if no solution exists.
 /// Assumes that `p` is an odd prime.
 /// # Examples
@@ -127,6 +150,26 @@ pub fn tonelli_shanks(n_original: &BigInt, p: &BigInt) -> Option<BigInt> {
     }
 
     Some(r)
+}
+
+pub fn solve_quadratic_equation(coeffs: [BigInt; 3], modulus: &BigInt) -> Option<BigInt> {
+    if coeffs[2].is_zero() && coeffs[1].is_zero() {
+        None
+    } else if coeffs[2].is_zero() {
+        Some(moddiv(&-&coeffs[0], &coeffs[1], modulus))
+    } else {
+        let d = (&coeffs[1] * &coeffs[1] - BigInt::from(4) * &coeffs[2] * &coeffs[0]) % modulus;
+        let root_d = tonelli_shanks(&d, modulus);
+        if let Some(r) = root_d {
+            Some(moddiv(
+                &(-&coeffs[1] + r),
+                &(BigInt::from(2) * &coeffs[2]),
+                modulus,
+            ))
+        } else {
+            None
+        }
+    }
 }
 
 /// Generates all combinations of indices for a given set of dimensions.
