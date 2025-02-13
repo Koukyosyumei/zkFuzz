@@ -1148,6 +1148,180 @@ pub fn is_equal_mod(a: &BigInt, b: &BigInt, p: &BigInt) -> bool {
     a_mod_p == b_mod_p
 }
 
+pub fn get_coefficient_of_polynomials(
+    expr: &SymbolicValue,
+    target_name: &SymbolicName,
+) -> [SymbolicValue; 3] {
+    match &expr {
+        SymbolicValue::ConstantInt(v) => [
+            SymbolicValue::ConstantInt(v.clone()),
+            SymbolicValue::ConstantInt(BigInt::zero()),
+            SymbolicValue::ConstantInt(BigInt::zero()),
+        ],
+        SymbolicValue::Variable(name) => {
+            if name == target_name {
+                [
+                    SymbolicValue::ConstantInt(BigInt::zero()),
+                    SymbolicValue::ConstantInt(BigInt::one()),
+                    SymbolicValue::ConstantInt(BigInt::zero()),
+                ]
+            } else {
+                [
+                    SymbolicValue::ConstantInt(BigInt::zero()),
+                    SymbolicValue::ConstantInt(BigInt::zero()),
+                    SymbolicValue::ConstantInt(BigInt::zero()),
+                ]
+            }
+        }
+        SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
+            ExpressionInfixOpcode::Add => {
+                let left = get_coefficient_of_polynomials(lhs, target_name);
+                let right = get_coefficient_of_polynomials(rhs, target_name);
+                [
+                    SymbolicValue::BinaryOp(
+                        Rc::new(left[0].clone()),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                        Rc::new(right[0].clone()),
+                    ),
+                    SymbolicValue::BinaryOp(
+                        Rc::new(left[1].clone()),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                        Rc::new(right[1].clone()),
+                    ),
+                    SymbolicValue::BinaryOp(
+                        Rc::new(left[2].clone()),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                        Rc::new(right[2].clone()),
+                    ),
+                ]
+            }
+            ExpressionInfixOpcode::Sub => {
+                let left = get_coefficient_of_polynomials(lhs, target_name);
+                let right = get_coefficient_of_polynomials(rhs, target_name);
+                [
+                    SymbolicValue::BinaryOp(
+                        Rc::new(left[0].clone()),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
+                        Rc::new(right[0].clone()),
+                    ),
+                    SymbolicValue::BinaryOp(
+                        Rc::new(left[1].clone()),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
+                        Rc::new(right[1].clone()),
+                    ),
+                    SymbolicValue::BinaryOp(
+                        Rc::new(left[2].clone()),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
+                        Rc::new(right[2].clone()),
+                    ),
+                ]
+            }
+            ExpressionInfixOpcode::Mul => {
+                let left = get_coefficient_of_polynomials(lhs, target_name);
+                let right = get_coefficient_of_polynomials(rhs, target_name);
+                let c0 = SymbolicValue::BinaryOp(
+                    Rc::new(left[0].clone()),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    Rc::new(right[0].clone()),
+                );
+                let c1 = SymbolicValue::BinaryOp(
+                    Rc::new(left[0].clone()),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    Rc::new(right[1].clone()),
+                );
+                let c2 = SymbolicValue::BinaryOp(
+                    Rc::new(left[1].clone()),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    Rc::new(right[0].clone()),
+                );
+                let c3 = SymbolicValue::BinaryOp(
+                    Rc::new(left[0].clone()),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    Rc::new(right[2].clone()),
+                );
+                let c4 = SymbolicValue::BinaryOp(
+                    Rc::new(left[0].clone()),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    Rc::new(right[2].clone()),
+                );
+                let c5 = SymbolicValue::BinaryOp(
+                    Rc::new(left[1].clone()),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    Rc::new(right[1].clone()),
+                );
+
+                [
+                    c0,
+                    SymbolicValue::BinaryOp(
+                        Rc::new(c1.clone()),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                        Rc::new(c2.clone()),
+                    ),
+                    SymbolicValue::BinaryOp(
+                        Rc::new(SymbolicValue::BinaryOp(
+                            Rc::new(c3.clone()),
+                            DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                            Rc::new(c4.clone()),
+                        )),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                        Rc::new(c5.clone()),
+                    ),
+                ]
+            }
+            _ => [
+                expr.clone(),
+                SymbolicValue::ConstantInt(BigInt::zero()),
+                SymbolicValue::ConstantInt(BigInt::zero()),
+            ],
+        },
+        _ => [
+            expr.clone(),
+            SymbolicValue::ConstantInt(BigInt::zero()),
+            SymbolicValue::ConstantInt(BigInt::zero()),
+        ],
+    }
+}
+
+pub fn get_degree_polynomial(expr: &SymbolicValue, target_name: &SymbolicName) -> usize {
+    match &expr {
+        SymbolicValue::ConstantInt(_) => 0,
+        SymbolicValue::Variable(name) => {
+            if name == target_name {
+                1
+            } else {
+                0
+            }
+        }
+        SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
+            ExpressionInfixOpcode::Add | ExpressionInfixOpcode::Sub => std::cmp::max(
+                get_degree_polynomial(lhs, target_name),
+                get_degree_polynomial(rhs, target_name),
+            ),
+            ExpressionInfixOpcode::Mul => {
+                get_degree_polynomial(lhs, target_name) + get_degree_polynomial(rhs, target_name)
+            }
+            _ => {
+                if (get_degree_polynomial(lhs, target_name) != 0)
+                    || (get_degree_polynomial(rhs, target_name) != 0)
+                {
+                    std::usize::MAX
+                } else {
+                    0
+                }
+            }
+        },
+        _ => {
+            let mut tmp = FxHashSet::default();
+            extract_variables_from_symbolic_value(expr, &mut tmp);
+            if tmp.contains(target_name) {
+                std::usize::MAX
+            } else {
+                0
+            }
+        }
+    }
+}
+
 /// Verifies an assignment for symbolic constraints and determines whether the constraints are
 /// under-constrained, over-constrained, or well-constrained.
 ///
