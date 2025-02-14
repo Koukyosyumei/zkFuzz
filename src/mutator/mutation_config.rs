@@ -36,6 +36,7 @@ pub struct MutationConfig {
     pub binary_mode_prob: f64,
     pub binary_mode_search_level: usize,
     pub binary_mode_partial_mode_round: f64,
+    pub zero_div_attempt_prob: f64,
     pub save_fitness_scores: bool,
 }
 
@@ -70,6 +71,7 @@ impl Default for MutationConfig {
             binary_mode_prob: 0.0,
             binary_mode_search_level: 3,
             binary_mode_partial_mode_round: 0.1,
+            zero_div_attempt_prob:0.2,
             save_fitness_scores: false,
         }
     }
