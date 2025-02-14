@@ -1857,16 +1857,8 @@ impl<'a> SymbolicExecutor<'a> {
                     self.cur_state.push_side_constraint(&cont);
                 }
                 DebuggableAssignOp(AssignOp::AssignSignal) => {
-                    let cont = SymbolicValue::Assign(
-                        Rc::new(SymbolicValue::Variable(var_name.clone())),
-                        Rc::new(value.clone()),
-                        self.symbolic_library.template_library[&self.cur_state.template_id].is_safe,
-                        None,
-                    );
-                    self.cur_state.push_symbolic_trace(&cont);
-
                     // handling zero-division pattern
-                    if !self.is_concrete_mode {
+                    let zero_div_info = if !self.is_concrete_mode {
                         self.is_concrete_mode = true;
                         println!(
                             "right-value: {}",
@@ -1892,6 +1884,7 @@ impl<'a> SymbolicExecutor<'a> {
                         {
                             let mut left_vars = FxHashSet::default();
                             extract_variables_from_symbolic_value(&left, &mut left_vars);
+                            let mut left_quad_poly = Vec::new();
                             for v in left_vars {
                                 let d = get_degree_polynomial(&left, &v);
                                 println!(
@@ -1911,11 +1904,13 @@ impl<'a> SymbolicExecutor<'a> {
                                         coefs[1].lookup_fmt(&self.symbolic_library.id2name),
                                         coefs[0].lookup_fmt(&self.symbolic_library.id2name)
                                     );
+                                    left_quad_poly.push((v, coefs));
                                 }
                             }
 
                             let mut right_vars = FxHashSet::default();
                             extract_variables_from_symbolic_value(&right, &mut right_vars);
+                            let mut right_quad_poly = Vec::new();
                             for v in right_vars {
                                 let d = get_degree_polynomial(&right, &v);
                                 println!(
@@ -1935,11 +1930,25 @@ impl<'a> SymbolicExecutor<'a> {
                                         coefs[1].lookup_fmt(&self.symbolic_library.id2name),
                                         coefs[0].lookup_fmt(&self.symbolic_library.id2name)
                                     );
+                                    right_quad_poly.push((v, coefs));
                                 }
                             }
+                            self.is_concrete_mode = false;
+                            Some((left_quad_poly, right_quad_poly))
+                        } else {
+                            None
                         }
-                        self.is_concrete_mode = false;
-                    }
+                    } else {
+                        None
+                    };
+
+                    let cont = SymbolicValue::Assign(
+                        Rc::new(SymbolicValue::Variable(var_name.clone())),
+                        Rc::new(value.clone()),
+                        self.symbolic_library.template_library[&self.cur_state.template_id].is_safe,
+                        None,
+                    );
+                    self.cur_state.push_symbolic_trace(&cont);
                 }
                 _ => {}
             }

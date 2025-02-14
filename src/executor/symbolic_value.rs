@@ -188,7 +188,7 @@ pub enum SymbolicValue {
         SymbolicValueRef,
         SymbolicValueRef,
         bool,
-        Option<Vec<QuadraticPoly>>,
+        Option<(Vec<QuadraticPoly>, Vec<QuadraticPoly>)>,
     ),
     AssignEq(SymbolicValueRef, SymbolicValueRef),
     AssignCall(SymbolicValueRef, SymbolicValueRef, bool),
