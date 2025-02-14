@@ -296,18 +296,6 @@ where
                 if numerator != denominator {
                     let mut dummy_inp = inp.clone();
                     dummy_inp.remove(&numerator.0);
-                    println!(
-                        "{}",
-                        numerator.1[0].lookup_fmt(&sexe.symbolic_library.id2name)
-                    );
-                    println!(
-                        "{}",
-                        numerator.1[1].lookup_fmt(&sexe.symbolic_library.id2name)
-                    );
-                    println!(
-                        "{}",
-                        numerator.1[2].lookup_fmt(&sexe.symbolic_library.id2name)
-                    );
                     let num_coef_0 = evaluate_symbolic_value(
                         &base_config.prime,
                         &numerator.1[0],
@@ -337,7 +325,6 @@ where
                                 &base_config.prime,
                             );
                             if let Some(ans_val) = ans {
-                                println!("{}x^2 + {}x + {} ... {}", c2, c1, c0, ans_val);
                                 inp.insert(numerator.0.clone(), ans_val);
                             }
                         }
