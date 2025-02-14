@@ -41,15 +41,13 @@ OPTIONS:
             (ProoFuzz) Prime number for ProoFuzz [default:
             21888242871839275222246405745257275088548364400416034343698204186575808495617]
         --search_mode <search_mode>
-            (ProoFuzz) Search mode to find the counter example that shows the given circuit is not well-constrained
-            [default: ga]
+            (ProoFuzz) Search mode to find the counter example that shows the given circuit is not well-constrained [default: ga]
         --heuristics_range <heuristics_range>
             (ProoFuzz) Heuristics range for ProoFuzz [default: 100]
-
         --path_to_mutation_setting <path_to_mutation_setting>
             (ProoFuzz) Path to the setting file for Mutation Testing [default: none]
-
-        --path_to_whitelist <path_to_whitelist>                  (ProoFuzz) Path to the white-lists file [default: none]
+        --path_to_whitelist <path_to_whitelist>                  
+            (ProoFuzz) Path to the white-lists file [default: none]
 
 ARGS:
     <input>    Path to a circuit with a main component [default: ./circuit.circom]
