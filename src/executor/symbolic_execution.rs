@@ -1111,6 +1111,7 @@ impl<'a> SymbolicExecutor<'a> {
                             Rc::new(simplified_rhe_val),
                             self.symbolic_library.template_library[&self.cur_state.template_id]
                                 .is_safe,
+                            None,
                         );
                         self.cur_state.push_symbolic_trace(&cont);
                     }
@@ -1860,6 +1861,7 @@ impl<'a> SymbolicExecutor<'a> {
                         Rc::new(SymbolicValue::Variable(var_name.clone())),
                         Rc::new(value.clone()),
                         self.symbolic_library.template_library[&self.cur_state.template_id].is_safe,
+                        None,
                     );
                     self.cur_state.push_symbolic_trace(&cont);
 

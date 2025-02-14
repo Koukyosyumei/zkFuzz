@@ -43,7 +43,7 @@ impl ConstraintStatistics {
             SymbolicValue::Variable(sym_name) => {
                 *self.variable_counts.entry(sym_name.clone()).or_insert(0) += 1;
             }
-            SymbolicValue::Assign(lhs, rhs, _) => {
+            SymbolicValue::Assign(lhs, rhs, _, _) => {
                 *self
                     .operator_counts
                     .entry("Assign".to_string())

@@ -168,7 +168,7 @@ where
     let mut assign_pos = Vec::new();
     for (i, sv) in symbolic_trace.iter().enumerate() {
         match *sv.as_ref() {
-            SymbolicValue::Assign(_, _, false) | SymbolicValue::AssignCall(_, _, true) => {
+            SymbolicValue::Assign(_, _, false, _) | SymbolicValue::AssignCall(_, _, true) => {
                 assign_pos.push(i);
             }
             _ => {}

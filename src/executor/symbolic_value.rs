@@ -173,6 +173,8 @@ impl Hash for SymbolicName {
     }
 }
 
+pub type QuadraticPoly = (SymbolicName, [SymbolicValueRef; 3]);
+
 /// Represents a symbolic value used in symbolic execution.
 ///
 /// This enum can represent constants, variables, or operations such as binary, unary,
@@ -182,7 +184,12 @@ pub enum SymbolicValue {
     ConstantInt(BigInt),
     ConstantBool(bool),
     Variable(SymbolicName),
-    Assign(SymbolicValueRef, SymbolicValueRef, bool),
+    Assign(
+        SymbolicValueRef,
+        SymbolicValueRef,
+        bool,
+        Option<Vec<QuadraticPoly>>,
+    ),
     AssignEq(SymbolicValueRef, SymbolicValueRef),
     AssignCall(SymbolicValueRef, SymbolicValueRef, bool),
     BinaryOp(
@@ -221,7 +228,7 @@ impl SymbolicValue {
                 )
             }
             SymbolicValue::Variable(sym_name) => sym_name.lookup_fmt(lookup),
-            SymbolicValue::Assign(lhs, rhs, is_safe) => {
+            SymbolicValue::Assign(lhs, rhs, is_safe, ..) => {
                 format!(
                     "({} {} {})",
                     if *is_safe {
@@ -1070,7 +1077,7 @@ pub fn extract_variables_from_symbolic_value(
         SymbolicValue::Variable(sym_name) => {
             variables.insert(sym_name.clone());
         }
-        SymbolicValue::Assign(lhs, rhs, _)
+        SymbolicValue::Assign(lhs, rhs, _, _)
         | SymbolicValue::AssignEq(lhs, rhs)
         | SymbolicValue::AssignCall(lhs, rhs, _) => {
             extract_variables_from_symbolic_value(&lhs, variables);

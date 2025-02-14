@@ -131,7 +131,7 @@ fn test_get_coefficient_constant() {
     let expr = SymbolicValue::ConstantInt(BigInt::from(5));
     let target = make_symbolic_name(100); // target name is irrelevant here
 
-    let result = get_coefficient_of_polynomials(&expr, &target);
+    let result = get_coefficient_of_polynomials(&expr, &target, &BigInt::from(7));
     let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
 
     let expected = [
@@ -149,7 +149,7 @@ fn test_get_coefficient_variable_match() {
     let target = make_symbolic_name(1);
     let expr = SymbolicValue::Variable(target.clone());
 
-    let result = get_coefficient_of_polynomials(&expr, &target);
+    let result = get_coefficient_of_polynomials(&expr, &target, &BigInt::from(7));
     let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
     let one = Rc::new(SymbolicValue::ConstantInt(BigInt::one()));
 
@@ -164,10 +164,9 @@ fn test_get_coefficient_variable_no_match() {
     let other = make_symbolic_name(2);
     let expr = SymbolicValue::Variable(other);
 
-    let result = get_coefficient_of_polynomials(&expr, &target);
+    let result = get_coefficient_of_polynomials(&expr, &target, &BigInt::from(7));
     let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
-
-    let expected = [zero.clone(), zero.clone(), zero.clone()];
+    let expected = [Rc::new(expr), zero.clone(), zero.clone()];
     assert_eq!(result, expected);
 }
 
@@ -192,24 +191,11 @@ fn test_get_coefficient_addition() {
         Rc::new(expr_right),
     );
 
-    let result = get_coefficient_of_polynomials(&expr, &target);
-    let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
+    let result = get_coefficient_of_polynomials(&expr, &target, &BigInt::from(7));
 
-    let expected_const = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::ConstantInt(BigInt::from(3))),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-    ));
-    let expected_linear = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-        Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
-    ));
-    let expected_quadratic = Rc::new(SymbolicValue::BinaryOp(
-        zero.clone(),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-        zero.clone(),
-    ));
+    let expected_const = Rc::new(SymbolicValue::ConstantInt(BigInt::from(3)));
+    let expected_linear = Rc::new(SymbolicValue::ConstantInt(BigInt::one()));
+    let expected_quadratic = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
 
     let expected = [expected_const, expected_linear, expected_quadratic];
     assert_eq!(result, expected);
@@ -236,24 +222,12 @@ fn test_get_coefficient_subtraction() {
         Rc::new(expr_right),
     );
 
-    let result = get_coefficient_of_polynomials(&expr, &target);
+    let result = get_coefficient_of_polynomials(&expr, &target, &BigInt::from(7));
     let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
 
-    let expected_const = Rc::new(SymbolicValue::BinaryOp(
-        zero.clone(),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
-        Rc::new(SymbolicValue::ConstantInt(BigInt::from(2))),
-    ));
-    let expected_linear = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
-        zero.clone(),
-    ));
-    let expected_quadratic = Rc::new(SymbolicValue::BinaryOp(
-        zero.clone(),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
-        zero.clone(),
-    ));
+    let expected_const = Rc::new(SymbolicValue::ConstantInt(BigInt::from(5)));
+    let expected_linear = Rc::new(SymbolicValue::ConstantInt(BigInt::one()));
+    let expected_quadratic = zero.clone();
 
     let expected = [expected_const, expected_linear, expected_quadratic];
     assert_eq!(result, expected);
@@ -297,88 +271,12 @@ fn test_get_coefficient_multiplication() {
         Rc::new(expr_right),
     );
 
-    let result = get_coefficient_of_polynomials(&expr, &target);
-
-    // To build our expected values we re-create the coefficients for (3+x) and (4+x):
-    let l_const = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::ConstantInt(BigInt::from(3))),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-    ));
-    let l_lin = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-        Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
-    ));
-    let l_quad = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-    ));
-
-    let r_const = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::ConstantInt(BigInt::from(4))),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-    ));
-    let r_lin = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-        Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
-    ));
-    let r_quad = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
-    ));
+    let result = get_coefficient_of_polynomials(&expr, &target, &BigInt::from(7));
 
     // Now, following the multiplication branch:
-    let expected_c0 = Rc::new(SymbolicValue::BinaryOp(
-        l_const.clone(),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-        r_const.clone(),
-    ));
-
-    let c1 = SymbolicValue::BinaryOp(
-        l_const.clone(),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-        r_lin.clone(),
-    );
-    let c2 = SymbolicValue::BinaryOp(
-        l_lin.clone(),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-        r_const.clone(),
-    );
-    let expected_c1 = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(c1.clone()),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-        Rc::new(c2.clone()),
-    ));
-
-    let c3 = SymbolicValue::BinaryOp(
-        l_const.clone(),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-        r_quad.clone(),
-    );
-    let c4 = SymbolicValue::BinaryOp(
-        l_const.clone(),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-        r_quad.clone(),
-    );
-    let c5 = SymbolicValue::BinaryOp(
-        l_lin.clone(),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-        r_lin.clone(),
-    );
-    let expected_c2 = Rc::new(SymbolicValue::BinaryOp(
-        Rc::new(SymbolicValue::BinaryOp(
-            Rc::new(c3.clone()),
-            DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-            Rc::new(c4.clone()),
-        )),
-        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-        Rc::new(c5.clone()),
-    ));
+    let expected_c0 = Rc::new(SymbolicValue::ConstantInt(BigInt::from(5)));
+    let expected_c1 = Rc::new(SymbolicValue::ConstantInt(BigInt::from(0)));
+    let expected_c2 = Rc::new(SymbolicValue::ConstantInt(BigInt::from(1)));
 
     let expected = [expected_c0, expected_c1, expected_c2];
     assert_eq!(result, expected);
@@ -397,7 +295,7 @@ fn test_get_coefficient_unknown_operator() {
         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div),
         Rc::new(expr_right),
     );
-    let result = get_coefficient_of_polynomials(&expr, &target);
+    let result = get_coefficient_of_polynomials(&expr, &target, &BigInt::from(7));
     let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
 
     let expected = [Rc::new(expr.clone()), zero.clone(), zero.clone()];

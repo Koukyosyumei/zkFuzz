@@ -82,6 +82,7 @@ fn test_if_else() {
                 Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
             )),
             false,
+            None,
         ),
         SymbolicValue::AssignEq(
             Rc::new(SymbolicValue::Variable(SymbolicName::new(
@@ -451,6 +452,7 @@ fn test_1d_array_component() {
                 ))),
             )),
             false,
+            None,
         ),
     ];
 
@@ -725,6 +727,7 @@ fn test_2d_array_var() {
             Rc::new(SymbolicValue::ConstantInt(BigInt::from(4))),
         )),
         false,
+        None,
     )];
 
     for i in 0..ground_truth_symbolic_trace.len() {
@@ -1008,6 +1011,7 @@ fn test_2d_array_component() {
                 ))),
             )),
             false,
+            None,
         ),
     ];
 

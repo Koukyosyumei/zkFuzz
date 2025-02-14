@@ -87,12 +87,14 @@ pub fn apply_trace_mutation(
 ) -> SymbolicTrace {
     let mut mutated_constraints = symbolic_trace.clone();
     for (index, value) in trace_mutation {
-        if let SymbolicValue::Assign(lv, _, is_safe) = mutated_constraints[*index].as_ref().clone()
+        if let SymbolicValue::Assign(lv, _, is_safe, _) =
+            mutated_constraints[*index].as_ref().clone()
         {
             mutated_constraints[*index] = Rc::new(SymbolicValue::Assign(
                 lv.clone(),
                 Rc::new(value.clone()),
                 is_safe,
+                None,
             ));
         } else if let SymbolicValue::AssignCall(lv, _, is_mutable) =
             mutated_constraints[*index].as_ref().clone()
@@ -101,6 +103,7 @@ pub fn apply_trace_mutation(
                 lv.clone(),
                 Rc::new(value.clone()),
                 !is_mutable,
+                None,
             ));
         } else {
             panic!("We can only mutate SymbolicValue::Assign");

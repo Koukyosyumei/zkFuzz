@@ -288,7 +288,7 @@ pub fn get_dependency_graph(
 ) {
     for value in values {
         match value.as_ref() {
-            SymbolicValue::Assign(lhs, rhs, _)
+            SymbolicValue::Assign(lhs, rhs, _, _)
             | SymbolicValue::AssignEq(lhs, rhs)
             | SymbolicValue::AssignCall(lhs, rhs, _) => {
                 if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
@@ -421,7 +421,7 @@ pub fn gather_runtime_mutable_inputs(
     for (i, inst) in trace.iter().enumerate() {
         match inst.as_ref() {
             SymbolicValue::ConstantBool(..) => {}
-            SymbolicValue::Assign(lhs, rhs, _)
+            SymbolicValue::Assign(lhs, rhs, _, _)
             | SymbolicValue::AssignEq(lhs, rhs)
             | SymbolicValue::AssignCall(lhs, rhs, _) => {
                 if let SymbolicValue::Variable(_sym_name) = lhs.as_ref() {
@@ -512,7 +512,7 @@ pub fn emulate_symbolic_trace(
                     failure_pos = i;
                 }
             }
-            SymbolicValue::Assign(lhs, rhs, _)
+            SymbolicValue::Assign(lhs, rhs, _, _)
             | SymbolicValue::AssignEq(lhs, rhs)
             | SymbolicValue::AssignCall(lhs, rhs, _) => {
                 if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
@@ -762,7 +762,7 @@ pub fn evaluate_symbolic_value(
                 ))
             }
         }
-        SymbolicValue::Assign(lhs, rhs, _)
+        SymbolicValue::Assign(lhs, rhs, _, _)
         | SymbolicValue::AssignEq(lhs, rhs)
         | SymbolicValue::AssignCall(lhs, rhs, _) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
@@ -963,7 +963,7 @@ pub fn evaluate_error_of_symbolic_value(
                 BigInt::one()
             }
         }
-        SymbolicValue::Assign(lhs, rhs, _)
+        SymbolicValue::Assign(lhs, rhs, _, _)
         | SymbolicValue::AssignEq(lhs, rhs)
         | SymbolicValue::AssignCall(lhs, rhs, _) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
