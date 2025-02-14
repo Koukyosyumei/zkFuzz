@@ -16,10 +16,11 @@ use crate::executor::symbolic_value::{
     extract_variables, QuadraticPoly, SymbolicName, SymbolicValue,
 };
 
+use crate::executor::utils::solve_quadratic_modulus_equation;
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::utils::{
-    gather_potential_zero_division, gather_runtime_mutable_inputs, is_containing_binary_check,
-    BaseVerificationConfig, CounterExample, Direction,
+    evaluate_symbolic_value, gather_potential_zero_division, gather_runtime_mutable_inputs,
+    is_containing_binary_check, BaseVerificationConfig, CounterExample, Direction,
 };
 
 pub struct MutationTestResult {
@@ -288,10 +289,61 @@ where
         trace_population.push(FxHashMap::default());
 
         // zero-division-pattern
-        for (i, inp) in input_population.iter().enumerate() {
+        for inp in input_population.iter_mut() {
             if !potential_zero_div_positions.is_empty() {
                 let numerator = &(potential_zero_div_positions[0].1 .0[0]);
                 let denominator = &(potential_zero_div_positions[0].1 .1[0]);
+                if numerator != denominator {
+                    let mut dummy_inp = inp.clone();
+                    dummy_inp.remove(&numerator.0);
+                    println!(
+                        "{}",
+                        numerator.1[0].lookup_fmt(&sexe.symbolic_library.id2name)
+                    );
+                    println!(
+                        "{}",
+                        numerator.1[1].lookup_fmt(&sexe.symbolic_library.id2name)
+                    );
+                    println!(
+                        "{}",
+                        numerator.1[2].lookup_fmt(&sexe.symbolic_library.id2name)
+                    );
+                    let num_coef_0 = evaluate_symbolic_value(
+                        &base_config.prime,
+                        &numerator.1[0],
+                        &dummy_inp,
+                        sexe.symbolic_library,
+                    );
+                    let num_coef_1 = evaluate_symbolic_value(
+                        &base_config.prime,
+                        &numerator.1[1],
+                        &dummy_inp,
+                        sexe.symbolic_library,
+                    );
+                    let num_coef_2 = evaluate_symbolic_value(
+                        &base_config.prime,
+                        &numerator.1[2],
+                        &dummy_inp,
+                        sexe.symbolic_library,
+                    );
+                    match (num_coef_0, num_coef_1, num_coef_2) {
+                        (
+                            Some(SymbolicValue::ConstantInt(c0)),
+                            Some(SymbolicValue::ConstantInt(c1)),
+                            Some(SymbolicValue::ConstantInt(c2)),
+                        ) => {
+                            let ans = solve_quadratic_modulus_equation(
+                                [c0.clone(), c1.clone(), c2.clone()],
+                                &base_config.prime,
+                            );
+                            if let Some(ans_val) = ans {
+                                println!("{}x^2 + {}x + {} ... {}", c2, c1, c0, ans_val);
+                                inp.insert(numerator.0.clone(), ans_val);
+                            }
+                        }
+                        _ => {}
+                    }
+                }
             }
         }
 
