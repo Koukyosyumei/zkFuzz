@@ -290,76 +290,16 @@ where
         trace_population.push(FxHashMap::default());
 
         // zero-division-pattern
-        for inp in input_population.iter_mut() {
-            if !potential_zero_div_positions.is_empty() {
+        if !potential_zero_div_positions.is_empty() {
+            for inp in input_population.iter_mut() {
                 if rng.gen::<f64>() < mutation_config.zero_div_attempt_prob {
-                    let zero_div_info = potential_zero_div_positions.choose(&mut rng);
-                    let mut dummy_inp = inp.clone();
-
-                    if let Some((_, (numerator_polys, denominator_polys))) = zero_div_info {
-                        if !numerator_polys.is_empty() {
-                            let numerator = numerator_polys.choose(&mut rng);
-                            if let Some((numerator_var_name, numerator_coefs)) = numerator {
-                                dummy_inp.remove(numerator_var_name);
-                                let numerator_coefficients: Option<Vec<_>> = numerator_coefs
-                                    .iter()
-                                    .map(|expr| {
-                                        evaluate_symbolic_value(
-                                            &base_config.prime,
-                                            expr,
-                                            &dummy_inp,
-                                            sexe.symbolic_library,
-                                        )
-                                        .and_then(|val| {
-                                            match val {
-                                                SymbolicValue::ConstantInt(c) => Some(c),
-                                                _ => None,
-                                            }
-                                        })
-                                    })
-                                    .collect();
-                                if let Some(coefs) = numerator_coefficients {
-                                    if let Some(ans_val) = solve_quadratic_modulus_equation(
-                                        [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
-                                        &base_config.prime,
-                                    ) {
-                                        inp.insert(numerator_var_name.clone(), ans_val);
-                                    }
-                                }
-                            }
-                        }
-                        if !denominator_polys.is_empty() {
-                            let denominator = denominator_polys.choose(&mut rng);
-                            if let Some((denominator_var_name, denominator_coefs)) = denominator {
-                                dummy_inp.remove(denominator_var_name);
-                                let denominator_coefficients: Option<Vec<_>> = denominator_coefs
-                                    .iter()
-                                    .map(|expr| {
-                                        evaluate_symbolic_value(
-                                            &base_config.prime,
-                                            expr,
-                                            &dummy_inp,
-                                            sexe.symbolic_library,
-                                        )
-                                        .and_then(|val| {
-                                            match val {
-                                                SymbolicValue::ConstantInt(c) => Some(c),
-                                                _ => None,
-                                            }
-                                        })
-                                    })
-                                    .collect();
-                                if let Some(coefs) = denominator_coefficients {
-                                    if let Some(ans_val) = solve_quadratic_modulus_equation(
-                                        [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
-                                        &base_config.prime,
-                                    ) {
-                                        inp.insert(denominator_var_name.clone(), ans_val);
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    zero_div_attempt(
+                        inp,
+                        sexe,
+                        base_config,
+                        &potential_zero_div_positions,
+                        &mut rng,
+                    );
                 }
             }
         }
@@ -462,5 +402,77 @@ where
         counter_example: None,
         generation: mutation_config.max_generations,
         fitness_score_log: fitness_score_log,
+    }
+}
+
+fn zero_div_attempt(
+    inp: &mut FxHashMap<SymbolicName, BigInt>,
+    sexe: &mut SymbolicExecutor,
+    base_config: &BaseVerificationConfig,
+    potential_zero_div_positions: &Vec<(usize, (Vec<QuadraticPoly>, Vec<QuadraticPoly>))>,
+    rng: &mut StdRng,
+) {
+    let zero_div_info = potential_zero_div_positions.choose(rng);
+    let mut dummy_inp = inp.clone();
+
+    if let Some((_, (numerator_polys, denominator_polys))) = zero_div_info {
+        if !numerator_polys.is_empty() {
+            let numerator = numerator_polys.choose(rng);
+            if let Some((numerator_var_name, numerator_coefs)) = numerator {
+                dummy_inp.remove(numerator_var_name);
+                let numerator_coefficients: Option<Vec<_>> = numerator_coefs
+                    .iter()
+                    .map(|expr| {
+                        evaluate_symbolic_value(
+                            &base_config.prime,
+                            expr,
+                            &dummy_inp,
+                            sexe.symbolic_library,
+                        )
+                        .and_then(|val| match val {
+                            SymbolicValue::ConstantInt(c) => Some(c),
+                            _ => None,
+                        })
+                    })
+                    .collect();
+                if let Some(coefs) = numerator_coefficients {
+                    if let Some(ans_val) = solve_quadratic_modulus_equation(
+                        [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
+                        &base_config.prime,
+                    ) {
+                        inp.insert(numerator_var_name.clone(), ans_val);
+                    }
+                }
+            }
+        }
+        if !denominator_polys.is_empty() {
+            let denominator = denominator_polys.choose(rng);
+            if let Some((denominator_var_name, denominator_coefs)) = denominator {
+                dummy_inp.remove(denominator_var_name);
+                let denominator_coefficients: Option<Vec<_>> = denominator_coefs
+                    .iter()
+                    .map(|expr| {
+                        evaluate_symbolic_value(
+                            &base_config.prime,
+                            expr,
+                            &dummy_inp,
+                            sexe.symbolic_library,
+                        )
+                        .and_then(|val| match val {
+                            SymbolicValue::ConstantInt(c) => Some(c),
+                            _ => None,
+                        })
+                    })
+                    .collect();
+                if let Some(coefs) = denominator_coefficients {
+                    if let Some(ans_val) = solve_quadratic_modulus_equation(
+                        [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
+                        &base_config.prime,
+                    ) {
+                        inp.insert(denominator_var_name.clone(), ans_val);
+                    }
+                }
+            }
+        }
     }
 }
