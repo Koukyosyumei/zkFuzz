@@ -137,7 +137,6 @@ where
         &SymbolicTrace,
         &SymbolicConstraints,
         &FxHashMap<usize, Direction>,
-        &Vec<(usize, (Vec<QuadraticPoly>, Vec<QuadraticPoly>))>,
         &Gene,
         &Vec<FxHashMap<SymbolicName, BigInt>>,
     ) -> (usize, BigInt, Option<CounterExample>, usize),
@@ -288,6 +287,14 @@ where
         }
         trace_population.push(FxHashMap::default());
 
+        // zero-division-pattern
+        for (i, inp) in input_population.iter().enumerate() {
+            if !potential_zero_div_positions.is_empty() {
+                let numerator = &(potential_zero_div_positions[0].1 .0[0]);
+                let denominator = &(potential_zero_div_positions[0].1 .1[0]);
+            }
+        }
+
         // Evaluate the trace population
         let mut evaluations = Vec::new();
         let mut is_extincted_due_to_illegal_subscript = true;
@@ -302,7 +309,6 @@ where
                 } else {
                     &runtime_mutable_positions
                 },
-                &potential_zero_div_positions,
                 individual,
                 &input_population,
             );

@@ -6,6 +6,7 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{
     QuadraticPoly, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
+use crate::executor::utils::solve_quadratic_modulus_equation;
 use crate::mutator::mutation_utils::apply_trace_mutation;
 use crate::mutator::utils::{
     accumulate_error_of_constraints, emulate_symbolic_trace, evaluate_constraints, is_equal_mod,
@@ -55,7 +56,6 @@ pub fn evaluate_trace_fitness_by_error(
     symbolic_trace: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
     runtime_mutable_positions: &FxHashMap<usize, Direction>,
-    potential_zero_div_positions: &Vec<(usize, (Vec<QuadraticPoly>, Vec<QuadraticPoly>))>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
     inputs_assignment: &Vec<FxHashMap<SymbolicName, BigInt>>,
 ) -> (usize, BigInt, Option<CounterExample>, usize) {
@@ -70,12 +70,6 @@ pub fn evaluate_trace_fitness_by_error(
     for (i, inp) in inputs_assignment.iter().enumerate() {
         // Clone the input assignment for evaluation with the original program.
         let mut assignment_for_original = inp.clone();
-
-        // zero-division-pattern heuristic
-        if !potential_zero_div_positions.is_empty() {
-            let numerator = &(potential_zero_div_positions[0].1 .0[0]);
-            let denominator = &(potential_zero_div_positions[0].1 .1[0]);
-        }
 
         // Emulate the original trace to evaluate its behavior on the given input.
         // Even if an assertion fails, the function proceeds, treating it as a modified trace with no assertions.
