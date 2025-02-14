@@ -23,9 +23,11 @@ use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_state::SymbolicState;
 use crate::executor::symbolic_value::{
     access_multidimensional_array, decompose_uniform_array, enumerate_array, evaluate_binary_op,
-    generate_lessthan_constraint, initialize_symbolic_nested_array_with_value, is_concrete_array,
-    register_array_elements, update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent,
-    SymbolicLibrary, SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
+    extract_variables_from_symbolic_value, generate_lessthan_constraint,
+    get_coefficient_of_polynomials, get_degree_polynomial,
+    initialize_symbolic_nested_array_with_value, is_concrete_array, register_array_elements,
+    update_nested_array, OwnerName, SymbolicAccess, SymbolicComponent, SymbolicLibrary,
+    SymbolicName, SymbolicTemplate, SymbolicValue, SymbolicValueRef,
 };
 use crate::executor::utils::generate_cartesian_product_indices;
 
@@ -1873,6 +1875,36 @@ impl<'a> SymbolicExecutor<'a> {
                         "right-value: {}",
                         simplified_value.lookup_fmt(&self.symbolic_library.id2name)
                     );
+                    if let SymbolicValue::BinaryOp(
+                        left,
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div),
+                        right,
+                    ) = simplified_value
+                    {
+                        let mut left_vars = FxHashSet::default();
+                        extract_variables_from_symbolic_value(&left, &mut left_vars);
+                        for v in left_vars {
+                            let d = get_degree_polynomial(&left, &v);
+                            println!("{} - {}", v.lookup_fmt(&self.symbolic_library.id2name), d);
+                            if d <= 2 {
+                                let coefs =
+                                    get_coefficient_of_polynomials(&left, &v, &self.setting.prime);
+                                println!(
+                                    "{}x^2 + {}x + {}",
+                                    coefs[2].lookup_fmt(&self.symbolic_library.id2name),
+                                    coefs[1].lookup_fmt(&self.symbolic_library.id2name),
+                                    coefs[0].lookup_fmt(&self.symbolic_library.id2name)
+                                );
+                            }
+                        }
+
+                        let mut right_vars = FxHashSet::default();
+                        extract_variables_from_symbolic_value(&right, &mut right_vars);
+                        for v in right_vars {
+                            let d = get_degree_polynomial(&right, &v);
+                            println!("{} - {}", v.lookup_fmt(&self.symbolic_library.id2name), d);
+                        }
+                    }
                 }
                 _ => {}
             }

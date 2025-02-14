@@ -1107,9 +1107,10 @@ pub fn extract_variables_from_symbolic_value(
 pub fn get_coefficient_of_polynomials(
     expr: &SymbolicValue,
     target_name: &SymbolicName,
+    prime: &BigInt,
 ) -> [SymbolicValueRef; 3] {
     match &expr {
-        SymbolicValue::ConstantInt(v) => {
+        SymbolicValue::ConstantInt(_) => {
             let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
             [Rc::new(expr.clone()), zero.clone(), zero]
         }
@@ -1119,101 +1120,119 @@ pub fn get_coefficient_of_polynomials(
                 let one = Rc::new(SymbolicValue::ConstantInt(BigInt::one()));
                 [zero.clone(), one, zero]
             } else {
-                [zero.clone(), zero.clone(), zero]
+                [Rc::new(expr.clone()), zero.clone(), zero]
             }
         }
         SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
             ExpressionInfixOpcode::Add => {
-                let left = get_coefficient_of_polynomials(lhs, target_name);
-                let right = get_coefficient_of_polynomials(rhs, target_name);
+                let left = get_coefficient_of_polynomials(lhs, target_name, prime);
+                let right = get_coefficient_of_polynomials(rhs, target_name, prime);
                 [
-                    Rc::new(SymbolicValue::BinaryOp(
-                        left[0].clone(),
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-                        right[0].clone(),
+                    Rc::new(evaluate_binary_op(
+                        &left[0],
+                        &right[0],
+                        prime,
+                        &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
                     )),
-                    Rc::new(SymbolicValue::BinaryOp(
-                        left[1].clone(),
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-                        right[1].clone(),
+                    Rc::new(evaluate_binary_op(
+                        &left[1],
+                        &right[1],
+                        prime,
+                        &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
                     )),
-                    Rc::new(SymbolicValue::BinaryOp(
-                        left[2].clone(),
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-                        right[2].clone(),
+                    Rc::new(evaluate_binary_op(
+                        &left[2],
+                        &right[2],
+                        prime,
+                        &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
                     )),
                 ]
             }
             ExpressionInfixOpcode::Sub => {
-                let left = get_coefficient_of_polynomials(lhs, target_name);
-                let right = get_coefficient_of_polynomials(rhs, target_name);
+                let left = get_coefficient_of_polynomials(lhs, target_name, prime);
+                let right = get_coefficient_of_polynomials(rhs, target_name, prime);
                 [
-                    Rc::new(SymbolicValue::BinaryOp(
-                        left[0].clone(),
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
-                        right[0].clone(),
+                    Rc::new(evaluate_binary_op(
+                        &left[0],
+                        &right[0],
+                        prime,
+                        &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
                     )),
-                    Rc::new(SymbolicValue::BinaryOp(
-                        left[1].clone(),
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
-                        right[1].clone(),
+                    Rc::new(evaluate_binary_op(
+                        &left[1],
+                        &right[1],
+                        prime,
+                        &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
                     )),
-                    Rc::new(SymbolicValue::BinaryOp(
-                        left[2].clone(),
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
-                        right[2].clone(),
+                    Rc::new(evaluate_binary_op(
+                        &left[2],
+                        &right[2],
+                        prime,
+                        &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
                     )),
                 ]
             }
             ExpressionInfixOpcode::Mul => {
-                let left = get_coefficient_of_polynomials(lhs, target_name);
-                let right = get_coefficient_of_polynomials(rhs, target_name);
-                let c0 = SymbolicValue::BinaryOp(
-                    left[0].clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    right[0].clone(),
+                // (ax^2 + bx + c) * (dx^2 + ex + f) = adx^4 + aex^3 + afx^2 + bdx^3 + bex^2 + bfx + cdx^2 + cex + cf
+                //                                   = adx^4 + (ae + bd)x^3 + (af + be + cd)x^2 + (bf + ce)x * cf
+
+                let left = get_coefficient_of_polynomials(lhs, target_name, &prime);
+                let right = get_coefficient_of_polynomials(rhs, target_name, &prime);
+                let c0 = evaluate_binary_op(
+                    &left[0],
+                    &right[0],
+                    &prime,
+                    &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
                 );
-                let c1 = SymbolicValue::BinaryOp(
-                    left[0].clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    right[1].clone(),
+                let c1 = evaluate_binary_op(
+                    &left[0],
+                    &right[1],
+                    &prime,
+                    &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
                 );
-                let c2 = SymbolicValue::BinaryOp(
-                    left[1].clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    right[0].clone(),
+                let c2 = evaluate_binary_op(
+                    &left[1],
+                    &right[0],
+                    &prime,
+                    &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
                 );
-                let c3 = SymbolicValue::BinaryOp(
-                    left[0].clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    right[2].clone(),
+                let c3 = evaluate_binary_op(
+                    &left[2],
+                    &right[0],
+                    &prime,
+                    &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
                 );
-                let c4 = SymbolicValue::BinaryOp(
-                    left[0].clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    right[2].clone(),
+                let c4 = evaluate_binary_op(
+                    &left[0],
+                    &right[2],
+                    &prime,
+                    &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
                 );
-                let c5 = SymbolicValue::BinaryOp(
-                    left[1].clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                    right[1].clone(),
+                let c5 = evaluate_binary_op(
+                    &left[1],
+                    &right[1],
+                    &prime,
+                    &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
                 );
 
                 [
                     Rc::new(c0),
-                    Rc::new(SymbolicValue::BinaryOp(
-                        Rc::new(c1.clone()),
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                        Rc::new(c2.clone()),
+                    Rc::new(evaluate_binary_op(
+                        &c1,
+                        &c2,
+                        prime,
+                        &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
                     )),
-                    Rc::new(SymbolicValue::BinaryOp(
-                        Rc::new(SymbolicValue::BinaryOp(
-                            Rc::new(c3.clone()),
-                            DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                            Rc::new(c4.clone()),
-                        )),
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
-                        Rc::new(c5.clone()),
+                    Rc::new(evaluate_binary_op(
+                        &evaluate_binary_op(
+                            &c3,
+                            &c4,
+                            prime,
+                            &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                        ),
+                        &c5,
+                        prime,
+                        &DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
                     )),
                 ]
             }
