@@ -1041,3 +1041,230 @@ pub fn update_nested_array(
         array.clone()
     }
 }
+
+/// Extracts all unique variable names referenced in a set of constraints.
+///
+/// # Parameters
+/// - `constraints`: A slice of symbolic values representing the constraints.
+///
+/// # Returns
+/// A vector of unique `SymbolicName`s referenced in the constraints.
+pub fn extract_variables(constraints: &[SymbolicValueRef]) -> Vec<SymbolicName> {
+    let mut variables = FxHashSet::default();
+    for constraint in constraints {
+        extract_variables_from_symbolic_value(constraint, &mut variables);
+    }
+    variables.into_iter().collect()
+}
+
+/// Recursively extracts variable names from a symbolic value.
+///
+/// # Parameters
+/// - `value`: The `SymbolicValue` to analyze.
+/// - `variables`: A mutable reference to a vector where extracted variable names will be stored.
+pub fn extract_variables_from_symbolic_value(
+    value: &SymbolicValue,
+    variables: &mut FxHashSet<SymbolicName>,
+) {
+    match value {
+        SymbolicValue::Variable(sym_name) => {
+            variables.insert(sym_name.clone());
+        }
+        SymbolicValue::Assign(lhs, rhs, _)
+        | SymbolicValue::AssignEq(lhs, rhs)
+        | SymbolicValue::AssignCall(lhs, rhs, _) => {
+            extract_variables_from_symbolic_value(&lhs, variables);
+            extract_variables_from_symbolic_value(&rhs, variables);
+        }
+        SymbolicValue::BinaryOp(lhs, _, rhs) => {
+            extract_variables_from_symbolic_value(&lhs, variables);
+            extract_variables_from_symbolic_value(&rhs, variables);
+        }
+        SymbolicValue::UnaryOp(_, expr) => extract_variables_from_symbolic_value(&expr, variables),
+        SymbolicValue::Array(elements) => {
+            for elem in elements {
+                extract_variables_from_symbolic_value(&elem, variables);
+            }
+        }
+        SymbolicValue::UniformArray(value, size) => {
+            extract_variables_from_symbolic_value(&value, variables);
+            extract_variables_from_symbolic_value(&size, variables);
+        }
+        SymbolicValue::Call(_, args) => {
+            for arg in args {
+                extract_variables_from_symbolic_value(&arg, variables);
+            }
+        }
+        SymbolicValue::Conditional(cond, then_val, else_val) => {
+            extract_variables_from_symbolic_value(&cond, variables);
+            extract_variables_from_symbolic_value(&then_val, variables);
+            extract_variables_from_symbolic_value(&else_val, variables);
+        }
+        _ => {}
+    }
+}
+
+pub fn get_coefficient_of_polynomials(
+    expr: &SymbolicValue,
+    target_name: &SymbolicName,
+) -> [SymbolicValueRef; 3] {
+    match &expr {
+        SymbolicValue::ConstantInt(v) => {
+            let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
+            [Rc::new(expr.clone()), zero.clone(), zero]
+        }
+        SymbolicValue::Variable(name) => {
+            let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
+            if name == target_name {
+                let one = Rc::new(SymbolicValue::ConstantInt(BigInt::one()));
+                [zero.clone(), one, zero]
+            } else {
+                [zero.clone(), zero.clone(), zero]
+            }
+        }
+        SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
+            ExpressionInfixOpcode::Add => {
+                let left = get_coefficient_of_polynomials(lhs, target_name);
+                let right = get_coefficient_of_polynomials(rhs, target_name);
+                [
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[0].clone(),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                        right[0].clone(),
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[1].clone(),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                        right[1].clone(),
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[2].clone(),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                        right[2].clone(),
+                    )),
+                ]
+            }
+            ExpressionInfixOpcode::Sub => {
+                let left = get_coefficient_of_polynomials(lhs, target_name);
+                let right = get_coefficient_of_polynomials(rhs, target_name);
+                [
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[0].clone(),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
+                        right[0].clone(),
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[1].clone(),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
+                        right[1].clone(),
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        left[2].clone(),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
+                        right[2].clone(),
+                    )),
+                ]
+            }
+            ExpressionInfixOpcode::Mul => {
+                let left = get_coefficient_of_polynomials(lhs, target_name);
+                let right = get_coefficient_of_polynomials(rhs, target_name);
+                let c0 = SymbolicValue::BinaryOp(
+                    left[0].clone(),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    right[0].clone(),
+                );
+                let c1 = SymbolicValue::BinaryOp(
+                    left[0].clone(),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    right[1].clone(),
+                );
+                let c2 = SymbolicValue::BinaryOp(
+                    left[1].clone(),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    right[0].clone(),
+                );
+                let c3 = SymbolicValue::BinaryOp(
+                    left[0].clone(),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    right[2].clone(),
+                );
+                let c4 = SymbolicValue::BinaryOp(
+                    left[0].clone(),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    right[2].clone(),
+                );
+                let c5 = SymbolicValue::BinaryOp(
+                    left[1].clone(),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                    right[1].clone(),
+                );
+
+                [
+                    Rc::new(c0),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        Rc::new(c1.clone()),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                        Rc::new(c2.clone()),
+                    )),
+                    Rc::new(SymbolicValue::BinaryOp(
+                        Rc::new(SymbolicValue::BinaryOp(
+                            Rc::new(c3.clone()),
+                            DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                            Rc::new(c4.clone()),
+                        )),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+                        Rc::new(c5.clone()),
+                    )),
+                ]
+            }
+            _ => {
+                let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
+                [Rc::new(expr.clone()), zero.clone(), zero]
+            }
+        },
+        _ => {
+            let zero = Rc::new(SymbolicValue::ConstantInt(BigInt::zero()));
+            [Rc::new(expr.clone()), zero.clone(), zero]
+        }
+    }
+}
+
+pub fn get_degree_polynomial(expr: &SymbolicValue, target_name: &SymbolicName) -> usize {
+    match &expr {
+        SymbolicValue::ConstantInt(_) => 0,
+        SymbolicValue::Variable(name) => {
+            if name == target_name {
+                1
+            } else {
+                0
+            }
+        }
+        SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
+            ExpressionInfixOpcode::Add | ExpressionInfixOpcode::Sub => std::cmp::max(
+                get_degree_polynomial(lhs, target_name),
+                get_degree_polynomial(rhs, target_name),
+            ),
+            ExpressionInfixOpcode::Mul => {
+                get_degree_polynomial(lhs, target_name) + get_degree_polynomial(rhs, target_name)
+            }
+            _ => {
+                if (get_degree_polynomial(lhs, target_name) != 0)
+                    || (get_degree_polynomial(rhs, target_name) != 0)
+                {
+                    std::usize::MAX
+                } else {
+                    0
+                }
+            }
+        },
+        _ => {
+            let mut tmp = FxHashSet::default();
+            extract_variables_from_symbolic_value(expr, &mut tmp);
+            if tmp.contains(target_name) {
+                std::usize::MAX
+            } else {
+                0
+            }
+        }
+    }
+}

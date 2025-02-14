@@ -5,11 +5,9 @@ use num_traits::Zero;
 use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_value::{register_array_elements, SymbolicName};
-
+use crate::executor::symbolic_value::{extract_variables, register_array_elements, SymbolicName};
 use crate::mutator::utils::{
-    extract_variables, BaseVerificationConfig, CounterExample, UnderConstrainedType,
-    VerificationResult,
+    BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
 };
 
 /// Checks for unused outputs in the symbolic execution trace and returns a counterexample if any are found.

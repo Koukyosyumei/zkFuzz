@@ -12,12 +12,12 @@ use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
-use crate::executor::symbolic_value::{SymbolicName, SymbolicValue};
+use crate::executor::symbolic_value::{extract_variables, SymbolicName, SymbolicValue};
 
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::utils::{
-    extract_variables, gather_runtime_mutable_inputs, is_containing_binary_check,
-    BaseVerificationConfig, CounterExample, Direction,
+    gather_runtime_mutable_inputs, is_containing_binary_check, BaseVerificationConfig,
+    CounterExample, Direction,
 };
 
 pub struct MutationTestResult {

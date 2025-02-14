@@ -9,11 +9,9 @@ use num_traits::{One, Zero};
 use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
-use crate::executor::symbolic_value::{SymbolicName, SymbolicValueRef};
-
+use crate::executor::symbolic_value::{extract_variables, SymbolicName, SymbolicValueRef};
 use crate::mutator::utils::{
-    extract_variables, is_vulnerable, verify_assignment, BaseVerificationConfig, CounterExample,
-    VerificationResult,
+    is_vulnerable, verify_assignment, BaseVerificationConfig, CounterExample, VerificationResult,
 };
 
 /// Performs a brute-force search over variable assignments to evaluate constraints.
