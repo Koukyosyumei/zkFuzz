@@ -19,7 +19,7 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_value::{
     evaluate_binary_op, extract_variables_from_symbolic_value, normalize_to_bool, normalize_to_int,
-    OwnerName, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
+    OwnerName, QuadraticPoly, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 
 #[derive(Clone)]
@@ -388,6 +388,21 @@ pub fn count_satisfied_constraints(
 pub enum Direction {
     Left,
     Right,
+}
+
+pub fn gather_potential_zero_division(
+    trace: &[SymbolicValueRef],
+) -> Vec<(usize, (Vec<QuadraticPoly>, Vec<QuadraticPoly>))> {
+    let mut result = Vec::new();
+    for (i, inst) in trace.iter().enumerate() {
+        match inst.as_ref() {
+            SymbolicValue::Assign(_, _, _, Some((num, div))) => {
+                result.push((i, (num.clone(), div.clone())));
+            }
+            _ => {}
+        }
+    }
+    result
 }
 
 /// Gathers runtime mutable inputs from a symbolic execution trace.

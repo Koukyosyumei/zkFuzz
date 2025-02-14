@@ -12,12 +12,14 @@ use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
-use crate::executor::symbolic_value::{extract_variables, SymbolicName, SymbolicValue};
+use crate::executor::symbolic_value::{
+    extract_variables, QuadraticPoly, SymbolicName, SymbolicValue,
+};
 
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::utils::{
-    gather_runtime_mutable_inputs, is_containing_binary_check, BaseVerificationConfig,
-    CounterExample, Direction,
+    gather_potential_zero_division, gather_runtime_mutable_inputs, is_containing_binary_check,
+    BaseVerificationConfig, CounterExample, Direction,
 };
 
 pub struct MutationTestResult {
@@ -135,6 +137,7 @@ where
         &SymbolicTrace,
         &SymbolicConstraints,
         &FxHashMap<usize, Direction>,
+        &Vec<(usize, (Vec<QuadraticPoly>, Vec<QuadraticPoly>))>,
         &Gene,
         &Vec<FxHashMap<SymbolicName, BigInt>>,
     ) -> (usize, BigInt, Option<CounterExample>, usize),
@@ -243,6 +246,8 @@ where
         partial_binary_mode = true;
     }
 
+    let potential_zero_div_positions = gather_potential_zero_division(symbolic_trace);
+
     for generation in 0..mutation_config.max_generations {
         if partial_binary_mode
             && 1 < generation
@@ -297,6 +302,7 @@ where
                 } else {
                     &runtime_mutable_positions
                 },
+                &potential_zero_div_positions,
                 individual,
                 &input_population,
             );
