@@ -33,7 +33,7 @@ FLAGS:
     -V, --version                        Prints version information
 
 OPTIONS:
-    -l <link_libraries>...                                       Adds directory to library search path
+    -l <link_libraries>                  Adds directory to library search path
     -p, --prime <prime>
             To choose the prime number to use to generate the circuit. Receives the name of the curve (bn128, bls12381,
             goldilocks, grumpkin, pallas, vesta, secq256r1) [default: bn128]
