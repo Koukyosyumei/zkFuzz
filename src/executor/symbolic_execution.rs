@@ -1860,6 +1860,19 @@ impl<'a> SymbolicExecutor<'a> {
                         self.symbolic_library.template_library[&self.cur_state.template_id].is_safe,
                     );
                     self.cur_state.push_symbolic_trace(&cont);
+
+                    // handling zero-division pattern
+                    println!(
+                        "right-value: {}",
+                        value.lookup_fmt(&self.symbolic_library.id2name)
+                    );
+                    let mut memo = FxHashSet::default();
+                    let simplified_value =
+                        self.simplify_variables(value, std::usize::MAX, false, false, &mut memo);
+                    println!(
+                        "right-value: {}",
+                        simplified_value.lookup_fmt(&self.symbolic_library.id2name)
+                    );
                 }
                 _ => {}
             }

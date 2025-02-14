@@ -7,11 +7,11 @@ use num_bigint_dig::BigInt;
 use num_traits::identities::Zero;
 use num_traits::One;
 
+use proofuzz::executor::symbolic_execution::SymbolicExecutor;
+use proofuzz::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
+use proofuzz::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
+use proofuzz::mutator::utils::{emulate_symbolic_trace, gather_runtime_mutable_inputs, Direction};
 use rustc_hash::{FxHashMap, FxHashSet};
-use tcct::executor::symbolic_execution::SymbolicExecutor;
-use tcct::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
-use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
-use tcct::mutator::utils::{emulate_symbolic_trace, gather_runtime_mutable_inputs, Direction};
 
 use crate::utils::{execute, prepare_symbolic_library};
 

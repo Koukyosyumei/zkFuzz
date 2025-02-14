@@ -1,4 +1,4 @@
-# Trace-Constraint Consistency Test (TCCT)
+# ProoFuzz
 
 This tool is designed to extract and analyze the trace constraints ($`\mathcal{T}(\mathcal{P})`$) and side constraints ($`\mathcal{S}(\mathcal{C})`$) from ZKP circuits written in Circom.
 
@@ -18,17 +18,17 @@ cargo build --release
 ZKP Circuit Debugger
 
 USAGE:
-    tcct [FLAGS] [OPTIONS] [--] [input]
+    proofuzz [FLAGS] [OPTIONS] [--] [input]
 
 FLAGS:
         --constraint_assert_dissabled    Does not add asserts in the generated code for === constraint equalities
-        --lessthan_dissabled             (TCCT) Does not detect overflow erros due to LessThan template
-        --print_ast                      (TCCT) Prints AST
-        --show_stats_of_ast              (TCCT) Prints the basic stats of AST
-        --print_stats                    (TCCT) Prints the stats of constraints
-        --print_stats_csv                (TCCT) Prints the stats of constraints in CSV format
-        --symbolic_template_params       (TCCT) Treats the template parameters of the main template as symbolic values
-        --save_output                    (TCCT) Save the output when the counterexample is found
+        --lessthan_dissabled             (ProoFuzz) Does not detect overflow erros due to LessThan template
+        --print_ast                      (ProoFuzz) Prints AST
+        --show_stats_of_ast              (ProoFuzz) Prints the basic stats of AST
+        --print_stats                    (ProoFuzz) Prints the stats of constraints
+        --print_stats_csv                (ProoFuzz) Prints the stats of constraints in CSV format
+        --symbolic_template_params       (ProoFuzz) Treats the template parameters of the main template as symbolic values
+        --save_output                    (ProoFuzz) Save the output when the counterexample is found
     -h, --help                           Prints help information
     -V, --version                        Prints version information
 
@@ -38,18 +38,18 @@ OPTIONS:
             To choose the prime number to use to generate the circuit. Receives the name of the curve (bn128, bls12381,
             goldilocks, grumpkin, pallas, vesta, secq256r1) [default: bn128]
         --debug_prime <debug_prime>
-            (TCCT) Prime number for TCCT debugging [default:
+            (ProoFuzz) Prime number for ProoFuzz [default:
             21888242871839275222246405745257275088548364400416034343698204186575808495617]
         --search_mode <search_mode>
-            (TCCT) Search mode to find the counter example that shows the given circuit is not well-constrained
+            (ProoFuzz) Search mode to find the counter example that shows the given circuit is not well-constrained
             [default: ga]
         --heuristics_range <heuristics_range>
-            (TCCT) Heuristics range for TCCT debugging [default: 100]
+            (ProoFuzz) Heuristics range for ProoFuzz [default: 100]
 
         --path_to_mutation_setting <path_to_mutation_setting>
-            (TCCT) Path to the setting file for Mutation Testing [default: none]
+            (ProoFuzz) Path to the setting file for Mutation Testing [default: none]
 
-        --path_to_whitelist <path_to_whitelist>                  (TCCT) Path to the white-lists file [default: none]
+        --path_to_whitelist <path_to_whitelist>                  (ProoFuzz) Path to the white-lists file [default: none]
 
 ARGS:
     <input>    Path to a circuit with a main component [default: ./circuit.circom]
@@ -58,9 +58,9 @@ ARGS:
 **Example Command:**
 
 ```bash
-./target/debug/tcct ./tests/sample/iszero_vuln.circom --search_mode="ga"
+./target/debug/proofuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
 or
-./target/release/tcct ./tests/sample/iszero_vuln.circom --search_mode="ga"
+./target/release/proofuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
 ```
 
 **Example Output:**
@@ -207,7 +207,7 @@ When the `--save_output` option is enabled, the counterexample is saved to the d
 **Example Command with `--save_output`**
 
 ```bash
-./target/release/tcct ./tests/sample/test_vuln_iszero.circom --search_mode="ga" --save_output
+./target/release/proofuzz ./tests/sample/test_vuln_iszero.circom --search_mode="ga" --save_output
 ```
 
 The output filename will follow the pattern `<TARGET_FILE_NAME>_<RANDOM_SUFFIX>_counterexample.json`.
@@ -220,7 +220,7 @@ The output filename will follow the pattern `<TARGET_FILE_NAME>_<RANDOM_SUFFIX>_
   "1_main_template": "VulnerableIsZero",
   "2_search_mode": "ga",
   "3_execution_time": "36.3001ms",
-  "4_git_hash_of_tcct": "106b20ddad6431d0eee3cd73f9aac0153af4bbd9",
+  "4_git_hash_of_proofuzz": "106b20ddad6431d0eee3cd73f9aac0153af4bbd9",
   "5_flag": {
     "1_type": "UnderConstrained-NonDeterministic",
     "2_expected_output": {
@@ -288,7 +288,7 @@ This tool also provides multiple verbosity levels for detailed analysis with the
 **Example Command with Verbosity:**
 
 ```bash
-RUST_LOG=trace ./target/debug/tcct ../sample/lessthan3.circom --print_ast --print_stats
+RUST_LOG=trace ./target/debug/proofuzz ../sample/lessthan3.circom --print_ast --print_stats
 ```
 
 **Example Output:**

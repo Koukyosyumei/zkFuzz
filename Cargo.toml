@@ -1,5 +1,5 @@
 [package]
-name = "tcct"
+name = "proofuzz"
 version = "2.2.1"
 edition = "2021"
 

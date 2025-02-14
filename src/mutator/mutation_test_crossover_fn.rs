@@ -22,7 +22,7 @@ use rustc_hash::FxHashMap;
 /// ```
 /// use rustc_hash::FxHashMap;
 /// use rand::{SeedableRng, rngs::StdRng};
-/// use tcct::mutator::mutation_test_crossover_fn::random_crossover;
+/// use proofuzz::mutator::mutation_test_crossover_fn::random_crossover;
 ///
 /// let mut rng = StdRng::seed_from_u64(42);
 ///

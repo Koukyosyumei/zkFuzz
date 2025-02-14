@@ -61,20 +61,14 @@ const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 const RESET: &str = "\x1b[0m";
 const BACK_GRAY_SCRIPT_BLACK: &str = "\x1b[30;100m"; //94
 
-fn display_tcct_logo() {
+fn display_proofuzz_header() {
     let logo = r#"
-  ████████╗ ██████╗ ██████╗████████╗
-  ╚══██╔══╝██╔════╝██╔════╝╚══██╔══╝
-     ██║   ██║     ██║        ██║   
-     ██║   ██║     ██║        ██║   
-     ██║   ╚██████╗╚██████╗   ██║   
-     ╚═╝    ╚═════╝ ╚═════╝   ╚═╝   
- Trace-Constraint Consistency Test
-     ZKP Circuit Debugger v0.0
+            ProoFuzz
+     ZKP Circuit Fuzzer v0.0
     "#;
 
     eprintln!("{}", logo.bright_cyan().bold());
-    eprintln!("{}", "Welcome to the TCCT Debugging Tool".green().bold());
+    eprintln!("{}", "Welcome to the ProoFuzz".green().bold());
     eprintln!("{}", "══════════════════════════════════".green());
 }
 
@@ -89,7 +83,7 @@ fn read_file_to_lines(file_path: &str) -> io::Result<Vec<String>> {
 }
 
 fn main() {
-    display_tcct_logo();
+    display_proofuzz_header();
 
     let result = start();
     if result.is_err() {
@@ -380,7 +374,7 @@ fn start() -> Result<(), ()> {
                                 format!("{:?}", start_time.elapsed()),
                             ),
                             (
-                                "4_git_hash_of_tcct".to_string(),
+                                "4_git_hash_of_proofuzz".to_string(),
                                 format!("{}", option_env!("GIT_HASH").unwrap_or("unknown")),
                             ),
                         ]);

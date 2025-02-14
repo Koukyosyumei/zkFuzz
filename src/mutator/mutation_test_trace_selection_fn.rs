@@ -41,7 +41,7 @@ use rand::rngs::StdRng;
 /// use rand::{SeedableRng, rngs::StdRng};
 /// use num_bigint_dig::BigInt;
 ///
-/// use tcct::mutator::mutation_test_trace_selection_fn::roulette_selection;
+/// use proofuzz::mutator::mutation_test_trace_selection_fn::roulette_selection;
 ///
 /// let population = vec!["A", "B", "C"];
 /// let fitness_scores = vec![BigInt::from(10), BigInt::from(20), BigInt::from(30)];

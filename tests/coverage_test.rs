@@ -11,9 +11,9 @@ use rustc_hash::FxHashMap;
 use program_structure::ast::Expression;
 use program_structure::program_archive::ProgramArchive;
 
-use tcct::executor::symbolic_execution::SymbolicExecutor;
-use tcct::executor::symbolic_setting::get_default_setting_for_concrete_execution;
-use tcct::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
+use proofuzz::executor::symbolic_execution::SymbolicExecutor;
+use proofuzz::executor::symbolic_setting::get_default_setting_for_concrete_execution;
+use proofuzz::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
 
 use crate::utils::prepare_symbolic_library;
 

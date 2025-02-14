@@ -7,9 +7,9 @@ use program_structure::ast::Expression;
 use program_structure::error_definition::Report;
 use program_structure::program_archive::ProgramArchive;
 
-use tcct::executor::symbolic_execution::SymbolicExecutor;
-use tcct::executor::symbolic_value::{OwnerName, SymbolicLibrary};
-use tcct::type_analysis_user::analyse_project;
+use proofuzz::executor::symbolic_execution::SymbolicExecutor;
+use proofuzz::executor::symbolic_value::{OwnerName, SymbolicLibrary};
+use proofuzz::type_analysis_user::analyse_project;
 
 pub fn parse_project(initial_file: String, prime: BigInt) -> Result<ProgramArchive, ()> {
     let result_program_archive = parser::run_parser(initial_file, VERSION, Vec::new(), &prime);

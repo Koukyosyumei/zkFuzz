@@ -6,8 +6,8 @@ use num_traits::{One, Zero};
 
 use program_structure::ast::ExpressionInfixOpcode;
 
-use tcct::executor::debug_ast::DebuggableExpressionInfixOpcode;
-use tcct::executor::symbolic_value::{
+use proofuzz::executor::debug_ast::DebuggableExpressionInfixOpcode;
+use proofuzz::executor::symbolic_value::{
     enumerate_array, evaluate_binary_op, initialize_symbolic_nested_array_with_name, OwnerName,
     SymbolicAccess, SymbolicName, SymbolicValue,
 };

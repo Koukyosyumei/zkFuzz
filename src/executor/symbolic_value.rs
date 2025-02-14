@@ -579,7 +579,7 @@ pub fn access_multidimensional_array(
 ///
 /// ```
 /// use rustc_hash::FxHashMap;
-/// use tcct::executor::symbolic_value::{register_array_elements,SymbolicName,SymbolicValue};
+/// use proofuzz::executor::symbolic_value::{register_array_elements,SymbolicName,SymbolicValue};
 ///
 /// let mut elements: FxHashMap<SymbolicName, Option<SymbolicValue>> = FxHashMap::default();
 /// register_array_elements(0, &vec![2, 3], None, &mut elements);
@@ -728,8 +728,8 @@ pub fn is_true(val: &SymbolicValue) -> bool {
 ///
 /// use program_structure::ast::ExpressionInfixOpcode;
 ///
-/// use tcct::executor::debug_ast::{DebuggableExpressionInfixOpcode};
-/// use tcct::executor::symbolic_value::{SymbolicValue, evaluate_binary_op};
+/// use proofuzz::executor::debug_ast::{DebuggableExpressionInfixOpcode};
+/// use proofuzz::executor::symbolic_value::{SymbolicValue, evaluate_binary_op};
 ///
 /// let lhs = SymbolicValue::ConstantInt(BigInt::from(10));
 /// let rhs = SymbolicValue::ConstantInt(BigInt::from(3));

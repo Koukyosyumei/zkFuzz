@@ -6,13 +6,13 @@ use num_traits::{One, Zero};
 
 use program_structure::ast::ExpressionInfixOpcode;
 
-use tcct::executor::debug_ast::DebuggableExpressionInfixOpcode;
-use tcct::executor::symbolic_value::{
+use proofuzz::executor::debug_ast::DebuggableExpressionInfixOpcode;
+use proofuzz::executor::symbolic_value::{
     enumerate_array, evaluate_binary_op, initialize_symbolic_nested_array_with_name, OwnerName,
     SymbolicAccess, SymbolicName, SymbolicValue,
 };
-use tcct::executor::utils::solve_quadratic_modulus_equation;
-use tcct::mutator::utils::{get_coefficient_of_polynomials, get_degree_polynomial};
+use proofuzz::executor::utils::solve_quadratic_modulus_equation;
+use proofuzz::mutator::utils::{get_coefficient_of_polynomials, get_degree_polynomial};
 
 // A dummy owner to use for creating SymbolicNames.
 fn dummy_owner() -> OwnerName {
