@@ -410,7 +410,7 @@ fn start() -> Result<(), ()> {
             );
             println!(
                 "{}",
-                "║                        TCCT Report                            ║".green()
+                "║                        ProoFuzz Report                        ║".green()
             );
             println!(
                 "{}",
