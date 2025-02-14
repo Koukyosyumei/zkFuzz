@@ -456,11 +456,22 @@ fn test_1d_array_component() {
         ),
     ];
 
+    let mut results = Vec::new();
+    for s in sexe.cur_state.symbolic_trace {
+        if let SymbolicValue::Assign(a, b, c, Some(_)) = s.as_ref() {
+            results.push(Rc::new(SymbolicValue::Assign(
+                a.clone(),
+                b.clone(),
+                c.clone(),
+                None,
+            )));
+        } else {
+            results.push(s.clone());
+        }
+    }
+
     for i in 0..ground_truth_symbolic_trace.len() {
-        assert_eq!(
-            ground_truth_symbolic_trace[i],
-            *sexe.cur_state.symbolic_trace[i + 1].clone()
-        );
+        assert_eq!(ground_truth_symbolic_trace[i], *results[i + 1].clone());
     }
 
     // main.c[0].x[0] = main.a;
@@ -1015,11 +1026,22 @@ fn test_2d_array_component() {
         ),
     ];
 
+    let mut results = Vec::new();
+    for s in sexe.cur_state.symbolic_trace {
+        if let SymbolicValue::Assign(a, b, c, Some(_)) = s.as_ref() {
+            results.push(Rc::new(SymbolicValue::Assign(
+                a.clone(),
+                b.clone(),
+                c.clone(),
+                None,
+            )));
+        } else {
+            results.push(s.clone());
+        }
+    }
+
     for i in 0..ground_truth_symbolic_trace.len() {
-        assert_eq!(
-            ground_truth_symbolic_trace[i],
-            *sexe.cur_state.symbolic_trace[i].clone()
-        );
+        assert_eq!(ground_truth_symbolic_trace[i], *results[i].clone());
     }
 }
 

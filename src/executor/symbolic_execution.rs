@@ -1860,10 +1860,6 @@ impl<'a> SymbolicExecutor<'a> {
                     // handling zero-division pattern
                     let zero_div_info = if !self.is_concrete_mode {
                         self.is_concrete_mode = true;
-                        println!(
-                            "right-value: {}",
-                            value.lookup_fmt(&self.symbolic_library.id2name)
-                        );
                         let mut memo = FxHashSet::default();
                         let simplified_value = self.simplify_variables(
                             value,
@@ -1871,10 +1867,6 @@ impl<'a> SymbolicExecutor<'a> {
                             false,
                             false,
                             &mut memo,
-                        );
-                        println!(
-                            "right-value: {}",
-                            simplified_value.lookup_fmt(&self.symbolic_library.id2name)
                         );
                         if let SymbolicValue::BinaryOp(
                             left,
@@ -1910,7 +1902,12 @@ impl<'a> SymbolicExecutor<'a> {
                                 }
                             }
                             self.is_concrete_mode = false;
-                            Some((left_quad_poly, right_quad_poly))
+
+                            if left_quad_poly.is_empty() && right_quad_poly.is_empty() {
+                                None
+                            } else {
+                                Some((left_quad_poly, right_quad_poly))
+                            }
                         } else {
                             None
                         }

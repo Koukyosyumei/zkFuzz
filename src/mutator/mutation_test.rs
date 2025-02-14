@@ -7,6 +7,7 @@ use log::info;
 use num_bigint_dig::BigInt;
 use num_traits::Zero;
 use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
 use rustc_hash::FxHashMap;
 
@@ -291,36 +292,73 @@ where
         // zero-division-pattern
         for inp in input_population.iter_mut() {
             if !potential_zero_div_positions.is_empty() {
-                let numerator = &(potential_zero_div_positions[0].1 .0[0]);
-                let denominator = &(potential_zero_div_positions[0].1 .1[0]);
+                let zero_div_info = potential_zero_div_positions.choose(&mut rng);
                 let mut dummy_inp = inp.clone();
 
-                dummy_inp.remove(&numerator.0);
-                let numerator_coefficients: Option<Vec<_>> = numerator
-                    .1
-                    .iter()
-                    .map(|expr| {
-                        evaluate_symbolic_value(
-                            &base_config.prime,
-                            expr,
-                            &dummy_inp,
-                            sexe.symbolic_library,
-                        )
-                        .and_then(|val| match val {
-                            SymbolicValue::ConstantInt(c) => Some(c),
-                            _ => None,
-                        })
-                    })
-                    .collect();
-                if let Some(coefs) = numerator_coefficients {
-                    if let Some(ans_val) = solve_quadratic_modulus_equation(
-                        [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
-                        &base_config.prime,
-                    ) {
-                        inp.insert(numerator.0.clone(), ans_val);
+                if let Some((_, (numerator_polys, denominator_polys))) = zero_div_info {
+                    if !numerator_polys.is_empty() {
+                        let numerator = numerator_polys.choose(&mut rng);
+                        if let Some((numerator_var_name, numerator_coefs)) = numerator {
+                            dummy_inp.remove(numerator_var_name);
+                            let numerator_coefficients: Option<Vec<_>> = numerator_coefs
+                                .iter()
+                                .map(|expr| {
+                                    evaluate_symbolic_value(
+                                        &base_config.prime,
+                                        expr,
+                                        &dummy_inp,
+                                        sexe.symbolic_library,
+                                    )
+                                    .and_then(
+                                        |val| match val {
+                                            SymbolicValue::ConstantInt(c) => Some(c),
+                                            _ => None,
+                                        },
+                                    )
+                                })
+                                .collect();
+                            if let Some(coefs) = numerator_coefficients {
+                                if let Some(ans_val) = solve_quadratic_modulus_equation(
+                                    [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
+                                    &base_config.prime,
+                                ) {
+                                    inp.insert(numerator_var_name.clone(), ans_val);
+                                }
+                            }
+                        }
+                    }
+                    if !denominator_polys.is_empty() {
+                        let denominator = denominator_polys.choose(&mut rng);
+                        if let Some((denominator_var_name, denominator_coefs)) = denominator {
+                            dummy_inp.remove(denominator_var_name);
+                            let denominator_coefficients: Option<Vec<_>> = denominator_coefs
+                                .iter()
+                                .map(|expr| {
+                                    evaluate_symbolic_value(
+                                        &base_config.prime,
+                                        expr,
+                                        &dummy_inp,
+                                        sexe.symbolic_library,
+                                    )
+                                    .and_then(
+                                        |val| match val {
+                                            SymbolicValue::ConstantInt(c) => Some(c),
+                                            _ => None,
+                                        },
+                                    )
+                                })
+                                .collect();
+                            if let Some(coefs) = denominator_coefficients {
+                                if let Some(ans_val) = solve_quadratic_modulus_equation(
+                                    [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
+                                    &base_config.prime,
+                                ) {
+                                    inp.insert(denominator_var_name.clone(), ans_val);
+                                }
+                            }
+                        }
                     }
                 }
-                if numerator != denominator {}
             }
         }
 
