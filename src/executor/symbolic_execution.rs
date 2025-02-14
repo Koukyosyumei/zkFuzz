@@ -1866,46 +1866,79 @@ impl<'a> SymbolicExecutor<'a> {
                     self.cur_state.push_symbolic_trace(&cont);
 
                     // handling zero-division pattern
-                    println!(
-                        "right-value: {}",
-                        value.lookup_fmt(&self.symbolic_library.id2name)
-                    );
-                    let mut memo = FxHashSet::default();
-                    let simplified_value =
-                        self.simplify_variables(value, std::usize::MAX, false, false, &mut memo);
-                    println!(
-                        "right-value: {}",
-                        simplified_value.lookup_fmt(&self.symbolic_library.id2name)
-                    );
-                    if let SymbolicValue::BinaryOp(
-                        left,
-                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div),
-                        right,
-                    ) = simplified_value
-                    {
-                        let mut left_vars = FxHashSet::default();
-                        extract_variables_from_symbolic_value(&left, &mut left_vars);
-                        for v in left_vars {
-                            let d = get_degree_polynomial(&left, &v);
-                            println!("{} - {}", v.lookup_fmt(&self.symbolic_library.id2name), d);
-                            if d <= 2 {
-                                let coefs =
-                                    get_coefficient_of_polynomials(&left, &v, &self.setting.prime);
+                    if !self.is_concrete_mode {
+                        self.is_concrete_mode = true;
+                        println!(
+                            "right-value: {}",
+                            value.lookup_fmt(&self.symbolic_library.id2name)
+                        );
+                        let mut memo = FxHashSet::default();
+                        let simplified_value = self.simplify_variables(
+                            value,
+                            std::usize::MAX,
+                            false,
+                            false,
+                            &mut memo,
+                        );
+                        println!(
+                            "right-value: {}",
+                            simplified_value.lookup_fmt(&self.symbolic_library.id2name)
+                        );
+                        if let SymbolicValue::BinaryOp(
+                            left,
+                            DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div),
+                            right,
+                        ) = simplified_value
+                        {
+                            let mut left_vars = FxHashSet::default();
+                            extract_variables_from_symbolic_value(&left, &mut left_vars);
+                            for v in left_vars {
+                                let d = get_degree_polynomial(&left, &v);
                                 println!(
-                                    "{}x^2 + {}x + {}",
-                                    coefs[2].lookup_fmt(&self.symbolic_library.id2name),
-                                    coefs[1].lookup_fmt(&self.symbolic_library.id2name),
-                                    coefs[0].lookup_fmt(&self.symbolic_library.id2name)
+                                    "{} - {}",
+                                    v.lookup_fmt(&self.symbolic_library.id2name),
+                                    d
                                 );
+                                if d <= 2 {
+                                    let coefs = get_coefficient_of_polynomials(
+                                        &left,
+                                        &v,
+                                        &self.setting.prime,
+                                    );
+                                    println!(
+                                        "{}x^2 + {}x + {}",
+                                        coefs[2].lookup_fmt(&self.symbolic_library.id2name),
+                                        coefs[1].lookup_fmt(&self.symbolic_library.id2name),
+                                        coefs[0].lookup_fmt(&self.symbolic_library.id2name)
+                                    );
+                                }
+                            }
+
+                            let mut right_vars = FxHashSet::default();
+                            extract_variables_from_symbolic_value(&right, &mut right_vars);
+                            for v in right_vars {
+                                let d = get_degree_polynomial(&right, &v);
+                                println!(
+                                    "{} - {}",
+                                    v.lookup_fmt(&self.symbolic_library.id2name),
+                                    d
+                                );
+                                if d <= 2 {
+                                    let coefs = get_coefficient_of_polynomials(
+                                        &right,
+                                        &v,
+                                        &self.setting.prime,
+                                    );
+                                    println!(
+                                        "{}x^2 + {}x + {}",
+                                        coefs[2].lookup_fmt(&self.symbolic_library.id2name),
+                                        coefs[1].lookup_fmt(&self.symbolic_library.id2name),
+                                        coefs[0].lookup_fmt(&self.symbolic_library.id2name)
+                                    );
+                                }
                             }
                         }
-
-                        let mut right_vars = FxHashSet::default();
-                        extract_variables_from_symbolic_value(&right, &mut right_vars);
-                        for v in right_vars {
-                            let d = get_degree_polynomial(&right, &v);
-                            println!("{} - {}", v.lookup_fmt(&self.symbolic_library.id2name), d);
-                        }
+                        self.is_concrete_mode = false;
                     }
                 }
                 _ => {}

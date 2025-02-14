@@ -22,4 +22,14 @@ template MontgomeryDouble() {
     out[1] <== lamda * (in[0] - out[0]) - in[1];
 }
 
-component main = MontgomeryDouble();
+template CallMontogmeryDouble() {
+    signal input a;
+    signal input b;
+    signal output c;
+    component md = MontgomeryDouble();
+    md.in[0] <== a;
+    md.in[1] <== b;
+    c <== md.out[0] + md.out[1];
+}
+
+component main = CallMontogmeryDouble();
