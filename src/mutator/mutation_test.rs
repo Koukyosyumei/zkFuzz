@@ -293,44 +293,34 @@ where
             if !potential_zero_div_positions.is_empty() {
                 let numerator = &(potential_zero_div_positions[0].1 .0[0]);
                 let denominator = &(potential_zero_div_positions[0].1 .1[0]);
-                if numerator != denominator {
-                    let mut dummy_inp = inp.clone();
-                    dummy_inp.remove(&numerator.0);
-                    let num_coef_0 = evaluate_symbolic_value(
+                let mut dummy_inp = inp.clone();
+
+                dummy_inp.remove(&numerator.0);
+                let numerator_coefficients: Option<Vec<_>> = numerator
+                    .1
+                    .iter()
+                    .map(|expr| {
+                        evaluate_symbolic_value(
+                            &base_config.prime,
+                            expr,
+                            &dummy_inp,
+                            sexe.symbolic_library,
+                        )
+                        .and_then(|val| match val {
+                            SymbolicValue::ConstantInt(c) => Some(c),
+                            _ => None,
+                        })
+                    })
+                    .collect();
+                if let Some(coefs) = numerator_coefficients {
+                    if let Some(ans_val) = solve_quadratic_modulus_equation(
+                        [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
                         &base_config.prime,
-                        &numerator.1[0],
-                        &dummy_inp,
-                        sexe.symbolic_library,
-                    );
-                    let num_coef_1 = evaluate_symbolic_value(
-                        &base_config.prime,
-                        &numerator.1[1],
-                        &dummy_inp,
-                        sexe.symbolic_library,
-                    );
-                    let num_coef_2 = evaluate_symbolic_value(
-                        &base_config.prime,
-                        &numerator.1[2],
-                        &dummy_inp,
-                        sexe.symbolic_library,
-                    );
-                    match (num_coef_0, num_coef_1, num_coef_2) {
-                        (
-                            Some(SymbolicValue::ConstantInt(c0)),
-                            Some(SymbolicValue::ConstantInt(c1)),
-                            Some(SymbolicValue::ConstantInt(c2)),
-                        ) => {
-                            let ans = solve_quadratic_modulus_equation(
-                                [c0.clone(), c1.clone(), c2.clone()],
-                                &base_config.prime,
-                            );
-                            if let Some(ans_val) = ans {
-                                inp.insert(numerator.0.clone(), ans_val);
-                            }
-                        }
-                        _ => {}
+                    ) {
+                        inp.insert(numerator.0.clone(), ans_val);
                     }
                 }
+                if numerator != denominator {}
             }
         }
 

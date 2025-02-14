@@ -1886,23 +1886,11 @@ impl<'a> SymbolicExecutor<'a> {
                             extract_variables_from_symbolic_value(&left, &mut left_vars);
                             let mut left_quad_poly = Vec::new();
                             for v in left_vars {
-                                let d = get_degree_polynomial(&left, &v);
-                                println!(
-                                    "{} - {}",
-                                    v.lookup_fmt(&self.symbolic_library.id2name),
-                                    d
-                                );
-                                if d <= 2 {
+                                if get_degree_polynomial(&left, &v) <= 2 {
                                     let coefs = get_coefficient_of_polynomials(
                                         &left,
                                         &v,
                                         &self.setting.prime,
-                                    );
-                                    println!(
-                                        "{}x^2 + {}x + {}",
-                                        coefs[2].lookup_fmt(&self.symbolic_library.id2name),
-                                        coefs[1].lookup_fmt(&self.symbolic_library.id2name),
-                                        coefs[0].lookup_fmt(&self.symbolic_library.id2name)
                                     );
                                     left_quad_poly.push((v, coefs));
                                 }
@@ -1912,23 +1900,11 @@ impl<'a> SymbolicExecutor<'a> {
                             extract_variables_from_symbolic_value(&right, &mut right_vars);
                             let mut right_quad_poly = Vec::new();
                             for v in right_vars {
-                                let d = get_degree_polynomial(&right, &v);
-                                println!(
-                                    "{} - {}",
-                                    v.lookup_fmt(&self.symbolic_library.id2name),
-                                    d
-                                );
-                                if d <= 2 {
+                                if get_degree_polynomial(&right, &v) <= 2 {
                                     let coefs = get_coefficient_of_polynomials(
                                         &right,
                                         &v,
                                         &self.setting.prime,
-                                    );
-                                    println!(
-                                        "{}x^2 + {}x + {}",
-                                        coefs[2].lookup_fmt(&self.symbolic_library.id2name),
-                                        coefs[1].lookup_fmt(&self.symbolic_library.id2name),
-                                        coefs[0].lookup_fmt(&self.symbolic_library.id2name)
                                     );
                                     right_quad_poly.push((v, coefs));
                                 }
