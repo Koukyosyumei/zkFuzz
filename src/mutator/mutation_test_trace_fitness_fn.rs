@@ -4,9 +4,8 @@ use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{
-    QuadraticPoly, SymbolicName, SymbolicValue, SymbolicValueRef,
+    SymbolicName, SymbolicValue, SymbolicValueRef,
 };
-use crate::executor::utils::solve_quadratic_modulus_equation;
 use crate::mutator::mutation_utils::apply_trace_mutation;
 use crate::mutator::utils::{
     accumulate_error_of_constraints, emulate_symbolic_trace, evaluate_constraints, is_equal_mod,

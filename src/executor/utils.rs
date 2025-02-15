@@ -1,6 +1,6 @@
 use num_bigint_dig::BigInt;
 use num_traits::{One, Signed, Zero};
-use std::ops::{BitAnd, Div, Rem, Shl, Sub};
+use std::ops::{Div, Rem, Sub};
 
 pub fn extended_euclidean<F>(a: F, b: F) -> (F, F, F)
 where

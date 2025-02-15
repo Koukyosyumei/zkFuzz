@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::cmp::min;
 
 use rand::rngs::StdRng;
 use rand::seq::{IteratorRandom, SliceRandom};
