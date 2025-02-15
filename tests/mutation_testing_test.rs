@@ -176,3 +176,17 @@ fn test_input_subscript_2d() {
         })
     ));
 }
+
+#[test]
+fn test_montgomerydouble() {
+    let result =
+        conduct_mutation_testing("./tests/sample/test_montgomerydouble.circom".to_string());
+
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic(..)),
+            ..
+        })
+    ));
+}
