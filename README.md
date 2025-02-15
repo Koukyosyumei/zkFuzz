@@ -15,7 +15,7 @@ cargo build --release
 ## Basic Usage
 
 ```
-ZKP Circuit Debugger
+ZKP Circuit Fuzzer
 
 USAGE:
     proofuzz [FLAGS] [OPTIONS] [--] [input]
