@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TARGET_DIR="../../Picus/benchmarks/"
-BASE_COMMAND="./target/release/tcct"
+BASE_COMMAND="./target/release/proofuzz"
 
 counter=1
 for circom_file in "$TARGET_DIR"/*/*.circom; do

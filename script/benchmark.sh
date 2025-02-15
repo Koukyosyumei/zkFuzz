@@ -7,7 +7,7 @@ output_file="out.txt"
 find ../../Picus/benchmarks/ -type f -name "*.circom" | while read -r circom_file; do
   echo "Processing file: $circom_file"
   temp_output=$(mktemp)
-  ./target/debug/tcct "$circom_file" > "$temp_output"
+  ./target/debug/proofuzz "$circom_file" > "$temp_output"
 
   if tail -n 1 "$temp_output" | grep -q "Everything went okay"; then
     echo "Adding output for $circom_file to $output_file"

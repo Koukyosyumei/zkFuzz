@@ -741,15 +741,12 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::ConstantInt(_v) => Some(value.clone()),
         SymbolicValue::Variable(sym_name) => {
             if !assignment.contains_key(sym_name) {
-                panic!(
-                    "name={} is not available in the assignment",
-                    sym_name.lookup_fmt(&symbolic_library.id2name)
-                );
+                None
+            } else {
+                Some(SymbolicValue::ConstantInt(
+                    assignment.get(sym_name).unwrap().clone(),
+                ))
             }
-
-            Some(SymbolicValue::ConstantInt(
-                assignment.get(sym_name).unwrap().clone(),
-            ))
         }
         SymbolicValue::Array(elements) => Some(SymbolicValue::Array(
             elements
@@ -765,6 +762,10 @@ pub fn evaluate_symbolic_value(
             let evaled_elem = evaluate_symbolic_value(prime, elem, assignment, symbolic_library);
             let evaled_counts =
                 evaluate_symbolic_value(prime, counts, assignment, symbolic_library);
+            if evaled_elem.is_none() || evaled_counts.is_none() {
+                return None;
+            }
+
             if let Some(SymbolicValue::ConstantInt(c)) = evaled_counts {
                 Some(SymbolicValue::Array(vec![
                     Rc::new(evaled_elem.unwrap());
@@ -782,6 +783,10 @@ pub fn evaluate_symbolic_value(
         | SymbolicValue::AssignCall(lhs, rhs, _) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
+            if lhs_val.is_none() || rhs_val.is_none() {
+                return None;
+            }
+
             match (&lhs_val.unwrap(), &rhs_val.unwrap()) {
                 (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
                     Some(SymbolicValue::ConstantBool(lv % prime == rv % prime))
@@ -799,6 +804,10 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::BinaryOp(lhs, op, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
+            if lhs_val.is_none() || rhs_val.is_none() {
+                return None;
+            }
+
             Some(evaluate_binary_op(
                 &lhs_val.unwrap(),
                 &rhs_val.unwrap(),
@@ -808,6 +817,10 @@ pub fn evaluate_symbolic_value(
         }
         SymbolicValue::UnaryOp(op, expr) => {
             let expr_val = evaluate_symbolic_value(prime, expr, assignment, symbolic_library);
+            if expr_val.is_none() {
+                return None;
+            }
+
             match &expr_val.unwrap() {
                 SymbolicValue::ConstantInt(rv) => match op.0 {
                     ExpressionPrefixOpcode::Sub => Some(SymbolicValue::ConstantInt(-1 * rv)),
@@ -832,6 +845,10 @@ pub fn evaluate_symbolic_value(
                 evaluate_symbolic_value(prime, then_branch, assignment, symbolic_library);
             let else_val =
                 evaluate_symbolic_value(prime, else_branch, assignment, symbolic_library);
+            if cond_val.is_none() {
+                return None;
+            }
+
             match &cond_val.as_ref().unwrap() {
                 SymbolicValue::ConstantBool(true) => then_val,
                 SymbolicValue::ConstantBool(false) => else_val,
