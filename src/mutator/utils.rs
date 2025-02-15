@@ -742,10 +742,7 @@ pub fn evaluate_symbolic_value(
         SymbolicValue::ConstantInt(_v) => Some(value.clone()),
         SymbolicValue::Variable(sym_name) => {
             if !assignment.contains_key(sym_name) {
-                panic!(
-                    "{} is not included",
-                    sym_name.lookup_fmt(&symbolic_library.id2name)
-                );
+                None
             } else {
                 Some(SymbolicValue::ConstantInt(
                     assignment.get(sym_name).unwrap().clone(),
