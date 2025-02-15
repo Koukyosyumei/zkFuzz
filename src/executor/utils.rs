@@ -156,7 +156,7 @@ pub fn tonelli_shanks(n_original: &BigInt, p: &BigInt) -> Option<BigInt> {
     Some(r)
 }
 
-pub fn solve_quadratic_modulus_equation(coeffs: [BigInt; 3], modulus: &BigInt) -> Option<BigInt> {
+pub fn solve_quadratic_modulus_equation(coeffs: &[BigInt; 3], modulus: &BigInt) -> Option<BigInt> {
     if coeffs[2].is_zero() && coeffs[1].is_zero() {
         None
     } else if coeffs[2].is_zero() {

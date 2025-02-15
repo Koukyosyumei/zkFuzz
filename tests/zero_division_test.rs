@@ -307,7 +307,7 @@ fn test_degenerate() {
     // Equation: 5 ≡ 0 (mod 7)  i.e. coefficients: c = 5, b = 0, a = 0.
     let coeffs = [BigInt::from(5), BigInt::zero(), BigInt::zero()];
     let modulus = BigInt::from(7);
-    assert_eq!(solve_quadratic_modulus_equation(coeffs, &modulus), None);
+    assert_eq!(solve_quadratic_modulus_equation(&coeffs, &modulus), None);
 }
 
 #[test]
@@ -319,7 +319,7 @@ fn test_linear_equation() {
     let coeffs = [BigInt::from(3), BigInt::from(2), BigInt::zero()];
     let modulus = BigInt::from(7);
     assert_eq!(
-        solve_quadratic_modulus_equation(coeffs, &modulus),
+        solve_quadratic_modulus_equation(&coeffs, &modulus),
         Some(BigInt::from(2))
     );
 }
@@ -333,7 +333,7 @@ fn test_linear_zero_constant() {
     let coeffs = [BigInt::zero(), BigInt::from(2), BigInt::zero()];
     let modulus = BigInt::from(7);
     assert_eq!(
-        solve_quadratic_modulus_equation(coeffs, &modulus),
+        solve_quadratic_modulus_equation(&coeffs, &modulus),
         Some(BigInt::zero())
     );
 }
@@ -348,7 +348,7 @@ fn test_quadratic_with_solution_mod17() {
     let coeffs = [BigInt::from(-1), BigInt::zero(), BigInt::one()];
     let modulus = BigInt::from(17);
     assert_eq!(
-        solve_quadratic_modulus_equation(coeffs, &modulus),
+        solve_quadratic_modulus_equation(&coeffs, &modulus),
         Some(BigInt::one())
     );
 }
@@ -364,7 +364,7 @@ fn test_quadratic_with_solution_mod7() {
     let coeffs = [BigInt::one(), BigInt::one(), BigInt::one()];
     let modulus = BigInt::from(7);
     assert_eq!(
-        solve_quadratic_modulus_equation(coeffs, &modulus),
+        solve_quadratic_modulus_equation(&coeffs, &modulus),
         Some(BigInt::from(4))
     );
 }
@@ -378,5 +378,5 @@ fn test_quadratic_with_solution_mod7() {
 fn test_quadratic_no_solution() {
     let coeffs = [BigInt::from(4), BigInt::from(3), BigInt::from(2)];
     let modulus = BigInt::from(11);
-    assert_eq!(solve_quadratic_modulus_equation(coeffs, &modulus), None);
+    assert_eq!(solve_quadratic_modulus_equation(&coeffs, &modulus), None);
 }

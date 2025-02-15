@@ -248,6 +248,7 @@ where
     }
 
     let potential_zero_div_positions = gather_potential_zero_division(symbolic_trace);
+    let mut zero_div_cache = FxHashMap::default();
 
     for generation in 0..mutation_config.max_generations {
         if partial_binary_mode
@@ -296,6 +297,7 @@ where
                     zero_div_attempt(
                         inp,
                         sexe,
+                        &mut zero_div_cache,
                         base_config,
                         &potential_zero_div_positions,
                         &mut rng,
@@ -408,6 +410,7 @@ where
 fn zero_div_attempt(
     inp: &mut FxHashMap<SymbolicName, BigInt>,
     sexe: &mut SymbolicExecutor,
+    cache: &mut FxHashMap<[BigInt; 3], BigInt>,
     base_config: &BaseVerificationConfig,
     potential_zero_div_positions: &Vec<(usize, (Vec<QuadraticPoly>, Vec<QuadraticPoly>))>,
     rng: &mut StdRng,
@@ -436,11 +439,14 @@ fn zero_div_attempt(
                     })
                     .collect();
                 if let Some(coefs) = numerator_coefficients {
-                    if let Some(ans_val) = solve_quadratic_modulus_equation(
-                        [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
-                        &base_config.prime,
-                    ) {
-                        inp.insert(numerator_var_name.clone(), ans_val);
+                    let coefs_slice = [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()];
+                    if let Some(ans_val) = cache.get(&coefs_slice) {
+                        inp.insert(numerator_var_name.clone(), ans_val.clone());
+                    } else if let Some(ans_val) =
+                        solve_quadratic_modulus_equation(&coefs_slice, &base_config.prime)
+                    {
+                        inp.insert(numerator_var_name.clone(), ans_val.clone());
+                        cache.insert(coefs_slice, ans_val);
                     }
                 }
             }
@@ -465,11 +471,14 @@ fn zero_div_attempt(
                     })
                     .collect();
                 if let Some(coefs) = denominator_coefficients {
-                    if let Some(ans_val) = solve_quadratic_modulus_equation(
-                        [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()],
-                        &base_config.prime,
-                    ) {
-                        inp.insert(denominator_var_name.clone(), ans_val);
+                    let coefs_slice = [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()];
+                    if let Some(ans_val) = cache.get(&coefs_slice) {
+                        inp.insert(denominator_var_name.clone(), ans_val.clone());
+                    } else if let Some(ans_val) =
+                        solve_quadratic_modulus_equation(&coefs_slice, &base_config.prime)
+                    {
+                        inp.insert(denominator_var_name.clone(), ans_val.clone());
+                        cache.insert(coefs_slice, ans_val);
                     }
                 }
             }
