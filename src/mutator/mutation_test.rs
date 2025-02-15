@@ -9,7 +9,7 @@ use num_traits::Zero;
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
-use rustc_hash::FxHashMap;
+use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_state::{SymbolicConstraints, SymbolicTrace};
@@ -300,6 +300,7 @@ where
                         &mut zero_div_cache,
                         base_config,
                         &potential_zero_div_positions,
+                        &input_variables.iter().cloned().collect(),
                         &mut rng,
                     );
                 }
@@ -413,6 +414,7 @@ fn zero_div_attempt(
     cache: &mut FxHashMap<[BigInt; 3], BigInt>,
     base_config: &BaseVerificationConfig,
     potential_zero_div_positions: &Vec<(usize, (Vec<QuadraticPoly>, Vec<QuadraticPoly>))>,
+    input_variables: &FxHashSet<SymbolicName>,
     rng: &mut StdRng,
 ) {
     let zero_div_info = potential_zero_div_positions.choose(rng);
@@ -422,31 +424,36 @@ fn zero_div_attempt(
         if !numerator_polys.is_empty() {
             let numerator = numerator_polys.choose(rng);
             if let Some((numerator_var_name, numerator_coefs)) = numerator {
-                dummy_inp.remove(numerator_var_name);
-                let numerator_coefficients: Option<Vec<_>> = numerator_coefs
-                    .iter()
-                    .map(|expr| {
-                        evaluate_symbolic_value(
-                            &base_config.prime,
-                            expr,
-                            &dummy_inp,
-                            sexe.symbolic_library,
-                        )
-                        .and_then(|val| match val {
-                            SymbolicValue::ConstantInt(c) => Some(c),
-                            _ => None,
+                if input_variables.contains(numerator_var_name) {
+                    let tmp_val = dummy_inp.remove(numerator_var_name);
+                    let numerator_coefficients: Option<Vec<_>> = numerator_coefs
+                        .iter()
+                        .map(|expr| {
+                            evaluate_symbolic_value(
+                                &base_config.prime,
+                                expr,
+                                &dummy_inp,
+                                sexe.symbolic_library,
+                            )
+                            .and_then(|val| match val {
+                                SymbolicValue::ConstantInt(c) => Some(c),
+                                _ => None,
+                            })
                         })
-                    })
-                    .collect();
-                if let Some(coefs) = numerator_coefficients {
-                    let coefs_slice = [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()];
-                    if let Some(ans_val) = cache.get(&coefs_slice) {
-                        inp.insert(numerator_var_name.clone(), ans_val.clone());
-                    } else if let Some(ans_val) =
-                        solve_quadratic_modulus_equation(&coefs_slice, &base_config.prime)
-                    {
-                        inp.insert(numerator_var_name.clone(), ans_val.clone());
-                        cache.insert(coefs_slice, ans_val);
+                        .collect();
+                    if let Some(coefs) = numerator_coefficients {
+                        let coefs_slice = [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()];
+                        if let Some(ans_val) = cache.get(&coefs_slice) {
+                            inp.insert(numerator_var_name.clone(), ans_val.clone());
+                        } else if let Some(ans_val) =
+                            solve_quadratic_modulus_equation(&coefs_slice, &base_config.prime)
+                        {
+                            inp.insert(numerator_var_name.clone(), ans_val.clone());
+                            cache.insert(coefs_slice, ans_val);
+                        }
+                    }
+                    if let Some(tv) = tmp_val {
+                        dummy_inp.insert(numerator_var_name.clone(), tv);
                     }
                 }
             }
@@ -454,31 +461,33 @@ fn zero_div_attempt(
         if !denominator_polys.is_empty() {
             let denominator = denominator_polys.choose(rng);
             if let Some((denominator_var_name, denominator_coefs)) = denominator {
-                dummy_inp.remove(denominator_var_name);
-                let denominator_coefficients: Option<Vec<_>> = denominator_coefs
-                    .iter()
-                    .map(|expr| {
-                        evaluate_symbolic_value(
-                            &base_config.prime,
-                            expr,
-                            &dummy_inp,
-                            sexe.symbolic_library,
-                        )
-                        .and_then(|val| match val {
-                            SymbolicValue::ConstantInt(c) => Some(c),
-                            _ => None,
+                if input_variables.contains(denominator_var_name) {
+                    dummy_inp.remove(denominator_var_name);
+                    let denominator_coefficients: Option<Vec<_>> = denominator_coefs
+                        .iter()
+                        .map(|expr| {
+                            evaluate_symbolic_value(
+                                &base_config.prime,
+                                expr,
+                                &dummy_inp,
+                                sexe.symbolic_library,
+                            )
+                            .and_then(|val| match val {
+                                SymbolicValue::ConstantInt(c) => Some(c),
+                                _ => None,
+                            })
                         })
-                    })
-                    .collect();
-                if let Some(coefs) = denominator_coefficients {
-                    let coefs_slice = [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()];
-                    if let Some(ans_val) = cache.get(&coefs_slice) {
-                        inp.insert(denominator_var_name.clone(), ans_val.clone());
-                    } else if let Some(ans_val) =
-                        solve_quadratic_modulus_equation(&coefs_slice, &base_config.prime)
-                    {
-                        inp.insert(denominator_var_name.clone(), ans_val.clone());
-                        cache.insert(coefs_slice, ans_val);
+                        .collect();
+                    if let Some(coefs) = denominator_coefficients {
+                        let coefs_slice = [coefs[0].clone(), coefs[1].clone(), coefs[2].clone()];
+                        if let Some(ans_val) = cache.get(&coefs_slice) {
+                            inp.insert(denominator_var_name.clone(), ans_val.clone());
+                        } else if let Some(ans_val) =
+                            solve_quadratic_modulus_equation(&coefs_slice, &base_config.prime)
+                        {
+                            inp.insert(denominator_var_name.clone(), ans_val.clone());
+                            cache.insert(coefs_slice, ans_val);
+                        }
                     }
                 }
             }
