@@ -5,8 +5,6 @@
 To compile the tool, run:
 
 ```bash
-cargo build
-or
 cargo build --release
 ```
 
