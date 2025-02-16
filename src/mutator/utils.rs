@@ -353,7 +353,15 @@ pub fn evaluate_constraints(
             let sv = evaluate_symbolic_value(prime, constraint, assignment, symbolic_library);
             match sv {
                 Some(SymbolicValue::ConstantBool(b)) => b,
-                _ => panic!("Non-bool output value is detected when evaluating a constraint"),
+                Some(v) => {
+                    panic!(
+                        "Non-bool output value is detected when evaluating a constraint: {}",
+                        v.lookup_fmt(&symbolic_library.id2name)
+                    )
+                }
+                _ => {
+                    panic!("Non-bool output value is detected when evaluating a constraint: None",)
+                }
             }
         })
     }
