@@ -191,6 +191,7 @@ pub enum SymbolicValue {
         Option<(Vec<QuadraticPoly>, Vec<QuadraticPoly>)>,
     ),
     AssignEq(SymbolicValueRef, SymbolicValueRef),
+    AssignTemplParam(SymbolicValueRef, SymbolicValueRef),
     AssignCall(SymbolicValueRef, SymbolicValueRef, bool),
     BinaryOp(
         SymbolicValueRef,
@@ -249,6 +250,14 @@ impl SymbolicValue {
                 format!(
                     "({} {} {})",
                     "AssignEq".green(),
+                    lhs.lookup_fmt(lookup),
+                    rhs.lookup_fmt(lookup)
+                )
+            }
+            SymbolicValue::AssignTemplParam(lhs, rhs) => {
+                format!(
+                    "({} {} {})",
+                    "AssignTemplParam".green(),
                     lhs.lookup_fmt(lookup),
                     rhs.lookup_fmt(lookup)
                 )
@@ -1214,6 +1223,7 @@ pub fn extract_variables_from_symbolic_value(
         }
         SymbolicValue::Assign(lhs, rhs, _, _)
         | SymbolicValue::AssignEq(lhs, rhs)
+        | SymbolicValue::AssignTemplParam(lhs, rhs)
         | SymbolicValue::AssignCall(lhs, rhs, _) => {
             extract_variables_from_symbolic_value(&lhs, variables);
             extract_variables_from_symbolic_value(&rhs, variables);

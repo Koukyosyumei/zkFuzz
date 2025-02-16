@@ -2016,7 +2016,7 @@ fn test_one_line_call() {
     )));
 
     let ground_truth_constraints = vec![
-        SymbolicValue::AssignEq(
+        SymbolicValue::AssignTemplParam(
             main_n.clone(),
             Rc::new(SymbolicValue::ConstantInt(BigInt::from_str("2").unwrap())),
         ),

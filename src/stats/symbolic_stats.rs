@@ -51,7 +51,7 @@ impl ConstraintStatistics {
                 self.update_from_symbolic_value(lhs, depth + 1);
                 self.update_from_symbolic_value(rhs, depth + 1);
             }
-            SymbolicValue::AssignEq(lhs, rhs) => {
+            SymbolicValue::AssignEq(lhs, rhs) | SymbolicValue::AssignTemplParam(lhs, rhs) => {
                 *self
                     .operator_counts
                     .entry("AssignEq".to_string())

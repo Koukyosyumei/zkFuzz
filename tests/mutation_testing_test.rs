@@ -204,3 +204,17 @@ fn test_decreasing_for_loop() {
         })
     ));
 }
+
+#[test]
+fn test_array_template_parameter() {
+    let result =
+        conduct_mutation_testing("./tests/sample/test_array_template_parameter.circom".to_string());
+
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic(..)),
+            ..
+        })
+    ));
+}

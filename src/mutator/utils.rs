@@ -21,7 +21,7 @@ use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_value::{
     evaluate_binary_op, evaluate_binary_op_integer_mode, extract_variables_from_symbolic_value,
     normalize_to_bool, normalize_to_int, val_for_relational_operators, OwnerName, QuadraticPoly,
-    SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
+    SymbolicAccess, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 
 #[derive(Clone)]
@@ -292,6 +292,7 @@ pub fn get_dependency_graph(
         match value.as_ref() {
             SymbolicValue::Assign(lhs, rhs, _, _)
             | SymbolicValue::AssignEq(lhs, rhs)
+            | SymbolicValue::AssignTemplParam(lhs, rhs)
             | SymbolicValue::AssignCall(lhs, rhs, _) => {
                 if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
                     graph.entry(sym_name.clone()).or_default();
@@ -539,6 +540,7 @@ pub fn emulate_symbolic_trace(
             }
             SymbolicValue::Assign(lhs, rhs, _, _)
             | SymbolicValue::AssignEq(lhs, rhs)
+            | SymbolicValue::AssignTemplParam(lhs, rhs)
             | SymbolicValue::AssignCall(lhs, rhs, _) => {
                 if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
                     let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
@@ -551,6 +553,26 @@ pub fn emulate_symbolic_trace(
                                 sym_name.clone(),
                                 if *b { BigInt::one() } else { BigInt::zero() },
                             );
+                        }
+                        Some(SymbolicValue::Array(arr)) => {
+                            for (i, a) in arr.iter().enumerate() {
+                                if let SymbolicValue::ConstantInt(v) = a.as_ref() {
+                                    let mut name = sym_name.clone();
+                                    let mut accsess = if name.access.is_some() {
+                                        name.access.unwrap().clone()
+                                    } else {
+                                        Vec::new()
+                                    };
+                                    accsess.push(SymbolicAccess::ArrayAccess(
+                                        SymbolicValue::ConstantInt(BigInt::from(i)),
+                                    ));
+                                    name.access = Some(accsess);
+                                    name.update_hash();
+                                    assignment.insert(name, v.clone());
+                                } else {
+                                    todo!("Support nested-arrays for template parameters");
+                                }
+                            }
                         }
                         None => {
                             return None;
@@ -910,6 +932,7 @@ pub fn evaluate_symbolic_value(
                 ),
             }
         }
+        SymbolicValue::AssignTemplParam(_, _) => Some(SymbolicValue::ConstantBool(true)),
         SymbolicValue::BinaryOp(lhs, op, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
@@ -1143,6 +1166,7 @@ pub fn evaluate_error_of_symbolic_value(
                 _ => panic!("Unassigned variables exist"),
             }
         }
+        SymbolicValue::AssignTemplParam(_, _) => BigInt::zero(),
         SymbolicValue::BinaryOp(lhs, op, rhs) | SymbolicValue::AuxBinaryOp(lhs, op, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
