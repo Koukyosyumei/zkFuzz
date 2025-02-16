@@ -118,7 +118,7 @@ fn start() -> Result<(), ()> {
 
     env_logger::init();
 
-    println!("{}", "🧾 Loading Whitelists...".green());
+    eprintln!("{}", "🧾 Loading Whitelists...".green());
     let whitelist = if user_input.path_to_whitelist() == "none" {
         FxHashSet::from_iter(["IsZero".to_string(), "Num2Bits".to_string()])
     } else {
@@ -137,7 +137,7 @@ fn start() -> Result<(), ()> {
         function_counter: FxHashMap::default(),
     };
 
-    println!("{}", "🧩 Parsing Templates...".green());
+    eprintln!("{}", "🧩 Parsing Templates...".green());
     for (k, v) in program_archive.templates.clone().into_iter() {
         let body = v.get_body().clone();
         symbolic_library.register_template(
@@ -149,11 +149,11 @@ fn start() -> Result<(), ()> {
         );
 
         if user_input.flag_printout_ast {
-            println!(
+            eprintln!(
                 "{}{} {}{}",
                 BACK_GRAY_SCRIPT_BLACK, "🌳 AST Tree for", k, RESET
             );
-            println!(
+            eprintln!(
                 "{}",
                 symbolic_library.template_library[&symbolic_library.name2id[&k]]
                     .body
@@ -165,17 +165,17 @@ fn start() -> Result<(), ()> {
         }
     }
 
-    println!("{}", "⚙️ Parsing Function...".green());
+    eprintln!("{}", "⚙️ Parsing Function...".green());
     for (k, v) in program_archive.functions.clone().into_iter() {
         let body = v.get_body().clone();
         symbolic_library.register_function(k.clone(), body.clone(), v.get_name_of_params());
 
         if user_input.flag_printout_ast {
-            println!(
+            eprintln!(
                 "{}{} {}{}",
                 BACK_GRAY_SCRIPT_BLACK, "🌴 AST Tree for", k, RESET
             );
-            println!(
+            eprintln!(
                 "{}",
                 symbolic_library.function_library[&symbolic_library.name2id[&k]]
                     .body
@@ -198,7 +198,7 @@ fn start() -> Result<(), ()> {
             let start_time = time::Instant::now();
             let template = program_archive.templates[id].clone();
 
-            println!("{}", "🛒 Gathering Trace/Side Constraints...".green());
+            eprintln!("{}", "🛒 Gathering Trace/Side Constraints...".green());
 
             sym_executor.symbolic_library.name2id.insert(
                 "main".to_string(),
@@ -228,7 +228,7 @@ fn start() -> Result<(), ()> {
                 .clone();
             sym_executor.execute(&body, 0);
 
-            println!("{}", "══════════════════════════════════".green());
+            eprintln!("{}", "══════════════════════════════════".green());
             let mut ts = ConstraintStatistics::new();
             let mut ss = ConstraintStatistics::new();
             for c in &sym_executor.cur_state.symbolic_trace {
@@ -246,8 +246,8 @@ fn start() -> Result<(), ()> {
 
             let mut is_safe = true;
             if user_input.search_mode != "off" {
-                println!("{}", "══════════════════════════════════".green());
-                println!("{}", "🩺 Scanning TCCT Instances...".green());
+                eprintln!("{}", "══════════════════════════════════".green());
+                eprintln!("{}", "🩺 Scanning TCCT Instances...".green());
 
                 let (main_template_name, template_param_names, template_param_values) =
                     match &program_archive.initial_template_call {
@@ -392,7 +392,7 @@ fn start() -> Result<(), ()> {
                             .collect();
                         file_path.push_str(&random_string);
                         file_path.push_str("_counterexample.json");
-                        println!("{} {}", "💾 Saving the output to:", file_path.cyan(),);
+                        eprintln!("{} {}", "💾 Saving the output to:", file_path.cyan(),);
 
                         let mut file = File::create(file_path).expect("Unable to create file");
                         let json_string = serde_json::to_string_pretty(&json_output).unwrap();
@@ -400,31 +400,31 @@ fn start() -> Result<(), ()> {
                             .expect("Unable to write data");
                     }
 
-                    println!("{}", ce.lookup_fmt(&sym_executor.symbolic_library.id2name));
+                    eprintln!("{}", ce.lookup_fmt(&sym_executor.symbolic_library.id2name));
                 }
             }
 
-            println!(
+            eprintln!(
                 "{}",
                 "╔═══════════════════════════════════════════════════════════════╗".green()
             );
-            println!(
+            eprintln!(
                 "{}",
                 "║                        ProoFuzz Report                        ║".green()
             );
-            println!(
+            eprintln!(
                 "{}",
                 "╚═══════════════════════════════════════════════════════════════╝".green()
             );
-            println!("{}", "📊 Execution Summary:".cyan().bold());
-            println!(" ├─ Prime Number      : {}", user_input.debug_prime());
-            println!(
+            eprintln!("{}", "📊 Execution Summary:".cyan().bold());
+            eprintln!(" ├─ Prime Number      : {}", user_input.debug_prime());
+            eprintln!(
                 " ├─ Compression Rate  : {:.2}% ({}/{})",
                 (ss.total_constraints as f64 / ts.total_constraints as f64) * 100 as f64,
                 ss.total_constraints,
                 ts.total_constraints
             );
-            println!(
+            eprintln!(
                 " ├─ Verification      : {}",
                 if is_safe {
                     "🆗 No Counter Example Found".green().bold()
@@ -432,7 +432,7 @@ fn start() -> Result<(), ()> {
                     "💥 NOT SAFE 💥".red().bold()
                 }
             );
-            println!(" └─ Execution Time    : {:?}", start_time.elapsed());
+            eprintln!(" └─ Execution Time    : {:?}", start_time.elapsed());
 
             if user_input.flag_printout_stats {
                 println!(
@@ -457,6 +457,10 @@ fn start() -> Result<(), ()> {
                     "Array_Counts",
                     "Avg_Depth",
                     "Max_Depth",
+                    "Count_Assign",
+                    "Count_AssignEq",
+                    "Count_AssignCall",
+                    "Count_QuadZeroDiv",
                     "Count_Mul",
                     "Count_Div",
                     "Count_Add",
@@ -487,7 +491,7 @@ fn start() -> Result<(), ()> {
                 print_constraint_summary_statistics_csv(&ts);
                 print_constraint_summary_statistics_csv(&ss);
             }
-            println!(
+            eprintln!(
                 "{}",
                 "════════════════════════════════════════════════════════════════".green()
             );
