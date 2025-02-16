@@ -46,7 +46,7 @@ impl Default for MutationConfig {
             seed: 0,
             program_population_size: 30,
             input_population_size: 30,
-            max_generations: 300,
+            max_generations: 500,
             input_initialization_method: "random".to_string(),
             trace_mutation_method: "constant".to_string(),
             fitness_function: "error".to_string(),
