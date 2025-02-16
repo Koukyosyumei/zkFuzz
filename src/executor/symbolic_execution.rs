@@ -484,7 +484,8 @@ impl<'a> SymbolicExecutor<'a> {
                     }
                 }
             }
-            SymbolicValue::BinaryOp(lv, infix_op, rv) => {
+            SymbolicValue::BinaryOp(lv, infix_op, rv)
+            | SymbolicValue::AuxBinaryOp(lv, infix_op, rv) => {
                 let lhs = self.simplify_variables(
                     lv,
                     elem_id,

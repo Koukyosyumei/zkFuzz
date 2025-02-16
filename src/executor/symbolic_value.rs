@@ -197,6 +197,11 @@ pub enum SymbolicValue {
         DebuggableExpressionInfixOpcode,
         SymbolicValueRef,
     ),
+    AuxBinaryOp(
+        SymbolicValueRef,
+        DebuggableExpressionInfixOpcode,
+        SymbolicValueRef,
+    ),
     Conditional(SymbolicValueRef, SymbolicValueRef, SymbolicValueRef),
     UnaryOp(DebuggableExpressionPrefixOpcode, SymbolicValueRef),
     Array(Vec<SymbolicValueRef>),
@@ -256,41 +261,43 @@ impl SymbolicValue {
                     rhs.lookup_fmt(lookup)
                 )
             }
-            SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
-                ExpressionInfixOpcode::Eq
-                | ExpressionInfixOpcode::NotEq
-                | ExpressionInfixOpcode::LesserEq
-                | ExpressionInfixOpcode::GreaterEq
-                | ExpressionInfixOpcode::Lesser
-                | ExpressionInfixOpcode::Greater => {
-                    format!(
+            SymbolicValue::BinaryOp(lhs, op, rhs) | SymbolicValue::AuxBinaryOp(lhs, op, rhs) => {
+                match &op.0 {
+                    ExpressionInfixOpcode::Eq
+                    | ExpressionInfixOpcode::NotEq
+                    | ExpressionInfixOpcode::LesserEq
+                    | ExpressionInfixOpcode::GreaterEq
+                    | ExpressionInfixOpcode::Lesser
+                    | ExpressionInfixOpcode::Greater => {
+                        format!(
+                            "({} {} {})",
+                            format!("{:?}", op).green(),
+                            lhs.lookup_fmt(lookup),
+                            rhs.lookup_fmt(lookup)
+                        )
+                    }
+                    ExpressionInfixOpcode::ShiftL
+                    | ExpressionInfixOpcode::ShiftR
+                    | ExpressionInfixOpcode::BitAnd
+                    | ExpressionInfixOpcode::BitOr
+                    | ExpressionInfixOpcode::BitXor
+                    | ExpressionInfixOpcode::Div
+                    | ExpressionInfixOpcode::IntDiv => {
+                        format!(
+                            "({} {} {})",
+                            format!("{:?}", op).red(),
+                            lhs.lookup_fmt(lookup),
+                            rhs.lookup_fmt(lookup)
+                        )
+                    }
+                    _ => format!(
                         "({} {} {})",
-                        format!("{:?}", op).green(),
+                        format!("{:?}", op).yellow(),
                         lhs.lookup_fmt(lookup),
                         rhs.lookup_fmt(lookup)
-                    )
+                    ),
                 }
-                ExpressionInfixOpcode::ShiftL
-                | ExpressionInfixOpcode::ShiftR
-                | ExpressionInfixOpcode::BitAnd
-                | ExpressionInfixOpcode::BitOr
-                | ExpressionInfixOpcode::BitXor
-                | ExpressionInfixOpcode::Div
-                | ExpressionInfixOpcode::IntDiv => {
-                    format!(
-                        "({} {} {})",
-                        format!("{:?}", op).red(),
-                        lhs.lookup_fmt(lookup),
-                        rhs.lookup_fmt(lookup)
-                    )
-                }
-                _ => format!(
-                    "({} {} {})",
-                    format!("{:?}", op).yellow(),
-                    lhs.lookup_fmt(lookup),
-                    rhs.lookup_fmt(lookup)
-                ),
-            },
+            }
             SymbolicValue::Conditional(cond, if_branch, else_branch) => {
                 format!(
                     "<🤔 {} ? {} : {}>",
@@ -697,6 +704,14 @@ pub fn is_true(val: &SymbolicValue) -> bool {
     }
 }
 
+pub fn val_for_relational_operators(z: &BigInt, p: &BigInt) -> BigInt {
+    if &(p / BigInt::from(2) + BigInt::one()) <= z && z < p {
+        z - p
+    } else {
+        z.clone()
+    }
+}
+
 /// Evaluates a binary operation on two symbolic values, taking into account modular arithmetic
 /// with a specified prime and the type of operation.
 ///
@@ -747,6 +762,126 @@ pub fn is_true(val: &SymbolicValue) -> bool {
 /// assert_eq!(result, SymbolicValue::ConstantInt(BigInt::from(6))); // (10 + 3) % 7 = 6
 /// ```
 pub fn evaluate_binary_op(
+    lhs: &SymbolicValue,
+    rhs: &SymbolicValue,
+    prime: &BigInt,
+    op: &DebuggableExpressionInfixOpcode,
+) -> SymbolicValue {
+    let (normalized_lhs, normalized_rhs) = match &op.0 {
+        // Convert booleans to integers for arithmetic or bitwise operators
+        ExpressionInfixOpcode::Add
+        | ExpressionInfixOpcode::Sub
+        | ExpressionInfixOpcode::Mul
+        | ExpressionInfixOpcode::Pow
+        | ExpressionInfixOpcode::Div
+        | ExpressionInfixOpcode::IntDiv
+        | ExpressionInfixOpcode::Mod
+        | ExpressionInfixOpcode::BitOr
+        | ExpressionInfixOpcode::BitAnd
+        | ExpressionInfixOpcode::BitXor
+        | ExpressionInfixOpcode::ShiftL
+        | ExpressionInfixOpcode::ShiftR
+        | ExpressionInfixOpcode::Lesser
+        | ExpressionInfixOpcode::Greater
+        | ExpressionInfixOpcode::LesserEq
+        | ExpressionInfixOpcode::GreaterEq
+        | ExpressionInfixOpcode::Eq
+        | ExpressionInfixOpcode::NotEq => {
+            (normalize_to_int(lhs, prime), normalize_to_int(rhs, prime))
+        }
+        // Keep booleans as they are for logical operators
+        ExpressionInfixOpcode::BoolAnd | ExpressionInfixOpcode::BoolOr => {
+            (normalize_to_bool(lhs, prime), normalize_to_bool(rhs, prime))
+        } //_ => (lhs.clone(), rhs.clone()), // Default case
+    };
+
+    match (&normalized_lhs, &normalized_rhs) {
+        (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => match &op.0 {
+            ExpressionInfixOpcode::Add => SymbolicValue::ConstantInt((lv + rv) % prime),
+            ExpressionInfixOpcode::Sub => {
+                let mut tmp = (lv - rv) % prime;
+                if tmp.is_negative() {
+                    tmp += prime;
+                }
+                SymbolicValue::ConstantInt(tmp)
+            }
+            ExpressionInfixOpcode::Mul => SymbolicValue::ConstantInt((lv * rv) % prime),
+            ExpressionInfixOpcode::Pow => SymbolicValue::ConstantInt(modpow(lv, rv, prime)),
+            ExpressionInfixOpcode::Div => {
+                if lv.is_zero() || rv.is_zero() {
+                    SymbolicValue::ConstantInt(BigInt::zero())
+                } else {
+                    let mut r = prime.clone();
+                    let mut new_r = rv.clone();
+                    if r.is_negative() {
+                        r += prime;
+                    }
+                    if new_r.is_negative() {
+                        new_r += prime;
+                    }
+
+                    let (_, _, mut rv_inv) = extended_euclidean(r, new_r);
+                    rv_inv %= prime;
+                    if rv_inv.is_negative() {
+                        rv_inv += prime;
+                    }
+
+                    SymbolicValue::ConstantInt((lv * rv_inv) % prime)
+                }
+            }
+            ExpressionInfixOpcode::IntDiv => {
+                SymbolicValue::ConstantInt(if lv.is_zero() || rv.is_zero() {
+                    BigInt::zero()
+                } else {
+                    lv / rv
+                })
+            }
+            ExpressionInfixOpcode::Mod => {
+                SymbolicValue::ConstantInt(if lv.is_zero() || rv.is_zero() {
+                    BigInt::zero()
+                } else {
+                    lv % rv
+                })
+            }
+            ExpressionInfixOpcode::BitOr => SymbolicValue::ConstantInt(lv | rv),
+            ExpressionInfixOpcode::BitAnd => SymbolicValue::ConstantInt(lv & rv),
+            ExpressionInfixOpcode::BitXor => SymbolicValue::ConstantInt(lv ^ rv),
+            ExpressionInfixOpcode::ShiftL => {
+                SymbolicValue::ConstantInt(lv << rv.to_usize().unwrap())
+            }
+            ExpressionInfixOpcode::ShiftR => {
+                SymbolicValue::ConstantInt(lv >> rv.to_usize().unwrap())
+            }
+            ExpressionInfixOpcode::Lesser => SymbolicValue::ConstantBool(
+                val_for_relational_operators(&(lv % prime), prime)
+                    < val_for_relational_operators(&(rv % prime), prime),
+            ),
+            ExpressionInfixOpcode::Greater => SymbolicValue::ConstantBool(
+                val_for_relational_operators(&(lv % prime), prime)
+                    > val_for_relational_operators(&(rv % prime), prime),
+            ),
+            ExpressionInfixOpcode::LesserEq => SymbolicValue::ConstantBool(
+                val_for_relational_operators(&(lv % prime), prime)
+                    <= val_for_relational_operators(&(rv % prime), prime),
+            ),
+            ExpressionInfixOpcode::GreaterEq => SymbolicValue::ConstantBool(
+                val_for_relational_operators(&(lv % prime), prime)
+                    >= val_for_relational_operators(&(rv % prime), prime),
+            ),
+            ExpressionInfixOpcode::Eq => SymbolicValue::ConstantBool(lv % prime == rv % prime),
+            ExpressionInfixOpcode::NotEq => SymbolicValue::ConstantBool(lv % prime != rv % prime),
+            _ => todo!("{:?} is currently not supported", op),
+        },
+        (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => match &op.0 {
+            ExpressionInfixOpcode::BoolAnd => SymbolicValue::ConstantBool(*lv && *rv),
+            ExpressionInfixOpcode::BoolOr => SymbolicValue::ConstantBool(*lv || *rv),
+            _ => todo!("{:?} is currently not supported", op),
+        },
+        _ => SymbolicValue::BinaryOp(Rc::new(normalized_lhs), op.clone(), Rc::new(normalized_rhs)),
+    }
+}
+
+pub fn evaluate_binary_op_integer_mode(
     lhs: &SymbolicValue,
     rhs: &SymbolicValue,
     prime: &BigInt,
@@ -911,7 +1046,7 @@ pub fn generate_lessthan_constraint(
             lessthan_out.clone(),
         )),
         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
-        Rc::new(SymbolicValue::BinaryOp(
+        Rc::new(SymbolicValue::AuxBinaryOp(
             in_0.clone(),
             DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
             in_1.clone(),
@@ -924,7 +1059,7 @@ pub fn generate_lessthan_constraint(
             lessthan_out.clone(),
         )),
         DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::BoolAnd),
-        Rc::new(SymbolicValue::BinaryOp(
+        Rc::new(SymbolicValue::AuxBinaryOp(
             in_0,
             DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq),
             in_1,

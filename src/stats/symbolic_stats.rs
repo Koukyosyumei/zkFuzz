@@ -73,6 +73,12 @@ impl ConstraintStatistics {
                 self.update_from_symbolic_value(lhs, depth + 1);
                 self.update_from_symbolic_value(rhs, depth + 1);
             }
+            SymbolicValue::AuxBinaryOp(lhs, op, rhs) => {
+                let op_name = format!("{:?}", op);
+                *self.operator_counts.entry(op_name).or_insert(0) += 1;
+                self.update_from_symbolic_value(lhs, depth + 1);
+                self.update_from_symbolic_value(rhs, depth + 1);
+            }
             SymbolicValue::Conditional(cond, if_true, if_false) => {
                 self.conditional_counts += 1;
                 self.update_from_symbolic_value(cond, depth + 1);

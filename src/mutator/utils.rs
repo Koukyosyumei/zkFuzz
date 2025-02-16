@@ -19,8 +19,9 @@ use crate::executor::debug_ast::{
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_value::{
-    evaluate_binary_op, extract_variables_from_symbolic_value, normalize_to_bool, normalize_to_int,
-    OwnerName, QuadraticPoly, SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
+    evaluate_binary_op, evaluate_binary_op_integer_mode, extract_variables_from_symbolic_value,
+    normalize_to_bool, normalize_to_int, val_for_relational_operators, OwnerName, QuadraticPoly,
+    SymbolicLibrary, SymbolicName, SymbolicValue, SymbolicValueRef,
 };
 
 #[derive(Clone)]
@@ -449,7 +450,7 @@ pub fn gather_runtime_mutable_inputs(
                     );
                 }
             }
-            SymbolicValue::BinaryOp(lhs, op, rhs) => {
+            SymbolicValue::BinaryOp(lhs, op, rhs) | SymbolicValue::AuxBinaryOp(lhs, op, rhs) => {
                 if let ExpressionInfixOpcode::Eq = op.0 {
                     if let SymbolicValue::Variable(var_name) = &**lhs {
                         if input_variables.contains(var_name) {
@@ -559,6 +560,105 @@ pub fn emulate_symbolic_trace(
                 }
             }
             SymbolicValue::BinaryOp(lhs, op, rhs) => {
+                let mut lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
+                let mut rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
+
+                if let Some(dir) = runtime_mutable_positions.get(&i) {
+                    match dir {
+                        Direction::Left => {
+                            if let SymbolicValue::Variable(var_name) = &**lhs {
+                                if let Some(SymbolicValue::ConstantInt(ref num)) = rhs_val {
+                                    assignment.insert(var_name.clone(), num.clone());
+                                    lhs_val = rhs_val.clone();
+                                }
+                            }
+                        }
+                        Direction::Right => {
+                            if let SymbolicValue::Variable(var_name) = &**rhs {
+                                if let Some(SymbolicValue::ConstantInt(ref num)) = lhs_val {
+                                    assignment.insert(var_name.clone(), num.clone());
+                                    rhs_val = lhs_val.clone();
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let (normalized_lhs, normalized_rhs) = match &op.0 {
+                    // Convert booleans to integers for arithmetic or bitwise operators
+                    ExpressionInfixOpcode::Add
+                    | ExpressionInfixOpcode::Sub
+                    | ExpressionInfixOpcode::Mul
+                    | ExpressionInfixOpcode::Pow
+                    | ExpressionInfixOpcode::Div
+                    | ExpressionInfixOpcode::IntDiv
+                    | ExpressionInfixOpcode::Mod
+                    | ExpressionInfixOpcode::BitOr
+                    | ExpressionInfixOpcode::BitAnd
+                    | ExpressionInfixOpcode::BitXor
+                    | ExpressionInfixOpcode::ShiftL
+                    | ExpressionInfixOpcode::ShiftR
+                    | ExpressionInfixOpcode::Lesser
+                    | ExpressionInfixOpcode::Greater
+                    | ExpressionInfixOpcode::LesserEq
+                    | ExpressionInfixOpcode::GreaterEq
+                    | ExpressionInfixOpcode::Eq
+                    | ExpressionInfixOpcode::NotEq => (
+                        normalize_to_int(&lhs_val.unwrap(), prime),
+                        normalize_to_int(&rhs_val.unwrap(), prime),
+                    ),
+                    // Keep booleans as they are for logical operators
+                    ExpressionInfixOpcode::BoolAnd | ExpressionInfixOpcode::BoolOr => (
+                        normalize_to_bool(&lhs_val.unwrap(), prime),
+                        normalize_to_bool(&rhs_val.unwrap(), prime),
+                    ), //_ => (lhs.clone(), rhs.clone()), // Default case
+                };
+
+                let flag = match (&normalized_lhs, &normalized_rhs) {
+                    (SymbolicValue::ConstantInt(lv), SymbolicValue::ConstantInt(rv)) => {
+                        match op.0 {
+                            ExpressionInfixOpcode::Lesser => {
+                                val_for_relational_operators(&(lv % prime), prime)
+                                    < val_for_relational_operators(&(rv % prime), prime)
+                            }
+                            ExpressionInfixOpcode::Greater => {
+                                val_for_relational_operators(&(lv % prime), prime)
+                                    > val_for_relational_operators(&(rv % prime), prime)
+                            }
+                            ExpressionInfixOpcode::LesserEq => {
+                                val_for_relational_operators(&(lv % prime), prime)
+                                    <= val_for_relational_operators(&(rv % prime), prime)
+                            }
+                            ExpressionInfixOpcode::GreaterEq => {
+                                val_for_relational_operators(&(lv % prime), prime)
+                                    >= val_for_relational_operators(&(rv % prime), prime)
+                            }
+                            ExpressionInfixOpcode::Eq => lv % prime == rv % prime,
+                            ExpressionInfixOpcode::NotEq => lv % prime != rv % prime,
+                            _ => panic!(
+                                "Non-Boolean Operation: {}",
+                                inst.lookup_fmt(&symbolic_library.id2name)
+                            ),
+                        }
+                    }
+                    (SymbolicValue::ConstantBool(lv), SymbolicValue::ConstantBool(rv)) => {
+                        match &op.0 {
+                            ExpressionInfixOpcode::BoolAnd => *lv && *rv,
+                            ExpressionInfixOpcode::BoolOr => *lv || *rv,
+                            _ => todo!(),
+                        }
+                    }
+                    _ => panic!(
+                        "Unassigned variables exist: {}",
+                        inst.lookup_fmt(&symbolic_library.id2name)
+                    ),
+                };
+                if !flag {
+                    success = false;
+                    failure_pos = i;
+                }
+            }
+            SymbolicValue::AuxBinaryOp(lhs, op, rhs) => {
                 let mut lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
                 let mut rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
 
@@ -816,6 +916,20 @@ pub fn evaluate_symbolic_value(
                 &op,
             ))
         }
+        SymbolicValue::AuxBinaryOp(lhs, op, rhs) => {
+            let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
+            let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
+            if lhs_val.is_none() || rhs_val.is_none() {
+                return None;
+            }
+
+            Some(evaluate_binary_op_integer_mode(
+                &lhs_val.unwrap(),
+                &rhs_val.unwrap(),
+                &prime,
+                &op,
+            ))
+        }
         SymbolicValue::UnaryOp(op, expr) => {
             let expr_val = evaluate_symbolic_value(prime, expr, assignment, symbolic_library);
             if expr_val.is_none() {
@@ -1021,7 +1135,7 @@ pub fn evaluate_error_of_symbolic_value(
                 _ => panic!("Unassigned variables exist"),
             }
         }
-        SymbolicValue::BinaryOp(lhs, op, rhs) => {
+        SymbolicValue::BinaryOp(lhs, op, rhs) | SymbolicValue::AuxBinaryOp(lhs, op, rhs) => {
             let lhs_val = evaluate_symbolic_value(prime, lhs, assignment, symbolic_library);
             let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
             match (lhs_val.as_ref().unwrap(), rhs_val.as_ref().unwrap()) {
