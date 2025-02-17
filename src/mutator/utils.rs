@@ -13,9 +13,7 @@ use program_structure::ast::ExpressionInfixOpcode;
 use program_structure::ast::ExpressionPrefixOpcode;
 use serde_json::{json, Value};
 
-use crate::executor::debug_ast::{
-    DebuggableExpressionInfixOpcode, DebuggableExpressionPrefixOpcode,
-};
+use crate::executor::debug_ast::DebuggableExpressionInfixOpcode;
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_setting::SymbolicExecutorSetting;
 use crate::executor::symbolic_value::{

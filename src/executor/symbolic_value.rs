@@ -10,9 +10,7 @@ use num_traits::ToPrimitive;
 use num_traits::{One, Signed, Zero};
 use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 
-use program_structure::ast::{
-    ExpressionInfixOpcode, ExpressionPrefixOpcode, SignalType, Statement, VariableType,
-};
+use program_structure::ast::{ExpressionInfixOpcode, SignalType, Statement, VariableType};
 
 use crate::executor::debug_ast::{
     DebuggableExpression, DebuggableExpressionInfixOpcode, DebuggableExpressionPrefixOpcode,
