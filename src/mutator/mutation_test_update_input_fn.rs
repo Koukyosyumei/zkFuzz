@@ -168,7 +168,6 @@ pub fn update_input_population_with_coverage_maximization(
                 } else {
                     // Mutate each input variable with a small probability
                     for var in input_variables {
-                        // rng.gen_bool(0.2)
                         if rng.gen::<bool>() {
                             let mutation =
                                 draw_bigint_with_probabilities(&mutation_config, rng).unwrap();
