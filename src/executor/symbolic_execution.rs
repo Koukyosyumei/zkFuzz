@@ -69,6 +69,7 @@ pub struct SymbolicExecutor<'a> {
     pub cur_state: SymbolicState,
     pub violated_condition: Option<(usize, SymbolicValue)>,
     pub id2dimensions: FxHashMap<usize, Vec<usize>>,
+    pub mindim: usize,
     pub execution_failed: bool,
     coverage_tracker: CoverageTracker,
     enable_coverage_tracking: bool,
@@ -102,6 +103,7 @@ impl<'a> SymbolicExecutor<'a> {
             cur_state: SymbolicState::new(),
             violated_condition: None,
             id2dimensions: FxHashMap::default(),
+            mindim: std::usize::MAX,
             execution_failed: false,
             coverage_tracker: CoverageTracker::new(),
             setting: setting,
@@ -788,6 +790,7 @@ impl<'a> SymbolicExecutor<'a> {
                     }
 
                     subse.execute(&func.body.clone(), 0);
+                    self.mindim = std::cmp::min(subse.mindim, self.mindim);
 
                     if !subse.setting.off_trace {
                         trace!("{}", format!("{}", "===========================").cyan());
@@ -1263,6 +1266,9 @@ impl<'a> SymbolicExecutor<'a> {
                     self.symbolic_library.id2name[&self.cur_state.template_id]
                 );*/
             };
+            if let Some(md) = dims.iter().min() {
+                self.mindim = std::cmp::min(self.mindim, *md);
+            }
             self.id2dimensions.insert(*id, dims);
 
             self.execute(statements, cur_bid + 1);

@@ -335,7 +335,12 @@ where
 
         if !binary_input_mode && is_extincted_due_to_illegal_subscript {
             binary_input_mode = true;
-            mutation_config.random_value_ranges = vec![(BigInt::from(0), BigInt::from(2))];
+            let mindim = if sexe.mindim >= std::usize::MAX {
+                1
+            } else {
+                sexe.mindim
+            };
+            mutation_config.random_value_ranges = vec![(BigInt::from(0), BigInt::from(mindim))];
             mutation_config.random_value_probs = vec![1.0];
         }
 
