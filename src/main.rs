@@ -398,9 +398,9 @@ fn start() -> Result<(), ()> {
                         let json_string = serde_json::to_string_pretty(&json_output).unwrap();
                         file.write_all(json_string.as_bytes())
                             .expect("Unable to write data");
+                    } else {
+                        eprintln!("{}", ce.lookup_fmt(&sym_executor.symbolic_library.id2name));
                     }
-
-                    eprintln!("{}", ce.lookup_fmt(&sym_executor.symbolic_library.id2name));
                 }
             }
 
