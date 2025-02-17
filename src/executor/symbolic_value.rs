@@ -705,14 +705,6 @@ pub fn enumerate_array(value: &SymbolicValue) -> Vec<(Vec<usize>, &SymbolicValue
     result
 }
 
-pub fn is_true(val: &SymbolicValue) -> bool {
-    if let SymbolicValue::ConstantBool(true) = val {
-        true
-    } else {
-        false
-    }
-}
-
 pub fn val_for_relational_operators(z: &BigInt, p: &BigInt) -> BigInt {
     if &(p / BigInt::from(2) + BigInt::one()) <= z && z < p {
         z - p
@@ -1081,16 +1073,6 @@ pub fn generate_lessthan_constraint(
     )
 }
 
-pub fn negate_condition(condition: &SymbolicValue) -> SymbolicValue {
-    match condition {
-        SymbolicValue::ConstantBool(v) => SymbolicValue::ConstantBool(!v),
-        _ => SymbolicValue::UnaryOp(
-            DebuggableExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
-            Rc::new(condition.clone()),
-        ),
-    }
-}
-
 fn check_array_concrete(array: &Vec<SymbolicValueRef>) -> bool {
     for value_ref in array {
         match &**value_ref {
@@ -1145,33 +1127,6 @@ pub fn initialize_symbolic_nested_array_with_value(
             ));
             dims[0]
         ]
-    }
-}
-
-pub fn initialize_symbolic_nested_array_with_name(
-    dims: &[usize],
-    sym_name: &SymbolicName,
-) -> SymbolicValue {
-    if dims.is_empty() {
-        SymbolicValue::Variable(sym_name.clone())
-    } else {
-        SymbolicValue::Array(
-            (0..dims[0])
-                .map(|i| {
-                    let mut new_sym_name = sym_name.clone();
-                    let mut access = new_sym_name.access.unwrap_or_default();
-                    access.push(SymbolicAccess::ArrayAccess(SymbolicValue::ConstantInt(
-                        BigInt::from_usize(i).unwrap(),
-                    )));
-                    new_sym_name.access = Some(access);
-                    // new_left_var_name.update_hash();
-                    Rc::new(initialize_symbolic_nested_array_with_name(
-                        &dims[1..],
-                        &new_sym_name,
-                    ))
-                })
-                .collect(),
-        )
     }
 }
 

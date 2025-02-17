@@ -284,54 +284,6 @@ fn matches_binary_pattern(
     false
 }
 
-pub fn get_dependency_graph(
-    values: &[SymbolicValueRef],
-    graph: &mut FxHashMap<SymbolicName, FxHashSet<SymbolicName>>,
-) {
-    for value in values {
-        match value.as_ref() {
-            SymbolicValue::Assign(lhs, rhs, _, _)
-            | SymbolicValue::AssignEq(lhs, rhs)
-            | SymbolicValue::AssignTemplParam(lhs, rhs)
-            | SymbolicValue::AssignCall(lhs, rhs, _) => {
-                if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
-                    graph.entry(sym_name.clone()).or_default();
-                    extract_variables_from_symbolic_value(&rhs, graph.get_mut(&sym_name).unwrap());
-                } else {
-                    panic!("Left hand of the assignment is not a variable");
-                }
-            }
-            SymbolicValue::BinaryOp(lhs, _op, rhs) => {
-                let mut variables = FxHashSet::default();
-                extract_variables_from_symbolic_value(&lhs, &mut variables);
-                extract_variables_from_symbolic_value(&rhs, &mut variables);
-
-                for v1 in &variables {
-                    for v2 in &variables {
-                        if v1 != v2 {
-                            graph.entry(v1.clone()).or_default().insert(v2.clone());
-                            graph.entry(v2.clone()).or_default().insert(v1.clone());
-                        }
-                    }
-                }
-            }
-            SymbolicValue::UnaryOp(_op, expr) => {
-                let mut variables = FxHashSet::default();
-                extract_variables_from_symbolic_value(&expr, &mut variables);
-                for v1 in &variables {
-                    for v2 in &variables {
-                        if v1 != v2 {
-                            graph.entry(v1.clone()).or_default().insert(v2.clone());
-                            graph.entry(v2.clone()).or_default().insert(v1.clone());
-                        }
-                    }
-                }
-            }
-            _ => todo!(),
-        }
-    }
-}
-
 /// Evaluates a set of constraints given a variable assignment.
 ///
 /// # Parameters
@@ -366,33 +318,6 @@ pub fn evaluate_constraints(
             }
         })
     }
-}
-
-/// Counts the number of satisfied constraints given a variable assignment.
-///
-/// # Parameters
-/// - `prime`: The prime modulus for computations.
-/// - `constraints`: A slice of symbolic values representing the constraints to evaluate.
-/// - `assignment`: A hash map of variable assignments.
-///
-/// # Returns
-/// The number of satisfied constraints.
-pub fn count_satisfied_constraints(
-    prime: &BigInt,
-    constraints: &[SymbolicValueRef],
-    assignment: &FxHashMap<SymbolicName, BigInt>,
-    symbolic_library: &mut SymbolicLibrary,
-) -> usize {
-    constraints
-        .iter()
-        .filter(|constraint| {
-            let sv = evaluate_symbolic_value(prime, constraint, assignment, symbolic_library);
-            match sv {
-                Some(SymbolicValue::ConstantBool(b)) => b,
-                _ => panic!("Non-bool output value is detected when evaluating a constraint"),
-            }
-        })
-        .count()
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
@@ -1059,51 +984,6 @@ pub fn evaluate_symbolic_value(
                 }
             }
         }
-    }
-}
-
-pub fn flip_op(value: &SymbolicValue) -> SymbolicValue {
-    match value {
-        SymbolicValue::UnaryOp(
-            DebuggableExpressionPrefixOpcode(ExpressionPrefixOpcode::BoolNot),
-            expr,
-        ) => match (*expr.clone()).clone() {
-            SymbolicValue::BinaryOp(lhs, op, rhs) => match &op.0 {
-                ExpressionInfixOpcode::Lesser => SymbolicValue::BinaryOp(
-                    lhs.clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Greater),
-                    rhs.clone(),
-                ),
-                ExpressionInfixOpcode::Greater => SymbolicValue::BinaryOp(
-                    lhs.clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Lesser),
-                    rhs.clone(),
-                ),
-                ExpressionInfixOpcode::LesserEq => SymbolicValue::BinaryOp(
-                    lhs.clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::GreaterEq),
-                    rhs.clone(),
-                ),
-                ExpressionInfixOpcode::GreaterEq => SymbolicValue::BinaryOp(
-                    lhs.clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::LesserEq),
-                    rhs.clone(),
-                ),
-                ExpressionInfixOpcode::Eq => SymbolicValue::BinaryOp(
-                    lhs.clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::NotEq),
-                    rhs.clone(),
-                ),
-                ExpressionInfixOpcode::NotEq => SymbolicValue::BinaryOp(
-                    lhs.clone(),
-                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
-                    rhs.clone(),
-                ),
-                _ => value.clone(),
-            },
-            _ => value.clone(),
-        },
-        _ => value.clone(),
     }
 }
 
