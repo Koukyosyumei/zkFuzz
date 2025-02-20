@@ -10,7 +10,7 @@ use num_traits::One;
 use proofuzz::executor::symbolic_execution::SymbolicExecutor;
 use proofuzz::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
 use proofuzz::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
-use proofuzz::mutator::utils::{emulate_symbolic_trace, gather_runtime_mutable_inputs, Direction};
+use proofuzz::mutator::utils::{execute_symbolic_trace, gather_runtime_mutable_inputs, Direction};
 use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::utils::{execute, prepare_symbolic_library};
@@ -50,7 +50,7 @@ fn test_emulate_if_else() {
 
     let runtime_mutable_positions = FxHashMap::default();
     let mut assignment = FxHashMap::from_iter([(main_in.clone(), BigInt::zero())]);
-    let _ = emulate_symbolic_trace(
+    let _ = execute_symbolic_trace(
         &prime,
         &sexe.cur_state.symbolic_trace,
         &runtime_mutable_positions,
@@ -60,7 +60,7 @@ fn test_emulate_if_else() {
     assert_eq!(assignment[&main_out], BigInt::one());
 
     assignment.insert(main_in, BigInt::one());
-    let _ = emulate_symbolic_trace(
+    let _ = execute_symbolic_trace(
         &prime,
         &sexe.cur_state.symbolic_trace,
         &runtime_mutable_positions,
@@ -102,7 +102,7 @@ fn test_recursive_call() {
         )
     }));
 
-    let _ = emulate_symbolic_trace(
+    let _ = execute_symbolic_trace(
         &prime,
         &sexe.cur_state.symbolic_trace,
         &runtime_mutable_positions,
@@ -170,7 +170,7 @@ fn test_call_const_template() {
         (main_a.clone(), BigInt::from(3)),
         (main_b.clone(), BigInt::from(4)),
     ]);
-    let _ = emulate_symbolic_trace(
+    let _ = execute_symbolic_trace(
         &prime,
         &sexe.cur_state.symbolic_trace,
         &runtime_mutable_positions,

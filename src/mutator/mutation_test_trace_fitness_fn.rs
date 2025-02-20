@@ -6,7 +6,7 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 use crate::mutator::mutation_utils::apply_trace_mutation;
 use crate::mutator::utils::{
-    accumulate_error_of_constraints, emulate_symbolic_trace, evaluate_constraints, is_equal_mod,
+    accumulate_error_of_constraints, execute_symbolic_trace, evaluate_constraints, is_equal_mod,
     BaseVerificationConfig, CounterExample, Direction, UnderConstrainedType, VerificationResult,
 };
 
@@ -70,7 +70,7 @@ pub fn evaluate_trace_fitness_by_error(
 
         // Emulate the original trace to evaluate its behavior on the given input.
         // Even if an assertion fails, the function proceeds, treating it as a modified trace with no assertions.
-        let emulation_result = emulate_symbolic_trace(
+        let emulation_result = execute_symbolic_trace(
             &base_config.prime,
             &symbolic_trace,
             runtime_mutable_positions,
@@ -122,7 +122,7 @@ pub fn evaluate_trace_fitness_by_error(
         let mut assignment_for_mutation = inp.clone();
 
         // Emulate the mutated trace and evaluate the error in side constraints.
-        let mutated_emulation_result = emulate_symbolic_trace(
+        let mutated_emulation_result = execute_symbolic_trace(
             &base_config.prime,
             &mutated_symbolic_trace,
             runtime_mutable_positions,

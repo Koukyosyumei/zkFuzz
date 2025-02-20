@@ -443,7 +443,7 @@ pub fn gather_runtime_mutable_inputs(
 /// # Errors
 /// - If the left-hand side of an assignment is not a variable, the function will panic.
 /// - If there is an unassigned variable in the expression being evaluated, the function will panic.
-pub fn emulate_symbolic_trace(
+pub fn execute_symbolic_trace(
     prime: &BigInt,
     trace: &[SymbolicValueRef],
     runtime_mutable_positions: &FxHashMap<usize, Direction>,
