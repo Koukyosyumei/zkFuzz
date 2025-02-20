@@ -6,7 +6,10 @@ use num_bigint_dig::BigInt;
 use program_structure::ast::ExpressionInfixOpcode;
 
 use proofuzz::executor::debug_ast::DebuggableExpressionInfixOpcode;
-use proofuzz::executor::symbolic_value::{enumerate_array, evaluate_binary_op, SymbolicValue};
+use proofuzz::executor::symbolic_value::{
+    enumerate_array, evaluate_binary_op, generate_smt_file, SymbolicName, SymbolicValue,
+    SymbolicValueRef,
+};
 
 #[test]
 fn test_arithmetic_operations() {
@@ -290,4 +293,49 @@ fn test_enumerate_empty_array() {
     let result = enumerate_array(&empty_array);
 
     assert_eq!(result.len(), 0);
+}
+
+fn create_variable(id: usize) -> SymbolicValueRef {
+    Rc::new(SymbolicValue::Variable(SymbolicName::new(
+        id,
+        Rc::new(vec![]),
+        None,
+    )))
+}
+
+#[test]
+fn test_generate_smt_file_single_assertion() {
+    let prime = BigInt::from(17);
+    // Create three variables: a, b, and c.
+    let a = create_variable(1);
+    let b = create_variable(2);
+    let c = create_variable(3);
+
+    // Build the binary operation: (a + b)
+    let sum = Rc::new(SymbolicValue::BinaryOp(
+        a.clone(),
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+        b.clone(),
+    ));
+    // Build the assertion: (fadd var_1 var_2) equals var_3.
+    let assertion = SymbolicValue::AssignEq(sum, c.clone());
+
+    let expressions = vec![assertion];
+    let smt = generate_smt_file(&expressions, &prime);
+
+    // Verify that the SMT header is present.
+    assert!(smt.contains("(declare-const p Int)"));
+    assert!(smt.contains(&format!("(assert (= p {}))", &prime)));
+
+    // Check that our assertion is correctly generated.
+    // Variables are named as "var_<id>".
+    // For ExpressionInfixOpcode::Add, our implementation emits (fadd ... ...).
+    assert!(
+        smt.contains("(assert (= (fadd var_1 var_2) var_3))"),
+        "Single assertion not correctly generated"
+    );
+
+    // Also check for the final commands.
+    assert!(smt.contains("(check-sat)"));
+    assert!(smt.contains("(get-model)"));
 }
