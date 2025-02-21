@@ -5,7 +5,7 @@ use std::io::Write;
 use colored::Colorize;
 use log::info;
 use num_bigint_dig::BigInt;
-use num_traits::Zero;
+use num_traits::{One, Zero};
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::{Rng, SeedableRng};
@@ -20,8 +20,9 @@ use crate::executor::symbolic_value::{
 use crate::executor::utils::solve_quadratic_modulus_equation;
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::utils::{
-    evaluate_symbolic_value, gather_potential_zero_division, gather_runtime_mutable_inputs,
-    is_containing_binary_check, BaseVerificationConfig, CounterExample, Direction,
+    emulate_symbolic_trace, evaluate_symbolic_value, gather_potential_zero_division,
+    gather_runtime_mutable_inputs, is_containing_binary_check, BaseVerificationConfig,
+    CounterExample, Direction,
 };
 
 pub struct MutationTestResult {
@@ -246,6 +247,22 @@ where
         info!("⚡ Binary check detected!");
         partial_binary_mode = true;
     }
+
+    // dry run
+    //let mut dry_assignment = FxHashMap::default();
+    /*
+    for iname in input_variables.iter() {
+        dry_assignment.insert(iname.clone(), SymbolicValue::ConstantInt(BigInt::one()));
+    }
+    dry_assignment.remove(&input_variables[0]);
+    */
+    /*
+    emulate_symbolic_trace(
+        &base_config.prime,
+        symbolic_trace,
+        &mut dry_assignment,
+        sexe.symbolic_library,
+    );*/
 
     let potential_zero_div_positions = gather_potential_zero_division(symbolic_trace);
     let mut zero_div_cache = FxHashMap::default();

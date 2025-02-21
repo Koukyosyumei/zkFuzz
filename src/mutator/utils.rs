@@ -413,6 +413,69 @@ pub fn gather_runtime_mutable_inputs(
     result
 }
 
+pub fn emulate_symbolic_trace(
+    prime: &BigInt,
+    trace: &[SymbolicValueRef],
+    assignment: &mut FxHashMap<SymbolicName, SymbolicValue>,
+    symbolic_library: &mut SymbolicLibrary,
+) -> bool {
+    for inst in trace.iter() {
+        println!("inst: {}", inst.lookup_fmt(&symbolic_library.id2name));
+        match inst.as_ref() {
+            SymbolicValue::Assign(lhs, rhs, _, _)
+            | SymbolicValue::AssignEq(lhs, rhs)
+            | SymbolicValue::AssignTemplParam(lhs, rhs) => {
+                if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
+                    let rhs_val =
+                        simplify_symbolic_value(prime, rhs, assignment, symbolic_library, 0);
+                    match &rhs_val {
+                        SymbolicValue::Array(arr) => {
+                            for (i, a) in arr.iter().enumerate() {
+                                if let SymbolicValue::ConstantInt(v) = a.as_ref() {
+                                    let mut name = sym_name.clone();
+                                    let mut accsess = if name.access.is_some() {
+                                        name.access.unwrap().clone()
+                                    } else {
+                                        Vec::new()
+                                    };
+                                    accsess.push(SymbolicAccess::ArrayAccess(
+                                        SymbolicValue::ConstantInt(BigInt::from(i)),
+                                    ));
+                                    name.access = Some(accsess);
+                                    name.update_hash();
+                                    assignment.insert(name, SymbolicValue::ConstantInt(v.clone()));
+                                } else {
+                                    return false;
+                                }
+                            }
+                        }
+                        _ => {
+                            assignment.insert(sym_name.clone(), rhs_val);
+                        }
+                    }
+                } else {
+                    panic!(
+                        "Left hand of the assignment is not a variable: {}",
+                        inst.lookup_fmt(&symbolic_library.id2name)
+                    );
+                }
+            }
+            SymbolicValue::AssignCall(..) => {
+                return false;
+            }
+            _ => {}
+        }
+    }
+    for (k, v) in assignment.iter() {
+        println!(
+            "{} - {}",
+            k.lookup_fmt(&symbolic_library.id2name),
+            v.lookup_fmt(&symbolic_library.id2name)
+        );
+    }
+    true
+}
+
 /// Simulates the execution of a symbolic trace, evaluating the values of symbolic variables.
 ///
 /// This function processes a symbolic trace step by step, updating the provided `assignment` with the values
@@ -743,6 +806,136 @@ pub fn execute_symbolic_trace(
     }
 
     Some((success, failure_pos))
+}
+
+pub fn simplify_symbolic_value(
+    prime: &BigInt,
+    value: &SymbolicValue,
+    assignment: &FxHashMap<SymbolicName, SymbolicValue>,
+    symbolic_library: &mut SymbolicLibrary,
+    recursive_level: usize,
+) -> SymbolicValue {
+    match value {
+        SymbolicValue::ConstantBool(_b) => value.clone(),
+        SymbolicValue::ConstantInt(_v) => value.clone(),
+        SymbolicValue::Variable(sym_name) => {
+            if !assignment.contains_key(sym_name) || recursive_level <= 0 {
+                value.clone()
+            } else {
+                simplify_symbolic_value(
+                    prime,
+                    assignment.get(sym_name).unwrap(),
+                    assignment,
+                    symbolic_library,
+                    recursive_level - 1,
+                )
+            }
+        }
+        SymbolicValue::Array(elements) => SymbolicValue::Array(
+            elements
+                .iter()
+                .map(|e| {
+                    Rc::new(simplify_symbolic_value(
+                        prime,
+                        e,
+                        assignment,
+                        symbolic_library,
+                        recursive_level,
+                    ))
+                })
+                .collect(),
+        ),
+        SymbolicValue::UniformArray(elem, counts) => {
+            let evaled_elem =
+                simplify_symbolic_value(prime, elem, assignment, symbolic_library, recursive_level);
+            let evaled_counts = simplify_symbolic_value(
+                prime,
+                counts,
+                assignment,
+                symbolic_library,
+                recursive_level,
+            );
+
+            if let SymbolicValue::ConstantInt(c) = evaled_counts {
+                SymbolicValue::Array(vec![Rc::new(evaled_elem); c.to_usize().unwrap()])
+            } else {
+                SymbolicValue::UniformArray(Rc::new(evaled_elem), Rc::new(evaled_counts))
+            }
+        }
+        SymbolicValue::BinaryOp(lhs, op, rhs) => {
+            let lhs_val =
+                simplify_symbolic_value(prime, lhs, assignment, symbolic_library, recursive_level);
+            let rhs_val =
+                simplify_symbolic_value(prime, rhs, assignment, symbolic_library, recursive_level);
+            evaluate_binary_op(&lhs_val, &rhs_val, &prime, &op)
+        }
+        SymbolicValue::AuxBinaryOp(lhs, op, rhs) => {
+            let lhs_val =
+                simplify_symbolic_value(prime, lhs, assignment, symbolic_library, recursive_level);
+            let rhs_val =
+                simplify_symbolic_value(prime, rhs, assignment, symbolic_library, recursive_level);
+            evaluate_binary_op_integer_mode(&lhs_val, &rhs_val, &prime, &op)
+        }
+        SymbolicValue::UnaryOp(op, expr) => {
+            let expr_val =
+                simplify_symbolic_value(prime, expr, assignment, symbolic_library, recursive_level);
+
+            match &expr_val {
+                SymbolicValue::ConstantInt(rv) => match op.0 {
+                    ExpressionPrefixOpcode::Sub => SymbolicValue::ConstantInt(-1 * rv),
+                    _ => panic!(
+                        "Illegal operator: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
+                },
+                SymbolicValue::ConstantBool(rv) => match op.0 {
+                    ExpressionPrefixOpcode::BoolNot => SymbolicValue::ConstantBool(!rv),
+                    _ => panic!(
+                        "Illegal operator: {}",
+                        value.lookup_fmt(&symbolic_library.id2name)
+                    ),
+                },
+                _ => SymbolicValue::UnaryOp(op.clone(), Rc::new(expr_val.clone())),
+            }
+        }
+        SymbolicValue::AssignTemplParam(_, _) => SymbolicValue::ConstantBool(true),
+        SymbolicValue::Conditional(cond, then_branch, else_branch) => {
+            let cond_val =
+                simplify_symbolic_value(prime, cond, assignment, symbolic_library, recursive_level);
+            let then_val = simplify_symbolic_value(
+                prime,
+                then_branch,
+                assignment,
+                symbolic_library,
+                recursive_level,
+            );
+            let else_val = simplify_symbolic_value(
+                prime,
+                else_branch,
+                assignment,
+                symbolic_library,
+                recursive_level,
+            );
+
+            match &cond_val {
+                SymbolicValue::ConstantBool(true) => then_val,
+                SymbolicValue::ConstantBool(false) => else_val,
+                SymbolicValue::ConstantInt(num) => {
+                    if num.is_positive() {
+                        then_val
+                    } else {
+                        else_val
+                    }
+                }
+                _ => SymbolicValue::Conditional(
+                    Rc::new(cond_val.clone()),
+                    Rc::new(then_val.clone()),
+                    Rc::new(else_val.clone()),
+                ),
+            }
+        }
+        _ => value.clone(),
+    }
 }
 
 /// Evaluates a symbolic value within the given context of a symbolic library and variable assignments.
