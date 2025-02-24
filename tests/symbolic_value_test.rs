@@ -318,7 +318,7 @@ fn test_generate_smt_file_single_assertion() {
         b.clone(),
     ));
     // Build the assertion: (fadd var_1 var_2) equals var_3.
-    let assertion = SymbolicValue::AssignEq(sum, c.clone());
+    let assertion = Rc::new(SymbolicValue::AssignEq(sum, c.clone()));
 
     let expressions = vec![assertion];
     let smt = generate_smt_file(&expressions, &prime);

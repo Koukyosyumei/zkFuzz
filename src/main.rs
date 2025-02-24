@@ -30,7 +30,7 @@ use executor::symbolic_execution::SymbolicExecutor;
 use executor::symbolic_setting::{
     get_default_setting_for_concrete_execution, get_default_setting_for_symbolic_execution,
 };
-use executor::symbolic_value::{OwnerName, SymbolicLibrary};
+use executor::symbolic_value::{OwnerName, SymbolicLibrary, generate_smt_file};
 
 use mutator::mutation_config::load_config_from_json;
 use mutator::mutation_test_crossover_fn::random_crossover;
@@ -243,6 +243,8 @@ fn start() -> Result<(), ()> {
                     .cur_state
                     .lookup_fmt(&sym_executor.symbolic_library.id2name)
             );
+
+            let smt_string = generate_smt_file(&sym_executor.cur_state.symbolic_trace, &base_config.prime);
 
             let mut is_safe = true;
             if user_input.search_mode != "off" {

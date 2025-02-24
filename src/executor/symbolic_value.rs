@@ -1606,7 +1606,7 @@ impl ToSMT for SymbolicAccess {
     }
 }
 
-pub fn generate_smt_file(exprs: &[SymbolicValue], p: &BigInt) -> String {
+pub fn generate_smt_file(exprs: &Vec<Rc<SymbolicValue>>, p: &BigInt) -> String {
     let mut smt = String::new();
 
     // Set the logic; we use QF_AUFLIA as an example.
@@ -1637,7 +1637,7 @@ pub fn generate_smt_file(exprs: &[SymbolicValue], p: &BigInt) -> String {
         smt.push('\n');
     }
     for expr in exprs {
-        if let SymbolicValue::Assign(_, rhs, ..) = expr.clone() {
+        if let SymbolicValue::Assign(_, rhs, ..) = (**expr).clone() {
             if let SymbolicValue::BinaryOp(den, DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div), num) = (*rhs).clone() {
                 smt.push_str(&format!("({} = 0)", den.to_smt(p).unwrap()).to_string());
                 smt.push('\n');
