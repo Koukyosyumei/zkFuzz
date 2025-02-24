@@ -1490,7 +1490,7 @@ impl ToSMT for SymbolicValue {
                         let lhs_smt = lhs.to_smt(p);
                         let rhs_smt = rhs.to_smt(p);
                         if lhs_smt.is_some() && rhs_smt.is_some() {
-                            Some(format!("(fdiv {} {})", lhs_smt.unwrap(), rhs_smt.unwrap()))
+                            Some(format!("(fdiv {} {})\n({} = 0)\n({} = 0)", lhs_smt.clone().unwrap(), rhs_smt.clone().unwrap(), lhs_smt.unwrap(), rhs_smt.unwrap()))
                         } else {
                             None
                         }
