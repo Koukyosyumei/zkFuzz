@@ -1636,6 +1636,16 @@ pub fn generate_smt_file(exprs: &[SymbolicValue], p: &BigInt) -> String {
         smt.push_str(&expr.to_smt(p).unwrap());
         smt.push('\n');
     }
+    for expr in exprs {
+        if let SymbolicValue::Assign(_, rhs, ..) = expr.clone() {
+            if let SymbolicValue::BinaryOp(den, DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div), num) = (*rhs).clone() {
+                smt.push_str(&format!("({} = 0)", den.to_smt(p).unwrap()).to_string());
+                smt.push('\n');
+                smt.push_str(&format!("({} = 0)", num.to_smt(p).unwrap()).to_string());
+                smt.push('\n');
+            }
+        }
+    }
 
     // Check satisfiability and get a model.
     smt.push_str("\n(check-sat)\n(get-model)\n");
