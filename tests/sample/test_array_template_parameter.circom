@@ -1,3 +1,5 @@
+pragma circom 2.0.0;
+
 template Main(N, C) {
     signal input x;
     signal output y;

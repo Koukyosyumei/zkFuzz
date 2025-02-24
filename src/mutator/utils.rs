@@ -954,17 +954,18 @@ pub fn evaluate_symbolic_value(
                     subse.cur_state.owner_name.clone(),
                     None,
                 );
+                let evaled_arg = evaluate_symbolic_value(
+                    prime,
+                    &args[i],
+                    assignment,
+                    subse.symbolic_library,
+                );
+                if evaled_arg.is_none() {
+                    return None;
+                }
                 subse.cur_state.set_rc_sym_val(
                     sym_name,
-                    Rc::new(
-                        evaluate_symbolic_value(
-                            prime,
-                            &args[i],
-                            assignment,
-                            subse.symbolic_library,
-                        )
-                        .unwrap(),
-                    ),
+                    Rc::new(evaled_arg.unwrap()),
                 );
             }
             subse.execute(&func.body.clone(), 0);
