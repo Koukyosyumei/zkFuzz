@@ -1396,11 +1396,11 @@ pub fn get_degree_polynomial(expr: &SymbolicValue, target_name: &SymbolicName) -
 }
 
 pub trait ToSMT {
-    fn to_smt(&self, p: &BigInt) -> Option<String>;
+    fn to_smt(&self, p: &BigInt, variables: &mut FxHashSet<String>) -> Option<String>;
 }
 
 impl ToSMT for SymbolicValue {
-    fn to_smt(&self, p: &BigInt) -> Option<String> {
+    fn to_smt(&self, p: &BigInt, variables: &mut FxHashSet<String>) -> Option<String> {
         match self {
             SymbolicValue::ConstantInt(n) => {
                 // Represent the constant modulo P.
@@ -1414,13 +1414,13 @@ impl ToSMT for SymbolicValue {
                     Some("false".into())
                 }
             }
-            SymbolicValue::Variable(name) => name.to_smt(p),
+            SymbolicValue::Variable(name) => {let ns = name.to_smt(p, variables).unwrap(); variables.insert(ns.clone()); Some(ns)},
             SymbolicValue::Assign(lhs, rhs, ..)
             | SymbolicValue::AssignEq(lhs, rhs)
             | SymbolicValue::AssignTemplParam(lhs, rhs) => {
                 // Generate an assertion that lhs equals rhs.
-                let lhs_smt = lhs.to_smt(p);
-                let rhs_smt = rhs.to_smt(p);
+                let lhs_smt = lhs.to_smt(p, variables);
+                let rhs_smt = rhs.to_smt(p, variables);
                 if lhs_smt.is_some() && rhs_smt.is_some() {
                     Some(format!(
                         "(= {} {})",
@@ -1445,9 +1445,9 @@ impl ToSMT for SymbolicValue {
                     | ExpressionInfixOpcode::BitAnd
                     | ExpressionInfixOpcode::BitOr
                     | ExpressionInfixOpcode::BitXor => {
-                        let op_smt = op.to_smt(p);
-                        let lhs_smt = lhs.to_smt(p);
-                        let rhs_smt = rhs.to_smt(p);
+                        let op_smt = op.to_smt(p, variables);
+                        let lhs_smt = lhs.to_smt(p, variables);
+                        let rhs_smt = rhs.to_smt(p, variables);
                         if op_smt.is_some() && lhs_smt.is_some() && rhs_smt.is_some() {
                             Some(format!(
                                 "({} {} {})",
@@ -1460,8 +1460,8 @@ impl ToSMT for SymbolicValue {
                         }
                     }
                     ExpressionInfixOpcode::Add => {
-                        let lhs_smt = lhs.to_smt(p);
-                        let rhs_smt = rhs.to_smt(p);
+                        let lhs_smt = lhs.to_smt(p, variables);
+                        let rhs_smt = rhs.to_smt(p, variables);
                         if lhs_smt.is_some() && rhs_smt.is_some() {
                             Some(format!("(fadd {} {})", lhs_smt.unwrap(), rhs_smt.unwrap()))
                         } else {
@@ -1469,8 +1469,8 @@ impl ToSMT for SymbolicValue {
                         }
                     }
                     ExpressionInfixOpcode::Sub => {
-                        let lhs_smt = lhs.to_smt(p);
-                        let rhs_smt = rhs.to_smt(p);
+                        let lhs_smt = lhs.to_smt(p, variables);
+                        let rhs_smt = rhs.to_smt(p, variables);
                         if lhs_smt.is_some() && rhs_smt.is_some() {
                             Some(format!("(fsub {} {})", lhs_smt.unwrap(), rhs_smt.unwrap()))
                         } else {
@@ -1478,8 +1478,8 @@ impl ToSMT for SymbolicValue {
                         }
                     }
                     ExpressionInfixOpcode::Mul => {
-                        let lhs_smt = lhs.to_smt(p);
-                        let rhs_smt = rhs.to_smt(p);
+                        let lhs_smt = lhs.to_smt(p, variables);
+                        let rhs_smt = rhs.to_smt(p, variables);
                         if lhs_smt.is_some() && rhs_smt.is_some() {
                             Some(format!("(fmul {} {})", lhs_smt.unwrap(), rhs_smt.unwrap()))
                         } else {
@@ -1487,8 +1487,8 @@ impl ToSMT for SymbolicValue {
                         }
                     }
                     ExpressionInfixOpcode::Div | ExpressionInfixOpcode::IntDiv => {
-                        let lhs_smt = lhs.to_smt(p);
-                        let rhs_smt = rhs.to_smt(p);
+                        let lhs_smt = lhs.to_smt(p, variables);
+                        let rhs_smt = rhs.to_smt(p, variables);
                         if lhs_smt.is_some() && rhs_smt.is_some() {
                             Some(format!("(fdiv {} {})", lhs_smt.unwrap(), rhs_smt.unwrap()))
                         } else {
@@ -1502,9 +1502,9 @@ impl ToSMT for SymbolicValue {
                 }
             }
             SymbolicValue::Conditional(cond, then_expr, else_expr) => {
-                let cond_smt = cond.to_smt(p);
-                let then_smt = then_expr.to_smt(p);
-                let else_smt = else_expr.to_smt(p);
+                let cond_smt = cond.to_smt(p, variables);
+                let then_smt = then_expr.to_smt(p, variables);
+                let else_smt = else_expr.to_smt(p, variables);
                 if cond_smt.is_some() && then_smt.is_some() && else_smt.is_some() {
                     Some(format!(
                         "(ite {} {} {})",
@@ -1520,7 +1520,7 @@ impl ToSMT for SymbolicValue {
                 // For a unary negation in our field, use fsub with 0.
                 match &op.0 {
                     ExpressionPrefixOpcode::Sub => {
-                        let expr_smt = expr.to_smt(p);
+                        let expr_smt = expr.to_smt(p, variables);
                         if expr_smt.is_some() {
                             Some(format!("(fsub 0 {})", expr_smt.unwrap()))
                         } else {
@@ -1528,7 +1528,7 @@ impl ToSMT for SymbolicValue {
                         }
                     }
                     ExpressionPrefixOpcode::BoolNot => {
-                        let expr_smt = expr.to_smt(p);
+                        let expr_smt = expr.to_smt(p, variables);
                         if expr_smt.is_some() {
                             Some(format!("(not {})", expr_smt.unwrap()))
                         } else {
@@ -1547,14 +1547,14 @@ impl ToSMT for SymbolicValue {
 }
 
 impl ToSMT for SymbolicName {
-    fn to_smt(&self, _p: &BigInt) -> Option<String> {
+    fn to_smt(&self, _p: &BigInt, variables: &mut FxHashSet<String>) -> Option<String> {
         // We name the variable "var_<id>"
-        Some(format!("var_{}", self.id))
+        Some(format!("var_{}", self.precomputed_hash.borrow().map_or("None".to_string(), |h| h.to_string())))
     }
 }
 
 impl ToSMT for DebuggableExpressionInfixOpcode {
-    fn to_smt(&self, _p: &BigInt) -> Option<String> {
+    fn to_smt(&self, _p: &BigInt, variables: &mut FxHashSet<String>) -> Option<String> {
         // For comparisons and bit-ops, we map directly to SMT-LIB operators.
         // For arithmetic, we will call custom functions.
         match self.0 {
@@ -1582,7 +1582,7 @@ impl ToSMT for DebuggableExpressionInfixOpcode {
 }
 
 impl ToSMT for DebuggableExpressionPrefixOpcode {
-    fn to_smt(&self, _p: &BigInt) -> Option<String> {
+    fn to_smt(&self, _p: &BigInt, variables: &mut FxHashSet<String>) -> Option<String> {
         match self.0 {
             ExpressionPrefixOpcode::BoolNot => Some("not".into()),
             ExpressionPrefixOpcode::Sub => Some("-".into()),
@@ -1592,11 +1592,11 @@ impl ToSMT for DebuggableExpressionPrefixOpcode {
 }
 
 impl ToSMT for SymbolicAccess {
-    fn to_smt(&self, p: &BigInt) -> Option<String> {
+    fn to_smt(&self, p: &BigInt, variables: &mut FxHashSet<String>) -> Option<String> {
         match self {
             SymbolicAccess::ComponentAccess(idx) => Some(format!("component_{}", idx)),
             SymbolicAccess::ArrayAccess(val) => {
-                if let Some(v) = val.to_smt(p) {
+                if let Some(v) = val.to_smt(p, variables) {
                     Some(format!("array_access({})", v))
                 } else {
                     None
@@ -1606,7 +1606,7 @@ impl ToSMT for SymbolicAccess {
     }
 }
 
-pub fn generate_smt_file(exprs: &Vec<Rc<SymbolicValue>>, p: &BigInt) -> String {
+pub fn generate_smt_file(exprs: &Vec<Rc<SymbolicValue>>, instrs: &Vec<Rc<SymbolicValue>>, p: &BigInt) -> String {
     let mut smt = String::new();
 
     // Set the logic; we use QF_AUFLIA as an example.
@@ -1620,28 +1620,30 @@ pub fn generate_smt_file(exprs: &Vec<Rc<SymbolicValue>>, p: &BigInt) -> String {
 (define-fun fadd ((x Int) (y Int)) Int (mod (+ x y) p))
 (define-fun fsub ((x Int) (y Int)) Int (mod (- x y) p))
 (define-fun fmul ((x Int) (y Int)) Int (mod (* x y) p))
-; Declare fdiv as an uninterpreted function returning an Int.
-(declare-fun fdiv (Int Int) Int)
-; Axiom: for all x and nonzero y, fdiv returns the modular inverse such that
-; (mod (* y (fdiv x y)) p) equals x.
-(assert (forall ((x Int) (y Int))
-         (=> (not (= y 0))
-             (= (mod (* y (fdiv x y)) p) x))))
 "#,
     );
+    let mut variables = FxHashSet::default();
+
+    smt.push_str("\n; --- Declare variables ---\n");
+    for expr in exprs {
+        expr.to_smt(p, &mut variables);
+    }
+    for v in &variables {
+        smt.push_str(&format!("(declare-const {} Int)\n", v).to_string());
+    }
 
     smt.push_str("\n; --- Assertions ---\n");
     for expr in exprs {
         // Each symbolic value is converted into an SMT snippet.
-        smt.push_str(&format!("(assert {})", &expr.to_smt(p).unwrap()).to_string());
+        smt.push_str(&format!("(assert {})", &expr.to_smt(p, &mut variables).unwrap()).to_string());
         smt.push('\n');
     }
-    for expr in exprs {
+    for expr in instrs {
         if let SymbolicValue::Assign(_, rhs, ..) = (**expr).clone() {
             if let SymbolicValue::BinaryOp(den, DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div), num) = (*rhs).clone() {
-                smt.push_str(&format!("(assert (= ({}) 0))", den.to_smt(p).unwrap()).to_string());
+                smt.push_str(&format!("(assert (= {} 0))", den.to_smt(p, &mut variables).unwrap()).to_string());
                 smt.push('\n');
-                smt.push_str(&format!("(assert (= ({}) 0))", num.to_smt(p).unwrap()).to_string());
+                smt.push_str(&format!("(assert (= {} 0))", num.to_smt(p, &mut variables).unwrap()).to_string());
                 smt.push('\n');
             }
         }

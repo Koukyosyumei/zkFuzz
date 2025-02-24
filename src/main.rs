@@ -244,7 +244,7 @@ fn start() -> Result<(), ()> {
                     .lookup_fmt(&sym_executor.symbolic_library.id2name)
             );
 
-            let smt_string = generate_smt_file(&sym_executor.cur_state.symbolic_trace, &base_config.prime);
+            let smt_string = generate_smt_file(&sym_executor.cur_state.side_constraints, &sym_executor.cur_state.symbolic_trace, &base_config.prime);
             println!("{}", smt_string);
 
             let mut is_safe = true;
