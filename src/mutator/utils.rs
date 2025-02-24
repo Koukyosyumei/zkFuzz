@@ -974,6 +974,9 @@ pub fn evaluate_symbolic_value(
             } else {
                 let return_name =
                     SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
+                if !subse.cur_state.symbol_binding_map.contains_key(&return_name) {
+                    return None;
+                }
                 let return_value =
                     (*subse.cur_state.symbol_binding_map[&return_name].clone()).clone();
                 if let SymbolicValue::ConstantInt(_) = &return_value {
