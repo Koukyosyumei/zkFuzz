@@ -245,6 +245,7 @@ fn start() -> Result<(), ()> {
             );
 
             let smt_string = generate_smt_file(&sym_executor.cur_state.symbolic_trace, &base_config.prime);
+            println!("{}", smt_string);
 
             let mut is_safe = true;
             if user_input.search_mode != "off" {

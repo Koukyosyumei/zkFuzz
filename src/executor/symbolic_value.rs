@@ -1423,7 +1423,7 @@ impl ToSMT for SymbolicValue {
                 let rhs_smt = rhs.to_smt(p);
                 if lhs_smt.is_some() && rhs_smt.is_some() {
                     Some(format!(
-                        "(assert (= {} {}))",
+                        "(= {} {})",
                         lhs_smt.unwrap(),
                         rhs_smt.unwrap()
                     ))
@@ -1633,15 +1633,15 @@ pub fn generate_smt_file(exprs: &Vec<Rc<SymbolicValue>>, p: &BigInt) -> String {
     smt.push_str("\n; --- Assertions ---\n");
     for expr in exprs {
         // Each symbolic value is converted into an SMT snippet.
-        smt.push_str(&expr.to_smt(p).unwrap());
+        smt.push_str(&format!("(assert {})", &expr.to_smt(p).unwrap()).to_string());
         smt.push('\n');
     }
     for expr in exprs {
         if let SymbolicValue::Assign(_, rhs, ..) = (**expr).clone() {
             if let SymbolicValue::BinaryOp(den, DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Div), num) = (*rhs).clone() {
-                smt.push_str(&format!("({} = 0)", den.to_smt(p).unwrap()).to_string());
+                smt.push_str(&format!("(assert (= ({}) 0))", den.to_smt(p).unwrap()).to_string());
                 smt.push('\n');
-                smt.push_str(&format!("({} = 0)", num.to_smt(p).unwrap()).to_string());
+                smt.push_str(&format!("(assert (= ({}) 0))", num.to_smt(p).unwrap()).to_string());
                 smt.push('\n');
             }
         }
