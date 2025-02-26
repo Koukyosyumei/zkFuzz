@@ -58,10 +58,17 @@ impl SymbolicStore {
 ///
 /// # Fields
 ///
-/// * `symbolic_library`: A mutable reference to the library storing templates for execution.
-/// * `setting`: A reference to the execution settings.
-/// * `symbolic_store`: A store for components, variable types, and execution states.
-/// * `cur_state`: The current symbolic execution state.
+/// * `symbolic_library` – A mutable reference to the symbolic library containing execution templates.
+/// * `setting` – A reference to execution settings that configure runtime behavior.
+/// * `symbolic_store` – A structured store maintaining components, variable types, and execution states.
+/// * `cur_state` – The current symbolic execution state being processed.
+/// * `violated_condition` – An optional tuple indicating a violated condition (index and symbolic value).
+/// * `id2dimensions` – A mapping from identifiers to their respective dimensional constraints.
+/// * `mindim` – The minimum dimensionality constraint applied during execution.
+/// * `execution_failed` – A flag indicating whether execution has encountered a failure.
+/// * `coverage_tracker` – An internal tracker for execution path coverage (enabled when configured).
+/// * `enable_coverage_tracking` – A flag controlling whether execution path coverage is tracked.
+/// * `is_concrete_mode` – A flag indicating whether the engine is running in concrete execution mode.
 pub struct SymbolicExecutor<'a> {
     pub symbolic_library: &'a mut SymbolicLibrary,
     pub setting: &'a SymbolicExecutorSetting,

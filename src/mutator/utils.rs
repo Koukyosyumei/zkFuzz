@@ -219,6 +219,25 @@ pub struct BaseVerificationConfig {
     pub template_param_values: Vec<Expression>,
 }
 
+/// Determines whether a collection of symbolic values contains a binary equality check against zero.  
+///
+/// This function scans through a list of symbolic values, searching for binary patterns (`x * (1 - x) == 0`).  
+/// If such a pattern is found and is part of a recognizable binary check structure, the function returns `true`.
+///
+/// # Parameters
+/// - `sym_vals`: A slice of `SymbolicValueRef` representing symbolic expressions to analyze.
+/// - `max_level`: The maximum depth allowed for recognizing binary patterns.
+///
+/// # Returns
+/// - `true` if a binary equality check (`x * (1 - x) == 0`) is detected within the allowed depth.
+/// - `false` otherwise.
+///
+/// # Internal Behavior
+/// - The function identifies binary equality checks by inspecting `SymbolicValue::BinaryOp` expressions.
+/// - If one of the operands is a zero constant, it invokes `is_binary_check` to verify whether the expression  
+///   follows a structured binary multiplication pattern.
+/// - The helper function `is_binary_check` ensures that a multiplication pattern exists (`x * y`) and delegates  
+///   further pattern matching to `matches_binary_pattern`, which checks for the form `(x - 1) * x == 0`.
 pub fn is_containing_binary_check(sym_vals: &[SymbolicValueRef], max_level: usize) -> bool {
     for sv in sym_vals {
         if let SymbolicValue::BinaryOp(
@@ -954,19 +973,14 @@ pub fn evaluate_symbolic_value(
                     subse.cur_state.owner_name.clone(),
                     None,
                 );
-                let evaled_arg = evaluate_symbolic_value(
-                    prime,
-                    &args[i],
-                    assignment,
-                    subse.symbolic_library,
-                );
+                let evaled_arg =
+                    evaluate_symbolic_value(prime, &args[i], assignment, subse.symbolic_library);
                 if evaled_arg.is_none() {
                     return None;
                 }
-                subse.cur_state.set_rc_sym_val(
-                    sym_name,
-                    Rc::new(evaled_arg.unwrap()),
-                );
+                subse
+                    .cur_state
+                    .set_rc_sym_val(sym_name, Rc::new(evaled_arg.unwrap()));
             }
             subse.execute(&func.body.clone(), 0);
             if subse.execution_failed {
@@ -974,7 +988,11 @@ pub fn evaluate_symbolic_value(
             } else {
                 let return_name =
                     SymbolicName::new(usize::MAX, subse.cur_state.owner_name.clone(), None);
-                if !subse.cur_state.symbol_binding_map.contains_key(&return_name) {
+                if !subse
+                    .cur_state
+                    .symbol_binding_map
+                    .contains_key(&return_name)
+                {
                     return None;
                 }
                 let return_value =
