@@ -69,7 +69,7 @@ impl Default for MutationConfig {
             ],
             random_value_probs: vec![0.1, 0.45, 0.45],
             binary_mode_prob: 0.0,
-            binary_mode_search_level: 3,
+            binary_mode_search_level: 1,
             binary_mode_partial_mode_round: 0.1,
             zero_div_attempt_prob:0.2,
             save_fitness_scores: false,

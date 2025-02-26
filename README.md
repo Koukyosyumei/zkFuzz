@@ -1,5 +1,7 @@
 # ProoFuzz
 
+**ProoFuzz** is a ZKP circuit fuzzer designed to help you identify vulnerabilities in zero-knowledge proof circuits. It leverages mutation testing to uncover counterexamples that reveal under-constrained or over-constrained behavior in your circuits.
+
 ## Build
 
 To compile the tool, run:
@@ -9,6 +11,8 @@ cargo build --release
 ```
 
 ## Basic Usage
+
+ProoFuzz’s CLI provides numerous options to tailor your fuzzing session. Below is a summary of the available commands and flags:
 
 ```
 ZKP Circuit Fuzzer
@@ -51,9 +55,13 @@ ARGS:
 
 **Example Command:**
 
+Run ProoFuzz using your circuit file written in Circom:
+
 ```bash
+# Using the debug build:
 ./target/debug/proofuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
-or
+
+# Using the release build:
 ./target/release/proofuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
 ```
 
@@ -208,7 +216,7 @@ If the configuration json file ommites some keys, the default values are used fo
     - Default: `false`
 ```
 
-## Tips
+## Tips & Advanced Features
 
 ### Saving Output
 
@@ -288,7 +296,7 @@ The output filename will follow the pattern `<TARGET_FILE_NAME>_<RANDOM_SUFFIX>_
 
 ### Logging
 
-This tool also provides multiple verbosity levels for detailed analysis with the environmental variable `RUST_LOG`:
+ProoFuzz offers multiple verbosity levels for detailed analysis with the environmental variable `RUST_LOG`:
 
 - `warn`: Outputs warnings and errors.
 - `info`: Includes everything from `warn` and adds the basic statistics about the trace and constraints.
