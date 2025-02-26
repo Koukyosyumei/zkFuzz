@@ -201,7 +201,7 @@ If the configuration json file ommites some keys, the default values are used fo
 
 - binary_mode_search_level (usize)
     - Purpose: Search depth for the binary pattern (x * (1 - x) === 0) check.
-    - Default: 3
+    - Default: 1
 
 - binary_mode_warmup_round (f64)
     - Purpose: Ratio of warmup rounds where binary_mode_prob is temporarily set to 1 upon detecting the binary pattern.
