@@ -187,6 +187,22 @@ If the configuration json file ommites some keys, the default values are used fo
     - Purpose: Probabilities associated with random value ranges.
     - Default: `[0.5, 0.5]`
 
+- binary_mode_prob (f64)
+    - Purpose: Probability of restricting random input to only 0 or 1.
+    - Default: `0.0`
+
+- binary_mode_search_level (usize)
+    - Purpose: Search depth for the binary pattern (x * (1 - x) === 0) check.
+    - Default: 3
+
+- binary_mode_warmup_round (f64)
+    - Purpose: Ratio of warmup rounds where binary_mode_prob is temporarily set to 1 upon detecting the binary pattern.
+    - Default: 0.1
+
+- zero_div_attempt_prob (f64)
+    - Purpose: Probability of invoking the quadratic equation solver to analytically determine solutions for zero-division patterns.
+    - Default: 0.2
+
 - save_fitness_scores (bool)
     - Purpose: Flag to determine if fitness scores should be saved.
     - Default: `false`
