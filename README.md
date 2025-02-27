@@ -59,10 +59,10 @@ Run ProoFuzz using your circuit file written in Circom:
 
 ```bash
 # Using the debug build:
-./target/debug/proofuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
+./target/debug/proofuzz ./tests/sample/iszero_vuln.circom
 
 # Using the release build:
-./target/release/proofuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
+./target/release/proofuzz ./tests/sample/iszero_vuln.circom
 ```
 
 **Example Output:**
