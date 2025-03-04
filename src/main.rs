@@ -105,6 +105,7 @@ fn show_stats(program_archive: &ProgramArchive) {
 }
 
 fn start() -> Result<(), ()> {
+    let start_time = time::Instant::now();
     //use compilation_user::CompilerConfig;
 
     let user_input = Input::new()?;
@@ -195,7 +196,6 @@ fn start() -> Result<(), ()> {
 
     match &program_archive.initial_template_call {
         Expression::Call { id, args, .. } => {
-            let start_time = time::Instant::now();
             let template = program_archive.templates[id].clone();
 
             eprintln!("{}", "🛒 Gathering Trace/Side Constraints...".green());
