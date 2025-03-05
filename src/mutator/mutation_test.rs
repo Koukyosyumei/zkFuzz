@@ -337,7 +337,10 @@ where
             evaluations.push(fitness);
         }
 
-        if !binary_input_mode && is_extincted_due_to_illegal_subscript {
+        if !binary_input_mode
+            && is_extincted_due_to_illegal_subscript
+            && (!mutation_config.dissable_heuristic_for_invalid_array_subscript)
+        {
             binary_input_mode = true;
             let mindim = if sexe.mindim >= std::usize::MAX {
                 1
