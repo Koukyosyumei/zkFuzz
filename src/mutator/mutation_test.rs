@@ -196,11 +196,15 @@ where
     }
 
     let dummy_runtime_mutable_positions = FxHashMap::default();
-    let runtime_mutable_positions = gather_runtime_mutable_inputs(
-        symbolic_trace,
-        sexe.symbolic_library,
-        &input_variables.iter().cloned().collect(),
-    );
+    let runtime_mutable_positions = if mutation_config.dissable_runtime_mutation_for_hash_check {
+        FxHashMap::default()
+    } else {
+        gather_runtime_mutable_inputs(
+            symbolic_trace,
+            sexe.symbolic_library,
+            &input_variables.iter().cloned().collect(),
+        )
+    };
 
     info!(
         "\n⚖️ Constraints Summary:
