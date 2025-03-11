@@ -466,10 +466,10 @@ mod input_processing {
     }
 
     pub fn view() -> ArgMatches<'static> {
-        App::new("circom compiler")
+        App::new("ZKP Circuit Fuzzer")
             .version(VERSION)
             .author("Anonymous Authors")
-            .about("ZKP Circuit Debugger")
+            .about("Fuzzer designed to help you identify vulnerabilities in zero-knowledge proof circuits")
             .arg(
                 Arg::with_name("input")
                     .multiple(false)
