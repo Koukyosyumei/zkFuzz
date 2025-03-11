@@ -4,17 +4,17 @@ version = "2.2.1"
 edition = "2021"
 
 [dependencies]
-compiler = { git = "https://github.com/iden3/circom.git", package = "compiler" }
-type_analysis = { git = "https://github.com/iden3/circom.git", package = "type_analysis" }
-circom_algebra = { git = "https://github.com/iden3/circom.git", package = "circom_algebra" }
-constraint_list = { git = "https://github.com/iden3/circom.git", package = "constraint_list" }
-program_structure = { git = "https://github.com/iden3/circom.git", package = "program_structure" }
-constraint_generation = { git = "https://github.com/iden3/circom.git", package = "constraint_generation" }
-constraint_writers = { git = "https://github.com/iden3/circom.git", package = "constraint_writers" }
-constant_tracking = { git = "https://github.com/iden3/circom.git", package = "constant_tracking" }
-parser = { git = "https://github.com/iden3/circom.git", package = "parser" }
-code_producers= { git = "https://github.com/iden3/circom.git", package = "code_producers" }
-dag = { git = "https://github.com/iden3/circom.git", package = "dag" }
+compiler = { git = "https://github.com/iden3/circom.git", package = "compiler", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+type_analysis = { git = "https://github.com/iden3/circom.git", package = "type_analysis", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+circom_algebra = { git = "https://github.com/iden3/circom.git", package = "circom_algebra", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+constraint_list = { git = "https://github.com/iden3/circom.git", package = "constraint_list", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+program_structure = { git = "https://github.com/iden3/circom.git", package = "program_structure", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+constraint_generation = { git = "https://github.com/iden3/circom.git", package = "constraint_generation", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+constraint_writers = { git = "https://github.com/iden3/circom.git", package = "constraint_writers", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+constant_tracking = { git = "https://github.com/iden3/circom.git", package = "constant_tracking", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+parser = { git = "https://github.com/iden3/circom.git", package = "parser", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+code_producers= { git = "https://github.com/iden3/circom.git", package = "code_producers", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
+dag = { git = "https://github.com/iden3/circom.git", package = "dag", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
 clap = "2.33.0"
 ansi_term = "0.12.1"
 wast = "39.0.0"
