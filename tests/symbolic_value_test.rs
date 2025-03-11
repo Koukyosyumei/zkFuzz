@@ -5,8 +5,8 @@ use num_bigint_dig::BigInt;
 
 use program_structure::ast::ExpressionInfixOpcode;
 
-use proofuzz::executor::debug_ast::DebuggableExpressionInfixOpcode;
-use proofuzz::executor::symbolic_value::{enumerate_array, evaluate_binary_op, SymbolicValue};
+use zkfuzz::executor::debug_ast::DebuggableExpressionInfixOpcode;
+use zkfuzz::executor::symbolic_value::{enumerate_array, evaluate_binary_op, SymbolicValue};
 
 #[test]
 fn test_arithmetic_operations() {

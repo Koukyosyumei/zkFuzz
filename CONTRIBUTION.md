@@ -11,13 +11,13 @@ cargo test
 **Example command:**
 
 ```bash
-perf stat -- ./target/release/proofuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
+perf stat -- ./target/release/zkfuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
 ```
 
 **Example output:**
 
 ```bash
- Performance counter stats for './target/release/proofuzz ./tests/sample/iszero_vuln.circom --search_mode=ga':
+ Performance counter stats for './target/release/zkfuzz ./tests/sample/iszero_vuln.circom --search_mode=ga':
 
            2443.80 msec task-clock:u              #    0.995 CPUs utilized
                  0      context-switches:u        #    0.000 /sec
@@ -39,7 +39,7 @@ perf stat -- ./target/release/proofuzz ./tests/sample/iszero_vuln.circom --searc
 **Example command:**
 
 ```s
-perf record -g -- ./target/release/proofuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
+perf record -g -- ./target/release/zkfuzz ./tests/sample/iszero_vuln.circom --search_mode="ga"
 perf report
 ```
 
@@ -57,18 +57,18 @@ perf report
 # Children      Self  Command  Shared Object          Symbol                                                                                                    >
 # ........  ........  .......  .....................  ..........................................................................................................>
 #
-    10.56%    10.56%  proofuzz     proofuzz                   [.] proofuzz::solver::utils::evaluate_symbolic_value
+    10.56%    10.56%  zkfuzz     zkfuzz                   [.] zkfuzz::solver::utils::evaluate_symbolic_value
             |
-             --9.89%--proofuzz::solver::utils::evaluate_symbolic_value
+             --9.89%--zkfuzz::solver::utils::evaluate_symbolic_value
 
-     9.67%     9.63%  proofuzz     proofuzz                   [.] <num_bigint_dig::bigint::BigInt as num_integer::Integer>::div_rem
+     9.67%     9.63%  zkfuzz     zkfuzz                   [.] <num_bigint_dig::bigint::BigInt as num_integer::Integer>::div_rem
             |
             |--8.35%--<num_bigint_dig::bigint::BigInt as num_integer::Integer>::div_rem
             |
              --0.57%--0
                        <num_bigint_dig::bigint::BigInt as num_integer::Integer>::div_rem
 
-     8.19%     8.19%  proofuzz     proofuzz                   [.] num_bigint_dig::bigint::BigInt::from_biguint
+     8.19%     8.19%  zkfuzz     zkfuzz                   [.] num_bigint_dig::bigint::BigInt::from_biguint
             |
        .
        .

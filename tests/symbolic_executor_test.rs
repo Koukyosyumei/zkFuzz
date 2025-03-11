@@ -9,14 +9,14 @@ use num_traits::One;
 
 use program_structure::ast::{Expression, ExpressionInfixOpcode, ExpressionPrefixOpcode};
 
-use proofuzz::executor::debug_ast::{
+use zkfuzz::executor::debug_ast::{
     DebuggableExpressionInfixOpcode, DebuggableExpressionPrefixOpcode,
 };
-use proofuzz::executor::symbolic_execution::SymbolicExecutor;
-use proofuzz::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
-use proofuzz::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
-use proofuzz::mutator::unused_outputs::check_unused_outputs;
-use proofuzz::mutator::utils::BaseVerificationConfig;
+use zkfuzz::executor::symbolic_execution::SymbolicExecutor;
+use zkfuzz::executor::symbolic_setting::get_default_setting_for_symbolic_execution;
+use zkfuzz::executor::symbolic_value::{OwnerName, SymbolicAccess, SymbolicName, SymbolicValue};
+use zkfuzz::mutator::unused_outputs::check_unused_outputs;
+use zkfuzz::mutator::utils::BaseVerificationConfig;
 
 use crate::utils::{execute, prepare_symbolic_library};
 

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 TARGET_DIR="../Picus/benchmarks/circomlib-cff5ab6"
-BASE_COMMAND="./target/release/proofuzz"
+BASE_COMMAND="./target/release/zkfuzz"
 
 TIME_LIMIT=60
 for circom_file in "$TARGET_DIR"/*.circom; do

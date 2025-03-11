@@ -5,10 +5,10 @@ use num_traits::{One, Zero};
 
 use program_structure::ast::ExpressionInfixOpcode;
 
-use proofuzz::executor::debug_ast::DebuggableExpressionInfixOpcode;
-use proofuzz::executor::symbolic_value::{get_coefficient_of_polynomials, get_degree_polynomial};
-use proofuzz::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue};
-use proofuzz::executor::utils::solve_quadratic_modulus_equation;
+use zkfuzz::executor::debug_ast::DebuggableExpressionInfixOpcode;
+use zkfuzz::executor::symbolic_value::{get_coefficient_of_polynomials, get_degree_polynomial};
+use zkfuzz::executor::symbolic_value::{OwnerName, SymbolicName, SymbolicValue};
+use zkfuzz::executor::utils::solve_quadratic_modulus_equation;
 
 // A dummy owner to use for creating SymbolicNames.
 fn dummy_owner() -> OwnerName {

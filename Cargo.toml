@@ -1,5 +1,5 @@
 [package]
-name = "proofuzz"
+name = "zkfuzz"
 version = "2.2.1"
 edition = "2021"
 

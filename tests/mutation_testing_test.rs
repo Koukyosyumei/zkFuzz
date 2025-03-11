@@ -6,23 +6,23 @@ use num_bigint_dig::BigInt;
 
 use program_structure::ast::Expression;
 
-use proofuzz::executor::symbolic_execution::SymbolicExecutor;
-use proofuzz::executor::symbolic_setting::{
+use zkfuzz::executor::symbolic_execution::SymbolicExecutor;
+use zkfuzz::executor::symbolic_setting::{
     get_default_setting_for_concrete_execution, get_default_setting_for_symbolic_execution,
 };
-use proofuzz::mutator::utils::{
+use zkfuzz::mutator::utils::{
     BaseVerificationConfig, CounterExample, UnderConstrainedType, VerificationResult,
 };
 
-use proofuzz::mutator::mutation_config::load_config_from_json;
-use proofuzz::mutator::mutation_test::{mutation_test_search, MutationTestResult};
-use proofuzz::mutator::mutation_test_crossover_fn::random_crossover;
-use proofuzz::mutator::mutation_test_evolution_fn::simple_evolution;
-use proofuzz::mutator::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
-use proofuzz::mutator::mutation_test_trace_initialization_fn::initialize_population_with_random_constant_replacement;
-use proofuzz::mutator::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
-use proofuzz::mutator::mutation_test_trace_selection_fn::roulette_selection;
-use proofuzz::mutator::mutation_test_update_input_fn::update_input_population_with_random_sampling;
+use zkfuzz::mutator::mutation_config::load_config_from_json;
+use zkfuzz::mutator::mutation_test::{mutation_test_search, MutationTestResult};
+use zkfuzz::mutator::mutation_test_crossover_fn::random_crossover;
+use zkfuzz::mutator::mutation_test_evolution_fn::simple_evolution;
+use zkfuzz::mutator::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
+use zkfuzz::mutator::mutation_test_trace_initialization_fn::initialize_population_with_random_constant_replacement;
+use zkfuzz::mutator::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
+use zkfuzz::mutator::mutation_test_trace_selection_fn::roulette_selection;
+use zkfuzz::mutator::mutation_test_update_input_fn::update_input_population_with_random_sampling;
 
 use crate::utils::{execute, prepare_symbolic_library};
 

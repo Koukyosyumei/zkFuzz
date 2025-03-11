@@ -1,6 +1,6 @@
-# ProoFuzz
+# zkFuzz
 
-**ProoFuzz** is a ZKP circuit fuzzer designed to help you identify vulnerabilities in zero-knowledge proof circuits. It leverages mutation testing to uncover counterexamples that reveal under-constrained or over-constrained behavior in your circuits.
+**zkFuzz** is a ZKP circuit fuzzer designed to help you identify vulnerabilities in zero-knowledge proof circuits. It leverages mutation testing to uncover counterexamples that reveal under-constrained or over-constrained behavior in your circuits.
 
 ## Build
 
@@ -12,23 +12,23 @@ cargo build --release
 
 ## Basic Usage
 
-ProoFuzz’s CLI provides numerous options to tailor your fuzzing session. Below is a summary of the available commands and flags:
+zkFuzz’s CLI provides numerous options to tailor your fuzzing session. Below is a summary of the available commands and flags:
 
 ```
 ZKP Circuit Fuzzer
 
 USAGE:
-    proofuzz [FLAGS] [OPTIONS] [--] [input]
+    zkfuzz [FLAGS] [OPTIONS] [--] [input]
 
 FLAGS:
         --constraint_assert_dissabled    Does not add asserts in the generated code for === constraint equalities
-        --lessthan_dissabled             (ProoFuzz) Does not detect overflow erros due to LessThan template
-        --print_ast                      (ProoFuzz) Prints AST
-        --show_stats_of_ast              (ProoFuzz) Prints the basic stats of AST
-        --print_stats                    (ProoFuzz) Prints the stats of constraints
-        --print_stats_csv                (ProoFuzz) Prints the stats of constraints in CSV format
-        --symbolic_template_params       (ProoFuzz) Treats the template parameters of the main template as symbolic values
-        --save_output                    (ProoFuzz) Save the output when the counterexample is found
+        --lessthan_dissabled             (zkFuzz) Does not detect overflow erros due to LessThan template
+        --print_ast                      (zkFuzz) Prints AST
+        --show_stats_of_ast              (zkFuzz) Prints the basic stats of AST
+        --print_stats                    (zkFuzz) Prints the stats of constraints
+        --print_stats_csv                (zkFuzz) Prints the stats of constraints in CSV format
+        --symbolic_template_params       (zkFuzz) Treats the template parameters of the main template as symbolic values
+        --save_output                    (zkFuzz) Save the output when the counterexample is found
     -h, --help                           Prints help information
     -V, --version                        Prints version information
 
@@ -38,16 +38,16 @@ OPTIONS:
             To choose the prime number to use to generate the circuit. Receives the name of the curve (bn128, bls12381,
             goldilocks, grumpkin, pallas, vesta, secq256r1) [default: bn128]
         --debug_prime <debug_prime>
-            (ProoFuzz) Prime number for ProoFuzz [default:
+            (zkFuzz) Prime number for zkFuzz [default:
             21888242871839275222246405745257275088548364400416034343698204186575808495617]
         --search_mode <search_mode>
-            (ProoFuzz) Search mode to find the counter example that shows the given circuit is not well-constrained [default: ga]
+            (zkFuzz) Search mode to find the counter example that shows the given circuit is not well-constrained [default: ga]
         --heuristics_range <heuristics_range>
-            (ProoFuzz) Heuristics range for ProoFuzz [default: 100]
+            (zkFuzz) Heuristics range for zkFuzz [default: 100]
         --path_to_mutation_setting <path_to_mutation_setting>
-            (ProoFuzz) Path to the setting file for Mutation Testing [default: none]
+            (zkFuzz) Path to the setting file for Mutation Testing [default: none]
         --path_to_whitelist <path_to_whitelist>                  
-            (ProoFuzz) Path to the white-lists file [default: none]
+            (zkFuzz) Path to the white-lists file [default: none]
 
 ARGS:
     <input>    Path to a circuit with a main component [default: ./circuit.circom]
@@ -55,14 +55,14 @@ ARGS:
 
 **Example Command:**
 
-Run ProoFuzz using your circuit file written in Circom:
+Run zkFuzz using your circuit file written in Circom:
 
 ```bash
 # Using the debug build:
-./target/debug/proofuzz ./tests/sample/iszero_vuln.circom
+./target/debug/zkfuzz ./tests/sample/iszero_vuln.circom
 
 # Using the release build:
-./target/release/proofuzz ./tests/sample/iszero_vuln.circom
+./target/release/zkfuzz ./tests/sample/iszero_vuln.circom
 ```
 
 **Example Output:**
@@ -225,7 +225,7 @@ When the `--save_output` option is enabled, the counterexample is saved to the d
 **Example Command with `--save_output`**
 
 ```bash
-./target/release/proofuzz ./tests/sample/test_vuln_iszero.circom --search_mode="ga" --save_output
+./target/release/zkfuzz ./tests/sample/test_vuln_iszero.circom --search_mode="ga" --save_output
 ```
 
 The output filename will follow the pattern `<TARGET_FILE_NAME>_<RANDOM_SUFFIX>_counterexample.json`.
@@ -238,7 +238,7 @@ The output filename will follow the pattern `<TARGET_FILE_NAME>_<RANDOM_SUFFIX>_
   "1_main_template": "VulnerableIsZero",
   "2_search_mode": "ga",
   "3_execution_time": "36.3001ms",
-  "4_git_hash_of_proofuzz": "106b20ddad6431d0eee3cd73f9aac0153af4bbd9",
+  "4_git_hash_of_zkfuzz": "106b20ddad6431d0eee3cd73f9aac0153af4bbd9",
   "5_flag": {
     "1_type": "UnderConstrained-NonDeterministic",
     "2_expected_output": {
@@ -296,7 +296,7 @@ The output filename will follow the pattern `<TARGET_FILE_NAME>_<RANDOM_SUFFIX>_
 
 ### Logging
 
-ProoFuzz offers multiple verbosity levels for detailed analysis with the environmental variable `RUST_LOG`:
+zkFuzz offers multiple verbosity levels for detailed analysis with the environmental variable `RUST_LOG`:
 
 - `warn`: Outputs warnings and errors.
 - `info`: Includes everything from `warn` and adds the basic statistics about the trace and constraints.
@@ -306,7 +306,7 @@ ProoFuzz offers multiple verbosity levels for detailed analysis with the environ
 **Example Command with Verbosity:**
 
 ```bash
-RUST_LOG=trace ./target/debug/proofuzz ../sample/lessthan3.circom --print_ast --print_stats
+RUST_LOG=trace ./target/debug/zkfuzz ../sample/lessthan3.circom --print_ast --print_stats
 ```
 
 **Example Output:**
