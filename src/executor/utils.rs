@@ -78,7 +78,7 @@ pub fn moddiv(lv: &BigInt, rv: &BigInt, modulus: &BigInt) -> BigInt {
 /// # Examples
 /// ```
 /// use num_bigint_dig::BigInt;
-/// use proofuzz::executor::utils::tonelli_shanks;
+/// use zkfuzz::executor::utils::tonelli_shanks;
 ///
 /// let n = BigInt::from(5);
 /// let p = BigInt::from(41);
@@ -190,7 +190,7 @@ pub fn solve_quadratic_modulus_equation(coeffs: &[BigInt; 3], modulus: &BigInt) 
 ///
 /// # Examples
 /// ```
-/// use proofuzz::executor::utils::generate_cartesian_product_indices;
+/// use zkfuzz::executor::utils::generate_cartesian_product_indices;
 ///
 /// // Example 1: Two dimensions with sizes 2 and 3
 /// let dims = &[2, 3];

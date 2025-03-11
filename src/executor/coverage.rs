@@ -55,7 +55,7 @@ use rustc_hash::{FxHashMap, FxHashSet, FxHasher};
 ///
 /// # Example
 /// ```rust
-/// use proofuzz::executor::coverage::CoverageTracker;
+/// use zkfuzz::executor::coverage::CoverageTracker;
 ///
 /// let mut tracker = CoverageTracker::new();
 ///

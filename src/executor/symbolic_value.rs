@@ -600,7 +600,7 @@ pub fn access_multidimensional_array(
 ///
 /// ```
 /// use rustc_hash::FxHashMap;
-/// use proofuzz::executor::symbolic_value::{register_array_elements,SymbolicName,SymbolicValue};
+/// use zkfuzz::executor::symbolic_value::{register_array_elements,SymbolicName,SymbolicValue};
 ///
 /// let mut elements: FxHashMap<SymbolicName, Option<SymbolicValue>> = FxHashMap::default();
 /// register_array_elements(0, &vec![2, 3], None, &mut elements);
@@ -749,8 +749,8 @@ pub fn val_for_relational_operators(z: &BigInt, p: &BigInt) -> BigInt {
 ///
 /// use program_structure::ast::ExpressionInfixOpcode;
 ///
-/// use proofuzz::executor::debug_ast::{DebuggableExpressionInfixOpcode};
-/// use proofuzz::executor::symbolic_value::{SymbolicValue, evaluate_binary_op};
+/// use zkfuzz::executor::debug_ast::{DebuggableExpressionInfixOpcode};
+/// use zkfuzz::executor::symbolic_value::{SymbolicValue, evaluate_binary_op};
 ///
 /// let lhs = SymbolicValue::ConstantInt(BigInt::from(10));
 /// let rhs = SymbolicValue::ConstantInt(BigInt::from(3));
