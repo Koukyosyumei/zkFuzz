@@ -60,15 +60,25 @@ pub fn update_input_population_with_random_sampling(
 }
 
 pub fn update_input_population_with_fitness_score(
-    _sexe: &mut SymbolicExecutor,
-    _input_variables: &[SymbolicName],
+    sexe: &mut SymbolicExecutor,
+    input_variables: &[SymbolicName],
     inputs_population: &mut Vec<FxHashMap<SymbolicName, BigInt>>,
     inputs_population_score: &Vec<BigInt>,
-    _base_config: &BaseVerificationConfig,
+    base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) {
-
+    if inputs_population.is_empty() {
+        update_input_population_with_random_sampling(
+            sexe,
+            input_variables,
+            inputs_population,
+            inputs_population_score,
+            base_config,
+            mutation_config,
+            rng,
+        );
+    }
     let mut updated_inputs_population = (0..mutation_config.input_population_size)
         .map(|_| {
             let parent1 = roulette_selection(inputs_population, inputs_population_score, rng);

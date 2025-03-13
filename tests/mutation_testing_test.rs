@@ -22,11 +22,11 @@ use zkfuzz::mutator::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_e
 use zkfuzz::mutator::mutation_test_trace_initialization_fn::initialize_population_with_random_constant_replacement;
 use zkfuzz::mutator::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
 use zkfuzz::mutator::mutation_test_trace_selection_fn::roulette_selection;
-use zkfuzz::mutator::mutation_test_update_input_fn::update_input_population_with_random_sampling;
+use zkfuzz::mutator::mutation_test_update_input_fn::{update_input_population_with_random_sampling, update_input_population_with_fitness_score};
 
 use crate::utils::{execute, prepare_symbolic_library};
 
-fn conduct_mutation_testing(path: String) -> MutationTestResult {
+fn conduct_mutation_testing(path: String, update_input_method: String) -> MutationTestResult {
     let prime = BigInt::from_str(
         "21888242871839275222246405745257275088548364400416034343698204186575808495617",
     )
@@ -67,6 +67,12 @@ fn conduct_mutation_testing(path: String) -> MutationTestResult {
 
     let mutation_config = load_config_from_json("./tests/parameters/test.json").unwrap();
 
+    let update_func = if update_input_method == "fitness" {
+        update_input_population_with_fitness_score
+    } else {
+        update_input_population_with_random_sampling
+    };
+
     mutation_test_search(
         &mut conc_executor,
         &sexe.cur_state.symbolic_trace.clone(),
@@ -74,7 +80,7 @@ fn conduct_mutation_testing(path: String) -> MutationTestResult {
         &verification_base_config,
         &mutation_config,
         initialize_population_with_random_constant_replacement,
-        update_input_population_with_random_sampling,
+        update_func,
         evaluate_trace_fitness_by_error,
         simple_evolution,
         mutate_trace_with_random_constant_replacement,
@@ -85,7 +91,20 @@ fn conduct_mutation_testing(path: String) -> MutationTestResult {
 
 #[test]
 fn test_vuln_iszero() {
-    let result = conduct_mutation_testing("./tests/sample/test_vuln_iszero.circom".to_string());
+    let result = conduct_mutation_testing("./tests/sample/test_vuln_iszero.circom".to_string(), "random".to_string());
+
+    assert!(matches!(
+        result.counter_example,
+        Some(CounterExample {
+            flag: VerificationResult::UnderConstrained(UnderConstrainedType::NonDeterministic(..)),
+            ..
+        })
+    ));
+}
+
+#[test]
+fn test_vuln_iszero_fitness() {
+    let result = conduct_mutation_testing("./tests/sample/test_vuln_iszero.circom".to_string(), "fitness".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -98,7 +117,7 @@ fn test_vuln_iszero() {
 
 #[test]
 fn test_vuln_average() {
-    let result = conduct_mutation_testing("./tests/sample/test_vuln_average.circom".to_string());
+    let result = conduct_mutation_testing("./tests/sample/test_vuln_average.circom".to_string(), "random".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -112,7 +131,7 @@ fn test_vuln_average() {
 #[test]
 fn test_vuln_scholarshipcheck() {
     let result =
-        conduct_mutation_testing("./tests/sample/test_vuln_scholarshipcheck.circom".to_string());
+        conduct_mutation_testing("./tests/sample/test_vuln_scholarshipcheck.circom".to_string(), "random".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -125,7 +144,7 @@ fn test_vuln_scholarshipcheck() {
 
 #[test]
 fn test_vuln_rshift1() {
-    let result = conduct_mutation_testing("./tests/sample/test_vuln_rshift1.circom".to_string());
+    let result = conduct_mutation_testing("./tests/sample/test_vuln_rshift1.circom".to_string(), "random".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -138,7 +157,7 @@ fn test_vuln_rshift1() {
 
 #[test]
 fn test_lessthan() {
-    let result = conduct_mutation_testing("./tests/sample/test_lessthan.circom".to_string());
+    let result = conduct_mutation_testing("./tests/sample/test_lessthan.circom".to_string(), "random".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -152,7 +171,7 @@ fn test_lessthan() {
 #[test]
 fn test_input_subscript_1d() {
     let result =
-        conduct_mutation_testing("./tests/sample/test_input_subscript_1d.circom".to_string());
+        conduct_mutation_testing("./tests/sample/test_input_subscript_1d.circom".to_string(), "random".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -166,7 +185,7 @@ fn test_input_subscript_1d() {
 #[test]
 fn test_input_subscript_2d() {
     let result =
-        conduct_mutation_testing("./tests/sample/test_input_subscript_2d.circom".to_string());
+        conduct_mutation_testing("./tests/sample/test_input_subscript_2d.circom".to_string(), "random".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -180,7 +199,7 @@ fn test_input_subscript_2d() {
 #[test]
 fn test_montgomerydouble() {
     let result =
-        conduct_mutation_testing("./tests/sample/test_montgomerydouble.circom".to_string());
+        conduct_mutation_testing("./tests/sample/test_montgomerydouble.circom".to_string(), "random".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -194,7 +213,7 @@ fn test_montgomerydouble() {
 #[test]
 fn test_decreasing_for_loop() {
     let result =
-        conduct_mutation_testing("./tests/sample/test_decreasing_for_loop.circom".to_string());
+        conduct_mutation_testing("./tests/sample/test_decreasing_for_loop.circom".to_string(), "random".to_string());
 
     assert!(matches!(
         result.counter_example,
@@ -208,7 +227,7 @@ fn test_decreasing_for_loop() {
 #[test]
 fn test_array_template_parameter() {
     let result =
-        conduct_mutation_testing("./tests/sample/test_array_template_parameter.circom".to_string());
+        conduct_mutation_testing("./tests/sample/test_array_template_parameter.circom".to_string(), "random".to_string());
 
     assert!(matches!(
         result.counter_example,
