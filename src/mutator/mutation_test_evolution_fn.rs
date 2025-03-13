@@ -36,9 +36,9 @@ use crate::mutator::utils::BaseVerificationConfig;
 ///
 /// # Type Parameters
 /// - `T`: The type representing an individual in the population, which must implement `Clone`.
-/// - `TraceMutationFn`: A callable function type for mutating an individual.
-/// - `TraceCrossoverFn`: A callable function type for performing crossover between two individuals.
-/// - `TraceSelectionFn`: A callable function type for selecting individuals based on fitness.
+/// - `MutationFn`: A callable function type for mutating an individual.
+/// - `CrossoverFn`: A callable function type for performing crossover between two individuals.
+/// - `SelectionFn`: A callable function type for selecting individuals based on fitness.
 ///
 /// # Algorithm
 /// 1. For each new individual in the population:
