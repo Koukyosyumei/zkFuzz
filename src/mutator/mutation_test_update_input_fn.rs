@@ -1,6 +1,7 @@
 use num_bigint_dig::BigInt;
 use rand::rngs::StdRng;
 use rand::Rng;
+use rand::prelude::IteratorRandom;
 use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
@@ -10,6 +11,7 @@ use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::mutation_test_crossover_fn::random_crossover;
 use crate::mutator::mutation_utils::draw_bigint_with_probabilities;
 use crate::mutator::utils::BaseVerificationConfig;
+use crate::mutator::mutation_test_trace_selection_fn::roulette_selection;
 
 /// Updates the input population with randomly generated samples.
 ///
@@ -58,28 +60,32 @@ pub fn update_input_population_with_random_sampling(
 
 pub fn update_input_population_with_fitness_score(
     _sexe: &mut SymbolicExecutor,
-    input_variables: &[SymbolicName],
+    _input_variables: &[SymbolicName],
     inputs_population: &mut Vec<FxHashMap<SymbolicName, BigInt>>,
     inputs_population_score: &Vec<BigInt>,
     _base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
 ) {
-    let mut new_inputs_population: Vec<_> = (0..mutation_config.input_population_size)
+
+    let mut updated_inputs_population = (0..mutation_config.input_population_size)
         .map(|_| {
-            input_variables
-                .iter()
-                .map(|var| {
-                    (
-                        var.clone(),
-                        draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
-                    )
-                })
-                .collect::<FxHashMap<SymbolicName, BigInt>>()
+            let parent1 = roulette_selection(inputs_population, inputs_population_score, rng);
+            let parent2 = roulette_selection(inputs_population, inputs_population_score, rng);
+            let mut child = if rng.gen::<f64>() < mutation_config.crossover_rate {
+                random_crossover(&parent1, &parent2, rng)
+            } else {
+                parent1.clone()
+            };
+            if rng.gen::<f64>() < mutation_config.mutation_rate {
+                let var = child.keys().choose(rng).unwrap();
+                child.insert(var.clone(), draw_bigint_with_probabilities(&mutation_config, rng).unwrap());
+            }
+            child
         })
-        .collect();
+        .collect::<Vec<_>>();
     inputs_population.clear();
-    inputs_population.append(&mut new_inputs_population);
+    inputs_population.append(&mut updated_inputs_population);
 }
 
 /// Evaluates the coverage achieved by a given set of inputs.
