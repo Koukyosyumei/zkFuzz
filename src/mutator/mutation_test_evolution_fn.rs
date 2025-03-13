@@ -48,33 +48,33 @@ use crate::mutator::utils::BaseVerificationConfig;
 ///     - With a probability defined in `mutation_config.mutation_rate`, apply `trace_mutation_fn`
 ///       to the child.
 /// 2. Collect all generated individuals into a new population.
-pub fn simple_evolution<T: Clone, TraceMutationFn, TraceCrossoverFn, TraceSelectionFn>(
+pub fn simple_evolution<T: Clone, MutationFn, CrossoverFn, SelectionFn>(
     assign_pos: &[usize],
     prev_population: &[T],
     prev_evaluations: &[BigInt],
     base_base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,
-    trace_mutation_fn: &TraceMutationFn,
-    trace_crossover_fn: &TraceCrossoverFn,
-    trace_selection_fn: &TraceSelectionFn,
+    mutation_fn: &MutationFn,
+    crossover_fn: &CrossoverFn,
+    selection_fn: &SelectionFn,
 ) -> Vec<T>
 where
-    TraceMutationFn: Fn(&[usize], &mut T, &BaseVerificationConfig, &MutationConfig, &mut StdRng),
-    TraceCrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
-    TraceSelectionFn: for<'a> Fn(&'a [T], &[BigInt], &mut StdRng) -> &'a T,
+    MutationFn: Fn(&[usize], &mut T, &BaseVerificationConfig, &MutationConfig, &mut StdRng),
+    CrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
+    SelectionFn: for<'a> Fn(&'a [T], &[BigInt], &mut StdRng) -> &'a T,
 {
     (0..mutation_config.program_population_size)
         .map(|_| {
-            let parent1 = trace_selection_fn(prev_population, prev_evaluations, rng);
-            let parent2 = trace_selection_fn(prev_population, prev_evaluations, rng);
+            let parent1 = selection_fn(prev_population, prev_evaluations, rng);
+            let parent2 = selection_fn(prev_population, prev_evaluations, rng);
             let mut child = if rng.gen::<f64>() < mutation_config.crossover_rate {
-                trace_crossover_fn(&parent1, &parent2, rng)
+                crossover_fn(&parent1, &parent2, rng)
             } else {
                 parent1.clone()
             };
             if rng.gen::<f64>() < mutation_config.mutation_rate {
-                trace_mutation_fn(
+                mutation_fn(
                     assign_pos,
                     &mut child,
                     base_base_config,
