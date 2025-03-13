@@ -55,6 +55,7 @@ pub fn evaluate_trace_fitness_by_error(
     runtime_mutable_positions: &FxHashMap<usize, Direction>,
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
     inputs_assignment: &Vec<FxHashMap<SymbolicName, BigInt>>,
+    fitness_scores_inputs: &mut Vec<BigInt>,
 ) -> (usize, BigInt, Option<CounterExample>, usize) {
     // Apply the given mutations to the symbolic trace.
     let mutated_symbolic_trace = apply_trace_mutation(symbolic_trace, trace_mutation);
@@ -195,6 +196,10 @@ pub fn evaluate_trace_fitness_by_error(
             }
             // Penalize valid solutions by setting their score to the worst possible value.
             score = -base_config.prime.clone();
+        }
+
+        if fitness_scores_inputs[i] > score.clone() {
+            fitness_scores_inputs[i] = score.clone();
         }
 
         if score > max_score {

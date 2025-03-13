@@ -56,6 +56,32 @@ pub fn update_input_population_with_random_sampling(
     inputs_population.append(&mut new_inputs_population);
 }
 
+pub fn update_input_population_with_fitness_score(
+    _sexe: &mut SymbolicExecutor,
+    input_variables: &[SymbolicName],
+    inputs_population: &mut Vec<FxHashMap<SymbolicName, BigInt>>,
+    inputs_population_score: &Vec<BigInt>,
+    _base_config: &BaseVerificationConfig,
+    mutation_config: &MutationConfig,
+    rng: &mut StdRng,
+) {
+    let mut new_inputs_population: Vec<_> = (0..mutation_config.input_population_size)
+        .map(|_| {
+            input_variables
+                .iter()
+                .map(|var| {
+                    (
+                        var.clone(),
+                        draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                    )
+                })
+                .collect::<FxHashMap<SymbolicName, BigInt>>()
+        })
+        .collect();
+    inputs_population.clear();
+    inputs_population.append(&mut new_inputs_population);
+}
+
 /// Evaluates the coverage achieved by a given set of inputs.
 ///
 /// This function runs the symbolic executor with the provided inputs and measures
