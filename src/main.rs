@@ -45,6 +45,7 @@ use mutator::mutation_test_trace_selection_fn::roulette_selection;
 use mutator::mutation_test_update_input_fn::{
     update_input_population_with_coverage_maximization,
     update_input_population_with_random_sampling,
+    update_input_population_with_fitness_score
 };
 use mutator::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
@@ -328,6 +329,7 @@ fn start() -> Result<(), ()> {
                                 .as_str()
                             {
                                 "random" => update_input_population_with_random_sampling,
+                                "fitness" => update_input_population_with_fitness_score,
                                 "coverage" => update_input_population_with_coverage_maximization,
                                 _ => panic!("`input_initialization_method` should be one of [`random`, `coverage`]")
                             };
