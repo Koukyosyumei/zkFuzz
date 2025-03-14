@@ -1,7 +1,7 @@
 use num_bigint_dig::BigInt;
+use rand::prelude::IteratorRandom;
 use rand::rngs::StdRng;
 use rand::Rng;
-use rand::prelude::IteratorRandom;
 use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
@@ -9,9 +9,9 @@ use crate::executor::symbolic_value::{OwnerName, SymbolicName};
 
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::mutation_test_crossover_fn::random_crossover;
+use crate::mutator::mutation_test_trace_selection_fn::roulette_selection;
 use crate::mutator::mutation_utils::draw_bigint_with_probabilities;
 use crate::mutator::utils::BaseVerificationConfig;
-use crate::mutator::mutation_test_trace_selection_fn::roulette_selection;
 
 /// Updates the input population with randomly generated samples.
 ///
@@ -88,9 +88,10 @@ pub fn update_input_population_with_fitness_score(
             } else {
                 parent1.clone()
             };
-            if rng.gen::<f64>() < mutation_config.mutation_rate {
-                let var = child.keys().choose(rng).unwrap();
-                child.insert(var.clone(), draw_bigint_with_probabilities(&mutation_config, rng).unwrap());
+            for (_, val) in child.iter_mut() {
+                if rng.gen::<f64>() < mutation_config.mutation_rate {
+                    *val = draw_bigint_with_probabilities(&mutation_config, rng).unwrap();
+                }
             }
             child
         })
