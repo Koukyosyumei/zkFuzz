@@ -263,7 +263,7 @@ where
             && 1 < generation
             && generation
                 < (mutation_config.max_generations as f64
-                    * mutation_config.binary_mode_partial_mode_round) as usize
+                    * mutation_config.binary_mode_warmup_round) as usize
         {
             mutation_config.binary_mode_prob = 1.0;
         } else {
