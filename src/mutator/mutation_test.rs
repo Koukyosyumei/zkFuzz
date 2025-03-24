@@ -230,7 +230,7 @@ where
         &mut rng,
     );
     let mut fitness_scores =
-        vec![-base_config.prime.clone(); mutation_config.program_population_size];
+        vec![-base_config.prime.clone(); mutation_config.program_population_size + 1];
     let mut fitness_scores_inputs =
         vec![-base_config.prime.clone(); mutation_config.input_population_size];
     let mut input_population = Vec::new();
