@@ -47,7 +47,9 @@ pub fn mutate_trace_with_random_constant_replacement(
     rng: &mut StdRng,
 ) {
     if !individual.is_empty() {
-        let var = individual.keys().choose(rng).unwrap();
+        let mut keys: Vec<usize> = individual.keys().copied().collect();
+        keys.sort();
+        let var = keys.iter().choose(rng).unwrap();
         individual.insert(
             var.clone(),
             SymbolicValue::ConstantInt(
@@ -63,7 +65,9 @@ pub fn mutate_trace_with_random_constant_replacement(
                 ),
             );
         } else if individual.len() > 1 && rng.gen::<bool>() {
-            let var = individual.keys().cloned().choose(rng).unwrap();
+            let mut keys: Vec<usize> = individual.keys().copied().collect();
+            keys.sort();
+            let var = keys.iter().choose(rng).unwrap();
             individual.remove(&var);
         }
     }

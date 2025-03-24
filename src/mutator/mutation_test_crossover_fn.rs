@@ -44,12 +44,15 @@ pub fn random_crossover<K, V>(
     rng: &mut StdRng,
 ) -> FxHashMap<K, V>
 where
-    K: Clone + std::hash::Hash + std::cmp::Eq,
+    K: Clone + std::hash::Hash + std::cmp::Eq + std::cmp::Ord,
     V: Clone,
 {
-    parent1
-        .iter()
-        .map(|(var, val)| {
+    let mut keys: Vec<&K> = parent1.keys().collect();
+    keys.sort();
+
+    keys.into_iter()
+        .map(|var| {
+            let val = parent1.get(var).unwrap();
             if rng.gen::<bool>() {
                 (var.clone(), val.clone())
             } else {

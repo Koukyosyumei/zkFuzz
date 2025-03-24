@@ -1,3 +1,6 @@
+use std::hash::DefaultHasher;
+use std::hash::Hash;
+use std::hash::Hasher;
 use std::rc::Rc;
 
 use num_bigint_dig::BigInt;
@@ -86,7 +89,11 @@ pub fn apply_trace_mutation(
     trace_mutation: &FxHashMap<usize, SymbolicValue>,
 ) -> SymbolicTrace {
     let mut mutated_constraints = symbolic_trace.clone();
-    for (index, value) in trace_mutation {
+    let mut keys: Vec<_> = trace_mutation.keys().collect();
+    keys.sort();
+
+    for index in keys {
+        let value = trace_mutation.get(index).unwrap();
         if let SymbolicValue::Assign(lv, _, is_safe, _) =
             mutated_constraints[*index].as_ref().clone()
         {

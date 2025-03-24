@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::cmp::Ordering;
 use std::collections::VecDeque;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
@@ -137,6 +138,17 @@ impl SymbolicName {
     pub fn update_hash(&self) {
         *self.precomputed_hash.borrow_mut() = Some(self.compute_hash());
     }
+
+    fn get_or_update_hash(&self) -> u64 {
+        // Check if the hash has been computed already.
+        if let Some(hash) = *self.precomputed_hash.borrow() {
+            hash
+        } else {
+            // Compute the hash and store it.
+            self.update_hash();
+            (*self.precomputed_hash.borrow()).unwrap()
+        }
+    }
 }
 
 impl PartialEq for SymbolicName {
@@ -168,6 +180,18 @@ impl Hash for SymbolicName {
             *self.precomputed_hash.borrow_mut() = Some(hash);
             hash.hash(state);
         }
+    }
+}
+
+impl PartialOrd for SymbolicName {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for SymbolicName {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.get_or_update_hash().cmp(&other.get_or_update_hash())
     }
 }
 

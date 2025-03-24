@@ -1,4 +1,6 @@
+use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher};
 use std::io;
 use std::io::Write;
 
@@ -185,8 +187,10 @@ where
     let mut variables = extract_variables(symbolic_trace);
     variables.append(&mut extract_variables(side_constraints));
     let variables_set: HashSet<SymbolicName> = variables.iter().cloned().collect();
+    let mut unique_variables: Vec<SymbolicName> = variables_set.iter().cloned().collect();
+    unique_variables.sort();
     let mut input_variables = Vec::new();
-    for v in variables_set.iter() {
+    for v in unique_variables.iter() {
         if v.owner.len() == 1
             && sexe.symbolic_library.template_library
                 [&sexe.symbolic_library.name2id[&base_config.target_template_name]]

@@ -1,3 +1,5 @@
+use std::hash::{DefaultHasher, Hash, Hasher};
+
 use num_bigint_dig::BigInt;
 use num_traits::Zero;
 use rustc_hash::FxHashMap;
@@ -128,7 +130,7 @@ pub fn evaluate_trace_fitness_by_error(
             &mutated_symbolic_trace,
             runtime_mutable_positions,
             &mut assignment_for_mutation,
-            &mut sexe.symbolic_library,
+            &mut sexe.symbolic_library.clone(),
         );
         if mutated_emulation_result.is_none() {
             break;
@@ -164,7 +166,10 @@ pub fn evaluate_trace_fitness_by_error(
                 break;
             } else {
                 // Verify consistency of outputs for valid solutions.
-                for (k, v) in assignment_for_original {
+                let mut keys: Vec<_> = assignment_for_original.keys().collect();
+                keys.sort();
+                for k in keys {
+                    let v = assignment_for_original.get(k).unwrap();
                     if k.owner.len() == 1
                         && sexe.symbolic_library.template_library
                             [&sexe.symbolic_library.name2id[&base_config.target_template_name]]
