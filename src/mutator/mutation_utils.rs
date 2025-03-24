@@ -1,6 +1,3 @@
-use std::hash::DefaultHasher;
-use std::hash::Hash;
-use std::hash::Hasher;
 use std::rc::Rc;
 
 use num_bigint_dig::BigInt;

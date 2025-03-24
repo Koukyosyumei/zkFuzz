@@ -1,5 +1,4 @@
 use num_bigint_dig::BigInt;
-use rand::prelude::IteratorRandom;
 use rand::rngs::StdRng;
 use rand::Rng;
 use rustc_hash::FxHashMap;

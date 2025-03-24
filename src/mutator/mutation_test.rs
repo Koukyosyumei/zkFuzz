@@ -1,6 +1,4 @@
-use std::collections::hash_map::DefaultHasher;
 use std::collections::HashSet;
-use std::hash::{Hash, Hasher};
 use std::io;
 use std::io::Write;
 
