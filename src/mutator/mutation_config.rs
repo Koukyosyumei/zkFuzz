@@ -42,18 +42,6 @@ pub struct MutationConfig {
     pub save_fitness_scores: bool,
 }
 
-/*
-            random_value_ranges: vec![
-                (BigInt::from(0), BigInt::from(10)),
-                (BigInt::from(10), BigInt::from(100)),
-                (BigInt::from_str("100").unwrap(),
-                 BigInt::from_str("21888242871839275222246405745257275088548364400416034343698204186575808495517").unwrap()),
-                (BigInt::from_str("21888242871839275222246405745257275088548364400416034343698204186575808495517").unwrap(),
-                 BigInt::from_str("21888242871839275222246405745257275088548364400416034343698204186575808495617").unwrap()),
-            ],
-            random_value_probs: vec![0.35, 0.14, 0.01, 0.5],
-*/
-
 impl Default for MutationConfig {
     fn default() -> Self {
         MutationConfig {
