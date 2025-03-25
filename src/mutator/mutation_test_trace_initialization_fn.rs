@@ -1,4 +1,5 @@
 use std::cmp::min;
+use std::rc::Rc;
 
 use rand::rngs::StdRng;
 use rand::seq::{IteratorRandom, SliceRandom};
@@ -184,6 +185,86 @@ pub fn initialize_population_with_operator_mutation_and_random_constant_replacem
                             draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
                         ),
                     ),
+                })
+                .collect()
+        })
+        .collect()
+}
+
+pub fn initialize_population_with_operator_mutation_and_random_constant_replacement_addition(
+    pos: &[usize],
+    program_population_size: usize,
+    symbolic_trace: &SymbolicTrace,
+    _base_config: &BaseVerificationConfig,
+    mutation_config: &MutationConfig,
+    rng: &mut StdRng,
+) -> Vec<Gene> {
+    (0..program_population_size)
+        .map(|_| {
+            let num_mutations = if pos.len() > 1 {
+                rng.gen_range(1, min(pos.len(), mutation_config.max_num_mutation_points))
+            } else {
+                1
+            };
+            let selected_pos: Vec<_> = pos.choose_multiple(rng, num_mutations).cloned().collect();
+            selected_pos
+                .iter()
+                .map(|p| {
+                    if rng.gen::<bool>() {
+                        (
+                            p.clone(),
+                            SymbolicValue::BinaryOp(
+                                symbolic_trace[*p].clone(),
+                                DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                                Rc::new(SymbolicValue::ConstantInt(
+                                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                                )),
+                            ),
+                        )
+                    } else {
+                        match &*symbolic_trace[*p] {
+                            SymbolicValue::BinaryOp(left, op, right) => {
+                                if rng.gen::<f64>() < mutation_config.operator_mutation_rate {
+                                    let mutated_op = if let Some(related_ops) =
+                                        OPERATOR_MUTATION_CANDIDATES
+                                            .iter()
+                                            .find(|&&(key, _)| key == op.0)
+                                            .map(|&(_, ref ops)| ops)
+                                    {
+                                        *related_ops
+                                            .iter()
+                                            .choose(rng)
+                                            .expect("Related operator group cannot be empty")
+                                    } else {
+                                        panic!("No group defined for the given opcode: {:?}", op);
+                                    };
+
+                                    (
+                                        p.clone(),
+                                        SymbolicValue::BinaryOp(
+                                            left.clone(),
+                                            DebuggableExpressionInfixOpcode(mutated_op),
+                                            right.clone(),
+                                        ),
+                                    )
+                                } else {
+                                    (
+                                        p.clone(),
+                                        SymbolicValue::ConstantInt(
+                                            draw_bigint_with_probabilities(&mutation_config, rng)
+                                                .unwrap(),
+                                        ),
+                                    )
+                                }
+                            }
+                            _ => (
+                                p.clone(),
+                                SymbolicValue::ConstantInt(
+                                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                                ),
+                            ),
+                        }
+                    }
                 })
                 .collect()
         })

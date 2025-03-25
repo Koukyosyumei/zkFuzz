@@ -38,14 +38,14 @@ use mutator::mutation_test_evolution_fn::simple_evolution;
 use mutator::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
 use mutator::mutation_test_trace_initialization_fn::{
     initialize_population_with_operator_mutation_and_random_constant_replacement,
+    initialize_population_with_operator_mutation_and_random_constant_replacement_addition,
     initialize_population_with_random_constant_replacement,
 };
 use mutator::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
 use mutator::mutation_test_trace_selection_fn::roulette_selection;
 use mutator::mutation_test_update_input_fn::{
-    update_input_population_with_coverage_maximization,
+    update_input_population_with_coverage_maximization, update_input_population_with_fitness_score,
     update_input_population_with_random_sampling,
-    update_input_population_with_fitness_score
 };
 use mutator::{
     brute_force::brute_force_search, mutation_test::mutation_test_search,
@@ -321,6 +321,7 @@ fn start() -> Result<(), ()> {
                             let trace_initialization_fn = match mutation_config.trace_mutation_method.as_str() {
                                 "constant" => initialize_population_with_random_constant_replacement,
                                 "constant_operator" => initialize_population_with_operator_mutation_and_random_constant_replacement,
+                                "constant_operator_and_add" => initialize_population_with_operator_mutation_and_random_constant_replacement_addition,
                                 _ => panic!("`trace_mutation_method` should be one of [`constant`, `constant_operator`]")
                             };
 
