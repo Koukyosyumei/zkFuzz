@@ -13,7 +13,9 @@ use crate::executor::symbolic_value::SymbolicValue;
 
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::mutation_test::Gene;
-use crate::mutator::mutation_utils::draw_bigint_with_probabilities;
+use crate::mutator::mutation_utils::{
+    draw_bigint_with_probabilities, draw_strict_operator_mutation_or_random_constant_replacement,
+};
 use crate::mutator::utils::BaseVerificationConfig;
 
 /// Initializes a population of `Gene` instances by replacing all symbolic trace positions
@@ -185,6 +187,39 @@ pub fn initialize_population_with_operator_mutation_and_random_constant_replacem
                             draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
                         ),
                     ),
+                })
+                .collect()
+        })
+        .collect()
+}
+
+pub fn initialize_population_with_strict_operator_mutation_and_random_constant_replacement(
+    pos: &[usize],
+    program_population_size: usize,
+    symbolic_trace: &SymbolicTrace,
+    _base_config: &BaseVerificationConfig,
+    mutation_config: &MutationConfig,
+    rng: &mut StdRng,
+) -> Vec<Gene> {
+    (0..program_population_size)
+        .map(|_| {
+            let num_mutations = if pos.len() > 1 {
+                rng.gen_range(1, min(pos.len(), mutation_config.max_num_mutation_points))
+            } else {
+                1
+            };
+            let selected_pos: Vec<_> = pos.choose_multiple(rng, num_mutations).cloned().collect();
+            selected_pos
+                .iter()
+                .map(|p| {
+                    (
+                        p.clone(),
+                        draw_strict_operator_mutation_or_random_constant_replacement(
+                            &*symbolic_trace[*p],
+                            mutation_config,
+                            rng,
+                        ),
+                    )
                 })
                 .collect()
         })

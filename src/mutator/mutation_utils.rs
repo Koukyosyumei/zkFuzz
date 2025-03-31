@@ -3,10 +3,13 @@ use std::rc::Rc;
 use num_bigint_dig::BigInt;
 use num_bigint_dig::RandBigInt;
 use num_traits::Zero;
+use program_structure::ast::ExpressionInfixOpcode;
 use rand::rngs::StdRng;
+use rand::seq::IteratorRandom;
 use rand::Rng;
 use rustc_hash::FxHashMap;
 
+use crate::executor::debug_ast::DebuggableExpressionInfixOpcode;
 use crate::executor::symbolic_state::SymbolicTrace;
 use crate::executor::symbolic_value::SymbolicValue;
 use crate::mutator::mutation_config::MutationConfig;
@@ -114,4 +117,67 @@ pub fn apply_trace_mutation(
         }
     }
     mutated_constraints
+}
+
+lazy_static::lazy_static! {
+    static ref OPERATOR_MUTATION_CANDIDATES_STRICT: Vec<(ExpressionInfixOpcode,Vec<ExpressionInfixOpcode>)> = {
+        vec![
+            (ExpressionInfixOpcode::Add, vec![ExpressionInfixOpcode::Sub, ExpressionInfixOpcode::Mul, ExpressionInfixOpcode::Pow, ExpressionInfixOpcode::Div, ExpressionInfixOpcode::IntDiv, ExpressionInfixOpcode::Mod]),
+            (ExpressionInfixOpcode::Sub, vec![ExpressionInfixOpcode::Add, ExpressionInfixOpcode::Mul, ExpressionInfixOpcode::Pow, ExpressionInfixOpcode::Div, ExpressionInfixOpcode::IntDiv, ExpressionInfixOpcode::Mod]),
+            (ExpressionInfixOpcode::Mul, vec![ExpressionInfixOpcode::Add, ExpressionInfixOpcode::Sub, ExpressionInfixOpcode::Pow, ExpressionInfixOpcode::Div, ExpressionInfixOpcode::IntDiv, ExpressionInfixOpcode::Mod]),
+            (ExpressionInfixOpcode::Pow, vec![ExpressionInfixOpcode::Add, ExpressionInfixOpcode::Sub, ExpressionInfixOpcode::Mul, ExpressionInfixOpcode::Div, ExpressionInfixOpcode::IntDiv, ExpressionInfixOpcode::Mod]),
+            (ExpressionInfixOpcode::Div, vec![ExpressionInfixOpcode::Add, ExpressionInfixOpcode::Sub, ExpressionInfixOpcode::Mul, ExpressionInfixOpcode::Pow, ExpressionInfixOpcode::IntDiv, ExpressionInfixOpcode::Mod]),
+            (ExpressionInfixOpcode::IntDiv, vec![ExpressionInfixOpcode::Add, ExpressionInfixOpcode::Sub, ExpressionInfixOpcode::Mul, ExpressionInfixOpcode::Pow, ExpressionInfixOpcode::Div, ExpressionInfixOpcode::Mod]),
+            (ExpressionInfixOpcode::Mod, vec![ExpressionInfixOpcode::Add, ExpressionInfixOpcode::Sub, ExpressionInfixOpcode::Mul, ExpressionInfixOpcode::Pow, ExpressionInfixOpcode::Div, ExpressionInfixOpcode::IntDiv]),
+            (ExpressionInfixOpcode::BitOr, vec![ExpressionInfixOpcode::BitAnd, ExpressionInfixOpcode::BitXor]),
+            (ExpressionInfixOpcode::BitAnd, vec![ExpressionInfixOpcode::BitOr, ExpressionInfixOpcode::BitXor]),
+            (ExpressionInfixOpcode::BitXor, vec![ExpressionInfixOpcode::BitOr, ExpressionInfixOpcode::BitAnd]),
+            (ExpressionInfixOpcode::ShiftL, vec![ExpressionInfixOpcode::ShiftR]),
+            (ExpressionInfixOpcode::ShiftR, vec![ExpressionInfixOpcode::ShiftL]),
+            (ExpressionInfixOpcode::Lesser, vec![ExpressionInfixOpcode::NotEq, ExpressionInfixOpcode::Eq, ExpressionInfixOpcode::Greater, ExpressionInfixOpcode::GreaterEq, ExpressionInfixOpcode::LesserEq]),
+            (ExpressionInfixOpcode::Greater, vec![ExpressionInfixOpcode::NotEq, ExpressionInfixOpcode::Eq, ExpressionInfixOpcode::Lesser, ExpressionInfixOpcode::GreaterEq, ExpressionInfixOpcode::LesserEq]),
+            (ExpressionInfixOpcode::LesserEq, vec![ExpressionInfixOpcode::NotEq, ExpressionInfixOpcode::Eq, ExpressionInfixOpcode::Lesser, ExpressionInfixOpcode::Greater, ExpressionInfixOpcode::GreaterEq]),
+            (ExpressionInfixOpcode::GreaterEq, vec![ExpressionInfixOpcode::NotEq, ExpressionInfixOpcode::Eq, ExpressionInfixOpcode::Lesser, ExpressionInfixOpcode::Greater, ExpressionInfixOpcode::LesserEq]),
+            (ExpressionInfixOpcode::Eq, vec![ExpressionInfixOpcode::NotEq, ExpressionInfixOpcode::Lesser, ExpressionInfixOpcode::Greater, ExpressionInfixOpcode::GreaterEq, ExpressionInfixOpcode::LesserEq]),
+            (ExpressionInfixOpcode::NotEq, vec![ExpressionInfixOpcode::Eq, ExpressionInfixOpcode::Lesser, ExpressionInfixOpcode::Greater, ExpressionInfixOpcode::GreaterEq, ExpressionInfixOpcode::LesserEq]),
+        ]
+    };
+}
+
+pub fn draw_strict_operator_mutation_or_random_constant_replacement(
+    target: &SymbolicValue,
+    mutation_config: &MutationConfig,
+    rng: &mut StdRng,
+) -> SymbolicValue {
+    match target {
+        SymbolicValue::BinaryOp(left, op, right) => {
+            if rng.gen::<f64>() < mutation_config.operator_mutation_rate {
+                let mutated_op = if let Some(related_ops) = OPERATOR_MUTATION_CANDIDATES_STRICT
+                    .iter()
+                    .find(|&&(key, _)| key == op.0)
+                    .map(|&(_, ref ops)| ops)
+                {
+                    *related_ops
+                        .iter()
+                        .choose(rng)
+                        .expect("Related operator group cannot be empty")
+                } else {
+                    panic!("No group defined for the given opcode: {:?}", op);
+                };
+
+                SymbolicValue::BinaryOp(
+                    left.clone(),
+                    DebuggableExpressionInfixOpcode(mutated_op),
+                    right.clone(),
+                )
+            } else {
+                SymbolicValue::ConstantInt(
+                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                )
+            }
+        }
+        _ => SymbolicValue::ConstantInt(
+            draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+        ),
+    }
 }

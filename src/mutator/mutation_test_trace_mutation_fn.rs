@@ -10,7 +10,9 @@ use crate::executor::symbolic_state::SymbolicTrace;
 use crate::executor::symbolic_value::SymbolicValue;
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::mutation_test::Gene;
-use crate::mutator::mutation_utils::draw_bigint_with_probabilities;
+use crate::mutator::mutation_utils::{
+    draw_bigint_with_probabilities, draw_strict_operator_mutation_or_random_constant_replacement,
+};
 use crate::mutator::utils::BaseVerificationConfig;
 
 /// Mutates a trace by replacing a randomly selected position with a new random constant value.
@@ -68,6 +70,45 @@ pub fn mutate_trace_with_random_constant_replacement(
                 var.clone(),
                 SymbolicValue::ConstantInt(
                     draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                ),
+            );
+        } else if individual.len() > 1 && rng.gen::<bool>() {
+            let mut keys: Vec<usize> = individual.keys().copied().collect();
+            keys.sort();
+            let var = keys.iter().choose(rng).unwrap();
+            individual.remove(&var);
+        }
+    }
+}
+
+pub fn mutate_trace_with_strict_operator_mutation_and_random_constant_replacement(
+    pos: &[usize],
+    symbolic_trace: &SymbolicTrace,
+    individual: &mut Gene,
+    _base_config: &BaseVerificationConfig,
+    mutation_config: &MutationConfig,
+    rng: &mut StdRng,
+) {
+    if !individual.is_empty() {
+        let mut keys: Vec<usize> = individual.keys().copied().collect();
+        keys.sort();
+        let var = keys.iter().choose(rng).unwrap();
+        individual.insert(
+            var.clone(),
+            draw_strict_operator_mutation_or_random_constant_replacement(
+                &*symbolic_trace[*var],
+                mutation_config,
+                rng,
+            ),
+        );
+        if individual.len() < mutation_config.max_num_mutation_points && rng.gen::<bool>() {
+            let var = pos.into_iter().choose(rng).unwrap();
+            individual.insert(
+                var.clone(),
+                draw_strict_operator_mutation_or_random_constant_replacement(
+                    &*symbolic_trace[*var],
+                    mutation_config,
+                    rng,
                 ),
             );
         } else if individual.len() > 1 && rng.gen::<bool>() {

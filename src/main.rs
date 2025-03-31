@@ -41,11 +41,13 @@ use mutator::mutation_test_trace_initialization_fn::{
     initialize_population_with_operator_mutation_and_random_constant_replacement_or_addition,
     initialize_population_with_operator_mutation_and_random_constant_replacement_or_delete_statement,
     initialize_population_with_random_constant_replacement,
+    initialize_population_with_strict_operator_mutation_and_random_constant_replacement,
 };
 use mutator::mutation_test_trace_mutation_fn::{
     mutate_trace_with_random_constant_replacement,
     mutate_trace_with_random_constant_replacement_or_addition,
     mutate_trace_with_random_constant_replacement_or_delete_statement,
+    mutate_trace_with_strict_operator_mutation_and_random_constant_replacement,
 };
 use mutator::mutation_test_trace_selection_fn::roulette_selection;
 use mutator::mutation_test_update_input_fn::{
@@ -326,6 +328,7 @@ fn start() -> Result<(), ()> {
                             let trace_initialization_fn = match mutation_config.trace_mutation_method.as_str() {
                                 "constant" => initialize_population_with_random_constant_replacement,
                                 "constant_operator" => initialize_population_with_operator_mutation_and_random_constant_replacement,
+                                "constant_strict_operator" => initialize_population_with_strict_operator_mutation_and_random_constant_replacement,
                                 "constant_operator_and_add" => initialize_population_with_operator_mutation_and_random_constant_replacement_or_addition,
                                 "constant_operator_and_delete" => initialize_population_with_operator_mutation_and_random_constant_replacement_or_delete_statement,
                                 _ => panic!("`trace_mutation_method` should be one of [`constant`, `constant_operator`, `constant_operator_and_add`, `constant_operator_and_delete`]")
@@ -334,6 +337,7 @@ fn start() -> Result<(), ()> {
                             let trace_mutation_fn = match mutation_config.trace_mutation_method.as_str() {
                                 "constant" => mutate_trace_with_random_constant_replacement,
                                 "constant_operator" => mutate_trace_with_random_constant_replacement,
+                                "constant_strict_operator" => mutate_trace_with_strict_operator_mutation_and_random_constant_replacement,
                                 "constant_operator_and_add" => mutate_trace_with_random_constant_replacement_or_addition,
                                 "constant_operator_and_delete" => mutate_trace_with_random_constant_replacement_or_delete_statement,
                                 _ => panic!("`trace_mutation_method` should be one of [`constant`, `constant_operator`, `constant_operator_and_add`, `constant_operator_and_delete`]")
