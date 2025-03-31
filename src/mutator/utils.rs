@@ -473,6 +473,7 @@ pub fn emulate_symbolic_trace(
     let mut failure_pos = 0;
     // let input_variables: FxHashSet<SymbolicName> = assignment.keys().cloned().collect();
     for (i, inst) in trace.iter().enumerate() {
+        // println!("{}", inst.lookup_fmt(&symbolic_library.id2name));
         match inst.as_ref() {
             SymbolicValue::NOP => {}
             SymbolicValue::ConstantBool(b) => {
@@ -488,6 +489,11 @@ pub fn emulate_symbolic_trace(
                 if let SymbolicValue::Variable(sym_name) = lhs.as_ref() {
                     let rhs_val = evaluate_symbolic_value(prime, rhs, assignment, symbolic_library);
                     match &rhs_val {
+                        Some(SymbolicValue::NOP) => {
+                            if !assignment.contains_key(sym_name) {
+                                assignment.insert(sym_name.clone(), BigInt::zero());
+                            }
+                        }
                         Some(SymbolicValue::ConstantInt(num)) => {
                             assignment.insert(sym_name.clone(), num.clone());
                         }
