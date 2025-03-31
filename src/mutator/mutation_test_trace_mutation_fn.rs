@@ -1,7 +1,12 @@
+use std::rc::Rc;
+
+use program_structure::ast::ExpressionInfixOpcode;
 use rand::rngs::StdRng;
 use rand::seq::IteratorRandom;
 use rand::Rng;
 
+use crate::executor::debug_ast::DebuggableExpressionInfixOpcode;
+use crate::executor::symbolic_state::SymbolicTrace;
 use crate::executor::symbolic_value::SymbolicValue;
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::mutation_test::Gene;
@@ -41,6 +46,7 @@ use crate::mutator::utils::BaseVerificationConfig;
 /// - `_base_config` could be leveraged to introduce additional constraints or behaviors during mutation.
 pub fn mutate_trace_with_random_constant_replacement(
     pos: &[usize],
+    _symbolic_trace: &SymbolicTrace,
     individual: &mut Gene,
     _base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
@@ -63,6 +69,104 @@ pub fn mutate_trace_with_random_constant_replacement(
                 SymbolicValue::ConstantInt(
                     draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
                 ),
+            );
+        } else if individual.len() > 1 && rng.gen::<bool>() {
+            let mut keys: Vec<usize> = individual.keys().copied().collect();
+            keys.sort();
+            let var = keys.iter().choose(rng).unwrap();
+            individual.remove(&var);
+        }
+    }
+}
+
+pub fn mutate_trace_with_random_constant_replacement_or_addition(
+    pos: &[usize],
+    symbolic_trace: &SymbolicTrace,
+    individual: &mut Gene,
+    _base_config: &BaseVerificationConfig,
+    mutation_config: &MutationConfig,
+    rng: &mut StdRng,
+) {
+    if !individual.is_empty() {
+        let mut keys: Vec<usize> = individual.keys().copied().collect();
+        keys.sort();
+        let var = keys.iter().choose(rng).unwrap();
+        individual.insert(
+            var.clone(),
+            if rng.gen::<f64>() < mutation_config.add_random_const_prob {
+                SymbolicValue::BinaryOp(
+                    symbolic_trace[*var].clone(),
+                    DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                    Rc::new(SymbolicValue::ConstantInt(
+                        draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                    )),
+                )
+            } else {
+                SymbolicValue::ConstantInt(
+                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                )
+            },
+        );
+        if individual.len() < mutation_config.max_num_mutation_points && rng.gen::<bool>() {
+            let var = pos.into_iter().choose(rng).unwrap();
+            individual.insert(
+                var.clone(),
+                if rng.gen::<f64>() < mutation_config.add_random_const_prob {
+                    SymbolicValue::BinaryOp(
+                        symbolic_trace[*var].clone(),
+                        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                        Rc::new(SymbolicValue::ConstantInt(
+                            draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                        )),
+                    )
+                } else {
+                    SymbolicValue::ConstantInt(
+                        draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                    )
+                },
+            );
+        } else if individual.len() > 1 && rng.gen::<bool>() {
+            let mut keys: Vec<usize> = individual.keys().copied().collect();
+            keys.sort();
+            let var = keys.iter().choose(rng).unwrap();
+            individual.remove(&var);
+        }
+    }
+}
+
+pub fn mutate_trace_with_random_constant_replacement_or_delete_statement(
+    pos: &[usize],
+    _symbolic_trace: &SymbolicTrace,
+    individual: &mut Gene,
+    _base_config: &BaseVerificationConfig,
+    mutation_config: &MutationConfig,
+    rng: &mut StdRng,
+) {
+    if !individual.is_empty() {
+        let mut keys: Vec<usize> = individual.keys().copied().collect();
+        keys.sort();
+        let var = keys.iter().choose(rng).unwrap();
+        individual.insert(
+            var.clone(),
+            if rng.gen::<f64>() < mutation_config.statement_deletion_prob {
+                SymbolicValue::NOP
+            } else {
+                SymbolicValue::ConstantInt(
+                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                )
+            },
+        );
+        if individual.len() < mutation_config.max_num_mutation_points && rng.gen::<bool>() {
+            let var = pos.into_iter().choose(rng).unwrap();
+            individual.insert(
+                var.clone(),
+                if rng.gen::<f64>() < mutation_config.statement_deletion_prob {
+                    SymbolicValue::NOP
+                } else {
+                    SymbolicValue::ConstantInt(
+                        draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                    )
+                },
             );
         } else if individual.len() > 1 && rng.gen::<bool>() {
             let mut keys: Vec<usize> = individual.keys().copied().collect();

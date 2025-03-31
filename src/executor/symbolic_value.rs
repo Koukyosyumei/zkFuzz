@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::cmp::Ordering;
 use std::collections::VecDeque;
-use std::fmt::format;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 

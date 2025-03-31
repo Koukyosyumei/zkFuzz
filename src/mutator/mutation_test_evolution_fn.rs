@@ -2,6 +2,7 @@ use num_bigint_dig::BigInt;
 use rand::rngs::StdRng;
 use rand::Rng;
 
+use crate::executor::symbolic_state::SymbolicTrace;
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::utils::BaseVerificationConfig;
 
@@ -50,6 +51,7 @@ use crate::mutator::utils::BaseVerificationConfig;
 /// 2. Collect all generated individuals into a new population.
 pub fn simple_evolution<T: Clone, MutationFn, CrossoverFn, SelectionFn>(
     assign_pos: &[usize],
+    symbolic_trace: &SymbolicTrace,
     prev_population: &[T],
     prev_evaluations: &[BigInt],
     base_base_config: &BaseVerificationConfig,
@@ -60,7 +62,8 @@ pub fn simple_evolution<T: Clone, MutationFn, CrossoverFn, SelectionFn>(
     selection_fn: &SelectionFn,
 ) -> Vec<T>
 where
-    MutationFn: Fn(&[usize], &mut T, &BaseVerificationConfig, &MutationConfig, &mut StdRng),
+    MutationFn:
+        Fn(&[usize], &SymbolicTrace, &mut T, &BaseVerificationConfig, &MutationConfig, &mut StdRng),
     CrossoverFn: Fn(&T, &T, &mut StdRng) -> T,
     SelectionFn: for<'a> Fn(&'a [T], &[BigInt], &mut StdRng) -> &'a T,
 {
@@ -76,6 +79,7 @@ where
             if rng.gen::<f64>() < mutation_config.mutation_rate {
                 mutation_fn(
                     assign_pos,
+                    symbolic_trace,
                     &mut child,
                     base_base_config,
                     mutation_config,

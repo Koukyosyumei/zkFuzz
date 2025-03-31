@@ -38,10 +38,15 @@ use mutator::mutation_test_evolution_fn::simple_evolution;
 use mutator::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
 use mutator::mutation_test_trace_initialization_fn::{
     initialize_population_with_operator_mutation_and_random_constant_replacement,
-    initialize_population_with_operator_mutation_and_random_constant_replacement_addition,
+    initialize_population_with_operator_mutation_and_random_constant_replacement_or_addition,
+    initialize_population_with_operator_mutation_and_random_constant_replacement_or_delete_statement,
     initialize_population_with_random_constant_replacement,
 };
-use mutator::mutation_test_trace_mutation_fn::mutate_trace_with_random_constant_replacement;
+use mutator::mutation_test_trace_mutation_fn::{
+    mutate_trace_with_random_constant_replacement,
+    mutate_trace_with_random_constant_replacement_or_addition,
+    mutate_trace_with_random_constant_replacement_or_delete_statement,
+};
 use mutator::mutation_test_trace_selection_fn::roulette_selection;
 use mutator::mutation_test_update_input_fn::{
     update_input_population_with_coverage_maximization, update_input_population_with_fitness_score,
@@ -321,8 +326,17 @@ fn start() -> Result<(), ()> {
                             let trace_initialization_fn = match mutation_config.trace_mutation_method.as_str() {
                                 "constant" => initialize_population_with_random_constant_replacement,
                                 "constant_operator" => initialize_population_with_operator_mutation_and_random_constant_replacement,
-                                "constant_operator_and_add" => initialize_population_with_operator_mutation_and_random_constant_replacement_addition,
-                                _ => panic!("`trace_mutation_method` should be one of [`constant`, `constant_operator`]")
+                                "constant_operator_and_add" => initialize_population_with_operator_mutation_and_random_constant_replacement_or_addition,
+                                "constant_operator_and_delete" => initialize_population_with_operator_mutation_and_random_constant_replacement_or_delete_statement,
+                                _ => panic!("`trace_mutation_method` should be one of [`constant`, `constant_operator`, `constant_operator_and_add`, `constant_operator_and_delete`]")
+                            };
+
+                            let trace_mutation_fn = match mutation_config.trace_mutation_method.as_str() {
+                                "constant" => mutate_trace_with_random_constant_replacement,
+                                "constant_operator" => mutate_trace_with_random_constant_replacement,
+                                "constant_operator_and_add" => mutate_trace_with_random_constant_replacement_or_addition,
+                                "constant_operator_and_delete" => mutate_trace_with_random_constant_replacement_or_delete_statement,
+                                _ => panic!("`trace_mutation_method` should be one of [`constant`, `constant_operator`, `constant_operator_and_add`, `constant_operator_and_delete`]")
                             };
 
                             let update_input_fn = match mutation_config
@@ -345,7 +359,7 @@ fn start() -> Result<(), ()> {
                                 update_input_fn,
                                 evaluate_trace_fitness_by_error,
                                 simple_evolution,
-                                mutate_trace_with_random_constant_replacement,
+                                trace_mutation_fn,
                                 random_crossover,
                                 roulette_selection,
                             );

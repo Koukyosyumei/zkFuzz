@@ -146,6 +146,7 @@ where
     ) -> (usize, BigInt, Option<CounterExample>, usize),
     TraceEvolutionFn: Fn(
         &[usize],
+        &SymbolicTrace,
         &[Gene],
         &[BigInt],
         &BaseVerificationConfig,
@@ -155,7 +156,14 @@ where
         &TraceCrossoverFn,
         &TraceSelectionFn,
     ) -> Vec<Gene>,
-    TraceMutationFn: Fn(&[usize], &mut Gene, &BaseVerificationConfig, &MutationConfig, &mut StdRng),
+    TraceMutationFn: Fn(
+        &[usize],
+        &SymbolicTrace,
+        &mut Gene,
+        &BaseVerificationConfig,
+        &MutationConfig,
+        &mut StdRng,
+    ),
     TraceCrossoverFn: Fn(&Gene, &Gene, &mut StdRng) -> Gene,
     TraceSelectionFn: for<'a> Fn(&'a [Gene], &[BigInt], &mut StdRng) -> &'a Gene,
 {
@@ -289,6 +297,7 @@ where
         if !trace_population.is_empty() {
             trace_population = trace_evolution_fn(
                 &assign_pos,
+                &symbolic_trace,
                 &trace_population,
                 &fitness_scores,
                 base_config,
