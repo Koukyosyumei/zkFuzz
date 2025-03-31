@@ -191,7 +191,7 @@ pub fn initialize_population_with_operator_mutation_and_random_constant_replacem
         .collect()
 }
 
-pub fn initialize_population_with_operator_mutation_and_random_constant_replacement_or_delete_statement(
+pub fn initialize_population_with_operator_mutation_and_random_constant_replacement_or_addition(
     pos: &[usize],
     program_population_size: usize,
     symbolic_trace: &SymbolicTrace,
@@ -210,8 +210,17 @@ pub fn initialize_population_with_operator_mutation_and_random_constant_replacem
             selected_pos
                 .iter()
                 .map(|p| {
-                    if rng.gen::<f64>() < mutation_config.statement_deletion_prob {
-                        (p.clone(), SymbolicValue::NOP)
+                    if rng.gen::<f64>() < mutation_config.add_random_const_prob {
+                        (
+                            p.clone(),
+                            SymbolicValue::BinaryOp(
+                                symbolic_trace[*p].clone(),
+                                DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
+                                Rc::new(SymbolicValue::ConstantInt(
+                                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                                )),
+                            ),
+                        )
                     } else {
                         match &*symbolic_trace[*p] {
                             SymbolicValue::BinaryOp(left, op, right) => {
@@ -262,7 +271,7 @@ pub fn initialize_population_with_operator_mutation_and_random_constant_replacem
         .collect()
 }
 
-pub fn initialize_population_with_operator_mutation_and_random_constant_replacement_or_addition(
+pub fn initialize_population_with_operator_mutation_and_random_constant_replacement_or_delete_statement(
     pos: &[usize],
     program_population_size: usize,
     symbolic_trace: &SymbolicTrace,
@@ -281,17 +290,8 @@ pub fn initialize_population_with_operator_mutation_and_random_constant_replacem
             selected_pos
                 .iter()
                 .map(|p| {
-                    if rng.gen::<f64>() < mutation_config.add_random_const_prob {
-                        (
-                            p.clone(),
-                            SymbolicValue::BinaryOp(
-                                symbolic_trace[*p].clone(),
-                                DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Add),
-                                Rc::new(SymbolicValue::ConstantInt(
-                                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
-                                )),
-                            ),
-                        )
+                    if rng.gen::<f64>() < mutation_config.statement_deletion_prob {
+                        (p.clone(), SymbolicValue::NOP)
                     } else {
                         match &*symbolic_trace[*p] {
                             SymbolicValue::BinaryOp(left, op, right) => {
