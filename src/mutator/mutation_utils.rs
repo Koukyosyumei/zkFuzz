@@ -94,26 +94,30 @@ pub fn apply_trace_mutation(
 
     for index in keys {
         let value = trace_mutation.get(index).unwrap();
-        if let SymbolicValue::Assign(lv, _, is_safe, _) =
-            mutated_constraints[*index].as_ref().clone()
-        {
-            mutated_constraints[*index] = Rc::new(SymbolicValue::Assign(
-                lv.clone(),
-                Rc::new(value.clone()),
-                is_safe,
-                None,
-            ));
-        } else if let SymbolicValue::AssignCall(lv, _, is_mutable) =
-            mutated_constraints[*index].as_ref().clone()
-        {
-            mutated_constraints[*index] = Rc::new(SymbolicValue::Assign(
-                lv.clone(),
-                Rc::new(value.clone()),
-                !is_mutable,
-                None,
-            ));
+        if let SymbolicValue::NOP = value {
+            mutated_constraints[*index] = Rc::new(SymbolicValue::NOP);
         } else {
-            panic!("We can only mutate SymbolicValue::Assign");
+            if let SymbolicValue::Assign(lv, _, is_safe, _) =
+                mutated_constraints[*index].as_ref().clone()
+            {
+                mutated_constraints[*index] = Rc::new(SymbolicValue::Assign(
+                    lv.clone(),
+                    Rc::new(value.clone()),
+                    is_safe,
+                    None,
+                ));
+            } else if let SymbolicValue::AssignCall(lv, _, is_mutable) =
+                mutated_constraints[*index].as_ref().clone()
+            {
+                mutated_constraints[*index] = Rc::new(SymbolicValue::Assign(
+                    lv.clone(),
+                    Rc::new(value.clone()),
+                    !is_mutable,
+                    None,
+                ));
+            } else {
+                panic!("We can only mutate SymbolicValue::Assign");
+            }
         }
     }
     mutated_constraints
