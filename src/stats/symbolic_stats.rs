@@ -34,6 +34,7 @@ impl ConstraintStatistics {
     /// * `depth` - The depth level of this value in its expression tree.
     fn update_from_symbolic_value(&mut self, value: &SymbolicValue, depth: usize) {
         match value {
+            SymbolicValue::NOP => {}
             SymbolicValue::ConstantInt(_) => {
                 self.constant_counts += 1;
             }

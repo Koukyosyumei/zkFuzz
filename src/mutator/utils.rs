@@ -474,6 +474,7 @@ pub fn emulate_symbolic_trace(
     // let input_variables: FxHashSet<SymbolicName> = assignment.keys().cloned().collect();
     for (i, inst) in trace.iter().enumerate() {
         match inst.as_ref() {
+            SymbolicValue::NOP => {}
             SymbolicValue::ConstantBool(b) => {
                 if !b {
                     success = false;
@@ -810,6 +811,7 @@ pub fn evaluate_symbolic_value(
     symbolic_library: &mut SymbolicLibrary,
 ) -> Option<SymbolicValue> {
     match value {
+        SymbolicValue::NOP => Some(SymbolicValue::NOP),
         SymbolicValue::ConstantBool(_b) => Some(value.clone()),
         SymbolicValue::ConstantInt(_v) => Some(value.clone()),
         SymbolicValue::Variable(sym_name) => {
@@ -1034,6 +1036,7 @@ pub fn evaluate_error_of_symbolic_value(
     symbolic_library: &mut SymbolicLibrary,
 ) -> BigInt {
     match value {
+        SymbolicValue::NOP => BigInt::zero(),
         SymbolicValue::ConstantBool(b) => {
             if *b {
                 BigInt::zero()

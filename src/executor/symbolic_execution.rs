@@ -419,6 +419,7 @@ impl<'a> SymbolicExecutor<'a> {
         memo: &mut FxHashSet<SymbolicValue>,
     ) -> SymbolicValue {
         match &sym_val {
+            SymbolicValue::NOP => SymbolicValue::NOP,
             SymbolicValue::Variable(sym_name) => {
                 if only_variable_simplification {
                     if let Some(template) = self
