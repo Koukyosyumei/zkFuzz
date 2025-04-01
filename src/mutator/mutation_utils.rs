@@ -144,7 +144,7 @@ lazy_static::lazy_static! {
     };
 }
 
-pub fn draw_strict_operator_mutation_or_random_constant_replacement(
+pub fn draw_operator_mutation_or_random_constant(
     target: &SymbolicValue,
     mutation_config: &MutationConfig,
     rng: &mut StdRng,

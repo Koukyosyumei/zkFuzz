@@ -11,7 +11,7 @@ use crate::executor::symbolic_value::SymbolicValue;
 use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::mutation_test::Gene;
 use crate::mutator::mutation_utils::{
-    draw_bigint_with_probabilities, draw_strict_operator_mutation_or_random_constant_replacement,
+    draw_bigint_with_probabilities, draw_operator_mutation_or_random_constant,
 };
 use crate::mutator::utils::BaseVerificationConfig;
 
@@ -46,7 +46,7 @@ use crate::mutator::utils::BaseVerificationConfig;
 ///
 /// # Future Considerations
 /// - `_base_config` could be leveraged to introduce additional constraints or behaviors during mutation.
-pub fn mutate_trace_with_random_constant_replacement(
+pub fn mutate_trace_with_constant_replacement(
     pos: &[usize],
     _symbolic_trace: &SymbolicTrace,
     individual: &mut Gene,
@@ -81,7 +81,7 @@ pub fn mutate_trace_with_random_constant_replacement(
     }
 }
 
-pub fn mutate_trace_with_strict_operator_mutation_and_random_constant_replacement(
+pub fn mutate_trace_with_operator_or_const_replacement(
     pos: &[usize],
     symbolic_trace: &SymbolicTrace,
     individual: &mut Gene,
@@ -95,17 +95,13 @@ pub fn mutate_trace_with_strict_operator_mutation_and_random_constant_replacemen
         let var = keys.iter().choose(rng).unwrap();
         individual.insert(
             var.clone(),
-            draw_strict_operator_mutation_or_random_constant_replacement(
-                &*symbolic_trace[*var],
-                mutation_config,
-                rng,
-            ),
+            draw_operator_mutation_or_random_constant(&*symbolic_trace[*var], mutation_config, rng),
         );
         if individual.len() < mutation_config.max_num_mutation_points && rng.gen::<bool>() {
             let var = pos.into_iter().choose(rng).unwrap();
             individual.insert(
                 var.clone(),
-                draw_strict_operator_mutation_or_random_constant_replacement(
+                draw_operator_mutation_or_random_constant(
                     &*symbolic_trace[*var],
                     mutation_config,
                     rng,
@@ -120,7 +116,7 @@ pub fn mutate_trace_with_strict_operator_mutation_and_random_constant_replacemen
     }
 }
 
-pub fn mutate_trace_with_random_constant_replacement_or_addition(
+pub fn mutate_trace_with_operator_or_const_replacement_or_addition(
     pos: &[usize],
     symbolic_trace: &SymbolicTrace,
     individual: &mut Gene,
@@ -143,8 +139,10 @@ pub fn mutate_trace_with_random_constant_replacement_or_addition(
                     )),
                 )
             } else {
-                SymbolicValue::ConstantInt(
-                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                draw_operator_mutation_or_random_constant(
+                    &*symbolic_trace[*var],
+                    mutation_config,
+                    rng,
                 )
             },
         );
@@ -161,8 +159,10 @@ pub fn mutate_trace_with_random_constant_replacement_or_addition(
                         )),
                     )
                 } else {
-                    SymbolicValue::ConstantInt(
-                        draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                    draw_operator_mutation_or_random_constant(
+                        &*symbolic_trace[*var],
+                        mutation_config,
+                        rng,
                     )
                 },
             );
@@ -175,9 +175,9 @@ pub fn mutate_trace_with_random_constant_replacement_or_addition(
     }
 }
 
-pub fn mutate_trace_with_random_constant_replacement_or_delete_statement(
+pub fn mutate_trace_with_operator_or_const_replacement_or_deletion(
     pos: &[usize],
-    _symbolic_trace: &SymbolicTrace,
+    symbolic_trace: &SymbolicTrace,
     individual: &mut Gene,
     _base_config: &BaseVerificationConfig,
     mutation_config: &MutationConfig,
@@ -192,8 +192,10 @@ pub fn mutate_trace_with_random_constant_replacement_or_delete_statement(
             if rng.gen::<f64>() < mutation_config.statement_deletion_prob {
                 SymbolicValue::NOP
             } else {
-                SymbolicValue::ConstantInt(
-                    draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                draw_operator_mutation_or_random_constant(
+                    &*symbolic_trace[*var],
+                    mutation_config,
+                    rng,
                 )
             },
         );
@@ -204,8 +206,10 @@ pub fn mutate_trace_with_random_constant_replacement_or_delete_statement(
                 if rng.gen::<f64>() < mutation_config.statement_deletion_prob {
                     SymbolicValue::NOP
                 } else {
-                    SymbolicValue::ConstantInt(
-                        draw_bigint_with_probabilities(&mutation_config, rng).unwrap(),
+                    draw_operator_mutation_or_random_constant(
+                        &*symbolic_trace[*var],
+                        mutation_config,
+                        rng,
                     )
                 },
             );

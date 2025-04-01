@@ -19,8 +19,8 @@ use zkfuzz::mutator::mutation_test::{mutation_test_search, MutationTestResult};
 use zkfuzz::mutator::mutation_test_crossover_fn::random_crossover;
 use zkfuzz::mutator::mutation_test_evolution_fn::simple_evolution;
 use zkfuzz::mutator::mutation_test_trace_fitness_fn::evaluate_trace_fitness_by_error;
-use zkfuzz::mutator::mutation_test_trace_initialization_fn::initialize_population_with_strict_operator_mutation_and_random_constant_replacement;
-use zkfuzz::mutator::mutation_test_trace_mutation_fn::mutate_trace_with_strict_operator_mutation_and_random_constant_replacement;
+use zkfuzz::mutator::mutation_test_trace_initialization_fn::initialize_population_with_operator_or_const_replacement;
+use zkfuzz::mutator::mutation_test_trace_mutation_fn::mutate_trace_with_operator_or_const_replacement;
 use zkfuzz::mutator::mutation_test_trace_selection_fn::roulette_selection;
 use zkfuzz::mutator::mutation_test_update_input_fn::{
     update_input_population_with_fitness_score, update_input_population_with_random_sampling,
@@ -81,11 +81,11 @@ fn conduct_mutation_testing(path: String, update_input_method: String) -> Mutati
         &sexe.cur_state.side_constraints.clone(),
         &verification_base_config,
         &mutation_config,
-        initialize_population_with_strict_operator_mutation_and_random_constant_replacement,
+        initialize_population_with_operator_or_const_replacement,
         update_func,
         evaluate_trace_fitness_by_error,
         simple_evolution,
-        mutate_trace_with_strict_operator_mutation_and_random_constant_replacement,
+        mutate_trace_with_operator_or_const_replacement,
         random_crossover,
         roulette_selection,
     )
