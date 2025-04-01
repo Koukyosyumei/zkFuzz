@@ -145,7 +145,14 @@ fn start() -> Result<(), ()> {
     };
 
     eprintln!("{}", "🧩 Parsing Templates...".green());
-    for (k, v) in program_archive.templates.clone().into_iter() {
+    let mut templates_names = program_archive
+        .templates
+        .keys()
+        .cloned()
+        .collect::<Vec<_>>();
+    templates_names.sort();
+    for k in templates_names {
+        let v = program_archive.templates.get(&k).unwrap();
         let body = v.get_body().clone();
         symbolic_library.register_template(
             k.clone(),
@@ -173,7 +180,14 @@ fn start() -> Result<(), ()> {
     }
 
     eprintln!("{}", "⚙️ Parsing Function...".green());
-    for (k, v) in program_archive.functions.clone().into_iter() {
+    let mut function_names = program_archive
+        .functions
+        .keys()
+        .cloned()
+        .collect::<Vec<_>>();
+    function_names.sort();
+    for k in function_names {
+        let v = program_archive.functions.get(&k).unwrap();
         let body = v.get_body().clone();
         symbolic_library.register_function(k.clone(), body.clone(), v.get_name_of_params());
 
