@@ -185,6 +185,11 @@ where
             SymbolicValue::Assign(_, _, false, _) | SymbolicValue::AssignCall(_, _, true) => {
                 assign_pos.push(i);
             }
+            SymbolicValue::Assign(_, _, _, _) | SymbolicValue::AssignCall(_, _, _) => {
+                if mutation_config.trace_mutation_method == "naive" {
+                    assign_pos.push(i);
+                }
+            }
             _ => {}
         }
     }
