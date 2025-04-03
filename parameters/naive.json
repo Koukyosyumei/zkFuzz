@@ -1,0 +1,5 @@
+{
+    "seed":1412899329743824902, 
+    "fitness_function": "const",
+    "trace_mutation_method": "naive"
+}

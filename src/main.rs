@@ -338,6 +338,7 @@ fn start() -> Result<(), ()> {
                             info!("\n{}", mutation_config);
 
                             let trace_initialization_fn = match mutation_config.trace_mutation_method.as_str() {
+                                "naive" => initialize_population_with_constant_replacement,
                                 "constant" => initialize_population_with_constant_replacement,
                                 "constant_operator" => initialize_population_with_operator_or_const_replacement,
                                 "constant_operator_add" => initialize_population_with_operator_or_const_replacement_or_addition,
@@ -346,6 +347,7 @@ fn start() -> Result<(), ()> {
                             };
 
                             let trace_mutation_fn = match mutation_config.trace_mutation_method.as_str() {
+                                "naive" => mutate_trace_with_constant_replacement,
                                 "constant" => mutate_trace_with_constant_replacement,
                                 "constant_operator" => mutate_trace_with_operator_or_const_replacement,
                                 "constant_operator_and_add" => mutate_trace_with_operator_or_const_replacement_or_addition,
