@@ -348,8 +348,8 @@ fn start() -> Result<(), ()> {
                             let trace_mutation_fn = match mutation_config.trace_mutation_method.as_str() {
                                 "constant" => mutate_trace_with_constant_replacement,
                                 "constant_operator" => mutate_trace_with_operator_or_const_replacement,
-                                "constant_operator_and_add" => mutate_trace_with_operator_or_const_replacement_or_addition,
-                                "constant_operator_and_delete" => mutate_trace_with_operator_or_const_replacement_or_deletion,
+                                "constant_operator_add" => mutate_trace_with_operator_or_const_replacement_or_addition,
+                                "constant_operator_delete" => mutate_trace_with_operator_or_const_replacement_or_deletion,
                                 _ => panic!("`trace_mutation_method` should be one of [`constant`, `constant_operator`, `constant_operator_add`, `constant_operator_delete`]")
                             };
 
