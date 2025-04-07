@@ -135,11 +135,11 @@ If the configuration json file ommites some keys, the default values are used fo
   - Default: 500
 
 - input_initialization_method (String)
-  - Purpose: Method used to initialize inputs (`random`, `coverage`).
+  - Purpose: Method used to initialize inputs ("random", "fitness", "coverage").
   - Default: "random"
 
 - trace_mutation_method (String)
-  - Purpose: Method used for trace mutation (`constant`, `constant_operator`).
+  - Purpose: Method used for trace mutation ("naive", "constant", "constant_operator", "constant_operator_add", "constant_operator_delete").
   - Default: "constant_operator"
 
 - fitness_function (String)
