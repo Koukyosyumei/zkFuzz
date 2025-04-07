@@ -120,119 +120,119 @@ If the configuration json file ommites some keys, the default values are used fo
 ```yaml
 - seed (u64)
   - Purpose: Seed for random number generation to ensure reproducibility. If set to 0, a new seed is internally generated using the thread-local random number generator.
-  - Default: `0`
+  - Default: 0
 
 - program_population_size (usize)
   - Purpose: Size of the program population in the genetic algorithm.
-  - Default: `30`
+  - Default: 30
 
 - input_population_size (usize)
   - Purpose: Size of the input population in the genetic algorithm.
-  - Default: `30`
+  - Default: 30
 
 - max_generations (usize)
   - Purpose: Maximum number of generations for the evolutionary process.
-  - Default: `500`
+  - Default: 500
 
 - input_initialization_method (String)
   - Purpose: Method used to initialize inputs (`random`, `coverage`).
-  - Default: `"random"`
+  - Default: "random"
 
 - trace_mutation_method (String)
   - Purpose: Method used for trace mutation (`constant`, `constant_operator`).
-  - Default: `"constant_operator"`
+  - Default: "constant_operator"
 
 - fitness_function (String)
   - Purpose: Function used to evaluate fitness of solutions.
-  - Default: `"error"`
+  - Default: "error"
 
 - mutation_rate (f64)
   - Purpose: Rate at which mutations occur in the genetic algorithm.
-  - Default: `0.3`
+  - Default: 0.3
 
 - crossover_rate (f64)
   - Purpose: Rate at which crossover occurs in the genetic algorithm.
-  - Default: `0.5`
+  - Default: 0.5
 
 - operator_mutation_rate (f64)
   - Purpose: Rate of mutation for operators in the genetic algorithm.
-  - Default: `0.1`
+  - Default: 0.1
 
 - runtime_mutation_rate (f64)
   - Purpose: Specifies the mutation rate applied during runtime mutation processes.
-  - Default: `0.3`
+  - Default: 0.3
 
 - num_eliminated_individuals (usize)
   - Purpose: The number of individuals with poor fitness eliminated in each generation.
-  - Default: `5`
+  - Default: 5
 
 - max_num_mutation_points (usize)
   - Purpose: The maximum number of mutation points allowed in the symbolic trace.
-  - Default: `10`
+  - Default: 10
 
 - input_update_interval (usize)
   - Purpose: Interval at which inputs are updated.
-  - Default: `1`
+  - Default: 1
 
 - input_generation_max_iteration (usize)
   - Purpose: Maximum number of iterations for input generation.
-  - Default: `30`
+  - Default: 30
 
 - input_generation_crossover_rate (f64)
   - Purpose: Crossover rate for input generation.
-  - Default: `0.66`
+  - Default: 0.66
 
 - input_generation_mutation_rate (f64)
   - Purpose: Mutation rate for input generation.
-  - Default: `0.5`
+  - Default: 0.5
 
 - input_generation_singlepoint_mutation_rate (f64)
   - Purpose: Single-point mutation rate for input generation.
-  - Default: `0.5`
+  - Default: 0.5
 
 - random_value_ranges (Array of Arrays)
   - Purpose: Specifies ranges for random value generation. Each range is defined as a pair of big integers (provided as strings) representing the lower and upper bounds.
-  - Default: `[["0", "2"], ["2", "11"], ["11", "21888242871839275222246405745257275088548364400416034343698204186575808495517"], ["21888242871839275222246405745257275088548364400416034343698204186575808495517", "21888242871839275222246405745257275088548364400416034343698204186575808495617"]]`
+  - Default: [["0", "2"], ["2", "11"], ["11", "21888242871839275222246405745257275088548364400416034343698204186575808495517"], ["21888242871839275222246405745257275088548364400416034343698204186575808495517", "21888242871839275222246405745257275088548364400416034343698204186575808495617"]]
 
 - random_value_probs (Array of f64)
   - Purpose: Probabilities associated with each range in `random_value_ranges`.
-  - Default: `[0.15, 0.34, 0.01, 0.5]`
+  - Default: [0.15, 0.34, 0.01, 0.5]
 
 - binary_mode_prob (f64)
   - Purpose: Probability of restricting random input to only 0 or 1.
-  - Default: `0.0`
+  - Default: 0.0
 
 - binary_mode_search_level (usize)
   - Purpose: Search depth for the binary pattern (x * (1 - x) === 0) check.
-  - Default: `1`
+  - Default: 1
 
 - binary_mode_warmup_round (f64)
   - Purpose: Ratio of warmup rounds where binary_mode_prob is temporarily set to 1 upon detecting the binary pattern.
-  - Default: `0.0`
+  - Default: 0.0
 
 - zero_div_attempt_prob (f64)
   - Purpose: Probability of invoking the quadratic equation solver to analytically determine solutions for zero-division patterns.
-  - Default: `0.2`
+  - Default: 0.2
 
 - statement_deletion_prob (f64)
   - Purpose: Probability of deleting a statement during mutation.
-  - Default: `0.2`
+  - Default: 0.2
 
 - add_random_const_prob (f64)
   - Purpose: Probability of adding a random constant during mutation.
-  - Default: `0.2`
+  - Default: 0.2
 
 - dissable_runtime_mutation_for_hash_check (bool)
   - Purpose: When enabled, disables runtime mutation for hash checks.
-  - Default: `false`
+  - Default: false
 
 - dissable_heuristic_for_invalid_array_subscript (bool)
   - Purpose: When enabled, disables heuristics that handle invalid array subscripts.
-  - Default: `false`
+  - Default: false
 
 - save_fitness_scores (bool)
   - Purpose: Flag indicating whether fitness scores should be saved.
-  - Default: `false`
+  - Default: false
 ```
 
 ## Tips & Advanced Features
