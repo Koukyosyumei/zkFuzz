@@ -15,7 +15,7 @@ cargo build --release
 zkFuzz’s CLI provides numerous options to tailor your fuzzing session. Below is a summary of the available commands and flags:
 
 ```
-ZKP Circuit Fuzzer
+ZK Circuit Fuzzer
 
 USAGE:
     zkfuzz [FLAGS] [OPTIONS] [--] [input]
