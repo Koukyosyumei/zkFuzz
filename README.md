@@ -143,7 +143,7 @@ If the configuration json file ommites some keys, the default values are used fo
   - Default: "constant_operator"
 
 - fitness_function (String)
-  - Purpose: Function used to evaluate fitness of solutions.
+  - Purpose: Function used to evaluate fitness of solutions ("error", "const").
   - Default: "error"
 
 - mutation_rate (f64)
