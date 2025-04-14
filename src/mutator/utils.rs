@@ -1166,7 +1166,7 @@ pub fn count_error_constraints(
                     assignment,
                     symbolic_library,
                 );
-                e == BigInt::zero()
+                e != BigInt::zero()
             })
             .count(),
     )
