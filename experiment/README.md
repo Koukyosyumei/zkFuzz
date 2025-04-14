@@ -6,7 +6,7 @@ You can run experiments on either ./benchmark1 or ./benchmark2 using one of the 
 
 Use the following script to iterate through each benchmark directory:
 
-```
+```bash
 for dir in $(find <BENCHMARK> -mindepth 1 -maxdepth 1 -type d); do
     if [ -d "$dir" ]; then
         echo "Processing: $dir"
