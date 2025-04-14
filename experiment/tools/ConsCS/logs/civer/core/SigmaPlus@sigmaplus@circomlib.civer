@@ -1,0 +1,143 @@
+Checking template RotR(32,7)
+Number of signals (i,int,o): 64
+Number of constraints in template: 32
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.016096536
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template RotR(32,18)
+Number of signals (i,int,o): 64
+Number of constraints in template: 32
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.01513536
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template ShR(32,3)
+Number of signals (i,int,o): 64
+Number of constraints in template: 32
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.014187465
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Xor3(32)
+Number of signals (i,int,o): 160
+Number of constraints in template: 64
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.055503022
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template SmallSigma(7,18,3)
+Number of signals (i,int,o): 64
+Number of constraints in template: 224
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.038634605
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template RotR(32,17)
+Number of signals (i,int,o): 64
+Number of constraints in template: 32
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.010663869
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template RotR(32,19)
+Number of signals (i,int,o): 64
+Number of constraints in template: 32
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.01069298
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template ShR(32,10)
+Number of signals (i,int,o): 64
+Number of constraints in template: 32
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.010190618
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template SmallSigma(17,19,10)
+Number of signals (i,int,o): 64
+Number of constraints in template: 224
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.039417369
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template BinSum(32,4)
+Number of signals (i,int,o): 162
+Number of constraints in template: 35
+### UNKNOWN: VERIFICATION OF WEAK SAFETY USING THE SPECIFICATION TIMEOUT
+Verification time per template: 5.00958367
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: UNKNOWN -> VERIFICATION TIMEOUT
+
+
+
+
+Checking template SigmaPlus()
+Number of signals (i,int,o): 160
+Number of constraints in template: 224
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.040439553
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

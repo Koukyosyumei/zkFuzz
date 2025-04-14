@@ -1,0 +1,78 @@
+Checking template Num2Bits(135)
+Number of signals (i,int,o): 136
+Number of constraints in template: 136
+### UNKNOWN: VERIFICATION OF WEAK SAFETY USING THE SPECIFICATION TIMEOUT
+Verification time per template: 5.02139145
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: UNKNOWN -> VERIFICATION TIMEOUT
+
+
+
+
+Checking template CompConstant(21888242871839275222246405745257275088548364400416034343698204186575808495616)
+Number of signals (i,int,o): 383
+Number of constraints in template: 130
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.173722063
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template AliasCheck()
+Number of signals (i,int,o): 254
+Number of constraints in template: 255
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.027552545
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Num2Bits(254)
+Number of signals (i,int,o): 255
+Number of constraints in template: 255
+### UNKNOWN: VERIFICATION OF WEAK SAFETY USING THE SPECIFICATION TIMEOUT
+Verification time per template: 5.015881338
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: UNKNOWN -> VERIFICATION TIMEOUT
+
+
+
+
+Checking template CompConstant(10944121435919637611123202872628637544274182200208017171849102093287904247808)
+Number of signals (i,int,o): 383
+Number of constraints in template: 130
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.166005716
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Point2Bits_Strict()
+Number of signals (i,int,o): 258
+Number of constraints in template: 1020
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.124830892
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

@@ -1,0 +1,88 @@
+FROM ubuntu:22.04
+
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+ENV PATH /opt/conda/bin:$PATH
+SHELL ["/bin/bash", "-c"]
+
+# Basic dependencies, antlr4, and C++ build tools
+# libpoly: libgmp-dev
+# racket: openssh-client
+RUN set -x && \
+    apt-get update --fix-missing && \
+    apt-get install -y --no-install-recommends \
+        bzip2 \
+        ca-certificates \
+        openssh-client \
+        git \
+        wget \
+        build-essential \
+        zip unzip \
+        python3-dev python3-pip \
+        gcc make cmake ninja-build \
+        antlr4 \
+        libgmp-dev \
+        software-properties-common gpg-agent \
+        jq \
+        time
+
+# fetch cvc5-ff
+RUN pip install tomli scikit-build Cython && \
+    git clone https://github.com/cvc5/cvc5.git --single-branch && \
+    cd cvc5 && \
+    git checkout de62429
+
+# compile and install cvc5-ff
+RUN cd ./cvc5/ && \
+    ./configure.sh --cocoa --auto-download --python-bindings --ninja && \
+    cd ./build/ && \
+    cmake --build . && \
+    cmake --install . && \
+    cd ../.. && rm -r ./cvc5
+
+# install z3 executable, with header files for cvc5 with ff-range
+RUN git clone https://github.com/Z3Prover/z3.git --single-branch && \
+    cd z3 && \
+    git checkout ec2b8eb && \
+    mkdir build && \
+    cd build && \
+    cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DZ3_BUILD_LIBZ3_SHARED=FALSE ../ && \
+    make && \
+    make install && \
+    cd ../.. && rm -rf z3
+
+# fetch cvc5 with ff-range
+# temporarily move the previously installed cvc5 away to prevent collision
+RUN mv /usr/local/bin/cvc5 /usr/local/bin/cvc5-regular && \
+    git clone https://github.com/alex-ozdemir/CVC4.git && \
+    cd CVC4 && \
+    git checkout 2ef8b43 && \
+    ./configure.sh --cocoa --auto-download --python-bindings --ninja && \
+    cd ./build/ && \
+    cmake --build . && \
+    cmake --install . && \
+    cd ../.. && rm -r ./CVC4 && \
+    mv /usr/local/bin/cvc5 /usr/local/bin/cvc5-ff-range && \
+    mv /usr/local/bin/cvc5-regular /usr/local/bin/cvc5
+
+# racket and rosette and other racket packages
+ARG DEBIAN_FRONTEND=noninteractive
+RUN add-apt-repository -y ppa:plt/racket && \
+    apt-get update && \
+    apt-get install -y racket libssl-dev curl && \
+    raco pkg install --auto rosette && \
+    raco pkg install --auto csv-reading && \
+    raco pkg install --auto graph && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# build rust & circom 2.1.6
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y && \
+    source "$HOME/.cargo/env" && \
+    git clone https://github.com/iden3/circom.git && \
+    cd circom/ && \
+    git checkout v2.1.6 && \
+    cargo build --release && \
+    cargo install --path circom && \
+    cd .. && rm -rf circom/
+
+CMD [ "/bin/bash" ]

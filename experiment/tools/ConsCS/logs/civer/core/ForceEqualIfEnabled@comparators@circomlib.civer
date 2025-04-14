@@ -1,0 +1,26 @@
+Checking template IsZero()
+Number of signals (i,int,o): 3
+Number of constraints in template: 2
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.018329025
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template ForceEqualIfEnabled()
+Number of signals (i,int,o): 3
+Number of constraints in template: 2
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.013894907
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

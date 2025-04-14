@@ -1,0 +1,549 @@
+AND@gates.circom:
+  result: safe
+  time: 0.056146860122680664
+AND@gates@circomlib.circom:
+  result: safe
+  time: 0.058379173278808594
+AliasCheck@aliascheck.circom:
+  result: unknown
+  time: 5.317592144012451
+AliasCheck@aliascheck@circomlib.circom:
+  result: unknown
+  time: 5.317678928375244
+Ark@poseidon.circom:
+  result: unknown
+  time: 0.10950994491577148
+BabyAdd@babyjub.circom:
+  result: unknown
+  time: 5.06030011177063
+BabyAdd@babyjub@circomlib.circom:
+  result: unknown
+  time: 5.058565855026245
+BabyCheck@babyjub.circom:
+  result: safe
+  time: 0.04525566101074219
+BabyCheck@babyjub@circomlib.circom:
+  result: safe
+  time: 0.06629157066345215
+BabyDbl@babyjub.circom:
+  result: unknown
+  time: 5.077747344970703
+BabyDbl@babyjub@circomlib.circom:
+  result: unknown
+  time: 5.070380449295044
+BabyPbk@babyjub.circom:
+  result: unknown
+  time: 20.03261375427246
+BabyPbk@babyjub@circomlib.circom:
+  result: unknown
+  time: 19.983736753463745
+BinSub@binsub.circom:
+  result: safe
+  time: 0.02770543098449707
+BinSub@binsub@circomlib_16.circom:
+  result: safe
+  time: 3.129810333251953
+BinSum@binsum.circom:
+  result: safe
+  time: 0.04032611846923828
+BinSum@binsum@circomlib_32_2.circom:
+  result: unknown
+  time: 5.049427032470703
+BinSum@binsum@circomlib_32_5.circom:
+  result: safe
+  time: 1.0242156982421875
+BitElementMulAny@escalarmulany.circom:
+  result: unknown
+  time: 7.12539005279541
+BitElementMulAny@escalarmulany@circomlib.circom:
+  result: unknown
+  time: 7.1330246925354
+Bits2Num@bitify.circom:
+  result: safe
+  time: 0.04018688201904297
+Bits2Num@bitify@circomlib_1.circom:
+  result: safe
+  time: 0.040172576904296875
+Bits2Num@bitify@circomlib_128.circom:
+  result: safe
+  time: 0.09870409965515137
+Bits2Num@bitify@circomlib_16.circom:
+  result: safe
+  time: 0.05320167541503906
+Bits2Num@bitify@circomlib_253.circom:
+  result: safe
+  time: 0.15543508529663086
+Bits2Num@bitify@circomlib_254.circom:
+  result: safe
+  time: 0.16550731658935547
+Bits2Num@bitify@circomlib_256.circom:
+  result: safe
+  time: 0.17633533477783203
+Bits2Num@bitify@circomlib_32.circom:
+  result: safe
+  time: 0.04461097717285156
+Bits2Num@bitify@circomlib_64.circom:
+  result: safe
+  time: 0.10704946517944336
+Bits2Num@bitify@circomlib_8.circom:
+  result: safe
+  time: 0.0592799186706543
+Bits2Num_strict@bitify.circom:
+  result: unknown
+  time: 5.494622230529785
+Bits2Num_strict@bitify@circomlib.circom:
+  result: unknown
+  time: 5.464019060134888
+Bits2Point@pointbits.circom:
+  result: unsafe
+  time: 0.09246182441711426
+Bits2Point@pointbits@circomlib.circom:
+  result: unsafe
+  time: 0.07761454582214355
+Bits2Point_Strict@pointbits.circom:
+  result: unknown
+  time: 27.04324698448181
+Bits2Point_Strict@pointbits@circomlib.circom:
+  result: unknown
+  time: 28.057263135910034
+CompConstant@compconstant.circom:
+  result: unknown
+  time: 5.283079147338867
+Decoder@multiplexer.circom:
+  result: unsafe
+  time: 0.03815937042236328
+EdDSAMiMCSpongeVerifier@eddsamimcsponge.circom:
+  result: unknown
+  time: 33.34318137168884
+EdDSAMiMCSpongeVerifier@eddsamimcsponge@circomlib.circom:
+  result: unknown
+  time: 33.29502773284912
+EdDSAMiMCVerifier@eddsamimc.circom:
+  result: unknown
+  time: 32.04296517372131
+EdDSAMiMCVerifier@eddsamimc@circomlib.circom:
+  result: unknown
+  time: 31.921762704849243
+EdDSAPoseidonVerifier@eddsaposeidon.circom:
+  result: unknown
+  time: 33.18923354148865
+EdDSAPoseidonVerifier@eddsaposeidon@circomlib.circom:
+  result: unknown
+  time: 32.9459445476532
+EdDSAVerifier@eddsa.circom:
+  result: unknown
+  time: 44.57644557952881
+Edwards2Montgomery@montgomery.circom:
+  result: unsafe
+  time: 0.05625009536743164
+Edwards2Montgomery@montgomery@circomlib.circom:
+  result: unsafe
+  time: 0.04360365867614746
+EscalarMul@escalarmul.circom:
+  result: unknown
+  time: 0.045218706130981445
+EscalarMulAny@escalarmulany.circom:
+  result: unknown
+  time: 12.20185399055481
+EscalarMulFix@escalarmulfix.circom:
+  result: unknown
+  time: 0.027424335479736328
+EscalarMulWindow@escalarmul.circom:
+  result: unknown
+  time: 0.04562854766845703
+EscalarProduct@multiplexer.circom:
+  result: safe
+  time: 0.045084476470947266
+ForceEqualIfEnabled@comparators.circom:
+  result: safe
+  time: 0.04935264587402344
+ForceEqualIfEnabled@comparators@circomlib.circom:
+  result: safe
+  time: 0.07243704795837402
+GreaterEqThan@comparators.circom:
+  result: safe
+  time: 0.09496378898620605
+GreaterEqThan@comparators@circomlib_16.circom:
+  result: safe
+  time: 0.1365962028503418
+GreaterEqThan@comparators@circomlib_32.circom:
+  result: safe
+  time: 0.20334076881408691
+GreaterEqThan@comparators@circomlib_8.circom:
+  result: safe
+  time: 0.11149477958679199
+GreaterThan@comparators.circom:
+  result: safe
+  time: 0.06716394424438477
+GreaterThan@comparators@circomlib_16.circom:
+  result: safe
+  time: 0.11248230934143066
+GreaterThan@comparators@circomlib_32.circom:
+  result: safe
+  time: 0.2116539478302002
+GreaterThan@comparators@circomlib_8.circom:
+  result: safe
+  time: 0.07071280479431152
+IsEqual@comparators.circom:
+  result: safe
+  time: 0.06895995140075684
+IsEqual@comparators@circomlib.circom:
+  result: safe
+  time: 0.057610273361206055
+IsZero@comparators.circom:
+  result: safe
+  time: 0.06903886795043945
+IsZero@comparators@circomlib.circom:
+  result: safe
+  time: 0.055787086486816406
+LessEqThan@comparators.circom:
+  result: safe
+  time: 0.09843254089355469
+LessEqThan@comparators@circomlib_16.circom:
+  result: safe
+  time: 0.10089612007141113
+LessEqThan@comparators@circomlib_32.circom:
+  result: safe
+  time: 0.20176982879638672
+LessEqThan@comparators@circomlib_8.circom:
+  result: safe
+  time: 0.1136789321899414
+LessThan@comparators.circom:
+  result: safe
+  time: 0.07063531875610352
+Main@main@circomlib.circom:
+  result: unknown
+  time: 89.21804475784302
+MiMC7@mimc.circom:
+  result: safe
+  time: 0.04927492141723633
+MiMCFeistel@mimcsponge.circom:
+  result: safe
+  time: 0.04679560661315918
+MiMCSponge@mimcsponge.circom:
+  result: safe
+  time: 0.08063292503356934
+Mix@poseidon.circom:
+  result: unknown
+  time: 0.1285710334777832
+Montgomery2Edwards@montgomery.circom:
+  result: unsafe
+  time: 0.06162381172180176
+Montgomery2Edwards@montgomery@circomlib.circom:
+  result: unsafe
+  time: 0.0474700927734375
+MontgomeryAdd@montgomery.circom:
+  result: unsafe
+  time: 2.04788875579834
+MontgomeryAdd@montgomery@circomlib.circom:
+  result: unsafe
+  time: 2.0471653938293457
+MontgomeryDouble@montgomery.circom:
+  result: unknown
+  time: 5.033106803894043
+MontgomeryDouble@montgomery@circomlib.circom:
+  result: unknown
+  time: 5.038665533065796
+MultiAND@gates.circom:
+  result: safe
+  time: 0.06162142753601074
+MultiMiMC7@mimc.circom:
+  result: safe
+  time: 0.06508660316467285
+MultiMux1@mux1.circom:
+  result: safe
+  time: 0.0276031494140625
+MultiMux2@mux2.circom:
+  result: safe
+  time: 0.05218696594238281
+MultiMux3@mux3.circom:
+  result: safe
+  time: 0.06527090072631836
+MultiMux4@mux4.circom:
+  result: safe
+  time: 0.07028532028198242
+Multiplexer@multiplexer.circom:
+  result: unsafe
+  time: 0.0881502628326416
+Multiplexor2@escalarmulany.circom:
+  result: safe
+  time: 0.09409403800964355
+Multiplexor2@escalarmulany@circomlib.circom:
+  result: safe
+  time: 0.07269525527954102
+Mux1@mux1.circom:
+  result: safe
+  time: 0.04483175277709961
+Mux1@mux1@circomlib.circom:
+  result: safe
+  time: 0.03992176055908203
+Mux2@mux2.circom:
+  result: safe
+  time: 0.06154036521911621
+Mux2@mux2@circomlib.circom:
+  result: safe
+  time: 0.06436634063720703
+Mux3@mux3.circom:
+  result: safe
+  time: 0.05709099769592285
+Mux3@mux3@circomlib.circom:
+  result: safe
+  time: 0.07182717323303223
+Mux4@mux4.circom:
+  result: safe
+  time: 0.08792304992675781
+Mux4@mux4@circomlib.circom:
+  result: safe
+  time: 0.09256482124328613
+NAND@gates.circom:
+  result: safe
+  time: 0.04008746147155762
+NAND@gates@circomlib.circom:
+  result: safe
+  time: 0.04433083534240723
+NOR@gates.circom:
+  result: safe
+  time: 0.03929877281188965
+NOR@gates@circomlib.circom:
+  result: safe
+  time: 0.09164285659790039
+NOT@gates.circom:
+  result: safe
+  time: 0.04086709022521973
+NOT@gates@circomlib.circom:
+  result: safe
+  time: 0.040895938873291016
+Num2Bits@bitify.circom:
+  result: safe
+  time: 0.03787851333618164
+Num2Bits@bitify@circomlib_1.circom:
+  result: safe
+  time: 0.05305838584899902
+Num2Bits@bitify@circomlib_128.circom:
+  result: unknown
+  time: 5.086935043334961
+Num2Bits@bitify@circomlib_16.circom:
+  result: safe
+  time: 0.07990407943725586
+Num2Bits@bitify@circomlib_253.circom:
+  result: unknown
+  time: 5.219422817230225
+Num2Bits@bitify@circomlib_254.circom:
+  result: unknown
+  time: 5.164302349090576
+Num2Bits@bitify@circomlib_256.circom:
+  result: unknown
+  time: 5.173032283782959
+Num2Bits@bitify@circomlib_32.circom:
+  result: safe
+  time: 0.11571741104125977
+Num2Bits@bitify@circomlib_64.circom:
+  result: safe
+  time: 0.3350203037261963
+Num2Bits@bitify@circomlib_8.circom:
+  result: safe
+  time: 0.057892799377441406
+Num2BitsNeg@bitify.circom:
+  result: safe
+  time: 0.07302427291870117
+Num2BitsNeg@bitify@circomlib_1.circom:
+  result: safe
+  time: 0.09018158912658691
+Num2BitsNeg@bitify@circomlib_128.circom:
+  result: unknown
+  time: 10.10218620300293
+Num2BitsNeg@bitify@circomlib_16.circom:
+  result: safe
+  time: 0.629218578338623
+Num2BitsNeg@bitify@circomlib_253.circom:
+  result: unknown
+  time: 10.206180095672607
+Num2BitsNeg@bitify@circomlib_254.circom:
+  result: unknown
+  time: 10.23945426940918
+Num2BitsNeg@bitify@circomlib_256.circom:
+  result: unknown
+  time: 10.23828125
+Num2BitsNeg@bitify@circomlib_32.circom:
+  result: unknown
+  time: 10.087103366851807
+Num2BitsNeg@bitify@circomlib_64.circom:
+  result: unknown
+  time: 10.078585624694824
+Num2BitsNeg@bitify@circomlib_8.circom:
+  result: safe
+  time: 0.08192205429077148
+Num2Bits_strict@bitify.circom:
+  result: unknown
+  time: 10.50149130821228
+Num2Bits_strict@bitify@circomlib.circom:
+  result: unknown
+  time: 10.489429235458374
+OR@gates.circom:
+  result: safe
+  time: 0.03983712196350098
+OR@gates@circomlib.circom:
+  result: safe
+  time: 0.035451650619506836
+Pedersen@pedersen.circom:
+  result: unknown
+  time: 7.214323997497559
+Pedersen@pedersen@circomlib_1.circom:
+  result: unknown
+  time: 7.212747097015381
+Pedersen@pedersen@circomlib_128.circom:
+  result: unknown
+  time: 8.370031356811523
+Pedersen@pedersen@circomlib_16.circom:
+  result: unknown
+  time: 7.34677791595459
+Pedersen@pedersen@circomlib_253.circom:
+  result: unknown
+  time: 14.165340900421143
+Pedersen@pedersen@circomlib_254.circom:
+  result: unknown
+  time: 14.153743028640747
+Pedersen@pedersen@circomlib_256.circom:
+  result: unknown
+  time: 14.156118154525757
+Pedersen@pedersen@circomlib_32.circom:
+  result: unknown
+  time: 7.511129856109619
+Pedersen@pedersen@circomlib_64.circom:
+  result: unknown
+  time: 7.78752326965332
+Pedersen@pedersen@circomlib_8.circom:
+  result: unknown
+  time: 7.259381055831909
+Pedersen@pedersen_old.circom:
+  result: unknown
+  time: 5.163149833679199
+Pedersen@pedersen_old@circomlib_1.circom:
+  result: unknown
+  time: 5.165863037109375
+Pedersen@pedersen_old@circomlib_128.circom:
+  result: unknown
+  time: 6.021084308624268
+Pedersen@pedersen_old@circomlib_16.circom:
+  result: unknown
+  time: 5.220434904098511
+Pedersen@pedersen_old@circomlib_253.circom:
+  result: unknown
+  time: 7.265618324279785
+Pedersen@pedersen_old@circomlib_254.circom:
+  result: unknown
+  time: 7.054220199584961
+Pedersen@pedersen_old@circomlib_256.circom:
+  result: unknown
+  time: 7.127151250839233
+Pedersen@pedersen_old@circomlib_32.circom:
+  result: unknown
+  time: 5.326768398284912
+Pedersen@pedersen_old@circomlib_64.circom:
+  result: unknown
+  time: 5.515615224838257
+Pedersen@pedersen_old@circomlib_8.circom:
+  result: unknown
+  time: 5.186528444290161
+Point2Bits@pointbits.circom:
+  result: unsafe
+  time: 0.09209895133972168
+Point2Bits@pointbits@circomlib.circom:
+  result: unsafe
+  time: 0.10023951530456543
+Point2Bits_Strict@pointbits.circom:
+  result: unknown
+  time: 10.754987478256226
+Point2Bits_Strict@pointbits@circomlib.circom:
+  result: unknown
+  time: 10.877706289291382
+Poseidon@poseidon.circom:
+  result: safe
+  time: 1.2390005588531494
+SMTHash1@smthash_mimc@circomlib.circom:
+  result: safe
+  time: 0.5153377056121826
+SMTHash1@smthash_poseidon@circomlib.circom:
+  result: safe
+  time: 1.3564774990081787
+SMTHash2@smthash_mimc@circomlib.circom:
+  result: safe
+  time: 0.39430809020996094
+SMTHash2@smthash_poseidon@circomlib.circom:
+  result: safe
+  time: 1.7698123455047607
+SMTProcessorLevel@smtprocessorlevel@circomlib.circom:
+  result: safe
+  time: 0.41120076179504395
+SMTProcessorSM@smtprocessorsm@circomlib.circom:
+  result: safe
+  time: 0.05014538764953613
+SMTVerifierLevel@smtverifierlevel@circomlib.circom:
+  result: safe
+  time: 0.40265464782714844
+SMTVerifierSM@smtverifiersm@circomlib.circom:
+  result: safe
+  time: 0.04069924354553223
+Segment@pedersen.circom:
+  result: unknown
+  time: 7.198866128921509
+SegmentMulAny@escalarmulany.circom:
+  result: unknown
+  time: 12.21315336227417
+SegmentMulFix@escalarmulfix.circom:
+  result: unknown
+  time: 12.208940267562866
+Sha256_2@sha256_2@circomlib.circom:
+  result: unknown
+  time: 85.94274544715881
+Sha256compression@sha256compression@circomlib.circom:
+  result: unknown
+  time: 83.68277740478516
+Sigma@poseidon.circom:
+  result: safe
+  time: 0.18231844902038574
+Sigma@poseidon@circomlib.circom:
+  result: safe
+  time: 0.17811012268066406
+Sigma@poseidon_old@circomlib.circom:
+  result: safe
+  time: 0.17787551879882812
+SigmaPlus@sigmaplus@circomlib.circom:
+  result: unknown
+  time: 5.340826749801636
+Sign@sign.circom:
+  result: unknown
+  time: 5.324469566345215
+Sign@sign@circomlib.circom:
+  result: unknown
+  time: 5.309371709823608
+Switcher@switcher.circom:
+  result: safe
+  time: 0.04191851615905762
+Switcher@switcher@circomlib.circom:
+  result: safe
+  time: 0.03992056846618652
+T1@t1@circomlib.circom:
+  result: unknown
+  time: 5.381174087524414
+T2@t2@circomlib.circom:
+  result: unknown
+  time: 5.285521030426025
+Window4@pedersen.circom:
+  result: unknown
+  time: 7.255738735198975
+Window4@pedersen@circomlib.circom:
+  result: unknown
+  time: 7.161825656890869
+WindowMulFix@escalarmulfix.circom:
+  result: unknown
+  time: 7.145262718200684
+WindowMulFix@escalarmulfix@circomlib.circom:
+  result: unknown
+  time: 7.166347980499268
+XOR@gates.circom:
+  result: safe
+  time: 0.029942989349365234
+XOR@gates@circomlib.circom:
+  result: safe
+  time: 0.030316591262817383

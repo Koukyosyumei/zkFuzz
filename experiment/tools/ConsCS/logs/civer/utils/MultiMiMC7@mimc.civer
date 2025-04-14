@@ -1,0 +1,26 @@
+Checking template MiMC7(2)
+Number of signals (i,int,o): 10
+Number of constraints in template: 8
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.022114502
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template MultiMiMC7(2,2)
+Number of signals (i,int,o): 7
+Number of constraints in template: 8
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.014934426
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

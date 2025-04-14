@@ -1,0 +1,13 @@
+Checking template BinSum(32,5)
+Number of signals (i,int,o): 195
+Number of constraints in template: 36
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.956627808
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

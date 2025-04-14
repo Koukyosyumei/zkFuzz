@@ -1,0 +1,39 @@
+Checking template MiMC7(91)
+Number of signals (i,int,o): 366
+Number of constraints in template: 364
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.33425341
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template MultiMiMC7(2,91)
+Number of signals (i,int,o): 7
+Number of constraints in template: 8
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.013453461
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template SMTHash2()
+Number of signals (i,int,o): 3
+Number of constraints in template: 4
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.007556477
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

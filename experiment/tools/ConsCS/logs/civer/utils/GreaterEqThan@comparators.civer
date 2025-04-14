@@ -1,0 +1,39 @@
+Checking template Num2Bits(3)
+Number of signals (i,int,o): 4
+Number of constraints in template: 4
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.022881446
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template LessThan(2)
+Number of signals (i,int,o): 3
+Number of constraints in template: 2
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.01656234
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template GreaterEqThan(2)
+Number of signals (i,int,o): 3
+Number of constraints in template: 3
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.015917978
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

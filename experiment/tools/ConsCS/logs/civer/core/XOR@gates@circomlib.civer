@@ -1,0 +1,13 @@
+Checking template XOR()
+Number of signals (i,int,o): 3
+Number of constraints in template: 1
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.013905662
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

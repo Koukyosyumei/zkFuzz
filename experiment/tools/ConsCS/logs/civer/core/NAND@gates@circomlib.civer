@@ -1,0 +1,13 @@
+Checking template NAND()
+Number of signals (i,int,o): 3
+Number of constraints in template: 1
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.016093828
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

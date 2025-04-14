@@ -1,0 +1,26 @@
+Checking template MiMCFeistel(2)
+Number of signals (i,int,o): 11
+Number of constraints in template: 8
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.026438368
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template MiMCSponge(2,2,2)
+Number of signals (i,int,o): 5
+Number of constraints in template: 11
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.017700015
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

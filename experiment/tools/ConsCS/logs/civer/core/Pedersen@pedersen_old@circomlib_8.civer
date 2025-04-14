@@ -1,0 +1,78 @@
+Checking template BabyAdd()
+Number of signals (i,int,o): 10
+Number of constraints in template: 6
+### UNKNOWN: VERIFICATION OF WEAK SAFETY USING THE SPECIFICATION TIMEOUT
+Verification time per template: 5.015201268
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: UNKNOWN -> VERIFICATION TIMEOUT
+
+
+
+
+Checking template MultiMux4(2)
+Number of signals (i,int,o): 74
+Number of constraints in template: 38
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.037414693
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template EscalarMulWindow([10457101036533406547632367118273992217979173478358440826365724437999023779287,19824078218392094440610104313265183977899662750282163392862422243483260492317],0)
+Number of signals (i,int,o): 8
+Number of constraints in template: 42
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.017574908
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template EscalarMulWindow([10457101036533406547632367118273992217979173478358440826365724437999023779287,19824078218392094440610104313265183977899662750282163392862422243483260492317],1)
+Number of signals (i,int,o): 8
+Number of constraints in template: 42
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.016972494
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template EscalarMul(8,[10457101036533406547632367118273992217979173478358440826365724437999023779287,19824078218392094440610104313265183977899662750282163392862422243483260492317])
+Number of signals (i,int,o): 12
+Number of constraints in template: 14
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.012900135
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Pedersen(8)
+Number of signals (i,int,o): 10
+Number of constraints in template: 12
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.012515974
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

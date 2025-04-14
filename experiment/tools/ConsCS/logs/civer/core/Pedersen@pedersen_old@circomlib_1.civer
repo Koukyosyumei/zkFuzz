@@ -1,0 +1,65 @@
+Checking template BabyAdd()
+Number of signals (i,int,o): 10
+Number of constraints in template: 6
+### UNKNOWN: VERIFICATION OF WEAK SAFETY USING THE SPECIFICATION TIMEOUT
+Verification time per template: 5.015534372
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: UNKNOWN -> VERIFICATION TIMEOUT
+
+
+
+
+Checking template MultiMux4(2)
+Number of signals (i,int,o): 74
+Number of constraints in template: 38
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.037425859
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template EscalarMulWindow([10457101036533406547632367118273992217979173478358440826365724437999023779287,19824078218392094440610104313265183977899662750282163392862422243483260492317],0)
+Number of signals (i,int,o): 8
+Number of constraints in template: 42
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.017651583
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template EscalarMul(1,[10457101036533406547632367118273992217979173478358440826365724437999023779287,19824078218392094440610104313265183977899662750282163392862422243483260492317])
+Number of signals (i,int,o): 5
+Number of constraints in template: 8
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.011940951
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Pedersen(1)
+Number of signals (i,int,o): 3
+Number of constraints in template: 5
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.011491976
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

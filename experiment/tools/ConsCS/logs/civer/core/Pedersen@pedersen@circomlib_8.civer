@@ -1,0 +1,118 @@
+Checking template MontgomeryAdd()
+Number of signals (i,int,o): 7
+Number of constraints in template: 3
+### THE TEMPLATE DOES NOT ENSURE SAFETY. FOUND COUNTEREXAMPLE USING SMT:
+Input signal 25: 10944121435919637611123202872628637544274182200208017171849102093287904163461
+Input signal 26: 21888242871839275222246405745257275088548364400416034343698204186575808326921
+Input signal 27: 10944121435919637611123202872628637544274182200208017171849102093287904163461
+Input signal 28: 21888242871839275222246405745257275088548364400416034343698204186575808326921
+Output signal 23: values 21888242871839275222246405745257275088548364400416034343698204186575808495615 | 1
+Output signal 24: values 10944121435919637611123202872628637544274182200208017171849102093287904332159 | 21888242871839275222246405745257275088548364400416034343698204186575808495616
+Verification time per template: 2.033315643
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: FAILED -> FOUND COUNTEREXAMPLE
+
+
+
+
+Checking template MontgomeryDouble()
+Number of signals (i,int,o): 6
+Number of constraints in template: 4
+### UNKNOWN: VERIFICATION OF WEAK SAFETY USING THE SPECIFICATION TIMEOUT
+Verification time per template: 5.012160519
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: UNKNOWN -> VERIFICATION TIMEOUT
+
+
+
+
+Checking template Edwards2Montgomery()
+Number of signals (i,int,o): 4
+Number of constraints in template: 2
+### THE TEMPLATE DOES NOT ENSURE SAFETY. FOUND COUNTEREXAMPLE USING SMT:
+Input signal 44: 0
+Input signal 45: 21888242871839275222246405745257275088548364400416034343698204186575808495616
+Output signal 42: values 0 | 0
+Output signal 43: values 2 | 1
+Verification time per template: 0.017907124
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: FAILED -> FOUND COUNTEREXAMPLE
+
+
+
+
+Checking template Montgomery2Edwards()
+Number of signals (i,int,o): 4
+Number of constraints in template: 2
+### THE TEMPLATE DOES NOT ENSURE SAFETY. FOUND COUNTEREXAMPLE USING SMT:
+Input signal 48: 0
+Input signal 49: 0
+Output signal 46: values 2 | 1
+Output signal 47: values 21888242871839275222246405745257275088548364400416034343698204186575808495616 | 21888242871839275222246405745257275088548364400416034343698204186575808495616
+Verification time per template: 0.017343085
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: FAILED -> FOUND COUNTEREXAMPLE
+
+
+
+
+Checking template MultiMux3(2)
+Number of signals (i,int,o): 38
+Number of constraints in template: 19
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.022498498
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Window4()
+Number of signals (i,int,o): 10
+Number of constraints in template: 49
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.023148284
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Segment(2)
+Number of signals (i,int,o): 12
+Number of constraints in template: 26
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.01503948
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Pedersen(8)
+Number of signals (i,int,o): 10
+Number of constraints in template: 12
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.012464691
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

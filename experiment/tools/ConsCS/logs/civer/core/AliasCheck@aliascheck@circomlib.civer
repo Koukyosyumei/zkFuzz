@@ -1,0 +1,39 @@
+Checking template Num2Bits(135)
+Number of signals (i,int,o): 136
+Number of constraints in template: 136
+### UNKNOWN: VERIFICATION OF WEAK SAFETY USING THE SPECIFICATION TIMEOUT
+Verification time per template: 5.020167486
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: UNKNOWN -> VERIFICATION TIMEOUT
+
+
+
+
+Checking template CompConstant(21888242871839275222246405745257275088548364400416034343698204186575808495616)
+Number of signals (i,int,o): 383
+Number of constraints in template: 130
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.173142755
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template AliasCheck()
+Number of signals (i,int,o): 254
+Number of constraints in template: 255
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.027116011
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

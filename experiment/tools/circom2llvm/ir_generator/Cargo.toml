@@ -1,0 +1,14 @@
+[package]
+name = "ir_generator"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+program_structure = {path = "../program_structure"}
+inkwell = { git = "https://github.com/TheDan64/inkwell", branch = "master", features = ["llvm13-0"] }
+num-bigint-dig = "0.6.0"
+num-traits = "0.2.6"
+serde_json = "1.0"
+serde = "1.0"

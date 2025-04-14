@@ -1,0 +1,26 @@
+Checking template Num2Bits(135)
+Number of signals (i,int,o): 136
+Number of constraints in template: 136
+### UNKNOWN: VERIFICATION OF WEAK SAFETY USING THE SPECIFICATION TIMEOUT
+Verification time per template: 5.020559972
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: UNKNOWN -> VERIFICATION TIMEOUT
+
+
+
+
+Checking template CompConstant(2)
+Number of signals (i,int,o): 383
+Number of constraints in template: 130
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.175467194
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

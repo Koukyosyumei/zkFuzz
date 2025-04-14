@@ -1,0 +1,7 @@
+[workspace]
+members = [
+    "circom2llvm",
+    "ir_generator",
+    "parser",
+    "program_structure",
+]

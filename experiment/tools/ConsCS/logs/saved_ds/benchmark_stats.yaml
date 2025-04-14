@@ -1,0 +1,2114 @@
+core:
+  AND@gates@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+  AliasCheck@aliascheck@circomlib.circom:
+    category: medium
+    linear constraints: 259
+    non-linear constraints: 262
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 521
+    total inputs: 254
+    total outputs: 0
+    wires: 774
+    witness: 520
+  BabyAdd@babyjub@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 6
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 6
+    total inputs: 4
+    total outputs: 2
+    wires: 11
+    witness: 5
+  BabyCheck@babyjub@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 3
+    total inputs: 2
+    total outputs: 0
+    wires: 5
+    witness: 3
+  BabyDbl@babyjub@circomlib.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 6
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 12
+    total inputs: 2
+    total outputs: 2
+    wires: 15
+    witness: 11
+  BabyPbk@babyjub@circomlib.circom:
+    category: large
+    linear constraints: 6166
+    non-linear constraints: 3948
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 10114
+    total inputs: 1
+    total outputs: 2
+    wires: 10115
+    witness: 10112
+  BinSub@binsub@circomlib_16.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 17
+    private inputs: 0
+    private outputs: 0
+    public outputs: 16
+    total constraints: 18
+    total inputs: 32
+    total outputs: 16
+    wires: 50
+    witness: 2
+  BinSum@binsum@circomlib_32_2.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 33
+    private inputs: 0
+    private outputs: 0
+    public outputs: 33
+    total constraints: 34
+    total inputs: 64
+    total outputs: 33
+    wires: 98
+    witness: 1
+  BinSum@binsum@circomlib_32_5.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 35
+    private inputs: 0
+    private outputs: 0
+    public outputs: 35
+    total constraints: 36
+    total inputs: 160
+    total outputs: 35
+    wires: 196
+    witness: 1
+  BitElementMulAny@escalarmulany@circomlib.circom:
+    category: small
+    linear constraints: 15
+    non-linear constraints: 9
+    private inputs: 0
+    private outputs: 0
+    public outputs: 4
+    total constraints: 24
+    total inputs: 5
+    total outputs: 4
+    wires: 30
+    witness: 21
+  Bits2Num@bitify@circomlib_1.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 1
+    total outputs: 1
+    wires: 3
+    witness: 1
+  Bits2Num@bitify@circomlib_128.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 128
+    total outputs: 1
+    wires: 130
+    witness: 1
+  Bits2Num@bitify@circomlib_16.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 16
+    total outputs: 1
+    wires: 18
+    witness: 1
+  Bits2Num@bitify@circomlib_253.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 253
+    total outputs: 1
+    wires: 255
+    witness: 1
+  Bits2Num@bitify@circomlib_254.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 254
+    total outputs: 1
+    wires: 256
+    witness: 1
+  Bits2Num@bitify@circomlib_256.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 256
+    total outputs: 1
+    wires: 258
+    witness: 1
+  Bits2Num@bitify@circomlib_32.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 32
+    total outputs: 1
+    wires: 34
+    witness: 1
+  Bits2Num@bitify@circomlib_64.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 64
+    total outputs: 1
+    wires: 66
+    witness: 1
+  Bits2Num@bitify@circomlib_8.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 8
+    total outputs: 1
+    wires: 10
+    witness: 1
+  Bits2Num_strict@bitify@circomlib.circom:
+    category: large
+    linear constraints: 769
+    non-linear constraints: 262
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1031
+    total inputs: 254
+    total outputs: 1
+    wires: 1284
+    witness: 1029
+  Bits2Point@pointbits@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 0
+    total inputs: 256
+    total outputs: 2
+    wires: 259
+    witness: 1
+  Bits2Point_Strict@pointbits@circomlib.circom:
+    category: large
+    linear constraints: 1546
+    non-linear constraints: 1043
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 2589
+    total inputs: 256
+    total outputs: 2
+    wires: 2838
+    witness: 2580
+  EdDSAMiMCSpongeVerifier@eddsamimcsponge@circomlib.circom:
+    category: large
+    linear constraints: 13948
+    non-linear constraints: 10368
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 24316
+    total inputs: 7
+    total outputs: 0
+    wires: 24315
+    witness: 24308
+  EdDSAMiMCVerifier@eddsamimc@circomlib.circom:
+    category: large
+    linear constraints: 12849
+    non-linear constraints: 8888
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 21737
+    total inputs: 7
+    total outputs: 0
+    wires: 21736
+    witness: 21729
+  EdDSAPoseidonVerifier@eddsaposeidon@circomlib.circom:
+    category: large
+    linear constraints: 13845
+    non-linear constraints: 7394
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 21239
+    total inputs: 7
+    total outputs: 0
+    wires: 21238
+    witness: 21231
+  Edwards2Montgomery@montgomery@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 2
+    total inputs: 2
+    total outputs: 2
+    wires: 5
+    witness: 1
+  ForceEqualIfEnabled@comparators@circomlib.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 4
+    total inputs: 3
+    total outputs: 0
+    wires: 7
+    witness: 4
+  GreaterEqThan@comparators@circomlib_16.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 17
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 23
+    total inputs: 2
+    total outputs: 1
+    wires: 25
+    witness: 22
+  GreaterEqThan@comparators@circomlib_32.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 33
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 39
+    total inputs: 2
+    total outputs: 1
+    wires: 41
+    witness: 38
+  GreaterEqThan@comparators@circomlib_8.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 9
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 15
+    total inputs: 2
+    total outputs: 1
+    wires: 17
+    witness: 14
+  GreaterThan@comparators@circomlib_16.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 17
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 23
+    total inputs: 2
+    total outputs: 1
+    wires: 25
+    witness: 22
+  GreaterThan@comparators@circomlib_32.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 33
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 39
+    total inputs: 2
+    total outputs: 1
+    wires: 41
+    witness: 38
+  GreaterThan@comparators@circomlib_8.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 9
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 15
+    total inputs: 2
+    total outputs: 1
+    wires: 17
+    witness: 14
+  IsEqual@comparators@circomlib.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 4
+    total inputs: 2
+    total outputs: 1
+    wires: 7
+    witness: 4
+  IsZero@comparators@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 2
+    total inputs: 1
+    total outputs: 1
+    wires: 4
+    witness: 2
+  LessEqThan@comparators@circomlib_16.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 17
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 23
+    total inputs: 2
+    total outputs: 1
+    wires: 25
+    witness: 22
+  LessEqThan@comparators@circomlib_32.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 33
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 39
+    total inputs: 2
+    total outputs: 1
+    wires: 41
+    witness: 38
+  LessEqThan@comparators@circomlib_8.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 9
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 15
+    total inputs: 2
+    total outputs: 1
+    wires: 17
+    witness: 14
+  Main@main@circomlib.circom:
+    category: large
+    linear constraints: 173081
+    non-linear constraints: 31384
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 204465
+    total inputs: 2
+    total outputs: 1
+    wires: 204154
+    witness: 204151
+  Montgomery2Edwards@montgomery@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 2
+    total inputs: 2
+    total outputs: 2
+    wires: 5
+    witness: 1
+  MontgomeryAdd@montgomery@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 3
+    total inputs: 4
+    total outputs: 2
+    wires: 8
+    witness: 2
+  MontgomeryDouble@montgomery@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 4
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 4
+    total inputs: 2
+    total outputs: 2
+    wires: 7
+    witness: 3
+  Multiplexor2@escalarmulany@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 2
+    total inputs: 5
+    total outputs: 2
+    wires: 8
+    witness: 1
+  Mux1@mux1@circomlib.circom:
+    category: small
+    linear constraints: 4
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 5
+    total inputs: 3
+    total outputs: 1
+    wires: 9
+    witness: 5
+  Mux2@mux2@circomlib.circom:
+    category: small
+    linear constraints: 9
+    non-linear constraints: 4
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 13
+    total inputs: 6
+    total outputs: 1
+    wires: 20
+    witness: 13
+  Mux3@mux3@circomlib.circom:
+    category: small
+    linear constraints: 14
+    non-linear constraints: 8
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 22
+    total inputs: 11
+    total outputs: 1
+    wires: 34
+    witness: 22
+  Mux4@mux4@circomlib.circom:
+    category: small
+    linear constraints: 23
+    non-linear constraints: 19
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 42
+    total inputs: 20
+    total outputs: 1
+    wires: 63
+    witness: 42
+  NAND@gates@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+  NOR@gates@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+  NOT@gates@circomlib.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 1
+    total outputs: 1
+    wires: 3
+    witness: 1
+  Num2Bits@bitify@circomlib_1.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 2
+    total inputs: 1
+    total outputs: 1
+    wires: 3
+    witness: 1
+  Num2Bits@bitify@circomlib_128.circom:
+    category: medium
+    linear constraints: 1
+    non-linear constraints: 128
+    private inputs: 0
+    private outputs: 0
+    public outputs: 128
+    total constraints: 129
+    total inputs: 1
+    total outputs: 128
+    wires: 130
+    witness: 1
+  Num2Bits@bitify@circomlib_16.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 16
+    private inputs: 0
+    private outputs: 0
+    public outputs: 16
+    total constraints: 17
+    total inputs: 1
+    total outputs: 16
+    wires: 18
+    witness: 1
+  Num2Bits@bitify@circomlib_253.circom:
+    category: medium
+    linear constraints: 1
+    non-linear constraints: 253
+    private inputs: 0
+    private outputs: 0
+    public outputs: 253
+    total constraints: 254
+    total inputs: 1
+    total outputs: 253
+    wires: 255
+    witness: 1
+  Num2Bits@bitify@circomlib_254.circom:
+    category: medium
+    linear constraints: 1
+    non-linear constraints: 254
+    private inputs: 0
+    private outputs: 0
+    public outputs: 254
+    total constraints: 255
+    total inputs: 1
+    total outputs: 254
+    wires: 256
+    witness: 1
+  Num2Bits@bitify@circomlib_256.circom:
+    category: medium
+    linear constraints: 1
+    non-linear constraints: 256
+    private inputs: 0
+    private outputs: 0
+    public outputs: 256
+    total constraints: 257
+    total inputs: 1
+    total outputs: 256
+    wires: 258
+    witness: 1
+  Num2Bits@bitify@circomlib_32.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 32
+    private inputs: 0
+    private outputs: 0
+    public outputs: 32
+    total constraints: 33
+    total inputs: 1
+    total outputs: 32
+    wires: 34
+    witness: 1
+  Num2Bits@bitify@circomlib_64.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 64
+    private inputs: 0
+    private outputs: 0
+    public outputs: 64
+    total constraints: 65
+    total inputs: 1
+    total outputs: 64
+    wires: 66
+    witness: 1
+  Num2Bits@bitify@circomlib_8.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 8
+    private inputs: 0
+    private outputs: 0
+    public outputs: 8
+    total constraints: 9
+    total inputs: 1
+    total outputs: 8
+    wires: 10
+    witness: 1
+  Num2BitsNeg@bitify@circomlib_1.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 5
+    total inputs: 1
+    total outputs: 1
+    wires: 6
+    witness: 4
+  Num2BitsNeg@bitify@circomlib_128.circom:
+    category: medium
+    linear constraints: 2
+    non-linear constraints: 130
+    private inputs: 0
+    private outputs: 0
+    public outputs: 128
+    total constraints: 132
+    total inputs: 1
+    total outputs: 128
+    wires: 133
+    witness: 4
+  Num2BitsNeg@bitify@circomlib_16.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 18
+    private inputs: 0
+    private outputs: 0
+    public outputs: 16
+    total constraints: 20
+    total inputs: 1
+    total outputs: 16
+    wires: 21
+    witness: 4
+  Num2BitsNeg@bitify@circomlib_253.circom:
+    category: medium
+    linear constraints: 2
+    non-linear constraints: 255
+    private inputs: 0
+    private outputs: 0
+    public outputs: 253
+    total constraints: 257
+    total inputs: 1
+    total outputs: 253
+    wires: 258
+    witness: 4
+  Num2BitsNeg@bitify@circomlib_254.circom:
+    category: medium
+    linear constraints: 2
+    non-linear constraints: 256
+    private inputs: 0
+    private outputs: 0
+    public outputs: 254
+    total constraints: 258
+    total inputs: 1
+    total outputs: 254
+    wires: 259
+    witness: 4
+  Num2BitsNeg@bitify@circomlib_256.circom:
+    category: medium
+    linear constraints: 2
+    non-linear constraints: 258
+    private inputs: 0
+    private outputs: 0
+    public outputs: 256
+    total constraints: 260
+    total inputs: 1
+    total outputs: 256
+    wires: 261
+    witness: 4
+  Num2BitsNeg@bitify@circomlib_32.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 34
+    private inputs: 0
+    private outputs: 0
+    public outputs: 32
+    total constraints: 36
+    total inputs: 1
+    total outputs: 32
+    wires: 37
+    witness: 4
+  Num2BitsNeg@bitify@circomlib_64.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 66
+    private inputs: 0
+    private outputs: 0
+    public outputs: 64
+    total constraints: 68
+    total inputs: 1
+    total outputs: 64
+    wires: 69
+    witness: 4
+  Num2BitsNeg@bitify@circomlib_8.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 10
+    private inputs: 0
+    private outputs: 0
+    public outputs: 8
+    total constraints: 12
+    total inputs: 1
+    total outputs: 8
+    wires: 13
+    witness: 4
+  Num2Bits_strict@bitify@circomlib.circom:
+    category: large
+    linear constraints: 769
+    non-linear constraints: 516
+    private inputs: 0
+    private outputs: 0
+    public outputs: 254
+    total constraints: 1285
+    total inputs: 1
+    total outputs: 254
+    wires: 1284
+    witness: 1029
+  OR@gates@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+  Pedersen@pedersen@circomlib_1.circom:
+    category: medium
+    linear constraints: 72
+    non-linear constraints: 42
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 114
+    total inputs: 1
+    total outputs: 2
+    wires: 116
+    witness: 113
+  Pedersen@pedersen@circomlib_128.circom:
+    category: large
+    linear constraints: 2242
+    non-linear constraints: 1561
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 3803
+    total inputs: 128
+    total outputs: 2
+    wires: 3932
+    witness: 3802
+  Pedersen@pedersen@circomlib_16.circom:
+    category: medium
+    linear constraints: 282
+    non-linear constraints: 189
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 471
+    total inputs: 16
+    total outputs: 2
+    wires: 488
+    witness: 470
+  Pedersen@pedersen@circomlib_253.circom:
+    category: large
+    linear constraints: 4486
+    non-linear constraints: 3128
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 7614
+    total inputs: 253
+    total outputs: 2
+    wires: 7868
+    witness: 7613
+  Pedersen@pedersen@circomlib_254.circom:
+    category: large
+    linear constraints: 4486
+    non-linear constraints: 3128
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 7614
+    total inputs: 254
+    total outputs: 2
+    wires: 7869
+    witness: 7613
+  Pedersen@pedersen@circomlib_256.circom:
+    category: large
+    linear constraints: 4486
+    non-linear constraints: 3128
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 7614
+    total inputs: 256
+    total outputs: 2
+    wires: 7871
+    witness: 7613
+  Pedersen@pedersen@circomlib_32.circom:
+    category: medium
+    linear constraints: 562
+    non-linear constraints: 385
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 947
+    total inputs: 32
+    total outputs: 2
+    wires: 980
+    witness: 946
+  Pedersen@pedersen@circomlib_64.circom:
+    category: large
+    linear constraints: 1122
+    non-linear constraints: 777
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 1899
+    total inputs: 64
+    total outputs: 2
+    wires: 1964
+    witness: 1898
+  Pedersen@pedersen@circomlib_8.circom:
+    category: medium
+    linear constraints: 142
+    non-linear constraints: 91
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 233
+    total inputs: 8
+    total outputs: 2
+    wires: 242
+    witness: 232
+  Pedersen@pedersen_old@circomlib_1.circom:
+    category: small
+    linear constraints: 59
+    non-linear constraints: 40
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 99
+    total inputs: 1
+    total outputs: 2
+    wires: 101
+    witness: 98
+  Pedersen@pedersen_old@circomlib_128.circom:
+    category: large
+    linear constraints: 1798
+    non-linear constraints: 1280
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 3078
+    total inputs: 128
+    total outputs: 2
+    wires: 3207
+    witness: 3077
+  Pedersen@pedersen_old@circomlib_16.circom:
+    category: medium
+    linear constraints: 230
+    non-linear constraints: 160
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 390
+    total inputs: 16
+    total outputs: 2
+    wires: 407
+    witness: 389
+  Pedersen@pedersen_old@circomlib_253.circom:
+    category: large
+    linear constraints: 3591
+    non-linear constraints: 2560
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 6151
+    total inputs: 253
+    total outputs: 2
+    wires: 6405
+    witness: 6150
+  Pedersen@pedersen_old@circomlib_254.circom:
+    category: large
+    linear constraints: 3592
+    non-linear constraints: 2560
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 6152
+    total inputs: 254
+    total outputs: 2
+    wires: 6407
+    witness: 6151
+  Pedersen@pedersen_old@circomlib_256.circom:
+    category: large
+    linear constraints: 3646
+    non-linear constraints: 2600
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 6246
+    total inputs: 256
+    total outputs: 2
+    wires: 6503
+    witness: 6245
+  Pedersen@pedersen_old@circomlib_32.circom:
+    category: medium
+    linear constraints: 454
+    non-linear constraints: 320
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 774
+    total inputs: 32
+    total outputs: 2
+    wires: 807
+    witness: 773
+  Pedersen@pedersen_old@circomlib_64.circom:
+    category: large
+    linear constraints: 902
+    non-linear constraints: 640
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 1542
+    total inputs: 64
+    total outputs: 2
+    wires: 1607
+    witness: 1541
+  Pedersen@pedersen_old@circomlib_8.circom:
+    category: medium
+    linear constraints: 118
+    non-linear constraints: 80
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 198
+    total inputs: 8
+    total outputs: 2
+    wires: 207
+    witness: 197
+  Point2Bits@pointbits@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 256
+    total constraints: 0
+    total inputs: 2
+    total outputs: 256
+    wires: 259
+    witness: 1
+  Point2Bits_Strict@pointbits@circomlib.circom:
+    category: large
+    linear constraints: 1544
+    non-linear constraints: 1294
+    private inputs: 0
+    private outputs: 0
+    public outputs: 256
+    total constraints: 2838
+    total inputs: 2
+    total outputs: 256
+    wires: 2834
+    witness: 2576
+  SMTHash1@smthash_mimc@circomlib.circom:
+    category: medium
+    linear constraints: 12
+    non-linear constraints: 728
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 740
+    total inputs: 2
+    total outputs: 1
+    wires: 743
+    witness: 740
+  SMTHash1@smthash_poseidon@circomlib.circom:
+    category: medium
+    linear constraints: 666
+    non-linear constraints: 264
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 930
+    total inputs: 2
+    total outputs: 1
+    wires: 933
+    witness: 930
+  SMTHash2@smthash_mimc@circomlib.circom:
+    category: medium
+    linear constraints: 12
+    non-linear constraints: 728
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 740
+    total inputs: 2
+    total outputs: 1
+    wires: 743
+    witness: 740
+  SMTHash2@smthash_poseidon@circomlib.circom:
+    category: medium
+    linear constraints: 521
+    non-linear constraints: 243
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 764
+    total inputs: 2
+    total outputs: 1
+    wires: 767
+    witness: 764
+  SMTProcessorLevel@smtprocessorlevel@circomlib.circom:
+    category: large
+    linear constraints: 36
+    non-linear constraints: 1466
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 1502
+    total inputs: 12
+    total outputs: 2
+    wires: 1515
+    witness: 1501
+  SMTProcessorSM@smtprocessorsm@circomlib.circom:
+    category: small
+    linear constraints: 3
+    non-linear constraints: 5
+    private inputs: 0
+    private outputs: 0
+    public outputs: 6
+    total constraints: 8
+    total inputs: 11
+    total outputs: 6
+    wires: 20
+    witness: 3
+  SMTVerifierLevel@smtverifierlevel@circomlib.circom:
+    category: medium
+    linear constraints: 19
+    non-linear constraints: 732
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 751
+    total inputs: 10
+    total outputs: 1
+    wires: 762
+    witness: 751
+  SMTVerifierSM@smtverifiersm@circomlib.circom:
+    category: small
+    linear constraints: 3
+    non-linear constraints: 4
+    private inputs: 0
+    private outputs: 0
+    public outputs: 5
+    total constraints: 7
+    total inputs: 8
+    total outputs: 5
+    wires: 16
+    witness: 3
+  Sha256_2@sha256_2@circomlib.circom:
+    category: large
+    linear constraints: 173078
+    non-linear constraints: 31384
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 204462
+    total inputs: 2
+    total outputs: 1
+    wires: 204151
+    witness: 204148
+  Sha256compression@sha256compression@circomlib.circom:
+    category: large
+    linear constraints: 171832
+    non-linear constraints: 30952
+    private inputs: 0
+    private outputs: 0
+    public outputs: 256
+    total constraints: 202784
+    total inputs: 768
+    total outputs: 256
+    wires: 203241
+    witness: 202217
+  Sigma@poseidon@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 3
+    total inputs: 1
+    total outputs: 1
+    wires: 5
+    witness: 3
+  Sigma@poseidon_old@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 3
+    total inputs: 1
+    total outputs: 1
+    wires: 5
+    witness: 3
+  SigmaPlus@sigmaplus@circomlib.circom:
+    category: large
+    linear constraints: 865
+    non-linear constraints: 162
+    private inputs: 0
+    private outputs: 0
+    public outputs: 32
+    total constraints: 1027
+    total inputs: 128
+    total outputs: 32
+    wires: 1155
+    witness: 995
+  Sign@sign@circomlib.circom:
+    category: medium
+    linear constraints: 259
+    non-linear constraints: 262
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 521
+    total inputs: 254
+    total outputs: 1
+    wires: 775
+    witness: 520
+  Switcher@switcher@circomlib.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 3
+    total inputs: 3
+    total outputs: 2
+    wires: 7
+    witness: 2
+  T1@t1@circomlib.circom:
+    category: medium
+    linear constraints: 641
+    non-linear constraints: 131
+    private inputs: 0
+    private outputs: 0
+    public outputs: 32
+    total constraints: 772
+    total inputs: 192
+    total outputs: 32
+    wires: 964
+    witness: 740
+  T2@t2@circomlib.circom:
+    category: medium
+    linear constraints: 545
+    non-linear constraints: 161
+    private inputs: 0
+    private outputs: 0
+    public outputs: 32
+    total constraints: 706
+    total inputs: 96
+    total outputs: 32
+    wires: 802
+    witness: 674
+  Window4@pedersen@circomlib.circom:
+    category: small
+    linear constraints: 52
+    non-linear constraints: 38
+    private inputs: 0
+    private outputs: 0
+    public outputs: 4
+    total constraints: 90
+    total inputs: 6
+    total outputs: 4
+    wires: 97
+    witness: 87
+  WindowMulFix@escalarmulfix@circomlib.circom:
+    category: small
+    linear constraints: 53
+    non-linear constraints: 37
+    private inputs: 0
+    private outputs: 0
+    public outputs: 4
+    total constraints: 90
+    total inputs: 5
+    total outputs: 4
+    wires: 96
+    witness: 87
+  XOR@gates@circomlib.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+utils:
+  AND@gates.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+  AliasCheck@aliascheck.circom:
+    category: medium
+    linear constraints: 259
+    non-linear constraints: 262
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 521
+    total inputs: 254
+    total outputs: 0
+    wires: 774
+    witness: 520
+  BabyAdd@babyjub.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 6
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 6
+    total inputs: 4
+    total outputs: 2
+    wires: 11
+    witness: 5
+  BabyCheck@babyjub.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 3
+    total inputs: 2
+    total outputs: 0
+    wires: 5
+    witness: 3
+  BabyDbl@babyjub.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 6
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 12
+    total inputs: 2
+    total outputs: 2
+    wires: 15
+    witness: 11
+  BabyPbk@babyjub.circom:
+    category: large
+    linear constraints: 6166
+    non-linear constraints: 3948
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 10114
+    total inputs: 1
+    total outputs: 2
+    wires: 10115
+    witness: 10112
+  BinSub@binsub.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 4
+    total inputs: 4
+    total outputs: 2
+    wires: 8
+    witness: 2
+  BinSum@binsum.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 3
+    total constraints: 4
+    total inputs: 4
+    total outputs: 3
+    wires: 8
+    witness: 1
+  BitElementMulAny@escalarmulany.circom:
+    category: small
+    linear constraints: 15
+    non-linear constraints: 9
+    private inputs: 0
+    private outputs: 0
+    public outputs: 4
+    total constraints: 24
+    total inputs: 5
+    total outputs: 4
+    wires: 30
+    witness: 21
+  Bits2Num@bitify.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+  Bits2Num_strict@bitify.circom:
+    category: large
+    linear constraints: 769
+    non-linear constraints: 262
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1031
+    total inputs: 254
+    total outputs: 1
+    wires: 1284
+    witness: 1029
+  Bits2Point_Strict@pointbits.circom:
+    category: large
+    linear constraints: 1546
+    non-linear constraints: 1043
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 2589
+    total inputs: 256
+    total outputs: 2
+    wires: 2838
+    witness: 2580
+  CompConstant@compconstant.circom:
+    category: medium
+    linear constraints: 4
+    non-linear constraints: 262
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 266
+    total inputs: 254
+    total outputs: 1
+    wires: 520
+    witness: 265
+  Decoder@multiplexer.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 3
+    total constraints: 4
+    total inputs: 1
+    total outputs: 3
+    wires: 5
+    witness: 1
+  EdDSAMiMCSpongeVerifier@eddsamimcsponge.circom:
+    category: large
+    linear constraints: 13948
+    non-linear constraints: 10368
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 24316
+    total inputs: 7
+    total outputs: 0
+    wires: 24315
+    witness: 24308
+  EdDSAMiMCVerifier@eddsamimc.circom:
+    category: large
+    linear constraints: 12849
+    non-linear constraints: 8888
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 21737
+    total inputs: 7
+    total outputs: 0
+    wires: 21736
+    witness: 21729
+  EdDSAPoseidonVerifier@eddsaposeidon.circom:
+    category: large
+    linear constraints: 13845
+    non-linear constraints: 7394
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 21239
+    total inputs: 7
+    total outputs: 0
+    wires: 21238
+    witness: 21231
+  EdDSAVerifier@eddsa.circom:
+    category: large
+    linear constraints: 26874
+    non-linear constraints: 16046
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 42920
+    total inputs: 770
+    total outputs: 0
+    wires: 43661
+    witness: 42891
+  Edwards2Montgomery@montgomery.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 2
+    total inputs: 2
+    total outputs: 2
+    wires: 5
+    witness: 1
+  EscalarMulAny@escalarmulany.circom:
+    category: small
+    linear constraints: 40
+    non-linear constraints: 27
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 67
+    total inputs: 4
+    total outputs: 2
+    wires: 72
+    witness: 66
+  EscalarProduct@multiplexer.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 3
+    total inputs: 4
+    total outputs: 1
+    wires: 8
+    witness: 3
+  ForceEqualIfEnabled@comparators.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 0
+    total constraints: 4
+    total inputs: 3
+    total outputs: 0
+    wires: 7
+    witness: 4
+  GreaterEqThan@comparators.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 9
+    total inputs: 2
+    total outputs: 1
+    wires: 11
+    witness: 8
+  GreaterThan@comparators.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 9
+    total inputs: 2
+    total outputs: 1
+    wires: 11
+    witness: 8
+  IsEqual@comparators.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 4
+    total inputs: 2
+    total outputs: 1
+    wires: 7
+    witness: 4
+  IsZero@comparators.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 2
+    total inputs: 1
+    total outputs: 1
+    wires: 4
+    witness: 2
+  LessEqThan@comparators.circom:
+    category: small
+    linear constraints: 6
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 9
+    total inputs: 2
+    total outputs: 1
+    wires: 11
+    witness: 8
+  LessThan@comparators.circom:
+    category: small
+    linear constraints: 3
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 6
+    total inputs: 2
+    total outputs: 1
+    wires: 8
+    witness: 5
+  MiMC7@mimc.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 8
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 8
+    total inputs: 2
+    total outputs: 1
+    wires: 11
+    witness: 8
+  MiMCFeistel@mimcsponge.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 6
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 8
+    total inputs: 3
+    total outputs: 2
+    wires: 12
+    witness: 7
+  MiMCSponge@mimcsponge.circom:
+    category: small
+    linear constraints: 17
+    non-linear constraints: 18
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 35
+    total inputs: 3
+    total outputs: 2
+    wires: 39
+    witness: 34
+  Montgomery2Edwards@montgomery.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 2
+    total inputs: 2
+    total outputs: 2
+    wires: 5
+    witness: 1
+  MontgomeryAdd@montgomery.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 3
+    total inputs: 4
+    total outputs: 2
+    wires: 8
+    witness: 2
+  MontgomeryDouble@montgomery.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 4
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 4
+    total inputs: 2
+    total outputs: 2
+    wires: 7
+    witness: 3
+  MultiAND@gates.circom:
+    category: small
+    linear constraints: 3
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 4
+    total inputs: 2
+    total outputs: 1
+    wires: 7
+    witness: 4
+  MultiMiMC7@mimc.circom:
+    category: small
+    linear constraints: 8
+    non-linear constraints: 16
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 24
+    total inputs: 3
+    total outputs: 1
+    wires: 28
+    witness: 24
+  MultiMux1@mux1.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 2
+    total inputs: 5
+    total outputs: 2
+    wires: 8
+    witness: 1
+  MultiMux2@mux2.circom:
+    category: small
+    linear constraints: 4
+    non-linear constraints: 7
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 11
+    total inputs: 10
+    total outputs: 2
+    wires: 22
+    witness: 10
+  MultiMux3@mux3.circom:
+    category: small
+    linear constraints: 4
+    non-linear constraints: 15
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 19
+    total inputs: 19
+    total outputs: 2
+    wires: 39
+    witness: 18
+  MultiMux4@mux4.circom:
+    category: small
+    linear constraints: 4
+    non-linear constraints: 34
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 38
+    total inputs: 36
+    total outputs: 2
+    wires: 75
+    witness: 37
+  Multiplexer@multiplexer.circom:
+    category: small
+    linear constraints: 15
+    non-linear constraints: 7
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 22
+    total inputs: 5
+    total outputs: 2
+    wires: 26
+    witness: 19
+  Multiplexor2@escalarmulany.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 2
+    total inputs: 5
+    total outputs: 2
+    wires: 8
+    witness: 1
+  Mux1@mux1.circom:
+    category: small
+    linear constraints: 4
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 5
+    total inputs: 3
+    total outputs: 1
+    wires: 9
+    witness: 5
+  Mux2@mux2.circom:
+    category: small
+    linear constraints: 9
+    non-linear constraints: 4
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 13
+    total inputs: 6
+    total outputs: 1
+    wires: 20
+    witness: 13
+  Mux3@mux3.circom:
+    category: small
+    linear constraints: 14
+    non-linear constraints: 8
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 22
+    total inputs: 11
+    total outputs: 1
+    wires: 34
+    witness: 22
+  Mux4@mux4.circom:
+    category: small
+    linear constraints: 23
+    non-linear constraints: 19
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 42
+    total inputs: 20
+    total outputs: 1
+    wires: 63
+    witness: 42
+  NAND@gates.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+  NOR@gates.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+  NOT@gates.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 0
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 1
+    total outputs: 1
+    wires: 3
+    witness: 1
+  Num2Bits@bitify.circom:
+    category: small
+    linear constraints: 1
+    non-linear constraints: 2
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 3
+    total inputs: 1
+    total outputs: 2
+    wires: 4
+    witness: 1
+  Num2BitsNeg@bitify.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 4
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 6
+    total inputs: 1
+    total outputs: 2
+    wires: 7
+    witness: 4
+  Num2Bits_strict@bitify.circom:
+    category: large
+    linear constraints: 769
+    non-linear constraints: 516
+    private inputs: 0
+    private outputs: 0
+    public outputs: 254
+    total constraints: 1285
+    total inputs: 1
+    total outputs: 254
+    wires: 1284
+    witness: 1029
+  OR@gates.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1
+  Pedersen@pedersen.circom:
+    category: medium
+    linear constraints: 72
+    non-linear constraints: 42
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 114
+    total inputs: 2
+    total outputs: 2
+    wires: 117
+    witness: 113
+  Pedersen@pedersen_old.circom:
+    category: medium
+    linear constraints: 60
+    non-linear constraints: 40
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 100
+    total inputs: 2
+    total outputs: 2
+    wires: 103
+    witness: 99
+  Point2Bits_Strict@pointbits.circom:
+    category: large
+    linear constraints: 1544
+    non-linear constraints: 1294
+    private inputs: 0
+    private outputs: 0
+    public outputs: 256
+    total constraints: 2838
+    total inputs: 2
+    total outputs: 256
+    wires: 2834
+    witness: 2576
+  Poseidon@poseidon.circom:
+    category: medium
+    linear constraints: 518
+    non-linear constraints: 243
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 761
+    total inputs: 2
+    total outputs: 1
+    wires: 764
+    witness: 761
+  Segment@pedersen.circom:
+    category: medium
+    linear constraints: 130
+    non-linear constraints: 91
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 221
+    total inputs: 10
+    total outputs: 2
+    wires: 232
+    witness: 220
+  SegmentMulAny@escalarmulany.circom:
+    category: small
+    linear constraints: 37
+    non-linear constraints: 21
+    private inputs: 0
+    private outputs: 0
+    public outputs: 4
+    total constraints: 58
+    total inputs: 4
+    total outputs: 4
+    wires: 63
+    witness: 55
+  SegmentMulFix@escalarmulfix.circom:
+    category: medium
+    linear constraints: 148
+    non-linear constraints: 102
+    private inputs: 0
+    private outputs: 0
+    public outputs: 4
+    total constraints: 250
+    total inputs: 8
+    total outputs: 4
+    wires: 259
+    witness: 247
+  Sigma@poseidon.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 3
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 3
+    total inputs: 1
+    total outputs: 1
+    wires: 5
+    witness: 3
+  Sign@sign.circom:
+    category: medium
+    linear constraints: 259
+    non-linear constraints: 262
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 521
+    total inputs: 254
+    total outputs: 1
+    wires: 775
+    witness: 520
+  Switcher@switcher.circom:
+    category: small
+    linear constraints: 2
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 2
+    total constraints: 3
+    total inputs: 3
+    total outputs: 2
+    wires: 7
+    witness: 2
+  Window4@pedersen.circom:
+    category: small
+    linear constraints: 52
+    non-linear constraints: 38
+    private inputs: 0
+    private outputs: 0
+    public outputs: 4
+    total constraints: 90
+    total inputs: 6
+    total outputs: 4
+    wires: 97
+    witness: 87
+  WindowMulFix@escalarmulfix.circom:
+    category: small
+    linear constraints: 53
+    non-linear constraints: 37
+    private inputs: 0
+    private outputs: 0
+    public outputs: 4
+    total constraints: 90
+    total inputs: 5
+    total outputs: 4
+    wires: 96
+    witness: 87
+  XOR@gates.circom:
+    category: small
+    linear constraints: 0
+    non-linear constraints: 1
+    private inputs: 0
+    private outputs: 0
+    public outputs: 1
+    total constraints: 1
+    total inputs: 2
+    total outputs: 1
+    wires: 4
+    witness: 1

@@ -1,0 +1,43 @@
+Checking template Decoder(2)
+Number of signals (i,int,o): 4
+Number of constraints in template: 4
+### THE TEMPLATE DOES NOT ENSURE SAFETY. FOUND COUNTEREXAMPLE USING SMT:
+Input signal 11: 0
+Output signal 8: values 0 | 1
+Output signal 9: values 0 | 0
+Output signal 10: values 0 | 1
+Verification time per template: 0.020126826
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: FAILED -> FOUND COUNTEREXAMPLE
+
+
+
+
+Checking template EscalarProduct(2)
+Number of signals (i,int,o): 7
+Number of constraints in template: 3
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.017160016
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Multiplexer(2,2)
+Number of signals (i,int,o): 7
+Number of constraints in template: 12
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.011192934
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

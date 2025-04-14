@@ -1,0 +1,13 @@
+Checking template Num2Bits(16)
+Number of signals (i,int,o): 17
+Number of constraints in template: 17
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.048317365
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

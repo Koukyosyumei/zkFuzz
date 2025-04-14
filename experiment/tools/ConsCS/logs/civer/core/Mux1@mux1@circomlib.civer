@@ -1,0 +1,26 @@
+Checking template MultiMux1(1)
+Number of signals (i,int,o): 4
+Number of constraints in template: 1
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.014246564
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+
+Checking template Mux1()
+Number of signals (i,int,o): 4
+Number of constraints in template: 4
+### WEAK SAFETY ENSURED BY THE TEMPLATE
+Verification time per template: 0.012293949
+     NUMBER OF ROUNDS: 0
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: VERIFIED
+
+
+
+

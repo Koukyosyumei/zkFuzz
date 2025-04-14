@@ -1,0 +1,17 @@
+Checking template Decoder(2)
+Number of signals (i,int,o): 4
+Number of constraints in template: 4
+### THE TEMPLATE DOES NOT ENSURE SAFETY. FOUND COUNTEREXAMPLE USING SMT:
+Input signal 4: 0
+Output signal 1: values 0 | 1
+Output signal 2: values 0 | 0
+Output signal 3: values 0 | 1
+Verification time per template: 0.016455145
+     NUMBER OF ROUNDS: 0  
+
+******** VERIFICATION RESULTS ********
+-----> WEAK SAFETY: FAILED -> FOUND COUNTEREXAMPLE
+
+
+
+
