@@ -1150,6 +1150,45 @@ pub fn accumulate_error_of_constraints(
         .sum()
 }
 
+pub fn count_error_constraints(
+    prime: &BigInt,
+    constraints: &[SymbolicValueRef],
+    assignment: &FxHashMap<SymbolicName, BigInt>,
+    symbolic_library: &mut SymbolicLibrary,
+) -> BigInt {
+    BigInt::from(
+        constraints
+            .iter()
+            .filter(|constraint| {
+                let e = evaluate_error_of_symbolic_value(
+                    prime,
+                    constraint,
+                    assignment,
+                    symbolic_library,
+                );
+                e == BigInt::zero()
+            })
+            .count(),
+    )
+}
+
+pub fn max_error_of_constraints(
+    prime: &BigInt,
+    constraints: &[SymbolicValueRef],
+    assignment: &FxHashMap<SymbolicName, BigInt>,
+    symbolic_library: &mut SymbolicLibrary,
+) -> BigInt {
+    constraints
+        .iter()
+        .map(|constraint| {
+            let e =
+                evaluate_error_of_symbolic_value(prime, constraint, assignment, symbolic_library);
+            e.max(BigInt::zero())
+        })
+        .max()
+        .unwrap_or(prime.clone())
+}
+
 /// Checks if two integers are equivalent modulo a given prime.
 ///
 /// This function determines whether two integers are congruent modulo the specified prime,

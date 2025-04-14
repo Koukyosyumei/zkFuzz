@@ -1,4 +1,3 @@
-
 use num_bigint_dig::BigInt;
 use num_traits::Zero;
 use rustc_hash::FxHashMap;
@@ -7,9 +6,12 @@ use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
 use crate::mutator::mutation_utils::apply_trace_mutation;
 use crate::mutator::utils::{
-    accumulate_error_of_constraints, emulate_symbolic_trace, evaluate_constraints, is_equal_mod,
-    BaseVerificationConfig, CounterExample, Direction, UnderConstrainedType, VerificationResult,
+    accumulate_error_of_constraints, count_error_constraints, emulate_symbolic_trace,
+    evaluate_constraints, is_equal_mod, max_error_of_constraints, BaseVerificationConfig,
+    CounterExample, Direction, UnderConstrainedType, VerificationResult,
 };
+
+use super::mutation_config::MutationConfig;
 
 /// Evaluates the fitness of a mutated symbolic execution trace by calculating the error score.
 ///
@@ -51,6 +53,7 @@ use crate::mutator::utils::{
 pub fn evaluate_trace_fitness_by_error(
     sexe: &mut SymbolicExecutor,
     base_config: &BaseVerificationConfig,
+    mutation_config: &MutationConfig,
     symbolic_trace: &Vec<SymbolicValueRef>,
     side_constraints: &Vec<SymbolicValueRef>,
     runtime_mutable_positions: &FxHashMap<usize, Direction>,
@@ -137,12 +140,30 @@ pub fn evaluate_trace_fitness_by_error(
         let (_is_mutated_program_success, _mutated_program_failure_pos) =
             mutated_emulation_result.unwrap();
         // Calculate the error in side constraints for the mutated trace.
-        let error_of_side_constraints_for_mutated_assignment = accumulate_error_of_constraints(
-            &base_config.prime,
-            side_constraints,
-            &assignment_for_mutation,
-            &mut sexe.symbolic_library,
-        );
+
+        let error_of_side_constraints_for_mutated_assignment =
+            if mutation_config.fitness_function == "count-error" {
+                count_error_constraints(
+                    &base_config.prime,
+                    side_constraints,
+                    &assignment_for_mutation,
+                    &mut sexe.symbolic_library,
+                )
+            } else if mutation_config.fitness_function == "sum-error" {
+                max_error_of_constraints(
+                    &base_config.prime,
+                    side_constraints,
+                    &assignment_for_mutation,
+                    &mut sexe.symbolic_library,
+                )
+            } else {
+                accumulate_error_of_constraints(
+                    &base_config.prime,
+                    side_constraints,
+                    &assignment_for_mutation,
+                    &mut sexe.symbolic_library,
+                )
+            };
         let mut score = -error_of_side_constraints_for_mutated_assignment.clone();
 
         // Check for valid solutions that satisfy all side constraints.

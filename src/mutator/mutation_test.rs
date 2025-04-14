@@ -137,6 +137,7 @@ where
     TraceFitnessFn: Fn(
         &mut SymbolicExecutor,
         &BaseVerificationConfig,
+        &MutationConfig,
         &SymbolicTrace,
         &SymbolicConstraints,
         &FxHashMap<usize, Direction>,
@@ -339,6 +340,7 @@ where
             let fitness = trace_fitness_fn(
                 sexe,
                 &base_config,
+                &mutation_config,
                 symbolic_trace,
                 side_constraints,
                 if rng.gen::<f64>() < mutation_config.runtime_mutation_rate {
