@@ -6,7 +6,7 @@
 
 ## Benchmark
 
-See [experiment/README.md](experiment/README.md)
+See [experiment/README.md](experiment/README.md).
 
 ## Build
 
