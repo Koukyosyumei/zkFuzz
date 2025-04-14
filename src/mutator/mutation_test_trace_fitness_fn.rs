@@ -149,7 +149,7 @@ pub fn evaluate_trace_fitness_by_error(
                     &assignment_for_mutation,
                     &mut sexe.symbolic_library,
                 )
-            } else if mutation_config.fitness_function == "sum-error" {
+            } else if mutation_config.fitness_function == "max-error" {
                 max_error_of_constraints(
                     &base_config.prime,
                     side_constraints,
