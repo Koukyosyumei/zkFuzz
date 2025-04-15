@@ -1,0 +1,34 @@
+[package]
+name = "circomspect-program-structure"
+version = "2.1.4"
+edition = "2021"
+rust-version = "1.65"
+license = "LGPL-3.0-only"
+description = "Support crate for the Circomspect static analyzer"
+repository = "https://github.com/trailofbits/circomspect"
+authors = [
+  "hermeGarcia <hermegarcianavarro@gmail.com>",
+  "Fredrik Dahlgren <fredrik.dahlgren@trailofbits.com>",
+]
+
+[dependencies]
+anyhow = "1.0"
+atty = "0.2"
+circom_algebra = { package = "circomspect-circom-algebra", version = "2.0.2", path = "../circom_algebra" }
+codespan = "0.11"
+codespan-reporting = "0.11"
+log = "0.4"
+regex = "1.7"
+rustc-hex = "2.1"
+num-bigint-dig = "0.8"
+num-traits = "0.2"
+serde = "1.0"
+serde_derive = "1.0"
+serde-sarif = "0.4"
+serde_json = "1.0"
+thiserror = "1.0"
+termcolor = "1.1.3"
+
+[dev-dependencies]
+proptest = "1.1"
+circom_algebra = { package = "circomspect-circom-algebra", version = "2.0.2", path = "../circom_algebra" }
