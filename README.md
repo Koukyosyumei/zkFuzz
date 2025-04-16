@@ -1,5 +1,6 @@
 # zkFuzz
 
+![example workflow](https://github.com/Koukyosyumei/zkFuzz/actions/workflows/test.yaml/badge.svg)
 ![Fuzzing Powered](https://img.shields.io/badge/Fuzzing-powered--by--program--mutation-blue)
 
 **zkFuzz** is a ZK circuit fuzzer designed to help you identify vulnerabilities in zero-knowledge proof circuits. It leverages mutation testing to uncover counterexamples that reveal under-constrained or over-constrained behavior in your circuits.
