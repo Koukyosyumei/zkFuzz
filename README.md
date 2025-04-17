@@ -3,7 +3,7 @@
 ![example workflow](https://github.com/Koukyosyumei/zkFuzz/actions/workflows/test.yaml/badge.svg)
 ![Fuzzing Powered](https://img.shields.io/badge/Fuzzing-powered--by--program--mutation-blue)
 
-**zkFuzz** is a ZK circuit fuzzer designed to help you identify vulnerabilities in zero-knowledge proof circuits. It leverages mutation testing to uncover counterexamples that reveal under-constrained or over-constrained behavior in your circuits.
+**zkFuzz** is a ZK circuit fuzzer designed to help you identify vulnerabilities in zero-knowledge proof circuits. It leverages fuzzing with program mutation to uncover counterexamples that reveal under-constrained or over-constrained behavior in your circuits.
 
 ## Build
 
@@ -74,7 +74,7 @@ Run zkFuzz using your circuit file written in Circom:
 
 ## Mutation Testing
 
-Mutation testing (`ga` mode) suppots a detailed configuration through the `path_to_mutation_setting` option. The configuration is specified as a JSON file.
+Fuzzing with program mutation mode (`ga` mode) suppots a detailed configuration through the `path_to_mutation_setting` option. The configuration is specified as a JSON file.
 
 ### Schema Overview
 
@@ -116,7 +116,7 @@ Here is an example of the JSON configuration schema:
 }
 ```
 
-If the configuration json file ommites some keys, the default values are used for those omiited keys.
+If the configuration JSON file omits some keys, the default values are used for those omitted keys.
 
 ### Field Descriptions
 
@@ -338,6 +338,16 @@ RUST_LOG=trace ./target/debug/zkfuzz ../sample/lessthan3.circom --print_ast --pr
   <img src="img/se.png" alt="Traces" style="width: 50%; margin-right: 5px;">
   <img src="img/result.png" alt="Summary Reports" style="width: 20%;">
 </div>
+
+## Trophies
+
+Here are some of the most notable security vulnerabilities uncovered using zkfuzz.
+If you’ve discovered a significant issue with our tool, we’d love to hear about it—please submit a pull request with the relevant details!
+
+- https://github.com/wizicer/dark-factory/pull/2
+- https://github.com/numtel/ntru-circom/issues/1
+- https://github.com/zkemail/zk-regex/pull/83
+- https://github.com/rarimo/passport-zk-circuits/pull/60
 
 ## Cite
 
