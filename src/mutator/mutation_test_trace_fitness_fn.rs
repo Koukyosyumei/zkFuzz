@@ -4,14 +4,13 @@ use rustc_hash::FxHashMap;
 
 use crate::executor::symbolic_execution::SymbolicExecutor;
 use crate::executor::symbolic_value::{SymbolicName, SymbolicValue, SymbolicValueRef};
+use crate::mutator::mutation_config::MutationConfig;
 use crate::mutator::mutation_utils::apply_trace_mutation;
 use crate::mutator::utils::{
     accumulate_error_of_constraints, count_error_constraints, emulate_symbolic_trace,
     evaluate_constraints, is_equal_mod, max_error_of_constraints, BaseVerificationConfig,
     CounterExample, Direction, UnderConstrainedType, VerificationResult,
 };
-
-use super::mutation_config::MutationConfig;
 
 /// Evaluates the fitness of a mutated symbolic execution trace by calculating the error score.
 ///
@@ -23,11 +22,14 @@ use super::mutation_config::MutationConfig;
 /// # Parameters
 /// - `sexe`: A mutable reference to a `SymbolicExecutor` instance responsible for symbolic execution.
 /// - `base_config`: The base verification configuration, containing the prime modulus and other verification parameters.
+/// - `mutation_config`: The mutation-specific configuration, including parameters such as
+///   population size, mutation rate, and maximum number of generations.
 /// - `symbolic_trace`: A vector of references to symbolic values representing the trace to be evaluated.
 /// - `side_constraints`: A vector of references to symbolic values representing additional constraints for the evaluation.
 /// - `runtime_mutable_positions`: A map of runtime mutable positions.
 /// - `trace_mutation`: A mapping of indices to mutated symbolic values applied to the trace.
 /// - `inputs_assignment`: A vector of potential input assignments, where each assignment is a mapping of symbolic names to `BigInt` values.
+/// - `fitness_scores_inputs`: A vector to store the fitness scores of inputs.
 ///
 /// # Returns
 /// A tuple containing:

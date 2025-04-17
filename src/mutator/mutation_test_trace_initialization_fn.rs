@@ -27,6 +27,7 @@ use crate::mutator::utils::BaseVerificationConfig;
 ///
 /// # Parameters
 /// - `pos`: A slice of indices representing positions in the symbolic trace to be initialized.
+/// - `program_population_size`: The size of the generated population
 /// - `_symbolic_trace`: A reference to the symbolic trace (`SymbolicTrace`). This parameter
 ///   is currently unused but reserved for potential future enhancements.
 /// - `_base_config`: Configuration object providing base parameters for generating random constants.
@@ -40,7 +41,6 @@ use crate::mutator::utils::BaseVerificationConfig;
 /// # Details
 /// - For each position in the trace, a random constant value is generated using the
 ///   `draw_bigint_with_probabilities` function and assigned as the symbolic value.
-/// - The size of the generated population is determined by `mutation_config.program_population_size`.
 pub fn initialize_population_with_constant_replacement(
     pos: &[usize],
     program_population_size: usize,

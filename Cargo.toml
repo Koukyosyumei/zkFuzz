@@ -2,6 +2,15 @@
 name = "zkfuzz"
 version = "2.2.1"
 edition = "2021"
+authors = ["Koukyosyumei <koukyosyumei@hotmail.com>"]
+description = "ZK Circuit Fuzzer"
+license = "GPL-3.0"
+repository = "https://github.com/Koukyosyumei/zkFuzz"
+keywords = ["fuzzing", "security", "zero-knowledge-proof", "zkp"]
+
+[[bin]]
+name = "zkfuzz"
+path = "src/main.rs"
 
 [dependencies]
 compiler = { git = "https://github.com/iden3/circom.git", package = "compiler", rev="9e5a950be1fb64fbde8d2917d8907f1e5463217e" }
