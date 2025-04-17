@@ -1,5 +1,8 @@
 # zkFuzz
 
+> [!IMPORTANT]
+> This tool is under active development. Usage patterns and features may change over time.
+
 <p align="center">
   <a href="https://risczero.com" target="_blank">
     <picture>
@@ -9,9 +12,10 @@
 </p>
 
 ![example workflow](https://github.com/Koukyosyumei/zkFuzz/actions/workflows/test.yaml/badge.svg)
-![Fuzzing Powered](https://img.shields.io/badge/Fuzzing-powered--by--program--mutation-blue)
+![GPL-3.0](https://img.shields.io/github/license/Koukyosyumei/zkFuzz?color=blue)
+![Fuzzing Powered](https://img.shields.io/badge/Fuzzing-powered--by--program--mutation-orange)
 
-**zkFuzz** is a ZK circuit fuzzer designed to help you identify vulnerabilities in zero-knowledge proof circuits. It leverages fuzzing with program mutation to uncover counterexamples that reveal under-constrained or over-constrained behavior in your circuits.
+**zkFuzz** is a ZK circuit fuzzer designed to help you identify vulnerabilities in [zero-knowledge proof](https://en.wikipedia.org/wiki/Non-interactive_zero-knowledge_proof) circuits. It leverages fuzzing with program mutation to uncover counterexamples that reveal under-constrained or over-constrained behavior in your circuits. zkFuzz currently supports [Circom](https://docs.circom.io/), with support for additional languages coming soon.
 
 ## 🚀 Install
 
