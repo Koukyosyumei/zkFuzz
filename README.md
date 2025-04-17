@@ -339,3 +339,17 @@ RUST_LOG=trace ./target/debug/zkfuzz ../sample/lessthan3.circom --print_ast --pr
   <img src="img/result.png" alt="Summary Reports" style="width: 20%;">
 </div>
 
+## Cite
+
+```
+@misc{takahashi2025zkfuzzfoundationframeworkeffective,
+      title={zkFuzz: Foundation and Framework for Effective Fuzzing of Zero-Knowledge Circuits}, 
+      author={Hideaki Takahashi and Jihwan Kim and Suman Jana and Junfeng Yang},
+      year={2025},
+      eprint={2504.11961},
+      archivePrefix={arXiv},
+      primaryClass={cs.CR},
+      url={https://arxiv.org/abs/2504.11961}, 
+}
+```
+
