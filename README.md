@@ -5,9 +5,7 @@
 
 <p align="center">
   <a href="https://arxiv.org/abs/2504.11961" target="_blank">
-    <picture>
       <img src="./img/zkfuzz-logo.png" alt="zkFuzz Logo" height="126">
-    </picture>
   </a>
 </p>
 
