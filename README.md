@@ -374,12 +374,12 @@ If you’ve discovered a significant issue with our tool, we’d love to hear ab
 
 There are several excellent tools for bug detection and verification of ZK circuits.
 
-- [Circomspect](https://github.com/trailofbits/circomspect)
-- [ZKAP](https://github.com/whbjzzwjxq/ZKAP)
-- [Picus](https://github.com/Veridise/Picus)
-- [ConsCS](https://github.com/jinan789/ConsCS)
-- [CIVER](https://github.com/costa-group/circom_civer)
-- [CODA](https://github.com/Veridise/Coda)
+- [Circomspect](https://github.com/trailofbits/circomspect): A linter and static analysis tool for ZK circuits
+- [ZKAP](https://github.com/whbjzzwjxq/ZKAP): A collection of static analysis tools designed to detect bugs in ZK circuits
+- [Picus](https://github.com/Veridise/Picus): A tool for automatically verifying non-deterministic behaviors in ZK circuits
+- [ConsCS](https://github.com/jinan789/ConsCS): Enables fast verification of non-deterministic properties in ZK circuits
+- [CIVER](https://github.com/costa-group/circom_civer): Automatically verifies weak safety properties and supports pre-/post-conditions and tag-based specifications
+- [CODA](https://github.com/Veridise/Coda): A statically-typed programming language for constructing and certifying ZK circuits
 
 Using zkFuzz in conjunction with these tools can significantly enhance the likelihood of detecting subtle and critical bugs early in the development cycle.
 
