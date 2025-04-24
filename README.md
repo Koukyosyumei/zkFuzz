@@ -370,6 +370,19 @@ If you’ve discovered a significant issue with our tool, we’d love to hear ab
 - https://github.com/zkemail/zk-regex/pull/83
 - https://github.com/rarimo/passport-zk-circuits/pull/60
 
+## 🧩 Complementary Tools
+
+There are several excellent tools for bug detection and verification of ZK circuits.
+
+- [Circomspect](https://github.com/trailofbits/circomspect)
+- [ZKAP](https://github.com/whbjzzwjxq/ZKAP)
+- [Picus](https://github.com/Veridise/Picus)
+- [ConsCS](https://github.com/jinan789/ConsCS)
+- [CIVER](https://github.com/costa-group/circom_civer)
+- [CODA](https://github.com/Veridise/Coda)
+
+Using zkFuzz in conjunction with these tools can significantly enhance the likelihood of detecting subtle and critical bugs early in the development cycle.
+
 ## 📃 Cite
 
 ```
