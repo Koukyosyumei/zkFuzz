@@ -365,10 +365,10 @@ RUST_LOG=trace ./target/debug/zkfuzz ../sample/lessthan3.circom --print_ast --pr
 Here are some of the most notable security vulnerabilities uncovered using zkfuzz.
 If you’ve discovered a significant issue with our tool, we’d love to hear about it—please submit a pull request with the relevant details!
 
+- https://github.com/zkemail/zk-regex/pull/83 (awarded a bug bounty)
+- https://github.com/rarimo/passport-zk-circuits/pull/60
 - https://github.com/wizicer/dark-factory/pull/2
 - https://github.com/numtel/ntru-circom/issues/1
-- https://github.com/zkemail/zk-regex/pull/83
-- https://github.com/rarimo/passport-zk-circuits/pull/60
 
 ## 🧩 Complementary Tools
 
