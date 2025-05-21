@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use ark_bn254::{Bn254, Fr};
+use ark_bn254::Fr;
 use ark_circom::{CircomBuilder, CircomConfig};
 use num_bigint::BigInt;
 
