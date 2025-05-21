@@ -54,3 +54,4 @@ wasmer = { version = "4.4.0", default-features = false }
 wasmer-wasix = { version = "0.28.0", default-features = false }
 tokio = { version = "1.29.1", features = ["macros"] }
 wasm-mutate = "0.230.0"
+color-eyre = "0.6.2"
