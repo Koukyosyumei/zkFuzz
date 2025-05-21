@@ -27,6 +27,7 @@ fn executor(
     let mut mutated_circuit = circuit.clone();
     let mut mutated_witness = circuit.witness.clone().unwrap();
     mutated_witness[1] = 1.into();
+    mutated_witness[3] = 0.into();
 
     println!("{:?}", circuit.witness);
     println!("{:?}", mutated_witness);
