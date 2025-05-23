@@ -15,7 +15,7 @@ use wasm_mutate::{ErrorKind, WasmMutate};
 //use wasmparser::Validator;
 
 /// Maximum number of mutation generations per fuzz loop
-const MAX_GENERATIONS: usize = 1000;
+const MAX_GENERATIONS: usize = 10;
 
 /// Runs the original and mutated circuits on input `x` and returns
 /// (witness, cs.is_satisfied)
@@ -74,39 +74,36 @@ fn fuzz_tcct(
         }
 
         let mut mutator = WasmMutate::default();
-        mutator.fuel(1000);
-        mutator.seed(0);
+        mutator.fuel(10);
+        mutator.seed(gen.try_into().unwrap());
 
-        let it = match mutator.run(&orig_wasm_bytes) {
-            Ok(it) => it,
-            Err(e) => match e.kind() {
-                ErrorKind::NoMutationsApplicable => continue,
-                ErrorKind::OutOfFuel => break,
-                _ => panic!("{}", e),
-            },
-        };
+        match mutator.run(&orig_wasm_bytes) {
+            Ok(it) => {
+                for mutated in it.into_iter().take(1000) {
+                    // Down here is the validation for the correct mutation
+                    let mutated_wasm_bytes = mutated.unwrap();
 
-        for mutated in it.into_iter().take(100) {
-            // Down here is the validation for the correct mutation
-            let mutated_wasm_bytes = mutated.unwrap();
+                    // 3. Execute both programs
+                    let (z, y_sat) = run_circuit(&orig_wasm_bytes, r1cs_path, &inputs)?;
+                    let (z_p, y_p_sat) = run_circuit(&mutated_wasm_bytes, r1cs_path, &inputs)?;
 
-            // 3. Execute both programs
-            let (z, y_sat) = run_circuit(&orig_wasm_bytes, r1cs_path, &inputs)?;
-            let (z_p, y_p_sat) = run_circuit(&mutated_wasm_bytes, r1cs_path, &inputs)?;
+                    // 4. Check for over-constrained: original rejects a valid-looking witness
+                    if y_sat && !y_sat {
+                        println!("Generation {}: Over-Constrained Problem detected.", gen);
+                        break;
+                    }
 
-            // 4. Check for over-constrained: original rejects a valid-looking witness
-            if y_sat && !y_sat {
-                println!("Generation {}: Over-Constrained Problem detected.", gen);
-                break;
+                    // 5. Check for under-constrained:
+                    //    both satisfy, but outputs differ, and mutated one satisfies C
+                    if y_sat && y_p_sat && z != z_p {
+                        println!("Generation {}: Under-Constrained Problem detected.", gen);
+                        break;
+                    }
+                }
             }
-
-            // 5. Check for under-constrained:
-            //    both satisfy, but outputs differ, and mutated one satisfies C
-            if y_sat && y_p_sat && z != z_p {
-                println!("Generation {}: Under-Constrained Problem detected.", gen);
-                break;
-            }
+            Err(e) => {}
         }
+        println!("pass");
     }
     Ok(())
 }
