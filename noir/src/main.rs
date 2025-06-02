@@ -109,19 +109,31 @@ fn execute(
 
 pub fn draw_random_constant<F>(
     destination: MemoryAddress,
-    source: MemoryAddress,
     rng: &mut StdRng,
 ) -> BrilligOpcode<F> {
-    std::env::set_var("ZKFUZZ_NOIR_SEED", format!("{}", rng.random::<u64>()));
-    match source {
-        MemoryAddress::Direct(address) => BrilligOpcode::Mov {
+    let random_value = rng.gen::<f64>();
+    
+    if random_value < 0.2 {
+        // 20% chance: Generate relative address with usize::MAX
+        std::env::set_var("ZKFUZZ_NOIR_SEED", format!("{}", rng.gen::<u64>()));
+        BrilligOpcode::Mov {
             destination,
-            source: MemoryAddress::Direct(usize::MAX - address),
-        },
-        MemoryAddress::Relative(offset) => BrilligOpcode::Mov {
+            source: MemoryAddress::Relative(usize::MAX),
+        }
+    } else if random_value < 0.4 {
+        // 20% chance: Generate relative address with usize::MAX - 1
+        std::env::set_var("ZKFUZZ_NOIR_SEED", format!("{}", rng.gen::<u64>()));
+        BrilligOpcode::Mov {
             destination,
-            source: MemoryAddress::Relative(usize::MAX - offset),
-        },
+            source: MemoryAddress::Relative(usize::MAX - 1),
+        }
+    } else {
+        // 60% chance: Generate relative address with usize::MAX - 2
+        std::env::set_var("ZKFUZZ_NOIR_SEED", format!("{}", rng.gen::<u64>()));
+        BrilligOpcode::Mov {
+            destination,
+            source: MemoryAddress::Relative(usize::MAX - 2),
+        }
     }
 }
 
@@ -196,33 +208,34 @@ pub fn zkfuzz_run(
             match mutated_unconstrained_functions[func_idx].bytecode[instr_pos] {
                 BrilligOpcode::Mov {
                     destination,
-                    source,
-                } => {
-                    mutated_unconstrained_functions[func_idx].bytecode[instr_pos] =
-                        draw_random_constant(destination, source, rng);
-                }
-                /*
-                BrilligOpcode::BinaryFieldOp {
-                    destination,
-                    op: _,
-                    lhs,
-                    rhs,
-                } => {
-                    mutated_unconstrained_functions[func_idx].bytecode[instr_pos] =
-                        draw_random_constant(destination, rng);
-                }
-                BrilligOpcode::BinaryIntOp {
-                    destination,
-                    op: _,
-                    lhs,
-                    rhs: _,
-                    bit_size,
-                } => {
-                    mutated_unconstrained_functions[func_idx].bytecode[instr_pos] =
-                        draw_random_constant(destination, rng);
-                }*/
-                _ => {}
+                    source: _,  // We ignore the original source since we're generating a new one
+            } => {
+                mutated_unconstrained_functions[func_idx].bytecode[instr_pos] =
+                    draw_random_constant(destination, rng);
             }
+            BrilligOpcode::BinaryFieldOp {
+                destination,
+                op: _,
+                lhs: _,
+                rhs: _,
+            } => {
+            // You can also apply the same random constant generation to binary field operations
+                mutated_unconstrained_functions[func_idx].bytecode[instr_pos] =
+                    draw_random_constant(destination, rng);
+            }
+            BrilligOpcode::BinaryIntOp {
+                destination,
+                op: _,
+                lhs: _,
+                rhs: _,
+                bit_size: _,
+            } => {
+                // And to binary int operations
+                mutated_unconstrained_functions[func_idx].bytecode[instr_pos] =
+                    draw_random_constant(destination, rng);
+            }
+            _ => {}
+        }
             circuit.program.unconstrained_functions = mutated_unconstrained_functions;
 
             // ----------- Executing the mutated circuit -------------------- //
