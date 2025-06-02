@@ -1,7 +1,7 @@
 [package]
 authors = ["@colinnielsen"]
 compiler_version = ">=0.30.0"
-name = "div_ceil"
+name = "str_to_u64"
 notes = "AMDG"
 type = "bin"
 

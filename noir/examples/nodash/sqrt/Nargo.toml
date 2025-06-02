@@ -1,7 +1,7 @@
 [package]
 authors = ["@colinnielsen"]
 compiler_version = ">=0.30.0"
-name = "div_ceil"
+name = "sqrt"
 notes = "AMDG"
 type = "bin"
 
