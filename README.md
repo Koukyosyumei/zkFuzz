@@ -368,6 +368,7 @@ If you’ve discovered a significant issue with our tool, we’d love to hear ab
 - https://github.com/zkemail/zk-regex/pull/83 (awarded a bug bounty)
 - https://github.com/rarimo/passport-zk-circuits/pull/60
 - https://github.com/banyancomputer/hot-proofs-blake3-circom/pull/11
+- https://github.com/tokamak-network/zvm
 - https://github.com/SpiralOutDotEu/zk_whitelist/pull/54
 - https://github.com/wizicer/dark-factory/pull/2
 - https://github.com/numtel/ntru-circom/issues/1
