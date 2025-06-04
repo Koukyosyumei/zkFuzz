@@ -1339,13 +1339,6 @@ impl<'a> SymbolicExecutor<'a> {
             let simplified_rhe_val =
                 self.simplify_variables(&rhe_val, meta.elem_id, false, true, &mut memo_right);
 
-            println!("{}: ", lhe.lookup_fmt(&self.symbolic_library.id2name, 0));
-            println!("{}: ", lhe_val.lookup_fmt(&self.symbolic_library.id2name));
-            println!(
-                "{}: ",
-                simplified_lhe_val.lookup_fmt(&self.symbolic_library.id2name)
-            );
-
             let cond = SymbolicValue::BinaryOp(
                 Rc::new(simplified_lhe_val),
                 DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
