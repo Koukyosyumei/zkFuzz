@@ -2265,6 +2265,52 @@ fn test_assign_nested_array() {
 }
 
 #[test]
+fn test_signal_var_constraint() {
+    let path = "./tests/sample/test_signal_var_constraint.circom".to_string();
+    let prime = BigInt::from_str(
+        "21888242871839275222246405745257275088548364400416034343698204186575808495617",
+    )
+    .unwrap();
+
+    let (mut symbolic_library, program_archive) = prepare_symbolic_library(path, prime.clone());
+    let setting = get_default_setting_for_symbolic_execution(prime, false);
+
+    let mut sexe = SymbolicExecutor::new(&mut symbolic_library, &setting);
+    execute(&mut sexe, &program_archive);
+
+    let pzbb_0 = SymbolicValue::Variable(SymbolicName::new(
+        sexe.symbolic_library.name2id["pzbb"],
+        Rc::new(vec![OwnerName {
+            id: sexe.symbolic_library.name2id["main"],
+            access: None,
+            counter: 0,
+        }]),
+        Some(vec![SymbolicAccess::ArrayAccess(
+            SymbolicValue::ConstantInt(BigInt::zero()),
+        )]),
+    ));
+
+    let sub_1_pzbb_0 = Rc::new(SymbolicValue::BinaryOp(
+        Rc::new(SymbolicValue::ConstantInt(BigInt::one())),
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Sub),
+        Rc::new(pzbb_0.clone()),
+    ));
+    let mul_sub_1_pzbb_0_pzbb_0 = Rc::new(SymbolicValue::BinaryOp(
+        sub_1_pzbb_0,
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Mul),
+        Rc::new(pzbb_0),
+    ));
+
+    let cond = SymbolicValue::BinaryOp(
+        mul_sub_1_pzbb_0_pzbb_0,
+        DebuggableExpressionInfixOpcode(ExpressionInfixOpcode::Eq),
+        Rc::new(SymbolicValue::ConstantInt(BigInt::zero())),
+    );
+
+    assert_eq!(*sexe.cur_state.side_constraints[0], cond);
+}
+
+#[test]
 fn test_var_bulk_assignment() {
     let path = "./tests/sample/test_var_bulk_assignment.circom".to_string();
     let prime = BigInt::from_str(

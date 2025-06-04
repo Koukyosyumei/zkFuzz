@@ -683,18 +683,26 @@ impl<'a> SymbolicExecutor<'a> {
                         }
                     }
 
-                    if sv.is_some() && component_name.is_none() {
-                        match &*sv.unwrap() {
-                            SymbolicValue::Array(values) => {
-                                let ama = access_multidimensional_array(&values, &dims);
-                                if let ExecutionResult::Success(v) = ama {
-                                    return v;
-                                }
-                                if let ExecutionResult::Failure = ama {
-                                    self.execution_failed = true;
+                    if let Some(template) = self
+                        .symbolic_library
+                        .template_library
+                        .get(&self.cur_state.template_id)
+                    {
+                        if let None = template.id2type.get(id) {
+                            if sv.is_some() && component_name.is_none() {
+                                match &*sv.unwrap() {
+                                    SymbolicValue::Array(values) => {
+                                        let ama = access_multidimensional_array(&values, &dims);
+                                        if let ExecutionResult::Success(v) = ama {
+                                            return v;
+                                        }
+                                        if let ExecutionResult::Failure = ama {
+                                            self.execution_failed = true;
+                                        }
+                                    }
+                                    _ => {}
                                 }
                             }
-                            _ => {}
                         }
                     }
 
