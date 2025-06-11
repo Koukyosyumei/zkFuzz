@@ -1,0 +1,6 @@
+[package]
+name = "iszero"
+type = "bin"
+authors = [""]
+
+[dependencies]

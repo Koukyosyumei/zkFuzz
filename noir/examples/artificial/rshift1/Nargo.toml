@@ -1,0 +1,6 @@
+[package]
+name = "rshift1"
+type = "bin"
+authors = [""]
+
+[dependencies]

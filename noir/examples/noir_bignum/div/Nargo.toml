@@ -1,0 +1,9 @@
+[package]
+authors = ["@colinnielsen"]
+compiler_version = ">=0.30.0"
+name = "add"
+notes = "AMDG"
+type = "bin"
+
+[dependencies]
+bignum = { tag = "v0.7.3", git = "https://github.com/noir-lang/noir-bignum" }

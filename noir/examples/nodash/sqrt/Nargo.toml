@@ -1,0 +1,9 @@
+[package]
+authors = ["@colinnielsen"]
+compiler_version = ">=0.30.0"
+name = "sqrt"
+notes = "AMDG"
+type = "bin"
+
+[dependencies]
+nodash = { git = "https://github.com/olehmisar/nodash/", tag = "v0.41.2" }

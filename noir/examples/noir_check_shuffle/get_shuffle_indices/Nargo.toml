@@ -1,0 +1,9 @@
+[package]
+authors = ["@colinnielsen"]
+compiler_version = ">=0.30.0"
+name = "get_shuffle_indices"
+notes = "AMDG"
+type = "bin"
+
+[dependencies]
+noir_check_shuffle = {tag = "v0.2.1", git = "https://github.com/noir-lang/noir_check_shuffle"}
