@@ -466,7 +466,7 @@ mod input_processing {
     }
 
     pub fn view() -> ArgMatches<'static> {
-        App::new("ZKP Circuit Fuzzer")
+        App::new("ZK Circuit Fuzzer")
             .version(VERSION)
             .author("Anonymous Authors")
             .about("Fuzzer designed to help you identify vulnerabilities in zero-knowledge proof circuits")
