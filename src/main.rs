@@ -70,7 +70,7 @@ const BACK_GRAY_SCRIPT_BLACK: &str = "\x1b[30;100m"; //94
 fn display_zkfuzz_header() {
     let logo = r#"
            zkFuzz      
-     ZKP Circuit Fuzzer
+      ZK Circuit Fuzzer
     "#;
 
     eprintln!("{}", logo.bright_cyan().bold());
