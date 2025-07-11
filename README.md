@@ -370,6 +370,7 @@ If you’ve discovered a significant issue with our tool, we’d love to hear ab
 - https://github.com/banyancomputer/hot-proofs-blake3-circom/pull/11
 - https://github.com/tokamak-network/zvm
 - https://github.com/inference-labs-inc/omron-circom/pull/2 (awarded a bug bounty)
+- https://github.com/siv-org/secretly-cancellable-votes/pull/13
 - https://github.com/SpiralOutDotEu/zk_whitelist/pull/54
 - https://github.com/voidcenter/ew-zw/pull/2
 - https://github.com/wizicer/dark-factory/pull/2
