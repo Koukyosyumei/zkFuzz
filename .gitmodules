@@ -1,0 +1,6 @@
+[submodule "experiment/tools/circom2llvm"]
+	path = experiment/tools/circom2llvm
+	url = git@github.com:Koukyosyumei/circom2llvm.git
+[submodule "experiment/tools/Picus"]
+	path = experiment/tools/Picus
+	url = https://github.com/Veridise/Picus.git
