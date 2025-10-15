@@ -1,0 +1,265 @@
+project,path,groundtruth,root-cause-name,root-cause-id,note
+aes-circom-0784f74,aes_256_ctr_test.circom,unsafe,AES256Encrypt,[1],
+aes-circom-0784f74,aes_256_encrypt_test.circom,unsafe,AES256Encrypt,[1],
+aes-circom-0784f74,aes_256_key_expansion_test.circom,unsafe,AES256KeyExpansion,[2],
+aes-circom-0784f74,gcm_siv_dec_2_keys_test.circom,unsafe,"AES256KeyExpansion,AES256Encrypt",[1],
+aes-circom-0784f74,gcm_siv_enc_2_keys_test.circom,unsafe,"AES256KeyExpansion,AES256Encrypt",[1],
+aes-circom-0784f74,gfmul_int_test.circom,,,,Highly convincing in terms of safety. No potential issues were found during human inspection.
+aes-circom-0784f74,mul_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+aes-circom-0784f74,polyval_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circom-bigint-7505e5c,test_bigadd_15.circom,,,,Formally certified in https://veridise.com/wp-content/uploads/2023/02/VAR-circom-bigint.pdf
+circom-bigint-7505e5c,test_bigadd_23.circom,,,,Formally certified in https://veridise.com/wp-content/uploads/2023/02/VAR-circom-bigint.pdf
+circom-bigint-7505e5c,test_biglessthan_23.circom,unsafe,BigLessThan,[3],
+circom-bigint-7505e5c,test_bigmod_22.circom,,,,"The vulnerability mentioned in the public auditing report (https://veridise.com/wp-content/uploads/2023/02/VAR-circom-bigint.pdf) has already been fixed in this benchmark. Since the bit lengths of both `mod` and `div` are verified using `Num2Bits`, passing them to `BigLessThan` (and consequently to `LessThan`) is safe."
+circom-bigint-7505e5c,test_bigmod_32.circom,,,,"The vulnerability mentioned in the public auditing report (https://veridise.com/wp-content/uploads/2023/02/VAR-circom-bigint.pdf) has already been fixed in this benchmark. Since the bit lengths of both `mod` and `div` are verified using `Num2Bits`, passing them to `BigLessThan` (and consequently to `LessThan`) is safe."
+circom-bigint-7505e5c,test_bigmult_21.circom,,,,"Although `<--` in https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/benchmark1/libs/circom-ecdsa-d87eb70/bigint.circom#L195 could potentially be replaced with `<==`, the final output `out_poly` is properly constrained, ensuring the circuit's overall safety."
+circom-bigint-7505e5c,test_bigmult_22.circom,,,,"Although `<--` in https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/benchmark1/libs/circom-ecdsa-d87eb70/bigint.circom#L195 could potentially be replaced with `<==`, the final output `out_poly` is properly constrained, ensuring the circuit's overall safety."
+circom-bigint-7505e5c,test_bigmult_23.circom,,,,"Although `<--` in https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/benchmark1/libs/circom-ecdsa-d87eb70/bigint.circom#L195 could potentially be replaced with `<==`, the final output `out_poly` is properly constrained, ensuring the circuit's overall safety."
+circom-bigint-7505e5c,test_bigsub_15.circom,unsafe,"ModSub,ModSubThree","[4,5]",https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/include/passport-zk-circuits-9143bc7/bigInt/bigInt.circom#L61
+circom-bigint-7505e5c,test_bigsub_23.circom,unsafe,"ModSub,ModSubThree","[4,5]",https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/include/passport-zk-circuits-9143bc7/bigInt/bigInt.circom#L61
+circom-bigint-7505e5c,test_bigsubmodp_32.circom,unsafe,"ModSub,ModSubThree","[4,5]",https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/include/passport-zk-circuits-9143bc7/bigInt/bigInt.circom#L61
+circom-ecdsa-d87eb70,ecdsa.circom,,,,
+circom-ecdsa-d87eb70,ecdsa_verify.circom,,,,
+circom-ecdsa-d87eb70,secp256k1_add.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circom-ecdsa-d87eb70,secp256k1_double.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circom-ecdsa-d87eb70,secp256k1_poc.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circom-ecdsa-d87eb70,secp256k1_scalarmult.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circom-pairing-743d761,BigAdd_1_2.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,BigAdd_251_2.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,BigIsEqual_16.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,BigIsZero_16.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,BigMultShortLong_126_16_0.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,BigMultShortLong_1_1_0.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,FpMultiply_1_1_2.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any critical bugs. Although this report found a maintainability issue, it is out of scope of this dataset."
+circom-pairing-743d761,ModProd_0.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,ModProd_126.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,ModProd_16.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,ModSubThree_0.circom,unsafe,ModSubThree,[5],https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/benchmark1/libs/circom-pairing-743d761/bigint.circom#L86
+circom-pairing-743d761,ModSubThree_251.circom,unsafe,ModSubThree,[5],https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/benchmark1/libs/circom-pairing-743d761/bigint.circom#L86
+circom-pairing-743d761,ModSub_0.circom,unsafe,ModSub,[6],https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/benchmark1/libs/circom-pairing-743d761/bigint.circom#L67
+circom-pairing-743d761,ModSub_252.circom,unsafe,ModSub,[6],https://github.com/Koukyosyumei/zk-Paradox/blob/ec1dd957f9a9e5945b2de25293cf4dfe77a7e55f/benchmark1/libs/circom-pairing-743d761/bigint.circom#L67
+circom-pairing-743d761,ModSumFour_0.circom,,,,"Highly convincing in terms of safety. While the report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) identified a logic error, it falls outside the scope of this dataset."
+circom-pairing-743d761,ModSumFour_251.circom,,,,"Highly convincing in terms of safety. While the report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) identified a logic error, it falls outside the scope of this dataset."
+circom-pairing-743d761,ModSumThree_0.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,ModSumThree_251.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,ModSum_0.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,ModSum_252.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,bls12-381_add.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs. Although `EllipticCurveAddUnequal` uses `<--` operator to `out`, it is constrained with `PointOnLine` and `RangeCheck2D`. "
+circom-pairing-743d761,bls12-381_double.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,fp12_add_22.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs. While BigLessThan and BigSub internally use LessThan and could be vulnerable to overflow attacks, they are safe in this case since the secnod argument is specified via template parameters, and the output of lessthan is constrained to 0. "
+circom-pairing-743d761,fp12_compression_32.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,fp12_cyclotomicExp_32.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,fp12_cyclotomicSquare_32.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,fp12_invert_42.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,fp12_multiply_32.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,fp2_add_22.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs. While BigLessThan and BigSub internally use LessThan and could be vulnerable to overflow attacks, they are safe in this case since the secnod argument is specified via template parameters, and the output of lessthan is constrained to 0. "
+circom-pairing-743d761,fp2_invert_42.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,fp2_multiply_42.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,linefunc_equal_32.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,linefunc_unequal_32.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,multiply_linefunc_unequal_32.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circom-pairing-743d761,secp256k1_add.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit report (https://veridise.com/wp-content/uploads/2023/04/VAR-Succinct.pdf) also did not detect any bugs."
+circomlib-cff5ab6,AliasCheck@aliascheck.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,BabyAdd@babyjub.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,BabyDbl@babyjub.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,BabyPbk@babyjub.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,BinSub@binsub.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,BinSum@binsum.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,BitElementMulAny@escalarmulany.circom,unsafe,MontgomeryDouble,[7],
+circomlib-cff5ab6,Bits2Num_strict@bitify.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Bits2Point@pointbits.circom,unsafe,BitsPoint,[8],
+circomlib-cff5ab6,Bits2Point_Strict@pointbits.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,CompConstant@compconstant.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Decoder@multiplexer.circom,unsafe,Decoder,[9],
+circomlib-cff5ab6,Edwards2Montgomery@montgomery.circom,unsafe,Edwards2Montgomery,[10],
+circomlib-cff5ab6,EscalarMul@escalarmul.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,EscalarMulAny@escalarmulany.circom,unsafe,"MontgomeryDouble,Montgomery2Edwards","[7,14]",
+circomlib-cff5ab6,EscalarMulFix@escalarmulfix.circom,unsafe,MontgomeryDouble,[7],
+circomlib-cff5ab6,EscalarMulWindow@escalarmul.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,ForceEqualIfEnabled@comparators.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,GreaterEqThan@comparators.circom,unsafe,GreaterEqThan,[11],
+circomlib-cff5ab6,GreaterThan@comparators.circom,unsafe,GreaterThan,[12],
+circomlib-cff5ab6,IsEqual@comparators.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,IsZero@comparators.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,LessEqThan@comparators.circom,unsafe,LessEqThan,[13],
+circomlib-cff5ab6,LessThan@comparators.circom,,,,
+circomlib-cff5ab6,MiMCSponge@mimcsponge.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Montgomery2Edwards@montgomery.circom,unsafe,Montgomery2Edwards,[14],
+circomlib-cff5ab6,MontgomeryAdd@montgomery.circom,unsafe,MontgomeryAdd,[15],
+circomlib-cff5ab6,MontgomeryDouble@montgomery.circom,unsafe,MontgomeryDouble,[7],
+circomlib-cff5ab6,Multiplexer@multiplexer.circom,,,,"Although this circuit, called `Decoder`, is non-deterministic with respect to the signal `success`, it enforces the constraint `dec.success === 1`, ensuring the correctness of the entire circuit."
+circomlib-cff5ab6,Num2Bits@bitify.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Num2BitsNeg@bitify.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Num2Bits_strict@bitify.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Pedersen@pedersen.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Pedersen@pedersen_old.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Point2Bits@pointbits.circom,unsafe,Point2Bits,[16],
+circomlib-cff5ab6,Point2Bits_Strict@pointbits.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Poseidon@poseidon.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Segment@pedersen.circom,unsafe,Edwards2Montgomery,[10],
+circomlib-cff5ab6,SegmentMulAny@escalarmulany.circom,unsafe,"Edwards2Montgomery,MontgomeryDouble","[10,7]",
+circomlib-cff5ab6,SegmentMulFix@escalarmulfix.circom,unsafe,"Edwards2Montgomery,MontgomeryDouble","[10, 7]",
+circomlib-cff5ab6,Sign@sign.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-cff5ab6,Window4@pedersen.circom,unsafe,"MontgomeryDouble,MontgomeryAdd","[7,15]",
+circomlib-cff5ab6,WindowMulFix@escalarmulfix.circom,unsafe,"MontgomeryDouble,MontgomeryAdd","[7,15]",
+circomlib-matrix-d41bae3,matAdd_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,matElemMul_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,matElemPow_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,matMul_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,matPow_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,matScalarAdd_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,matScalarMul_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,matScalarSub_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,matSub_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,outer_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,tranpose_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-matrix-d41bae3,trace_test.circom,,,,Not using non-diagonal elements is the expected behavior when calculating the trace of a matrix.
+circomlib-ml-adb9edd,Conv1D_test.circom,,,,"Although not using all inputs may be incorrect based on the definition of Conv1D, it is a logical error and falls outside the scope of this dataset."
+circomlib-ml-adb9edd,Dense_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-ml-adb9edd,Conv2D_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-ml-adb9edd,Conv2D_stride_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-ml-adb9edd,IsNegative_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-ml-adb9edd,IsPositive_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-ml-adb9edd,ReLU_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-ml-adb9edd,SumPooling2D_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circomlib-ml-adb9edd,mnist_convnet_test.circom,unsafe,Argmax,[26],
+circomlib-ml-adb9edd,mnist_poly_test.circom,unsafe,Argmax,[26],
+circomlib-ml-adb9edd,mnist_test.circom,unsafe,Argmax,[26],
+circomlib-ml-adb9edd,model1_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+darkforest-eth-9033eaf-fixed,biomebase.circom,unsafe,PerlinValue,[17],"SCALE can be 0, causing zero-division"
+darkforest-eth-9033eaf-fixed,init.circom,unsafe,PerlinValue,[17],"SCALE can be 0, causing zero-division"
+darkforest-eth-9033eaf-fixed,move.circom,unsafe,PerlinValue,[17],"SCALE can be 0, causing zero-division"
+darkforest-eth-9033eaf-fixed,reveal.circom,unsafe,PerlinValue,[17],"SCALE can be 0, causing zero-division"
+darkforest-eth-9033eaf-fixed,test_perlin.circom,unsafe,PerlinValue,[17],"SCALE can be 0, causing zero-division"
+darkforest-eth-9033eaf-fixed,test_PerlinValue.circom,unsafe,PerlinValue,[17],"SCALE can be 0, causing zero-division"
+darkforest-eth-9033eaf-fixed,test_range_proof.circom,,,,Classified as safe in ZKAP (USENIX '24).
+darkforest-eth-9033eaf-fixed,whitelist.circom,,,,Classified as safe in ZKAP (USENIX '24).
+ed25519-099d19c-fixed,batchverify.circom,unsafe,MontgomeryDouble,[7],
+ed25519-099d19c-fixed,binadd1.circom,unsafe,fulladder,[18],
+ed25519-099d19c-fixed,binadd2.circom,unsafe,fulladder,[18],
+ed25519-099d19c-fixed,binaddirr.circom,unsafe,fulladder,[18],
+ed25519-099d19c-fixed,binmul1.circom,unsafe,fulladder,[18],
+ed25519-099d19c-fixed,binmulfast1.circom,unsafe,fulladder,[18],
+ed25519-099d19c-fixed,binmulfast51.circom,unsafe,LessThanPower,[19],
+ed25519-099d19c-fixed,binmulfast51_1.circom,unsafe,LessThanPower,[19],
+ed25519-099d19c-fixed,binmulfast51_2.circom,unsafe,LessThanPower,[19],
+ed25519-099d19c-fixed,binmullessthan51.circom,unsafe,LessThanPower,[19],
+ed25519-099d19c-fixed,binsub1.circom,unsafe,fulladder,[18],"Although using fulladder makes this circuit under-constrained, not checking the final output bit of BinAdd (carryout) is not a direct issue—it might be a logic bug, but it falls outside the scope of this dataset."
+ed25519-099d19c-fixed,chunkedadd.circom,unsafe,LessThanPower,[19],
+ed25519-099d19c-fixed,chunkedadd1.circom,unsafe,LessThanPower,[19],
+ed25519-099d19c-fixed,chunkedmodulus.circom,unsafe,LessThanPower,[19],
+ed25519-099d19c-fixed,chunkify1.circom,,,,Classified as safe in ZKAP (USENIX '24).
+ed25519-099d19c-fixed,modinv.circom,,LessThanPower,[19],
+ed25519-099d19c-fixed,modulus0.circom,unsafe,fulladder,[18],
+ed25519-099d19c-fixed,modulus2.circom,unsafe,fulladder,[18],
+ed25519-099d19c-fixed,modulusagainst2p.circom,unsafe,"LessThanBounded,LessThanPower","[20,19]",
+ed25519-099d19c-fixed,modulusq2.circom,unsafe,fulladder,[18],
+hermez-network-9a696e3-fixed,test-balance-updater.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit reports (https://github.com/hermeznetwork/contracts/tree/2a47249fe9ae3b8e923c6acc2554c98500026f8d/audits)."
+hermez-network-9a696e3-fixed,test-compute-fee.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit reports (https://github.com/hermeznetwork/contracts/tree/2a47249fe9ae3b8e923c6acc2554c98500026f8d/audits)."
+hermez-network-9a696e3-fixed,test-decode-tx.circom,unsafe,DecodeTx,[21],
+hermez-network-9a696e3-fixed,test-fee-accumulator.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit reports (https://github.com/hermeznetwork/contracts/tree/2a47249fe9ae3b8e923c6acc2554c98500026f8d/audits)."
+hermez-network-9a696e3-fixed,test-hash-inputs.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit reports (https://github.com/hermeznetwork/contracts/tree/2a47249fe9ae3b8e923c6acc2554c98500026f8d/audits)."
+hermez-network-9a696e3-fixed,test-rollup-tx-states.circom,,,,Not using all inputs might be logic error but falls outside the scope of this dataset.
+hermez-network-9a696e3-fixed,test-rq-tx-verifier.circom,,,,"Highly convincing in terms of safety. No potential issues were found during human inspection, and the related audit reports (https://github.com/hermeznetwork/contracts/tree/2a47249fe9ae3b8e923c6acc2554c98500026f8d/audits)."
+hydra-2010a65,hydra-s1 copy.circom,,Montgomery2Edwards,[14],
+hydra-2010a65,verify-hydra-commitment.circom,,Montgomery2Edwards,[14],
+hydra-2010a65,verify-merkle-path.circom,,,,Classified as safe in ZKAP (USENIX '24).
+iden3-core-56a08f9,auth.circom,,,,
+iden3-core-56a08f9,authTest.circom,unsafe,verifyExpirationTime,[11],
+iden3-core-56a08f9,authWithRelayTest.circom,,,,
+iden3-core-56a08f9,credentialAtomicQueryMTP.circom,unsafe,verifyExpirationTime,[11],
+iden3-core-56a08f9,credentialAtomicQueryMTPTest.circom,,,,
+iden3-core-56a08f9,credentialAtomicQueryMTPWithRelay.circom,,,,
+iden3-core-56a08f9,credentialAtomicQueryMTPWithRelayTest.circom,,,,
+iden3-core-56a08f9,credentialAtomicQuerySig.circom,,,,
+iden3-core-56a08f9,credentialAtomicQuerySigTest.circom,,,,
+iden3-core-56a08f9,idOwnershipBySignatureTest.circom,,,,
+iden3-core-56a08f9,idOwnershipBySignatureWithRelayTest.circom,,,,
+iden3-core-56a08f9,inTest.circom,,,,"Highly convincing in terms of safety, with no potential issues found during human inspection. Although ZKAP (USENIX'24) claims that IN is vulnerable to overflow attacks due to the lack of a bit-length check for GreaterThan(252), this claim is unfounded. The first argument of GreaterThan(252) is the sum of IsEqual's output, whose maximum value is the template parameter valueArraySize, while the second argument is 0. Therefore, this operation is safe."
+iden3-core-56a08f9,poseidon.circom,,,,Highly convincing in terms of safety. No potential issues were found during human inspection.
+iden3-core-56a08f9,poseidon14.circom,,,,Highly convincing in terms of safety. No potential issues were found during human inspection.
+iden3-core-56a08f9,poseidon16.circom,,,,Highly convincing in terms of safety. No potential issues were found during human inspection.
+iden3-core-56a08f9,queryTest.circom,unsafe,Query,[12],
+iden3-core-56a08f9,stateTransition.circom,unsafe,Query,[12],
+iden3-core-56a08f9,utils_GetValueByIndex.circom,,,,Classified as safe in ZKAP (USENIX '24).
+iden3-core-56a08f9,utils_checkIdenStateMatchesRoots.circom,,,,Highly convincing in terms of safety. No potential issues were found during human inspection.
+iden3-core-56a08f9,utils_getClaimExpiration.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. The circuit's omission of certain parts of the input claim appears to be expected behavior.
+iden3-core-56a08f9,utils_getClaimSubjectOtherIden.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. The circuit's omission of certain parts of the input appears to be expected behavior.
+iden3-core-56a08f9,utils_getSubjectLocation.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. The circuit's omission of certain parts of the input appears to be expected behavior.
+iden3-core-56a08f9,utils_isExpirable.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. The circuit's omission of certain parts of the input appears to be expected behavior.
+iden3-core-56a08f9,utils_isUpdatable.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. The circuit's omission of certain parts of the input appears to be expected behavior.
+iden3-core-56a08f9,utils_verifyClaimSignature.circom,unsafe,Montgomery2Edwards,[14],
+iden3-core-56a08f9,utils_verifyCredentialSubject.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. The circuit's omission of certain parts of the input appears to be expected behavior.
+iden3-core-56a08f9,utils_verifyExpirationTime.circom,unsafe,verifyExpirationTime,[11],
+keccak256-circom-af3e898,absorb_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. zkap appears to mishandle cases where array substitution is conditioned on the index.
+keccak256-circom-af3e898,chi_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+keccak256-circom-af3e898,final_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. zkap appears to mishandle cases where array substitution is conditioned on the index.
+keccak256-circom-af3e898,keccak_256_256_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. zkap appears to mishandle cases where array substitution is conditioned on the index.
+keccak256-circom-af3e898,keccak_32_256_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. zkap appears to mishandle cases where array substitution is conditioned on the index.
+keccak256-circom-af3e898,keccakfRound0_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. zkap appears to mishandle cases where array substitution is conditioned on the index.
+keccak256-circom-af3e898,keccakfRound20_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. zkap appears to mishandle cases where array substitution is conditioned on the index.
+keccak256-circom-af3e898,keccakf_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. zkap appears to mishandle cases where array substitution is conditioned on the index.
+keccak256-circom-af3e898,pad_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+keccak256-circom-af3e898,rhopi_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. zkap appears to mishandle cases where array substitution is conditioned on the index.
+keccak256-circom-af3e898,squeeze_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+keccak256-circom-af3e898,theta_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. zkap appears to mishandle cases where array substitution is conditioned on the index.
+keccak256-circom-af3e898,iota3_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+keccak256-circom-af3e898,iota10_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+maci-9b1b1a6-fixed,batchUpdateStateTree_32.circom,unsafe,BatchUpdateStateTree,[22],
+maci-9b1b1a6-fixed,batchUpdateStateTree_32_batch16.circom,unsafe,BatchUpdateStateTree,[22],
+maci-9b1b1a6-fixed,batchUpdateStateTree_32_batch256.circom,unsafe,BatchUpdateStateTree,[22],
+maci-9b1b1a6-fixed,batchUpdateStateTree_large.circom,unsafe,BatchUpdateStateTree,[22],
+maci-9b1b1a6-fixed,batchUpdateStateTree_medium.circom,unsafe,BatchUpdateStateTree,[22],
+maci-9b1b1a6-fixed,batchUpdateStateTree_small.circom,unsafe,BatchUpdateStateTree,[22],
+maci-9b1b1a6-fixed,batchUpdateStateTree_test.circom,unsafe,BatchUpdateStateTree,[22],
+maci-9b1b1a6-fixed,calculateTotal_test.circom,,,,"The sum might overflow, but that would be a logic error and falls outside the scope of this dataset."
+maci-9b1b1a6-fixed,decrypt_test.circom,,,,Classified as safe in ZKAP (USENIX '24).
+maci-9b1b1a6-fixed,ecdh_test.circom,unsafe,MontgomeryDouble,[7],
+maci-9b1b1a6-fixed,hasher11_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. Poseidon is certified as safe in ZKAP (USENIX'24).
+maci-9b1b1a6-fixed,hasher5_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. Poseidon is certified as safe in ZKAP (USENIX'24).
+maci-9b1b1a6-fixed,hashleftright_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. Poseidon is certified as safe in ZKAP (USENIX'24).
+maci-9b1b1a6-fixed,merkleTreeCheckRoot_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. Poseidon is certified as safe in ZKAP (USENIX'24).
+maci-9b1b1a6-fixed,merkleTreeInclusionProof_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. Poseidon is certified as safe in ZKAP (USENIX'24).
+maci-9b1b1a6-fixed,merkleTreeLeafExists_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection. Poseidon is certified as safe in ZKAP (USENIX'24).
+maci-9b1b1a6-fixed,performChecksBeforeUpdate_test.circom,unsafe,QuinSelector,[23],
+maci-9b1b1a6-fixed,publicKey_test.circom,unsafe,MontgomeryDouble,[7],
+maci-9b1b1a6-fixed,quadVoteTally_32.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection.
+maci-9b1b1a6-fixed,quadVoteTally_32_batch16.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection.
+maci-9b1b1a6-fixed,quadVoteTally_32_batch256.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection.
+maci-9b1b1a6-fixed,quadVoteTally_large.circom,,,,Classified as safe in ZKAP (USENIX '24).
+maci-9b1b1a6-fixed,quadVoteTally_medium.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection.
+maci-9b1b1a6-fixed,quadVoteTally_small.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection.
+maci-9b1b1a6-fixed,quadVoteTally_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection.
+maci-9b1b1a6-fixed,quinGeneratePathIndices_test.circom,unsafe,QuinGeneratePathIndices,[24],
+maci-9b1b1a6-fixed,quinSelector_test.circom,unsafe,QuinSelector,[23],
+maci-9b1b1a6-fixed,quinTreeCheckRoot_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection.
+maci-9b1b1a6-fixed,quinTreeInclusionProof_test.circom,unsafe,QuinSelector,[23],
+maci-9b1b1a6-fixed,quinTreeLeafExists_test.circom,unsafe,QuinSelector,[23],
+maci-9b1b1a6-fixed,resultCommitmentVerifier_test.circom,,,,Highly convincing in terms of safety. No potential issues were identified during human inspection.
+maci-9b1b1a6-fixed,splicer_test.circom,unsafe,QuinSelector,[23],
+maci-9b1b1a6-fixed,updateStateTree_test.circom,unsafe,UpdateStateTree,[25],
+maci-9b1b1a6-fixed,verifySignature_test.circom,unsafe,MontgomeryDouble,[7],
+semaphore-0f0fc95,semaphore.circom,,,,Classified as safe in ZKAP (USENIX '24).
+semaphore-0f0fc95,tree.circom,,,,Classified as safe in ZKAP (USENIX '24).
+zk-SQL-4c3626d,delete.circom,,,,Classified as safe in ZKAP (USENIX '24).
+zk-SQL-4c3626d,hashTable.circom,,,,Classified as safe in ZKAP (USENIX '24).
+zk-SQL-4c3626d,insert.circom,,,,Classified as safe in ZKAP (USENIX '24).
+zk-SQL-4c3626d,select.circom,,,,Classified as safe in ZKAP (USENIX '24).
+zk-SQL-4c3626d,update.circom,,,,Classified as safe in ZKAP (USENIX '24).
+zk-SQL-4c3626d,utils.circom,,,,Classified as safe in ZKAP (USENIX '24).
+zk-group-sigs-1337689-fixed,deny.circom,,,,Classified as safe in ZKAP (USENIX '24).
+zk-group-sigs-1337689-fixed,reveal.circom,,,,Classified as safe in ZKAP (USENIX '24).
+zk-group-sigs-1337689-fixed,sign.circom,,,,Classified as safe in ZKAP (USENIX '24).
+circom-ecdsa-d87eb70,SSZRestoreMerkleRoot@telepathy@depth=2@index=2.circom,safe,,,"Although ZKAP (usenix'24) flags this circuit vulnerable, not using the variable does not mean that the circuit is under-/over-constrained. The issue (https://github.com/0xPARC/circom-ecdsa/issues/29) has been not addressed by the developer, also suggesting that this circuit is likely to be safe"
+internal,DivModN@veridise@n=13.circom,unsafe,DivMod,[27],
+internal,Reward@veridise.circom,safe,,,This circuit is not over-constrained with the default setting of Circom compile.
+internal,ArrayXOR@telepathy@n=4.circom,unsafe,ArrayXOR,[28],
+internal,Rotate@telepathy.circom,unsafe,,,
+internal,SSZLayer@telepathy@numBytes=2.circom,unsafe,SSZLayer,[29],
+internal,SSZLayer@telepathy@numBytes=64.circom,safe,,,
+internal,SSZRestoreMerkleRoot@telepathy@depth=2@index=2.circom,safe,,,"Although ZKAP (USENIX '24) flags this circuit as vulnerable due to the unused intermediate signal `values`, it is neither under-constrained nor over-constrained by our definition, as other parts of the circuit still depend on `values`."
+iden3-core-56a08f9,stateTransitionTest.circom,unsafe,Montgomery2Edwards,[14],
+darkforest-eth-9033eaf-fixed,CalculateTotal.circom,safe,,,
+darkforest-eth-9033eaf-fixed,QuinSelector.circom,unsafe,QuinSelector,[23],
+circom-pairing-743d761,CoreVerifyPubkeyG1@circom-pairing@n=55@k=7.circom,safe,,,
+circom-pairing-743d761,LongToShortNoEndCarry@circom-pairing@n=32@k=3.circom,safe,,,
