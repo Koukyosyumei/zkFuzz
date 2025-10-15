@@ -1,0 +1,10 @@
+{
+  "goerli": "https://goerli.infura.io/v3/9aa3d95b3bc440fa88ea12eaa4456161",
+  "polygon": "https://polygon-mainnet.g.alchemy.com/v2/t7iQZs3ufBXziZASNU21lFJAeP4DxE-B",
+  "optimism": "https://opt-mainnet.g.alchemy.com/v2/7BbvPgCkiTTiCct1aOP9hFfbY6wgCzwX",
+  "gnosis": "https://rpc.gnosischain.com",
+  "arbitrum": "https://rpc.ankr.com/arbitrum",
+  "bsc": "https://tiniest-snowy-patina.bsc.quiknode.pro/4ce8ea8898f6e45a7db465ec28833df45bd7ca81",
+  "avalanche": "https://rpc.ankr.com/avalanche",
+  "evmos": "https://json-rpc.evmos.blockhunters.org"
+}

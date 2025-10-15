@@ -1,0 +1,14 @@
+stepInterval = 720
+rotateInterval = 97200
+stepGasLimit = 350000
+rotateGasLimit = 1000000
+
+[step]
+witnessExecutablePath = "~/telepathy/circuits/build/step_backup_cpp/step"
+proverExecutablePath = "~/rapidsnark/build/prover"
+proverKeyPath = "~/telepathy/circuits/build/step_backup_cpp/p2.zkey"
+
+[rotate]
+witnessExecutablePath = "~/telepathy/circuits/build/rotate_backup_cpp/rotate"
+proverExecutablePath = "~/rapidsnark/build/prover"
+proverKeyPath = "~/telepathy/circuits/build/rotate_backup_cpp/p2.zkey"

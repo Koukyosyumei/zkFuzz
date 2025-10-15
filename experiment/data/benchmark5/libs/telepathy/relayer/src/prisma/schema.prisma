@@ -1,0 +1,82 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+
+model HeadUpdate {
+  id    Int     @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  // Event arguments
+  argSlot BigInt
+  argRoot String
+  // Metadata related to event that we augment
+  augBlockForSlot Int
+  // Smart contract data 
+  chainId Int 
+  contractAddress String
+  // Metadata about transaction that contained event
+  txHash  String
+  txIndex Int
+  logIndex Int
+  txBlockNumber Int
+  txBlockHash String
+  txTime Int
+  reorged Boolean @default(false)
+}
+
+model SentMessage {
+  id    Int     @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  // Event arguments
+  argNonce BigInt
+  argMessageRoot String
+  argMessage String
+  // Metadata related to event that we augment
+  augMsgSender String
+  augRecipient String
+  augRecipientChainId Int
+  augGasLimit Int
+  augData String
+  // Smart contract data 
+  chainId Int 
+  contractAddress String
+  // Metadata about transaction that contained event
+  txHash  String
+  txIndex Int
+  logIndex Int
+  txBlockNumber Int
+  txBlockHash String
+  txTime Int
+  reorged Boolean @default(false)
+}
+
+// Given a SentMessage, have an execute message transaction that is prepared
+// model ExecuteTransaction {
+// }
+
+model ExecutedMessage {
+  id    Int     @id @default(autoincrement())
+  createdAt DateTime @default(now())
+  // Event arguments
+  argNonce BigInt
+  argMessageRoot String // Can match to SentMessage on argMessageRoot 
+  // to figure out source message
+  argMessage String
+  argStatus Boolean
+  // Smart contract data 
+  chainId Int 
+  contractAddress String
+  // Metadata about transaction that contained event
+  txHash  String
+  txIndex Int
+  logIndex Int
+  txBlockNumber Int
+  txBlockHash String
+  txTime Int
+  reorged Boolean @default(false)
+}

@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+        "target": "es2020",
+        "module": "es2020",
+        "rootDir": "src",
+        "outDir": "dist",
+        "moduleResolution": "node",
+        "esModuleInterop": true,
+        "forceConsistentCasingInFileNames": true,
+        "strict": true,
+        "composite": true,
+        "skipLibCheck": true
+    },
+    "exclude": [
+      "jest.config.ts",
+      "**/*.test.ts"
+    ]
+}

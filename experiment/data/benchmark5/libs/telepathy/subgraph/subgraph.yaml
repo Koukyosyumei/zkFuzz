@@ -1,0 +1,30 @@
+specVersion: 0.0.5
+schema:
+  file: ./schema.graphql
+dataSources:
+  # The LightClient data source was genereated using the following graph cli command within the top
+  # level telepathy directory.
+  # "graph init --product hosted-service --from-contract=0x6069D09b61484Ed3339Be4755969A6fD6F43809e --protocol ethereum --contract-name=LightClient --index-events --network=matic --abi contracts/abi/LightClient.sol/LightClient.json succinctlabs/telepathy-polygon subgraph"
+  # Note that one modification made is the abi file path (to read from the contracts folder).
+  - kind: ethereum
+    name: LightClient
+    network: matic
+    source:
+      abi: LightClient
+      address: "0xb3D7F6da9753c9292D9BBAFf045b425e9Dc46A0b"
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      language: wasm/assemblyscript
+      entities:
+        - HeadUpdate
+        - SyncCommitteeUpdate
+      abis:
+        - name: LightClient
+          file: ../contracts/abi/LightClient.sol/LightClient.json
+      eventHandlers:
+        - event: HeadUpdate(indexed uint256,indexed bytes32)
+          handler: handleHeadUpdate
+        - event: SyncCommitteeUpdate(indexed uint256,indexed bytes32)
+          handler: handleSyncCommitteeUpdate
+      file: ./src/light-client.ts

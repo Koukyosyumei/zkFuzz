@@ -1,0 +1,17 @@
+type HeadUpdate @entity(immutable: true) {
+  id: Bytes!
+  slot: BigInt! # uint256
+  root: Bytes! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}
+
+type SyncCommitteeUpdate @entity(immutable: true) {
+  id: Bytes!
+  period: BigInt! # uint256
+  root: Bytes! # bytes32
+  blockNumber: BigInt!
+  blockTimestamp: BigInt!
+  transactionHash: Bytes!
+}

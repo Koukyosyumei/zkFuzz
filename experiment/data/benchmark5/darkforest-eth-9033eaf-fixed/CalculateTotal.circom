@@ -1,0 +1,5 @@
+pragma circom 2.0.3;
+
+include "../libs/darkforest-eth-9033eaf-fixed/CalculateTotal.circom";
+
+component main = CalculateTotal(4);

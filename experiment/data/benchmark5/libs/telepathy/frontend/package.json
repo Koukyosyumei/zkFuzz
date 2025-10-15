@@ -1,0 +1,45 @@
+{
+  "name": "@succinctlabs/telepathy-frontend",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@headlessui/react": "^1.6.6",
+    "@heroicons/react": "^2.0.12",
+    "@rainbow-me/rainbowkit": "^0.8.0",
+    "@tailwindcss/typography": "^0.5.4",
+    "abitype": "^0.2.5",
+    "dotenv": "^16.0.2",
+    "ethers": "^5.7.0",
+    "lodash.merge": "^4.6.2",
+    "next": "12.2.5",
+    "next-themes": "^0.2.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-dropdown": "^1.10.0",
+    "react-hot-toast": "^2.4.0",
+    "react-select": "^5.4.0",
+    "react-toastify": "^9.0.8",
+    "wagmi": "^0.8.4",
+    "zod": "^3.19.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.14.184",
+    "@types/lodash.merge": "^4.6.7",
+    "@types/node": "18.7.13",
+    "@types/react": "^18.0.17",
+    "@types/react-dom": "^18.0.6",
+    "autoprefixer": "^10.4.8",
+    "eslint": "8.22.0",
+    "eslint-config-next": "12.2.5",
+    "postcss": "^8.4.16",
+    "tailwindcss": "^3.1.8",
+    "typescript": "4.8.2"
+  },
+  "packageManager": "yarn@3.3.0"
+}

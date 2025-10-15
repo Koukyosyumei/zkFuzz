@@ -1,0 +1,38 @@
+{
+  "matic": {
+    "LightClient": {
+      "address": "0x6069D09b61484Ed3339Be4755969A6fD6F43809e",
+      "startBlock": 35864324
+    }
+  },
+  "optimism": {
+    "LightClient": {
+      "address": "0x536565bF53bBc9b91F3eE4fD80F542779BCaDd4C",
+      "startBlock": 40273608
+    }
+  },
+  "gnosis": {
+    "LightClient": {
+      "address": "0x95d4760e7E6e871b23AF7D9225F26B7E4F5E8568",
+      "startBlock": 25079605
+    }
+  },
+  "arbitrum-one": {
+    "LightClient": {
+      "address": "0xb3D7F6da9753c9292D9BBAFf045b425e9Dc46A0b",
+      "startBlock": 40043086
+    }
+  },
+  "bsc": {
+    "LightClient": {
+      "address": "0x6dB0a5c6f3f3ABB3b72420a536A0573eac00ECE4",
+      "startBlock": 23255731
+    }
+  },
+  "avalanche": {
+    "LightClient": {
+      "address": "0xb3D7F6da9753c9292D9BBAFf045b425e9Dc46A0b",
+      "startBlock": 22669232
+    }
+  }
+}

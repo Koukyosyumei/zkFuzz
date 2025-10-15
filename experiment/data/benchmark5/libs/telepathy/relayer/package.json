@@ -1,0 +1,43 @@
+{
+    "name": "@succinctlabs/telepathy-relayer",
+    "version": "1.0.0",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "devDependencies": {
+        "@jest/globals": "^29.3.1",
+        "@typechain/ethers-v5": "^10.1.1",
+        "@types/debug": "^4.1.7",
+        "@types/jest": "^29.2.3",
+        "@types/lru-cache": "^7.10.10",
+        "@types/node": "^18.11.9",
+        "@typescript-eslint/eslint-plugin": "^5.43.0",
+        "@typescript-eslint/parser": "^5.43.0",
+        "eslint": "^8.27.0",
+        "ethers": "^5.7.2",
+        "jest": "^29.3.1",
+        "prisma": "^4.6.1",
+        "ts-jest": "^29.0.3",
+        "tsc": "^2.0.4",
+        "typescript": "^4.8.4"
+    },
+    "dependencies": {
+        "@ethereumjs/block": "^4.0.1",
+        "@ethereumjs/evm": "^1.2.2",
+        "@ethereumjs/tx": "^4.0.1",
+        "@ethereumjs/vm": "^6.2.0",
+        "@prisma/client": "^4.6.1",
+        "@succinctlabs/telepathy-sdk": "workspace:^",
+        "dotenv": "^16.0.3",
+        "patch-package": "^6.5.0"
+    },
+    "scripts": {
+        "lint": "eslint . --ext .ts",
+        "prisma-reset": "prisma migrate reset --schema ./src/prisma/schema.prisma",
+        "prisma-generate": "prisma generate --schema ./src/prisma/schema.prisma",
+        "build": "yarn workspace @succinctlabs/telepathy-sdk build && yarn tsc -b",
+        "start": "echo 'building' && yarn build && echo 'build complete' && node --es-module-specifier-resolution=node --async-stack-traces --no-warnings dist/index.js",
+        "test": "yarn jest"
+    }
+}

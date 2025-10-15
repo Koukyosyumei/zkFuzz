@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  background-color: #141414;
+  padding: 0px;
+  margin: 0px;
+  font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Oxygen,
+    Ubuntu, Cantarell, Fira Sans, Droid Sans, Helvetica Neue, sans-serif;
+}
+
+main {
+  background-size: contain;
+  min-height: 100vh;
+}
+
+@font-face {
+  font-family: GroteskBold;
+  src: url(NONNaturalGrotesk-Bold.woff2);
+}
+
+@font-face {
+  font-family: GroteskRegular;
+  src: url(NONNaturalGrotesk-Regular.woff2);
+}
+
+@font-face {
+  font-family: NimbusSansExtended;
+  src: url(nimbus-sans-extended.ttf);
+}
+
+@font-face {
+  font-family: SilkscreenBold;
+  src: url(Silkscreen-Bold.ttf);
+}
+
+@font-face {
+  font-family: SilkscreenRegular;
+  src: url(Silkscreen-Regular.ttf);
+}
+
+.silkscreen-regular {
+  font-family: SilkscreenRegular;
+}
+
+.silkscreen-bold {
+  font-family: SilkscreenBold;
+}
+
+
+.grotesk-bold {
+  font-family: GroteskBold;
+}
+
+.grotesk-regular {
+  font-family: GroteskRegular;
+}
+
+.nimbus-extended {
+  font-family: NimbusSansExtended;
+}
+
+.dark-gradient {
+  background: rgb(0,0,0);
+  background: linear-gradient(180deg, rgb(0 9 255) 0%, rgb(129 124 255) 100%);
+}
+
+.Dropdown-root {
+  position: relative;
+}
+
+.Dropdown-control {
+  font-family: GroteskRegular;
+  position: relative;
+  overflow: hidden;
+  background-color: black;
+  border: 1px solid black;
+  box-sizing: border-box;
+  color: white;
+  cursor: default;
+  outline: none;
+  padding: 8px 52px 8px 10px;
+  transition: all 200ms ease;
+}
+
+.Dropdown-control:hover {
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+}
+
+.Dropdown-arrow {
+  border-color: white transparent transparent;
+  border-style: solid;
+  border-width: 5px 5px 0;
+  content: ' ';
+  display: block;
+  height: 0;
+  margin-top: -ceil(2.5);
+  position: absolute;
+  right: 10px;
+  top: 18px;
+  width: 0
+}
+
+.is-open .Dropdown-arrow {
+  border-color: transparent transparent white;
+  border-width: 0 5px 5px;
+}
+
+.Dropdown-menu {
+  background-color: white;
+  border: 1px solid #ccc;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.06);
+  box-sizing: border-box;
+  margin-top: -1px;
+  max-height: 200px;
+  overflow-y: auto;
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  z-index: 1000;
+  -webkit-overflow-scrolling: touch;
+}
+
+.Dropdown-menu .Dropdown-group > .Dropdown-title{
+  padding: 8px 10px;
+  color: rgba(51, 51, 51, 1);
+  font-weight: bold;
+  text-transform: capitalize;
+}
+
+.Dropdown-option {
+  box-sizing: border-box;
+  color: rgba(51, 51, 51, 0.8);
+  cursor: pointer;
+  display: block;
+  padding: 8px 10px;
+}
+
+.Dropdown-option:last-child {
+  border-bottom-right-radius: 2px;
+   border-bottom-left-radius: 2px;
+}
+
+.Dropdown-option:hover {
+  background-color: #f2f9fc;
+  color: #333;
+}
+
+.Dropdown-option.is-selected {
+  background-color: #f2f9fc;
+  color: #333;
+}
+
+.Dropdown-noresults {
+  box-sizing: border-box;
+  color: #ccc;
+  cursor: default;
+  display: block;
+  padding: 8px 10px;
+}
+
+input:focus{
+  outline: none;
+}
+
+.arrow {
+  border: solid black;
+  border-width: 0 2px 2px 0;
+  display: inline-block;
+  padding: 3px;
+}
+
+.right {
+  transform: rotate(-45deg);
+  -webkit-transform: rotate(-45deg);
+}
+
+.left {
+  transform: rotate(135deg);
+  -webkit-transform: rotate(135deg);
+}
+
+.up {
+  transform: rotate(-135deg);
+  -webkit-transform: rotate(-135deg);
+}
+
+.down {
+  transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
+}
+
+.background-glow {
+  position: fixed;
+  inset: 0%;
+  z-index: 100;
+  display: block;
+  margin-right: auto;
+  margin-left: auto;
+  background-image: url(glow.png);
+  background-position: 50% 0%;
+  background-size: cover;
+  opacity: 0.5;
+  pointer-events: none;
+
+}

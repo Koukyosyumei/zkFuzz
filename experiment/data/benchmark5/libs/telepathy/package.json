@@ -1,0 +1,25 @@
+{
+    "name": "@succinctlabs/telepathy",
+    "version": "1.0.0",
+    "private": true,
+    "workspaces": [
+        "circuits",
+        "cli",
+        "operator",
+        "sdk",
+        "relayer",
+        "frontend"
+    ],
+    "devDependencies": {
+        "prettier": "^2.7.1",
+        "typechain": "^8.1.1",
+        "winston": "^3.8.2"
+    },
+    "resolutions": {
+        "@ethereumjs/blockchain@^6.0.1": "patch:@ethereumjs/blockchain@npm%3A6.0.2#./.yarn/patches/@ethereumjs-blockchain-npm-6.0.2-c0a291725c.patch"
+    },
+    "scripts": {
+        "nuke": "rm -rf node_modules && rm -rf **/node_modules && rm yarn.lock && rm **/tsconfig.tsbuildinfo && rm -rf **/dist && yarn cache clean"
+    },
+    "packageManager": "yarn@3.3.0"
+}

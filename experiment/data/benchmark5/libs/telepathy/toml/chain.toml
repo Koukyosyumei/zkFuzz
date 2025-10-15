@@ -1,0 +1,31 @@
+[goerli]
+chainId = 5
+source = true
+
+[polygon]
+chainId = 137
+destination = true
+
+[optimism]
+chainId = 10
+destination = true
+
+[gnosis]
+chainId = 100
+destination = true
+
+[arbitrum]
+chainId = 42161
+destination = false
+
+[bsc]
+chainId = 56
+destination = false
+
+[avalanche]
+chainId = 43114
+destination = true
+
+[evmos]
+chainId = 9001
+destination = false

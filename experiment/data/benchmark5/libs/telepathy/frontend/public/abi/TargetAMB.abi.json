@@ -1,0 +1,165 @@
+[
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_lightClient",
+        "type": "address"
+      },
+      {
+        "internalType": "address",
+        "name": "_sourceAMB",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "constructor"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "uint256",
+        "name": "nonce",
+        "type": "uint256"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "msgHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "bytes",
+        "name": "message",
+        "type": "bytes"
+      },
+      {
+        "indexed": false,
+        "internalType": "bool",
+        "name": "status",
+        "type": "bool"
+      }
+    ],
+    "name": "ExecutedMessage",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint64",
+        "name": "slot",
+        "type": "uint64"
+      },
+      {
+        "internalType": "bytes",
+        "name": "messageBytes",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "accountProof",
+        "type": "bytes[]"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "storageProof",
+        "type": "bytes[]"
+      }
+    ],
+    "name": "executeMessage",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes",
+        "name": "srcSlotTxSlotPack",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes",
+        "name": "messageBytes",
+        "type": "bytes"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "receiptsRootProof",
+        "type": "bytes32[]"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "receiptsRoot",
+        "type": "bytes32"
+      },
+      {
+        "internalType": "bytes[]",
+        "name": "receiptProof",
+        "type": "bytes[]"
+      },
+      {
+        "internalType": "bytes",
+        "name": "txIndexRLPEncoded",
+        "type": "bytes"
+      },
+      {
+        "internalType": "uint256",
+        "name": "logIndex",
+        "type": "uint256"
+      }
+    ],
+    "name": "executeMessageFromLog",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "lightClient",
+    "outputs": [
+      {
+        "internalType": "contract ILightClient",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "messageStatus",
+    "outputs": [
+      {
+        "internalType": "enum MessageStatus",
+        "name": "",
+        "type": "uint8"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "sourceAMB",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  }
+]

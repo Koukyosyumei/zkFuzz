@@ -1,0 +1,10 @@
+{
+  "goerli": 5,
+  "polygon": 137,
+  "optimism": 10,
+  "gnosis": 100,
+  "arbitrum": 42161,
+  "bsc": 56,
+  "avalanche": 43114,
+  "evmos": 9001
+}

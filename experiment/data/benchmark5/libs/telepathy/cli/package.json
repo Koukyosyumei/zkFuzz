@@ -1,0 +1,34 @@
+{
+    "name": "@succinctlabs/telepathy-cli",
+    "version": "1.0.0",
+    "license": "MIT",
+    "type": "module",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "devDependencies": {
+        "@typechain/ethers-v5": "^10.1.1",
+        "@types/node": "^18.11.9",
+        "@typescript-eslint/eslint-plugin": "^5.43.0",
+        "@typescript-eslint/parser": "^5.43.0",
+        "eslint": "^8.27.0",
+        "pino-pretty": "^9.1.1",
+        "tsc": "^2.0.4",
+        "tsx": "^3.12.1",
+        "typechain": "^8.1.1",
+        "typescript": "^4.8.4"
+    },
+    "dependencies": {
+        "@succinctlabs/telepathy-sdk": "workspace:^",
+        "pino": "^8.7.0",
+        "toml": "^3.0.0",
+        "winston": "^3.8.2",
+        "yargs": "^17.6.2"
+    },
+    "scripts": {
+        "lint": "eslint . --ext .ts",
+        "build": "yarn workspace @succinctlabs/telepathy-sdk build && tsc -b",
+        "lightclient": "yarn build && node --es-module-specifier-resolution=node --no-warnings dist/lightclient.js",
+        "counter": "yarn build && node --es-module-specifier-resolution=node --no-warnings dist/counter.js",
+        "bridge": "yarn build && node --es-module-specifier-resolution=node --no-warnings dist/bridge.js"
+    }
+}

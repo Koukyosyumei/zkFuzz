@@ -1,0 +1,37 @@
+{
+    "goerli": {
+      "SourceAMB": "0xb6dF59A1BD38d2749fc6b62C16AF46D5992A3814",
+      "Counter": "0x6824ab466604C0F0F66Bc59564D3df75964Af43A",
+      "InfiniteMintSuccincts": "0xE485e1D99A843F861975D2272Fe2f6a06db6ea00",
+      "Deposit": "0x9DAedA0b5B4001552132c92814705D6F8eb59120"
+    },
+    "polygon": {
+      "LightClient": "0x54bCDFdE79168451985FED4F8c74E2148Fb75239",
+      "TargetAMB": "0x3557bB6c9389dfD3E6952328d967FCf166c7aeFf",
+      "Counter": "0xaCf03851fCCd8E41A24a33662DFdABAcECcA8504"
+    },
+    "optimism": {
+      "LightClient": "0x54bCDFdE79168451985FED4F8c74E2148Fb75239",
+      "TargetAMB": "0x3557bB6c9389dfD3E6952328d967FCf166c7aeFf",
+      "Counter": "0xaCf03851fCCd8E41A24a33662DFdABAcECcA8504",
+      "Withdraw": "0x9EC4E2532aDA25A99c35C01fc3B6C45a3027a134"
+    },
+    "gnosis": {
+      "LightClient": "0x54bCDFdE79168451985FED4F8c74E2148Fb75239",
+      "TargetAMB": "0x3557bB6c9389dfD3E6952328d967FCf166c7aeFf",
+      "Counter": "0xaCf03851fCCd8E41A24a33662DFdABAcECcA8504",
+      "Withdraw": "0x9EC4E2532aDA25A99c35C01fc3B6C45a3027a134"
+    },
+    "arbitrum": {},
+    "bsc": {
+      "LightClient": "0x54bCDFdE79168451985FED4F8c74E2148Fb75239",
+      "TargetAMB": "0x3557bB6c9389dfD3E6952328d967FCf166c7aeFf",
+      "Counter": "0xaCf03851fCCd8E41A24a33662DFdABAcECcA8504"
+    },
+    "avalanche": {
+      "LightClient": "0x54bCDFdE79168451985FED4F8c74E2148Fb75239",
+      "TargetAMB": "0x3557bB6c9389dfD3E6952328d967FCf166c7aeFf",
+      "Counter": "0xaCf03851fCCd8E41A24a33662DFdABAcECcA8504",
+      "Withdraw": "0x9EC4E2532aDA25A99c35C01fc3B6C45a3027a134"
+    }
+  }
