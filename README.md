@@ -391,14 +391,21 @@ Using zkFuzz in conjunction with these tools can significantly enhance the likel
 ## 📃 Cite
 
 ```
-@misc{takahashi2025zkfuzzfoundationframeworkeffective,
-      title={zkFuzz: Foundation and Framework for Effective Fuzzing of Zero-Knowledge Circuits}, 
-      author={Hideaki Takahashi and Jihwan Kim and Suman Jana and Junfeng Yang},
-      year={2025},
-      eprint={2504.11961},
-      archivePrefix={arXiv},
-      primaryClass={cs.CR},
-      url={https://arxiv.org/abs/2504.11961}, 
-}
+@INPROCEEDINGS {,
+author = { Takahashi, Hideaki and Kim, Jihwan and Jana, Suman and Yang, Junfeng },
+booktitle = { 2026 IEEE Symposium on Security and Privacy (SP) },
+title = {{ zkFuzz: Foundation and Framework for Effective Fuzzing of Zero-Knowledge Circuits }},
+year = {2026},
+volume = {},
+ISSN = {2375-1207},
+pages = {919-938},
+abstract = { Zero-knowledge (ZK) circuits enable privacy-preserving computations and are central to many cryptographic protocols. Systems like Circom simplify ZK development by combining witness computation and circuit constraints in one program. However, even small errors can compromise security of ZK programs -- under-constrained circuits may accept invalid witnesses, while over-constrained ones may reject valid ones. Static analyzers are often imprecise with high false positives, and formal tools struggle with real-world circuit scale. Additionally, existing tools overlook several critical behaviors, such as intermediate computations and program aborts, and thus miss many vulnerabilities. Our theoretical contribution is the Trace-Constraint Consistency Test (TCCT), a foundational, language-independent formulation of ZK circuit bugs. TCCT provides a unified semantics that subsumes prior definitions and captures both under- and over-constrained vulnerabilities, exposing the full space of ZK bugs that elude prior tools. Our systems contribution is zkFuzz, a novel program mutation-based fuzzing framework for detecting TCCT violations. zkFuzz systematically mutates the computational logic of Zk programs guided by a novel fitness function, and injects carefully crafted inputs using tailored heuristics to expose bugs. We evaluated zkFuzz on 452 real-world ZK circuits written in Circom, a leading programming system for ZK development. zkFuzz successfully identified 85 bugs, including 59 zero-days-39 of which were confirmed by developers and 14 fixed, including bugs undetectable by prior works due to their fundamentally limited formulations, earning thousands of bug bounties. Our preliminary research on Noir, another emerging DSL for ZK circuit, also demonstrates the feasibility of zkFuzz to support multiple DSLs. },
+keywords = {zero-lnowledge proof;fuzzing;vulnerability detection;circom;mutation testing;cryptography},
+doi = {10.1109/SP63933.2026.00049},
+url = {https://doi.ieeecomputersociety.org/10.1109/SP63933.2026.00049},
+publisher = {IEEE Computer Society},
+address = {Los Alamitos, CA, USA},
+month =May}
+
 ```
 
