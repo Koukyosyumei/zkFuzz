@@ -374,6 +374,7 @@ If you’ve discovered a significant issue with our tool, we’d love to hear ab
 - https://github.com/aptos-labs/keyless-zk-proofs/issues/50
 - https://github.com/worm-privacy/proof-of-burn/issues/1
 - https://github.com/SpiralOutDotEu/zk_whitelist/pull/54
+- https://github.com/EkuboProtocol/privacy-pools/issues/7
 
 ## 🧩 Complementary Tools
 
